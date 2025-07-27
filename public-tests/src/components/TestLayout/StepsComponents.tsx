@@ -7,7 +7,7 @@ import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { LoadingModal } from './LoadingModal';
-import { DetailedEmotionQuestion, EmotionHierarchyQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
+import { EmotionHierarchyQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
 
@@ -81,7 +81,8 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   question,
   currentStepKey
 }) => {
-  const questionType = QUESTION_TYPE_MAP[currentStepKey as keyof typeof QUESTION_TYPE_MAP] || 'pending';
+  // 🎯 USAR EL TIPO DE LA PREGUNTA EN LUGAR DEL QUESTION_TYPE_MAP
+  const questionType = question.type || QUESTION_TYPE_MAP[currentStepKey as keyof typeof QUESTION_TYPE_MAP] || 'pending';
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [textValue, setTextValue] = useState<string>('');
 
@@ -96,12 +97,10 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     }
   }, [setSelectedValue, setTextValue]);
 
-  // 🎯 USAR EL NUEVO HOOK DE LOADING STATE
   const {
     isLoading,
     hasLoadedData,
     formValues,
-    handleInputChange,
     saveToStore
   } = useFormLoadingState({
     questionKey: currentStepKey,
@@ -113,9 +112,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     saveToStore(data);
   }, [saveToStore]);
 
-  // 🎯 LIMPIAR VALORES CUANDO CAMBIA LA PREGUNTA
   useEffect(() => {
-    console.log(`[QuestionComponent] 🔄 Cambiando a pregunta: ${currentStepKey}`);
     setSelectedValue('');
     setTextValue('');
   }, [currentStepKey]);
@@ -155,6 +152,60 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
 
   const renderQuestion = () => {
     switch (questionType) {
+      case 'smartvoc_nev':
+      case 'detailed':
+        console.log('[StepsComponents] 🎯 ENTRANDO EN CASE SMARTVOC_NEV/DETAILED!');
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                Selecciona tus emociones
+              </h3>
+              <p className="text-sm text-neutral-600">
+                Selecciona hasta 3 emociones que mejor describan tu experiencia
+              </p>
+            </div>
+
+            {/* Primera fila - 7 emociones */}
+            <div className="grid grid-cols-7 gap-2">
+              {['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado'].map((emotion) => (
+                <button
+                  key={emotion}
+                  onClick={() => handleValueChange(emotion)}
+                  className="p-3 rounded-lg border-2 text-sm font-medium bg-green-100 border-green-200 text-green-800 hover:bg-green-200"
+                >
+                  {emotion}
+                </button>
+              ))}
+            </div>
+
+            {/* Segunda fila - 6 emociones */}
+            <div className="grid grid-cols-6 gap-2">
+              {['Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico', 'Descontento'].map((emotion) => (
+                <button
+                  key={emotion}
+                  onClick={() => handleValueChange(emotion)}
+                  className="p-3 rounded-lg border-2 text-sm font-medium bg-green-200 border-green-300 text-green-900 hover:bg-green-300"
+                >
+                  {emotion}
+                </button>
+              ))}
+            </div>
+
+            {/* Tercera fila - 7 emociones */}
+            <div className="grid grid-cols-7 gap-2">
+              {['Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'].map((emotion) => (
+                <button
+                  key={emotion}
+                  onClick={() => handleValueChange(emotion)}
+                  className="p-3 rounded-lg border-2 text-sm font-medium bg-red-100 border-red-200 text-red-800 hover:bg-red-200"
+                >
+                  {emotion}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
       case 'scale':
         return (
           <ScaleRangeQuestion
@@ -175,20 +226,150 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
           />
         );
       case 'detailed':
+        console.log('[StepsComponents] ✅ Renderizando detailed emotions:', {
+          selectedValue,
+          selectedEmotions: selectedValue ? selectedValue.split(',').filter(Boolean) : [],
+          maxSelections: 3
+        });
+
+        // 🎯 FORZAR RENDERIZADO DE LA CUADRÍCULA DE EMOCIONES
+        const emotions = [
+          // Primera fila - Verde claro
+          { id: 'feliz', name: 'Feliz', color: '#86efac' },
+          { id: 'satisfecho', name: 'Satisfecho', color: '#86efac' },
+          { id: 'confiado', name: 'Confiado', color: '#22c55e' },
+          { id: 'valorado', name: 'Valorado', color: '#22c55e' },
+          { id: 'cuidado', name: 'Cuidado', color: '#22c55e' },
+          { id: 'seguro', name: 'Seguro', color: '#22c55e' },
+          { id: 'enfocado', name: 'Enfocado', color: '#22c55e' },
+
+          // Segunda fila - Verde medio + 1 rojo
+          { id: 'indulgente', name: 'Indulgente', color: '#16a34a' },
+          { id: 'estimulado', name: 'Estimulado', color: '#16a34a' },
+          { id: 'exploratorio', name: 'Exploratorio', color: '#16a34a' },
+          { id: 'interesado', name: 'Interesado', color: '#16a34a' },
+          { id: 'energico', name: 'Enérgico', color: '#16a34a' },
+          { id: 'descontento', name: 'Descontento', color: '#ef4444' },
+
+          // Tercera fila - Rojo claro
+          { id: 'frustrado', name: 'Frustrado', color: '#ef4444' },
+          { id: 'irritado', name: 'Irritado', color: '#ef4444' },
+          { id: 'decepcion', name: 'Decepción', color: '#ef4444' },
+          { id: 'estresado', name: 'Estresado', color: '#ef4444' },
+          { id: 'infeliz', name: 'Infeliz', color: '#ef4444' },
+          { id: 'desatendido', name: 'Desatendido', color: '#ef4444' },
+          { id: 'apresurado', name: 'Apresurado', color: '#ef4444' }
+        ];
+
+        const selectedEmotions = selectedValue ? selectedValue.split(',').filter(Boolean) : [];
+
         return (
-          <DetailedEmotionQuestion
-            selectedEmotions={selectedValue ? selectedValue.split(',').filter(Boolean) : []}
-            onEmotionSelect={(emotionId) => {
-              const currentEmotions = selectedValue ? selectedValue.split(',').filter(Boolean) : [];
-              const newEmotions = currentEmotions.includes(emotionId)
-                ? currentEmotions.filter(id => id !== emotionId)
-                : currentEmotions.length < 3
-                  ? [...currentEmotions, emotionId]
-                  : currentEmotions;
-              handleValueChange(newEmotions.join(','));
-            }}
-            maxSelections={3}
-          />
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                Emociones Detalladas
+              </h3>
+              <p className="text-sm text-neutral-600">
+                Selecciona hasta 3 emociones que mejor describan tu experiencia
+              </p>
+              <p className="text-xs text-neutral-500 mt-1">
+                Seleccionadas: {selectedEmotions.length}/3
+              </p>
+            </div>
+
+            {/* Primera fila - 7 emociones */}
+            <div className="grid grid-cols-7 gap-2">
+              {emotions.slice(0, 7).map((emotion) => {
+                const isSelected = selectedEmotions.includes(emotion.id);
+                return (
+                  <button
+                    key={emotion.id}
+                    onClick={() => {
+                      const currentEmotions = selectedValue ? selectedValue.split(',').filter(Boolean) : [];
+                      const newEmotions = currentEmotions.includes(emotion.id)
+                        ? currentEmotions.filter(id => id !== emotion.id)
+                        : currentEmotions.length < 3
+                          ? [...currentEmotions, emotion.id]
+                          : currentEmotions;
+                      handleValueChange(newEmotions.join(','));
+                    }}
+                    disabled={!isSelected && selectedEmotions.length >= 3}
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${isSelected
+                      ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-md'
+                      : selectedEmotions.length >= 3
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    style={{ backgroundColor: isSelected ? undefined : emotion.color + '20' }}
+                  >
+                    {emotion.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Segunda fila - 6 emociones */}
+            <div className="grid grid-cols-6 gap-2">
+              {emotions.slice(7, 13).map((emotion) => {
+                const isSelected = selectedEmotions.includes(emotion.id);
+                return (
+                  <button
+                    key={emotion.id}
+                    onClick={() => {
+                      const currentEmotions = selectedValue ? selectedValue.split(',').filter(Boolean) : [];
+                      const newEmotions = currentEmotions.includes(emotion.id)
+                        ? currentEmotions.filter(id => id !== emotion.id)
+                        : currentEmotions.length < 3
+                          ? [...currentEmotions, emotion.id]
+                          : currentEmotions;
+                      handleValueChange(newEmotions.join(','));
+                    }}
+                    disabled={!isSelected && selectedEmotions.length >= 3}
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${isSelected
+                      ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-md'
+                      : selectedEmotions.length >= 3
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    style={{ backgroundColor: isSelected ? undefined : emotion.color + '20' }}
+                  >
+                    {emotion.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tercera fila - 7 emociones */}
+            <div className="grid grid-cols-7 gap-2">
+              {emotions.slice(13, 20).map((emotion) => {
+                const isSelected = selectedEmotions.includes(emotion.id);
+                return (
+                  <button
+                    key={emotion.id}
+                    onClick={() => {
+                      const currentEmotions = selectedValue ? selectedValue.split(',').filter(Boolean) : [];
+                      const newEmotions = currentEmotions.includes(emotion.id)
+                        ? currentEmotions.filter(id => id !== emotion.id)
+                        : currentEmotions.length < 3
+                          ? [...currentEmotions, emotion.id]
+                          : currentEmotions;
+                      handleValueChange(newEmotions.join(','));
+                    }}
+                    disabled={!isSelected && selectedEmotions.length >= 3}
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${isSelected
+                      ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-md'
+                      : selectedEmotions.length >= 3
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    style={{ backgroundColor: isSelected ? undefined : emotion.color + '20' }}
+                  >
+                    {emotion.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         );
       case 'text':
         return (
@@ -347,20 +528,51 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
           </div>
         );
       case 'pending':
-      default:
         return (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">Componente en desarrollo</h2>
+              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
+              <p className="text-gray-600 mb-6">{question.description}</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            </div>
+          </div>
+        );
+      default:
+        console.log('[StepsComponents] ❌ Caso no manejado:', {
+          questionType,
+          questionTitle: question.title,
+          questionConfig: question.config,
+          currentStepKey,
+          questionTypeExact: `"${questionType}"`,
+          questionTypeLength: questionType.length
+        });
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">TIPO NO MANEJADO: "{questionType}"</h2>
               <p className="text-gray-600">
                 El tipo de pregunta "{questionType}" aún no está implementado
               </p>
               <p className="text-sm text-gray-500 mt-2">QuestionKey: {currentStepKey}</p>
+              <p className="text-sm text-red-500 mt-2">Tipo exacto: "{questionType}"</p>
             </div>
           </div>
         );
     }
   };
+
+  console.log('[StepsComponents] 🎯 ANTES DE RENDERIZAR:', {
+    questionTitle: question.title,
+    questionType,
+    willCallRenderQuestion: true
+  });
+
+  const renderedContent = renderQuestion();
+
+  console.log('[StepsComponents] 🎯 DESPUÉS DE RENDERIZAR:', {
+    renderedContent: !!renderedContent,
+    renderedContentType: typeof renderedContent
+  });
 
   return (
     <div className="flex flex-col items-center justify-center h-full">
@@ -371,7 +583,12 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
           <p className="text-sm text-green-600">✓ Tus respuestas han sido cargadas</p>
         )}
       </div>
-      {renderQuestion()}
+      <div className="bg-red-100 p-4 rounded-lg">
+        <p className="text-red-800">DEBUG: QuestionComponent se está renderizando</p>
+        <p className="text-red-800">Tipo: {questionType}</p>
+        <p className="text-red-800">Título: {question.title}</p>
+      </div>
+      {renderedContent}
     </div>
   );
 };

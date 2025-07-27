@@ -187,6 +187,65 @@ const QuestionComponent: React.FC<{
             />
           </>
         )}
+        {(question.type === 'smartvoc_nev' || question.type === 'detailed') && (
+          <>
+            {console.log('[QuestionComponent] 🎯 Renderizando smartvoc_nev/detailed:', {
+              questionType: question.type,
+              questionTitle: question.title,
+              currentStepKey,
+              value
+            })}
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                  Selecciona tus emociones
+                </h3>
+                <p className="text-sm text-neutral-600">
+                  Selecciona hasta 3 emociones que mejor describan tu experiencia
+                </p>
+              </div>
+
+              {/* Primera fila - 7 emociones */}
+              <div className="grid grid-cols-7 gap-2">
+                {['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado'].map((emotion) => (
+                  <button
+                    key={emotion}
+                    onClick={() => handleChange(emotion)}
+                    className="p-3 rounded-lg border-2 text-sm font-medium bg-green-100 border-green-200 text-green-800 hover:bg-green-200"
+                  >
+                    {emotion}
+                  </button>
+                ))}
+              </div>
+
+              {/* Segunda fila - 6 emociones */}
+              <div className="grid grid-cols-6 gap-2">
+                {['Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico', 'Descontento'].map((emotion) => (
+                  <button
+                    key={emotion}
+                    onClick={() => handleChange(emotion)}
+                    className="p-3 rounded-lg border-2 text-sm font-medium bg-green-200 border-green-300 text-green-900 hover:bg-green-300"
+                  >
+                    {emotion}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tercera fila - 7 emociones */}
+              <div className="grid grid-cols-7 gap-2">
+                {['Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'].map((emotion) => (
+                  <button
+                    key={emotion}
+                    onClick={() => handleChange(emotion)}
+                    className="p-3 rounded-lg border-2 text-sm font-medium bg-red-100 border-red-200 text-red-800 hover:bg-red-200"
+                  >
+                    {emotion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -326,8 +385,15 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   ),
 
   smartvoc_nev: ({ contentConfiguration, currentQuestionKey }) => {
-    // Determinar el tipo de selector basado en la configuración
-    const selectorType = contentConfiguration?.type || 'hierarchy';
+    // 🎯 SIEMPRE USAR 'detailed' PARA smartvoc_nev (NO el tipo del contentConfiguration)
+    const selectorType = 'detailed'; // Sin espacios
+
+    console.log('[TestLayoutRenderer] 🎯 smartvoc_nev:', {
+      selectorType,
+      contentConfigurationType: contentConfiguration?.type,
+      contentConfiguration,
+      currentQuestionKey
+    });
 
     return (
       <QuestionComponent
@@ -336,14 +402,9 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
           questionKey: currentQuestionKey,
           type: selectorType,
           config: {
-            // Configuración específica para cada tipo
-            ...(selectorType === 'hierarchy' && {
-              clusters: ['advocacy', 'recommendation', 'attention', 'destroying']
-            }),
-            ...(selectorType === 'detailed' && {
-              maxSelections: 3,
-              emotions: ['happy', 'pleased', 'trusting', 'valued', 'cared_for', 'focused', 'safe', 'interesting', 'energetic', 'stimulated', 'exploratory', 'indulgent', 'irritated', 'hurried', 'neglected', 'unhappy', 'unsatisfied', 'stressed', 'disappointment', 'frustrated']
-            })
+            // Configuración específica para detailed
+            maxSelections: 3,
+            emotions: ['feliz', 'satisfecho', 'confiado', 'valorado', 'cuidado', 'seguro', 'enfocado', 'indulgente', 'estimulado', 'exploratorio', 'interesado', 'energico', 'descontento', 'frustrado', 'irritado', 'decepcion', 'estresado', 'infeliz', 'desatendido', 'apresurado']
           },
           choices: [],
           description: String(contentConfiguration?.description || '¿Cómo te sientes con nuestro servicio?')

@@ -22,7 +22,7 @@ export interface EmotionOption {
 
 /**
  * Clusters emocionales según la jerarquía de valor emocional
- * Basado en BeyondPhilosophy.com
+ * Basado en BeyondPhilosophy.com - Versión en español
  */
 export const EMOTION_CLUSTERS: EmotionCluster[] = [
   {
@@ -31,14 +31,13 @@ export const EMOTION_CLUSTERS: EmotionCluster[] = [
     color: '#ef4444', // Red
     value: 1,
     emotions: [
-      'Irritated',
-      'Hurried',
-      'Neglected',
-      'Unhappy',
-      'Unsatisfied',
-      'Stressed',
-      'Disappointment',
-      'Frustrated'
+      'Frustrado',
+      'Irritado',
+      'Decepción',
+      'Estresado',
+      'Infeliz',
+      'Desatendido',
+      'Apresurado'
     ],
     description: 'Estados emocionales destructivos que generan valor negativo'
   },
@@ -48,11 +47,11 @@ export const EMOTION_CLUSTERS: EmotionCluster[] = [
     color: '#16a34a', // Dark Green
     value: 2,
     emotions: [
-      'Interesting',
-      'Energetic',
-      'Stimulated',
-      'Exploratory',
-      'Indulgent'
+      'Indulgente',
+      'Estimulado',
+      'Exploratorio',
+      'Interesado',
+      'Enérgico'
     ],
     description: 'Emociones que capturan atención y engagement'
   },
@@ -62,11 +61,11 @@ export const EMOTION_CLUSTERS: EmotionCluster[] = [
     color: '#22c55e', // Medium Green
     value: 3,
     emotions: [
-      'Trusting',
-      'Valued',
-      'Cared for',
-      'Focused',
-      'Safe'
+      'Confiado',
+      'Valorado',
+      'Cuidado',
+      'Seguro',
+      'Enfocado'
     ],
     description: 'Estados que fomentan confianza y llevan a recomendaciones'
   },
@@ -76,8 +75,8 @@ export const EMOTION_CLUSTERS: EmotionCluster[] = [
     color: '#86efac', // Light Green
     value: 4,
     emotions: [
-      'Happy',
-      'Pleased'
+      'Feliz',
+      'Satisfecho'
     ],
     description: 'Estados más positivos que llevan a la defensa de la marca'
   }
@@ -85,35 +84,34 @@ export const EMOTION_CLUSTERS: EmotionCluster[] = [
 
 /**
  * Todas las emociones individuales con sus valores y clusters
+ * Basado en la imagen con 22 emociones en español
  */
 export const ALL_EMOTIONS: EmotionOption[] = [
-  // Destroying Cluster
-  { id: 'irritated', name: 'Irritated', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'hurried', name: 'Hurried', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'neglected', name: 'Neglected', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'unhappy', name: 'Unhappy', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'unsatisfied', name: 'Unsatisfied', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'stressed', name: 'Stressed', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'disappointment', name: 'Disappointment', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'frustrated', name: 'Frustrated', cluster: 'destroying', value: 1, color: '#ef4444' },
+  // Primera fila - Advocacy y Recommendation (Verde Claro)
+  { id: 'feliz', name: 'Feliz', cluster: 'advocacy', value: 4, color: '#86efac' },
+  { id: 'satisfecho', name: 'Satisfecho', cluster: 'advocacy', value: 4, color: '#86efac' },
+  { id: 'confiado', name: 'Confiado', cluster: 'recommendation', value: 3, color: '#22c55e' },
+  { id: 'valorado', name: 'Valorado', cluster: 'recommendation', value: 3, color: '#22c55e' },
+  { id: 'cuidado', name: 'Cuidado', cluster: 'recommendation', value: 3, color: '#22c55e' },
+  { id: 'seguro', name: 'Seguro', cluster: 'recommendation', value: 3, color: '#22c55e' },
+  { id: 'enfocado', name: 'Enfocado', cluster: 'recommendation', value: 3, color: '#22c55e' },
 
-  // Attention Cluster
-  { id: 'interesting', name: 'Interesting', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'energetic', name: 'Energetic', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'stimulated', name: 'Stimulated', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'exploratory', name: 'Exploratory', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'indulgent', name: 'Indulgent', cluster: 'attention', value: 2, color: '#16a34a' },
+  // Segunda fila - Attention (Verde Medio) + 1 Destroying (Rojo Claro)
+  { id: 'indulgente', name: 'Indulgente', cluster: 'attention', value: 2, color: '#16a34a' },
+  { id: 'estimulado', name: 'Estimulado', cluster: 'attention', value: 2, color: '#16a34a' },
+  { id: 'exploratorio', name: 'Exploratorio', cluster: 'attention', value: 2, color: '#16a34a' },
+  { id: 'interesado', name: 'Interesado', cluster: 'attention', value: 2, color: '#16a34a' },
+  { id: 'energico', name: 'Enérgico', cluster: 'attention', value: 2, color: '#16a34a' },
+  { id: 'descontento', name: 'Descontento', cluster: 'destroying', value: 1, color: '#ef4444' },
 
-  // Recommendation Cluster
-  { id: 'trusting', name: 'Trusting', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  { id: 'valued', name: 'Valued', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  { id: 'cared_for', name: 'Cared for', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  { id: 'focused', name: 'Focused', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  { id: 'safe', name: 'Safe', cluster: 'recommendation', value: 3, color: '#22c55e' },
-
-  // Advocacy Cluster
-  { id: 'happy', name: 'Happy', cluster: 'advocacy', value: 4, color: '#86efac' },
-  { id: 'pleased', name: 'Pleased', cluster: 'advocacy', value: 4, color: '#86efac' }
+  // Tercera fila - Destroying (Rojo Claro)
+  { id: 'frustrado', name: 'Frustrado', cluster: 'destroying', value: 1, color: '#ef4444' },
+  { id: 'irritado', name: 'Irritado', cluster: 'destroying', value: 1, color: '#ef4444' },
+  { id: 'decepcion', name: 'Decepción', cluster: 'destroying', value: 1, color: '#ef4444' },
+  { id: 'estresado', name: 'Estresado', cluster: 'destroying', value: 1, color: '#ef4444' },
+  { id: 'infeliz', name: 'Infeliz', cluster: 'destroying', value: 1, color: '#ef4444' },
+  { id: 'desatendido', name: 'Desatendido', cluster: 'destroying', value: 1, color: '#ef4444' },
+  { id: 'apresurado', name: 'Apresurado', cluster: 'destroying', value: 1, color: '#ef4444' }
 ];
 
 /**
@@ -150,8 +148,8 @@ export const EmotionHierarchySelector: React.FC<EmotionHierarchySelectorProps> =
           <button
             onClick={() => onClusterSelect?.('advocacy')}
             className={`w-full p-4 rounded-lg border-2 transition-all duration-200 ${selectedCluster === 'advocacy'
-                ? 'border-green-500 bg-green-50 shadow-lg scale-105'
-                : 'border-green-200 bg-green-50 hover:border-green-300 hover:shadow-md'
+              ? 'border-green-500 bg-green-50 shadow-lg scale-105'
+              : 'border-green-200 bg-green-50 hover:border-green-300 hover:shadow-md'
               }`}
           >
             <div className="flex items-center justify-between">
@@ -170,8 +168,8 @@ export const EmotionHierarchySelector: React.FC<EmotionHierarchySelectorProps> =
           <button
             onClick={() => onClusterSelect?.('recommendation')}
             className={`w-full p-4 rounded-lg border-2 transition-all duration-200 ${selectedCluster === 'recommendation'
-                ? 'border-green-600 bg-green-50 shadow-lg scale-105'
-                : 'border-green-300 bg-green-50 hover:border-green-400 hover:shadow-md'
+              ? 'border-green-600 bg-green-50 shadow-lg scale-105'
+              : 'border-green-300 bg-green-50 hover:border-green-400 hover:shadow-md'
               }`}
           >
             <div className="flex items-center justify-between">
@@ -190,8 +188,8 @@ export const EmotionHierarchySelector: React.FC<EmotionHierarchySelectorProps> =
           <button
             onClick={() => onClusterSelect?.('attention')}
             className={`w-full p-4 rounded-lg border-2 transition-all duration-200 ${selectedCluster === 'attention'
-                ? 'border-green-700 bg-green-50 shadow-lg scale-105'
-                : 'border-green-400 bg-green-50 hover:border-green-500 hover:shadow-md'
+              ? 'border-green-700 bg-green-50 shadow-lg scale-105'
+              : 'border-green-400 bg-green-50 hover:border-green-500 hover:shadow-md'
               }`}
           >
             <div className="flex items-center justify-between">
@@ -210,8 +208,8 @@ export const EmotionHierarchySelector: React.FC<EmotionHierarchySelectorProps> =
           <button
             onClick={() => onClusterSelect?.('destroying')}
             className={`w-full p-4 rounded-lg border-2 transition-all duration-200 ${selectedCluster === 'destroying'
-                ? 'border-red-500 bg-red-50 shadow-lg scale-105'
-                : 'border-red-200 bg-red-50 hover:border-red-300 hover:shadow-md'
+              ? 'border-red-500 bg-red-50 shadow-lg scale-105'
+              : 'border-red-200 bg-red-50 hover:border-red-300 hover:shadow-md'
               }`}
           >
             <div className="flex items-center justify-between">
@@ -289,41 +287,101 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
         </p>
       </div>
 
-      {EMOTION_CLUSTERS.map((cluster) => (
-        <div key={cluster.id} className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <div
-              className="w-4 h-4 rounded-full"
-              style={{ backgroundColor: cluster.color }}
-            ></div>
-            <h4 className="font-semibold text-neutral-900">{cluster.name}</h4>
-            <span className="text-xs text-neutral-500">({cluster.emotions.length} emociones)</span>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {cluster.emotions.map((emotion) => {
-              const emotionId = emotion.toLowerCase().replace(/\s+/g, '_');
-              const isSelected = selectedEmotions.includes(emotionId);
-
-              return (
-                <button
-                  key={emotionId}
-                  onClick={() => handleEmotionClick(emotionId)}
-                  disabled={!isSelected && selectedEmotions.length >= maxSelections}
-                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${isSelected
-                      ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-md'
-                      : selectedEmotions.length >= maxSelections
-                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm'
-                    }`}
-                >
-                  {emotion}
-                </button>
-              );
-            })}
-          </div>
+      {/* Primera fila - Advocacy y Recommendation (Verde Claro) */}
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 rounded-full bg-green-400"></div>
+          <h4 className="font-semibold text-neutral-900">Emociones Positivas</h4>
+          <span className="text-xs text-neutral-500">(7 emociones)</span>
         </div>
-      ))}
+
+        <div className="grid grid-cols-7 gap-2">
+          {ALL_EMOTIONS.slice(0, 7).map((emotion) => {
+            const isSelected = selectedEmotions.includes(emotion.id);
+
+            return (
+              <button
+                key={emotion.id}
+                onClick={() => handleEmotionClick(emotion.id)}
+                disabled={!isSelected && selectedEmotions.length >= maxSelections}
+                className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${isSelected
+                  ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-md'
+                  : selectedEmotions.length >= maxSelections
+                    ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm'
+                  }`}
+                style={{ backgroundColor: isSelected ? undefined : emotion.color + '20' }}
+              >
+                {emotion.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Segunda fila - Attention (Verde Medio) + 1 Destroying (Rojo Claro) */}
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 rounded-full bg-green-600"></div>
+          <h4 className="font-semibold text-neutral-900">Emociones de Atención</h4>
+          <span className="text-xs text-neutral-500">(6 emociones)</span>
+        </div>
+
+        <div className="grid grid-cols-6 gap-2">
+          {ALL_EMOTIONS.slice(7, 13).map((emotion) => {
+            const isSelected = selectedEmotions.includes(emotion.id);
+
+            return (
+              <button
+                key={emotion.id}
+                onClick={() => handleEmotionClick(emotion.id)}
+                disabled={!isSelected && selectedEmotions.length >= maxSelections}
+                className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${isSelected
+                  ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-md'
+                  : selectedEmotions.length >= maxSelections
+                    ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm'
+                  }`}
+                style={{ backgroundColor: isSelected ? undefined : emotion.color + '20' }}
+              >
+                {emotion.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tercera fila - Destroying (Rojo Claro) */}
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 rounded-full bg-red-400"></div>
+          <h4 className="font-semibold text-neutral-900">Emociones Negativas</h4>
+          <span className="text-xs text-neutral-500">(7 emociones)</span>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2">
+          {ALL_EMOTIONS.slice(13, 20).map((emotion) => {
+            const isSelected = selectedEmotions.includes(emotion.id);
+
+            return (
+              <button
+                key={emotion.id}
+                onClick={() => handleEmotionClick(emotion.id)}
+                disabled={!isSelected && selectedEmotions.length >= maxSelections}
+                className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${isSelected
+                  ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-md'
+                  : selectedEmotions.length >= maxSelections
+                    ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm'
+                  }`}
+                style={{ backgroundColor: isSelected ? undefined : emotion.color + '20' }}
+              >
+                {emotion.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
