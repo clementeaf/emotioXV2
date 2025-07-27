@@ -99,7 +99,7 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
             key={element.id}
             type="button"
             className={`transition ${useStars
-              ? `text-3xl ${value === element.id ? 'text-yellow-500 scale-125' : 'text-gray-300 hover:text-yellow-400 hover:scale-110'}`
+              ? `text-3xl ${value >= element.id ? 'text-yellow-500 scale-125' : 'text-gray-300 hover:text-yellow-400 hover:scale-110'}`
               : `text-3xl ${value === element.id ? 'scale-125' : 'opacity-80 hover:scale-110'}`
               }`}
             onClick={() => onChange?.(element.id)}
