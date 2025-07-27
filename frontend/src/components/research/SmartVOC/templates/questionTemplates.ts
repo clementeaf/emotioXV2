@@ -50,7 +50,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
       type: 'scale',
       scaleRange: { start: 0, end: 10 },
       startLabel: '',
-      endLabel: ''
+      endLabel: '',
+      companyName: ''
     }
   },
   [QuestionType.SMARTVOC_NEV]: {

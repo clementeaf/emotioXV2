@@ -70,9 +70,9 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
           const description = q.description || q.title || ' ';
           // 2. Añadir el campo 'required'
           const required = q.type !== QuestionType.SMARTVOC_VOC;
-          // 3. Preservar configuración existente y limpiar solo companyName si está vacío
+          // 3. Preservar configuración existente y limpiar solo companyName si está vacío (excepto para NPS que lo requiere)
           const config = { ...q.config };
-          if ('companyName' in config && config.companyName === '') {
+          if ('companyName' in config && config.companyName === '' && q.type !== QuestionType.SMARTVOC_NPS) {
             delete config.companyName;
           }
           // 4. Asegurar que CSAT tenga el tipo correcto
@@ -82,6 +82,10 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
           // 5. Asegurar que CES tenga escala 1-5
           if (q.type === QuestionType.SMARTVOC_CES && (!config.scaleRange || config.scaleRange.end !== 5)) {
             config.scaleRange = { start: 1, end: 5 };
+          }
+          // 6. Asegurar que NPS tenga companyName
+          if (q.type === QuestionType.SMARTVOC_NPS && (!config.companyName || config.companyName === '')) {
+            config.companyName = 'Empresa';
           }
           return {
             ...q,
@@ -123,6 +127,10 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
     onError: (error: any, data) => {
       if (process.env.NODE_ENV === 'development') {
         console.error('[SmartVOCForm] Error al guardar. Datos enviados:', data);
+        console.error('[SmartVOCForm] Preguntas enviadas:', data?.questions);
+        console.error('[SmartVOCForm] Error completo:', error);
+        console.error('[SmartVOCForm] Error message:', error?.message);
+        console.error('[SmartVOCForm] Error response:', error?.response);
       }
 
       let displayMessage = 'Ocurrió un error al guardar los datos. Por favor, intenta de nuevo.';

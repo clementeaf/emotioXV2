@@ -115,6 +115,20 @@ export const useSmartVOCForm = (researchId: string) => {
               }
             };
           }
+          // Preservar configuración por defecto para NPS si no está definida
+          if (q.type === QuestionType.SMARTVOC_NPS && (!q.config || !q.config.companyName)) {
+            return {
+              ...q,
+              config: {
+                ...q.config,
+                type: 'scale',
+                scaleRange: q.config?.scaleRange || { start: 0, end: 10 },
+                startLabel: q.config?.startLabel || '',
+                endLabel: q.config?.endLabel || '',
+                companyName: q.config?.companyName || ''
+              }
+            };
+          }
           return q;
         }) || [],
         randomizeQuestions: smartVocData.randomizeQuestions || false,

@@ -256,6 +256,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                 disabled={disabled}
               >
                 <option value="0-10">Escala 0-10</option>
+                <option value="0-6">Escala 0-6</option>
               </select>
             </div>
           </div>

@@ -409,26 +409,50 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     />
   ),
 
-  smartvoc_nps: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Pregunta NPS'),
-        questionKey: currentQuestionKey,
-        type: 'scale',
-        config: {
-          min: 0,
-          max: 10,
-          leftLabel: 'No lo recomendaría',
-          rightLabel: 'Lo recomendaría',
-          startLabel: 'No lo recomendaría',
-          endLabel: 'Lo recomendaría'
-        },
-        choices: [],
-        description: String(contentConfiguration?.description || '¿Qué tan probable es que recomiendes nuestro servicio?')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  smartvoc_nps: ({ contentConfiguration, currentQuestionKey }) => {
+    // 🎯 DETERMINAR ESCALA DINÁMICAMENTE
+    const scaleRange = contentConfiguration?.scaleRange || { start: 0, end: 10 };
+    const maxValue = scaleRange.end;
+    
+    // 🎯 CONFIGURAR LABELS SEGÚN ESCALA
+    let leftLabel = 'No lo recomendaría';
+    let rightLabel = 'Lo recomendaría';
+    let startLabel = 'No lo recomendaría';
+    let endLabel = 'Lo recomendaría';
+    
+    if (maxValue === 6) {
+      leftLabel = '0 - No lo recomendaría';
+      rightLabel = '6 - Lo recomendaría';
+      startLabel = '0 - No lo recomendaría';
+      endLabel = '6 - Lo recomendaría';
+    } else {
+      leftLabel = '0 - No lo recomendaría';
+      rightLabel = '10 - Lo recomendaría';
+      startLabel = '0 - No lo recomendaría';
+      endLabel = '10 - Lo recomendaría';
+    }
+    
+    return (
+      <QuestionComponent
+        question={{
+          title: String(contentConfiguration?.title || 'Pregunta NPS'),
+          questionKey: currentQuestionKey,
+          type: 'scale',
+          config: {
+            min: scaleRange.start,
+            max: scaleRange.end,
+            leftLabel,
+            rightLabel,
+            startLabel,
+            endLabel
+          },
+          choices: [],
+          description: String(contentConfiguration?.description || '¿Qué tan probable es que recomiendes nuestro servicio?')
+        }}
+        currentStepKey={currentQuestionKey}
+      />
+    );
+  },
 
   smartvoc_nev: ({ contentConfiguration, currentQuestionKey }) => {
     // 🎯 SIEMPRE USAR 'detailed' PARA smartvoc_nev (NO el tipo del contentConfiguration)

@@ -518,10 +518,23 @@ export class ModuleResponseController {
       const totalResponses = allSmartVOCResponses.length;
       const uniqueParticipants = participants.length;
 
-      // Calcular NPS
-      const promoters = npsScores.filter(score => score >= 9).length;
-      const detractors = npsScores.filter(score => score <= 6).length;
-      const neutrals = npsScores.filter(score => score > 6 && score < 9).length;
+      // Calcular NPS - Manejar escalas 0-6 y 0-10 dinámicamente
+      const maxNpsScore = npsScores.length > 0 ? Math.max(...npsScores) : 10;
+      const isScale0to6 = maxNpsScore <= 6;
+      
+      let promoters, detractors, neutrals;
+      
+      if (isScale0to6) {
+        // Escala 0-6: 0-2 detractores, 3 neutral, 4-6 promotores
+        promoters = npsScores.filter(score => score >= 4).length;
+        detractors = npsScores.filter(score => score <= 2).length;
+        neutrals = npsScores.filter(score => score === 3).length;
+      } else {
+        // Escala 0-10: 0-6 detractores, 7-8 neutral, 9-10 promotores
+        promoters = npsScores.filter(score => score >= 9).length;
+        detractors = npsScores.filter(score => score <= 6).length;
+        neutrals = npsScores.filter(score => score >= 7 && score <= 8).length;
+      }
       const npsScore = npsScores.length > 0 ? Math.round(((promoters - detractors) / npsScores.length) * 100) : 0;
 
       // Calcular promedio de scores
@@ -721,10 +734,23 @@ export class ModuleResponseController {
       const cpvValue = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
       const satisfaction = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
 
-      // Calcular NPS para retención
-      const promoters = npsScores.filter(score => score >= 9).length;
-      const detractors = npsScores.filter(score => score <= 6).length;
-      const neutrals = npsScores.filter(score => score > 6 && score < 9).length;
+      // Calcular NPS para retención - Manejar escalas 0-6 y 0-10 dinámicamente
+      const maxNpsScore = npsScores.length > 0 ? Math.max(...npsScores) : 10;
+      const isScale0to6 = maxNpsScore <= 6;
+      
+      let promoters, detractors, neutrals;
+      
+      if (isScale0to6) {
+        // Escala 0-6: 0-2 detractores, 3 neutral, 4-6 promotores
+        promoters = npsScores.filter(score => score >= 4).length;
+        detractors = npsScores.filter(score => score <= 2).length;
+        neutrals = npsScores.filter(score => score === 3).length;
+      } else {
+        // Escala 0-10: 0-6 detractores, 7-8 neutral, 9-10 promotores
+        promoters = npsScores.filter(score => score >= 9).length;
+        detractors = npsScores.filter(score => score <= 6).length;
+        neutrals = npsScores.filter(score => score >= 7 && score <= 8).length;
+      }
       const totalNPS = npsScores.length;
       const retention = totalNPS > 0 ? Math.round(((promoters + neutrals) / totalNPS) * 100) : 0;
 

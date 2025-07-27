@@ -74,7 +74,8 @@ export const useSmartVOCState = (researchId: string) => {
           type: 'scale',
           scaleRange: { start: 0, end: 10 },
           startLabel: '',
-          endLabel: ''
+          endLabel: '',
+          companyName: ''
         }
       },
       {
@@ -217,7 +218,8 @@ export const useSmartVOCState = (researchId: string) => {
             type: 'scale',
             scaleRange: { start: 0, end: 10 },
             startLabel: '',
-            endLabel: ''
+            endLabel: '',
+            companyName: ''
           }
         },
         {

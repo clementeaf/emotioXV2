@@ -90,9 +90,22 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
     switch (question.type) {
       case QuestionType.SMARTVOC_NPS:
         const npsScores = smartVOCData?.npsScores || [];
-        const promoters = npsScores.filter((score: number) => score >= 9).length;
-        const detractors = npsScores.filter((score: number) => score <= 6).length;
-        const neutrals = npsScores.filter((score: number) => score > 6 && score < 9).length;
+        const maxNpsScore = npsScores.length > 0 ? Math.max(...npsScores) : 10;
+        const isScale0to6 = maxNpsScore <= 6;
+
+        let promoters, detractors, neutrals;
+
+        if (isScale0to6) {
+          // Escala 0-6: 0-2 detractores, 3 neutral, 4-6 promotores
+          promoters = npsScores.filter((score: number) => score >= 4).length;
+          detractors = npsScores.filter((score: number) => score <= 2).length;
+          neutrals = npsScores.filter((score: number) => score === 3).length;
+        } else {
+          // Escala 0-10: 0-6 detractores, 7-8 neutral, 9-10 promotores
+          promoters = npsScores.filter((score: number) => score >= 9).length;
+          detractors = npsScores.filter((score: number) => score <= 6).length;
+          neutrals = npsScores.filter((score: number) => score >= 7 && score <= 8).length;
+        }
         const npsScore = npsScores.length > 0 ? Math.round(((promoters - detractors) / npsScores.length) * 100) : 0;
 
         return {
