@@ -40,6 +40,10 @@ interface SmartVOCResults {
   cesScores: number[];
   nevScores: number[];
   cvScores: number[];
+  cvScore: number;
+  cvPositive: number;
+  cvNegative: number;
+  cvNeutral: number;
 }
 
 export const useSmartVOCResponses = (researchId: string) => {
@@ -132,7 +136,11 @@ export const useSmartVOCResponses = (researchId: string) => {
         csatScores: [],
         cesScores: [],
         nevScores: [],
-        cvScores: []
+        cvScores: [],
+        cvScore: 0,
+        cvPositive: 0,
+        cvNegative: 0,
+        cvNeutral: 0
       };
     }
 

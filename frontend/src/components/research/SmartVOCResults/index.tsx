@@ -312,28 +312,28 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
           {/* Customer Satisfaction */}
           <MetricCard
             title="Customer Satisfaction"
-            score={0}
+            score={finalCPVData.csatPercentage}
             question="How are feeling your customers when they interact with you?"
             data={[]}
-            hasData={false}
+            hasData={hasCPVData}
           />
 
           {/* Customer Effort Score */}
           <MetricCard
             title="Customer Effort Score"
-            score={0}
+            score={finalCPVData.cesPercentage}
             question="How much effort do they need to do to complete a task?"
             data={[]}
-            hasData={false}
+            hasData={hasCPVData}
           />
 
           {/* Cognitive Value */}
           <MetricCard
             title="Cognitive Value"
-            score={0}
-            question="Is there value in your solution ove the memory of customers?"
+            score={finalCPVData.cvValue}
+            question="Is there value in your solution over the memory of customers?"
             data={[]}
-            hasData={false}
+            hasData={hasCPVData}
           />
         </div>
       </div>
@@ -355,7 +355,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 required={true}
                 question="How would you rate your overall satisfaction level with [company]?"
                 responses={{ count: 0, timeAgo: '0s' }}
-                score={0}
+                score={finalCPVData.csatPercentage}
                 distribution={[
                   { label: 'Promoters', percentage: 0, color: '#10B981' },
                   { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
@@ -370,9 +370,9 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 type="Linear Scale question"
                 conditionality="Conditionality disabled"
                 required={true}
-                question="It was easy for me to handle my issue today"
+                question="It was easy for me to handle my issue too"
                 responses={{ count: 0, timeAgo: '0s' }}
-                score={0}
+                score={finalCPVData.cesPercentage}
                 distribution={[
                   { label: 'Little effort', percentage: 0, color: '#10B981' },
                   { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
@@ -387,9 +387,9 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 type="Linear Scale question"
                 conditionality="Conditionality disabled"
                 required={true}
-                question="This was the best app my eyes had see"
+                question="Is there value in your solution over the memory of customers?"
                 responses={{ count: 0, timeAgo: '0s' }}
-                score={0}
+                score={finalCPVData.cvValue}
                 distribution={[
                   { label: 'Worth', percentage: 0, color: '#10B981' },
                   { label: 'Neutrals', percentage: 0, color: '#F59E0B' },

@@ -318,7 +318,7 @@ export function useCognitiveTaskResults(researchId: string) {
                   questionData.navigationFlowData.visualClickPoints = [];
                 }
                 // Agregar los puntos del participante actual con su ID
-                const pointsWithParticipantId = navResponse.visualClickPoints.map(point => ({
+                const pointsWithParticipantId = navResponse.visualClickPoints.map((point: any) => ({
                   ...point,
                   participantId: participant.participantId
                 }));
@@ -333,7 +333,7 @@ export function useCognitiveTaskResults(researchId: string) {
                   questionData.navigationFlowData.allClicksTracking = [];
                 }
                 // Agregar los clicks del participante actual con su ID
-                const clicksWithParticipantId = navResponse.allClicksTracking.map(click => ({
+                const clicksWithParticipantId = navResponse.allClicksTracking.map((click: any) => ({
                   ...click,
                   participantId: participant.participantId
                 }));

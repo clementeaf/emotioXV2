@@ -2,11 +2,11 @@
 
 import { CognitiveTaskQuestion } from '../types';
 
+import { NavigationFlowData } from '../types';
 import { AnalysisTabType } from './AnalysisTabs';
 import { ChoiceQuestionData } from './ChoiceResults';
 import { ImageSelectionData } from './ImageSelectionResults';
 import { LinearScaleData } from './LinearScaleResults';
-import { NavigationFlowData } from './NavigationFlowResults';
 import { PreferenceTestData } from './PreferenceTestResults';
 import { RankingQuestionData } from './RankingResults';
 import { RatingData } from './RatingResults';

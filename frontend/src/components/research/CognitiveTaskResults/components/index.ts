@@ -13,7 +13,7 @@ export { CognitiveTaskHeader } from './CognitiveTaskHeader';
 export { CommentsList } from './CommentsList';
 export { KeywordsPanel } from './KeywordsPanel';
 export { MainContent } from './MainContent';
-export { NavigationFlowResults, type NavigationFlowData } from './NavigationFlowResults';
+export { NavigationFlowResults } from './NavigationFlowResults';
 export { NavigationTestResults } from './NavigationTestResults';
 export { QuestionContainer, type QuestionViewType } from './QuestionContainer';
 export { QuestionInfo } from './QuestionInfo';

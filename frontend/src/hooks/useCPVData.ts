@@ -8,7 +8,8 @@ interface CPVData {
   impact: string;
   trend: string;
   csatPercentage: number; // % de registros 4 y 5
-  cesPercentage: number;  // % de registros 1 y 2
+  cesPercentage: number;  // % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
+  cvValue: number;        // Cognitive Value: % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
   peakValue?: number;     // Valor pico para el gráfico
 }
 
@@ -85,6 +86,7 @@ export const useCPVData = (researchId: string) => {
         trend: 'Negativa',
         csatPercentage: 0,
         cesPercentage: 0,
+        cvValue: 0,
         peakValue: 0
       };
     }
@@ -134,9 +136,16 @@ export const useCPVData = (researchId: string) => {
     const csatHighScores = csatScores.filter(score => score >= 4 && score <= 5).length;
     const csatPercentage = csatScores.length > 0 ? Math.round((csatHighScores / csatScores.length) * 100) : 0;
 
-    // Calcular CES: % de registros 1 y 2 (escala 1-5)
-    const cesLowScores = cesScores.filter(score => score >= 1 && score <= 2).length;
-    const cesPercentage = cesScores.length > 0 ? Math.round((cesLowScores / cesScores.length) * 100) : 0;
+    // Calcular CES: % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
+    const cesPositiveScores = cesScores.filter(score => score >= 4 && score <= 5).length;
+    const cesNegativeScores = cesScores.filter(score => score >= 1 && score <= 2).length;
+    const cesPositivePercentage = cesScores.length > 0 ? Math.round((cesPositiveScores / cesScores.length) * 100) : 0;
+    const cesNegativePercentage = cesScores.length > 0 ? Math.round((cesNegativeScores / cesScores.length) * 100) : 0;
+    const cesPercentage = cesPositivePercentage - cesNegativePercentage; // Ecuación CES
+
+    // Calcular CV (Cognitive Value): % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
+    // CV usa los mismos datos de CES pero es un cálculo separado
+    const cvValue = cesPositivePercentage - cesNegativePercentage; // Ecuación CV
 
     // Calcular CPV usando la ecuación: CPV = CSAT / CES
     let cpvValue = 0;
@@ -183,6 +192,7 @@ export const useCPVData = (researchId: string) => {
       trend,
       csatPercentage,
       cesPercentage,
+      cvValue,
       peakValue
     };
   };
@@ -193,14 +203,15 @@ export const useCPVData = (researchId: string) => {
     error,
     // Valores por defecto para evitar errores de renderizado
     defaultData: {
-      cpvValue: 71.89, // Valor como en la imagen
-      satisfaction: 8.4,
-      retention: 92,
-      impact: 'Alto',
-      trend: 'Positiva',
-      csatPercentage: 59.63, // % de registros 4 y 5 (como en la imagen)
-      cesPercentage: 55.25,  // % de registros 1 y 2 (como en la imagen)
-      peakValue: 83.62 // Valor pico como en la imagen
+      cpvValue: 0,
+      satisfaction: 0,
+      retention: 0,
+      impact: 'Bajo',
+      trend: 'Negativa',
+      csatPercentage: 0, // % de registros 4 y 5 - se calculará con datos reales
+      cesPercentage: 0,  // % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS - se calculará con datos reales
+      cvValue: 0,        // Cognitive Value - se calculará con datos reales
+      peakValue: 0 // Valor pico - se calculará con datos reales
     }
   };
 };
