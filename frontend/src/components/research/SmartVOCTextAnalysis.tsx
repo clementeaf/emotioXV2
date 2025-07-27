@@ -32,70 +32,21 @@ interface CommentData {
 export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
   const [activeTab, setActiveTab] = useState<'topics' | 'wordcloud' | 'comments'>('topics');
   const [timePeriod, setTimePeriod] = useState<'7days' | '30days' | '90days' | 'year'>('30days');
-  
-  // Datos simulados para el análisis de texto
+
+  // Datos vacíos para el análisis de texto
   const [sentiment] = useState<SentimentData>({
-    positive: 62,
-    neutral: 25,
-    negative: 13
+    positive: 0,
+    neutral: 0,
+    negative: 0
   });
-  
-  const [topics] = useState<TopicData[]>([
-    { name: 'Interface design', count: 342, sentiment: 'positive' },
-    { name: 'Customer support', count: 287, sentiment: 'negative' },
-    { name: 'App performance', count: 264, sentiment: 'neutral' },
-    { name: 'Feature requests', count: 213, sentiment: 'positive' },
-    { name: 'Billing issues', count: 198, sentiment: 'negative' },
-    { name: 'Documentation', count: 176, sentiment: 'neutral' },
-    { name: 'Onboarding process', count: 154, sentiment: 'positive' },
-    { name: 'Bug reports', count: 142, sentiment: 'negative' }
-  ]);
-  
-  const [comments] = useState<CommentData[]>([
-    {
-      id: '1',
-      text: 'The new interface is much cleaner and more intuitive than before. I really appreciate the attention to detail.',
-      sentiment: 'positive',
-      date: '2023-05-12',
-      topics: ['Interface design', 'Feature requests']
-    },
-    {
-      id: '2',
-      text: 'Customer support was unresponsive when I needed help with billing issues. Had to contact multiple times.',
-      sentiment: 'negative',
-      date: '2023-05-10',
-      topics: ['Customer support', 'Billing issues']
-    },
-    {
-      id: '3',
-      text: 'App performance is acceptable but could be faster on mobile devices.',
-      sentiment: 'neutral',
-      date: '2023-05-08',
-      topics: ['App performance']
-    }
-  ]);
-  
-  // Palabras para la nube de palabras con tamaños relativos
-  const wordCloudData = [
-    { text: 'Interface', size: 70 },
-    { text: 'Support', size: 65 },
-    { text: 'Responsive', size: 60 },
-    { text: 'Design', size: 55 },
-    { text: 'Features', size: 50 },
-    { text: 'Performance', size: 48 },
-    { text: 'Mobile', size: 45 },
-    { text: 'Usability', size: 43 },
-    { text: 'Billing', size: 40 },
-    { text: 'Speed', size: 38 },
-    { text: 'Navigation', size: 35 },
-    { text: 'Customer', size: 33 },
-    { text: 'Bugs', size: 30 },
-    { text: 'Documentation', size: 28 },
-    { text: 'Integration', size: 25 },
-    { text: 'Experience', size: 23 },
-    { text: 'Issues', size: 20 }
-  ];
-  
+
+  const [topics] = useState<TopicData[]>([]);
+
+  const [comments] = useState<CommentData[]>([]);
+
+  // Nube de palabras vacía
+  const wordCloudData: { text: string; size: number }[] = [];
+
   const getSentimentColor = (sentiment: 'positive' | 'neutral' | 'negative') => {
     switch (sentiment) {
       case 'positive':
@@ -106,7 +57,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
         return 'text-red-600';
     }
   };
-  
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'topics':
@@ -117,16 +68,16 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                 <h3 className="text-sm font-medium text-neutral-700 mb-2">Sentiment Distribution</h3>
                 <div className="relative pt-1">
                   <div className="flex h-4 overflow-hidden rounded text-xs">
-                    <div 
-                      className="bg-green-500 flex flex-col justify-center text-center text-white" 
+                    <div
+                      className="bg-green-500 flex flex-col justify-center text-center text-white"
                       style={{ width: `${sentiment.positive}%` }}
                     ></div>
-                    <div 
-                      className="bg-gray-400 flex flex-col justify-center text-center text-white" 
+                    <div
+                      className="bg-gray-400 flex flex-col justify-center text-center text-white"
                       style={{ width: `${sentiment.neutral}%` }}
                     ></div>
-                    <div 
-                      className="bg-red-500 flex flex-col justify-center text-center text-white" 
+                    <div
+                      className="bg-red-500 flex flex-col justify-center text-center text-white"
                       style={{ width: `${sentiment.negative}%` }}
                     ></div>
                   </div>
@@ -146,7 +97,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                   </div>
                 </div>
               </div>
-              
+
               <div className="w-2/3 ml-6 p-4 bg-white rounded-lg border border-neutral-200 shadow-sm">
                 <h3 className="text-sm font-medium text-neutral-700 mb-4">Top Topics Mentioned</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -165,7 +116,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-5">
               <h3 className="text-sm font-medium text-neutral-700 mb-4">All Topics</h3>
               <div className="overflow-hidden overflow-x-auto">
@@ -202,14 +153,14 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <svg 
+                            <svg
                               className={cn(
-                                'w-4 h-4', 
-                                topic.sentiment === 'positive' ? 'text-green-500' : 
+                                'w-4 h-4',
+                                topic.sentiment === 'positive' ? 'text-green-500' :
                                   topic.sentiment === 'negative' ? 'text-red-500' : 'text-gray-400'
-                              )} 
-                              fill="none" 
-                              stroke="currentColor" 
+                              )}
+                              fill="none"
+                              stroke="currentColor"
                               viewBox="0 0 24 24"
                             >
                               {topic.sentiment === 'positive' ? (
@@ -221,7 +172,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                               )}
                             </svg>
                             <span className="ml-1 text-xs text-neutral-500">
-                              {topic.sentiment === 'positive' ? '+12%' : 
+                              {topic.sentiment === 'positive' ? '+12%' :
                                 topic.sentiment === 'negative' ? '-8%' : '0%'}
                             </span>
                           </div>
@@ -234,7 +185,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
             </div>
           </div>
         );
-      
+
       case 'wordcloud':
         return (
           <div className="mt-6">
@@ -242,7 +193,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
               <h3 className="text-sm font-medium text-neutral-700 mb-4">Word Cloud</h3>
               <div className="h-96 w-full relative">
                 {wordCloudData.map((word, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="absolute text-neutral-800"
                     style={{
@@ -263,7 +214,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
             </div>
           </div>
         );
-      
+
       case 'comments':
         return (
           <div className="mt-6">
@@ -285,8 +236,8 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {comment.topics.map((topic, i) => (
-                        <span 
-                          key={i} 
+                        <span
+                          key={i}
                           className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-800"
                         >
                           {topic}
@@ -304,7 +255,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -316,7 +267,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
         <h2 className="text-xl font-semibold text-neutral-900">
           Text Analysis for Open-ended Questions
         </h2>
-        
+
         <div className="flex space-x-2">
           <Button
             variant={timePeriod === '7days' ? 'default' : 'outline'}
@@ -348,13 +299,13 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
           </Button>
         </div>
       </div>
-      
+
       <div className="bg-neutral-50 rounded-lg p-1 flex space-x-1 mb-4">
         <button
           className={cn(
             'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
-            activeTab === 'topics' 
-              ? 'bg-white shadow-sm text-neutral-900' 
+            activeTab === 'topics'
+              ? 'bg-white shadow-sm text-neutral-900'
               : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
           )}
           onClick={() => setActiveTab('topics')}
@@ -364,8 +315,8 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
         <button
           className={cn(
             'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
-            activeTab === 'wordcloud' 
-              ? 'bg-white shadow-sm text-neutral-900' 
+            activeTab === 'wordcloud'
+              ? 'bg-white shadow-sm text-neutral-900'
               : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
           )}
           onClick={() => setActiveTab('wordcloud')}
@@ -375,8 +326,8 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
         <button
           className={cn(
             'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
-            activeTab === 'comments' 
-              ? 'bg-white shadow-sm text-neutral-900' 
+            activeTab === 'comments'
+              ? 'bg-white shadow-sm text-neutral-900'
               : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
           )}
           onClick={() => setActiveTab('comments')}
@@ -384,8 +335,8 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
           Individual Comments
         </button>
       </div>
-      
+
       {renderTabContent()}
     </div>
   );
-} 
+}

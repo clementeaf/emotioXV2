@@ -1,4 +1,4 @@
-import { UserIcon, ClipboardListIcon, KeyboardIcon } from 'lucide-react';
+import { ClipboardListIcon, KeyboardIcon, UserIcon } from 'lucide-react';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -46,9 +46,9 @@ export function VOCQuestion({ comments }: VOCQuestionProps) {
                 <tr key={index} className={comment.selected ? 'bg-blue-50' : ''}>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-gray-300" 
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300"
                         checked={comment.selected}
                         readOnly
                       />
@@ -56,10 +56,9 @@ export function VOCQuestion({ comments }: VOCQuestionProps) {
                     </div>
                   </td>
                   <td className="p-3">
-                    <span className={`text-sm px-2 py-1 rounded-full ${
-                      comment.mood === 'Positive' ? 'bg-green-100 text-green-700' : 
+                    <span className={`text-sm px-2 py-1 rounded-full ${comment.mood === 'Positive' ? 'bg-green-100 text-green-700' :
                         comment.mood === 'green' ? 'bg-green-100 text-green-700' : ''
-                    }`}>
+                      }`}>
                       {comment.mood}
                     </span>
                   </td>
@@ -87,30 +86,26 @@ export function VOCQuestion({ comments }: VOCQuestionProps) {
           <div className="p-4 h-[340px] overflow-y-auto">
             <div className="space-y-4">
               <h4 className="text-lg font-medium">Sentiment analysis</h4>
-              
-              <p className="text-sm text-gray-800">
-                Then I explore the nature of cognitive developmental improvements in working memory, 
-                the role of working memory in learning, and some potential implications of working memory 
-                and its development for the education of children and adults.
-              </p>
-              
-              <p className="text-sm text-gray-800">
-                The use of working memory is quite ubiquitous in human thought, but the best way to 
-                improve education using what we know about working memory is still controversial. 
-                I hope to provide some directions for research and educational practice.
-              </p>
-              
+
+              <div className="flex items-center justify-center h-48">
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gray-500">Aún no hay datos de análisis de sentimientos</p>
+                </div>
+              </div>
+
               <h5 className="text-base font-medium mt-6">Accionables:</h5>
-              <p className="text-sm text-gray-800">
-                Using what we know about working memory is still controversial.
-              </p>
-              <p className="text-sm text-gray-800">
-                I hope to provide some directions for research and educational practice.
-              </p>
+              <div className="text-sm text-gray-500">
+                <p>No hay datos disponibles para mostrar acciones recomendadas.</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </Card>
   );
-} 
+}
