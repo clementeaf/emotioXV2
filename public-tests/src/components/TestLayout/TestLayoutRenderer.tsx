@@ -388,38 +388,74 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     />
   ),
 
-  smartvoc_cv: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Pregunta CV'),
-        questionKey: currentQuestionKey,
-        type: 'scale',
-        config: {
-          min: 1,
-          max: 5,
-          leftLabel: 'Muy bajo',
-          rightLabel: 'Muy alto',
-          startLabel: 'Muy bajo',
-          endLabel: 'Muy alto'
-        },
-        choices: [],
-        description: String(contentConfiguration?.description || '¿Qué tan valioso consideras este servicio?')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  smartvoc_cv: ({ contentConfiguration, currentQuestionKey }) => {
+    // 🎯 DETERMINAR ESCALA DINÁMICAMENTE
+    const scaleRange = contentConfiguration?.scaleRange || { start: 1, end: 5 };
+    const maxValue = scaleRange.end;
+
+    // 🎯 CONFIGURAR LABELS SEGÚN ESCALA
+    // Usar etiquetas personalizadas si están definidas, sino usar valores por defecto
+    const customStartLabel = contentConfiguration?.startLabel;
+    const customEndLabel = contentConfiguration?.endLabel;
+
+    let leftLabel = customStartLabel || 'No en absoluto';
+    let rightLabel = customEndLabel || 'Totalmente';
+    let startLabel = customStartLabel || 'No en absoluto';
+    let endLabel = customEndLabel || 'Totalmente';
+
+    // Si no hay etiquetas personalizadas, agregar números según la escala
+    if (!customStartLabel && !customEndLabel) {
+      if (maxValue === 5) {
+        leftLabel = `1 - No en absoluto`;
+        rightLabel = `5 - Totalmente`;
+        startLabel = `1 - No en absoluto`;
+        endLabel = `5 - Totalmente`;
+      } else if (maxValue === 7) {
+        leftLabel = `1 - No en absoluto`;
+        rightLabel = `7 - Totalmente`;
+        startLabel = `1 - No en absoluto`;
+        endLabel = `7 - Totalmente`;
+      } else {
+        leftLabel = `1 - No en absoluto`;
+        rightLabel = `10 - Totalmente`;
+        startLabel = `1 - No en absoluto`;
+        endLabel = `10 - Totalmente`;
+      }
+    }
+
+    return (
+      <QuestionComponent
+        question={{
+          title: String(contentConfiguration?.title || 'Pregunta CV'),
+          questionKey: currentQuestionKey,
+          type: 'scale',
+          config: {
+            min: scaleRange.start,
+            max: scaleRange.end,
+            leftLabel,
+            rightLabel,
+            startLabel,
+            endLabel
+          },
+          choices: [],
+          description: String(contentConfiguration?.description || '¿Qué tan valioso consideras este servicio?')
+        }}
+        currentStepKey={currentQuestionKey}
+      />
+    );
+  },
 
   smartvoc_nps: ({ contentConfiguration, currentQuestionKey }) => {
     // 🎯 DETERMINAR ESCALA DINÁMICAMENTE
     const scaleRange = contentConfiguration?.scaleRange || { start: 0, end: 10 };
     const maxValue = scaleRange.end;
-    
+
     // 🎯 CONFIGURAR LABELS SEGÚN ESCALA
     let leftLabel = 'No lo recomendaría';
     let rightLabel = 'Lo recomendaría';
     let startLabel = 'No lo recomendaría';
     let endLabel = 'Lo recomendaría';
-    
+
     if (maxValue === 6) {
       leftLabel = '0 - No lo recomendaría';
       rightLabel = '6 - Lo recomendaría';
@@ -431,7 +467,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
       startLabel = '0 - No lo recomendaría';
       endLabel = '10 - Lo recomendaría';
     }
-    
+
     return (
       <QuestionComponent
         question={{

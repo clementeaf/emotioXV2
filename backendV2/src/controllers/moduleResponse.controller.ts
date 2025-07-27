@@ -521,9 +521,9 @@ export class ModuleResponseController {
       // Calcular NPS - Manejar escalas 0-6 y 0-10 dinámicamente
       const maxNpsScore = npsScores.length > 0 ? Math.max(...npsScores) : 10;
       const isScale0to6 = maxNpsScore <= 6;
-      
+
       let promoters, detractors, neutrals;
-      
+
       if (isScale0to6) {
         // Escala 0-6: 0-2 detractores, 3 neutral, 4-6 promotores
         promoters = npsScores.filter(score => score >= 4).length;
@@ -536,6 +536,28 @@ export class ModuleResponseController {
         neutrals = npsScores.filter(score => score >= 7 && score <= 8).length;
       }
       const npsScore = npsScores.length > 0 ? Math.round(((promoters - detractors) / npsScores.length) * 100) : 0;
+
+      // Calcular CV - Manejar escalas 1-5, 1-7 y 1-10 dinámicamente
+      const maxCvScore = cvScores.length > 0 ? Math.max(...cvScores) : 5;
+      let cvPositive, cvNegative, cvNeutral;
+
+      if (maxCvScore <= 5) {
+        // Escala 1-5: 1-2 negativo, 3 neutral, 4-5 positivo
+        cvPositive = cvScores.filter(score => score >= 4).length;
+        cvNegative = cvScores.filter(score => score <= 2).length;
+        cvNeutral = cvScores.filter(score => score === 3).length;
+      } else if (maxCvScore <= 7) {
+        // Escala 1-7: 1-3 negativo, 4 neutral, 5-7 positivo
+        cvPositive = cvScores.filter(score => score >= 5).length;
+        cvNegative = cvScores.filter(score => score <= 3).length;
+        cvNeutral = cvScores.filter(score => score === 4).length;
+      } else {
+        // Escala 1-10: 1-4 negativo, 5-6 neutral, 7-10 positivo
+        cvPositive = cvScores.filter(score => score >= 7).length;
+        cvNegative = cvScores.filter(score => score <= 4).length;
+        cvNeutral = cvScores.filter(score => score >= 5 && score <= 6).length;
+      }
+      const cvScore = cvScores.length > 0 ? Math.round(((cvPositive - cvNegative) / cvScores.length) * 100) : 0;
 
       // Calcular promedio de scores
       const allScores = [...csatScores, ...cesScores, ...nevScores, ...cvScores].filter(score => score > 0);
@@ -608,7 +630,13 @@ export class ModuleResponseController {
         csatScores,
         cesScores,
         nevScores,
-        cvScores
+        cvScores,
+
+        // Métricas CV
+        cvScore,
+        cvPositive,
+        cvNegative,
+        cvNeutral
       };
 
       console.log(`[ModuleResponseController.getSmartVOCResults] ✅ Resultados procesados:`, {
@@ -619,7 +647,11 @@ export class ModuleResponseController {
         promoters,
         detractors,
         neutrals,
-        cpvValue
+        cpvValue,
+        cvScore,
+        cvPositive,
+        cvNegative,
+        cvNeutral
       });
 
       return {
@@ -737,9 +769,9 @@ export class ModuleResponseController {
       // Calcular NPS para retención - Manejar escalas 0-6 y 0-10 dinámicamente
       const maxNpsScore = npsScores.length > 0 ? Math.max(...npsScores) : 10;
       const isScale0to6 = maxNpsScore <= 6;
-      
+
       let promoters, detractors, neutrals;
-      
+
       if (isScale0to6) {
         // Escala 0-6: 0-2 detractores, 3 neutral, 4-6 promotores
         promoters = npsScores.filter(score => score >= 4).length;

@@ -184,26 +184,42 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
 
       case QuestionType.SMARTVOC_CV:
         const cvScores = smartVOCData?.cvScores || [];
-        const highValue = Math.round(cvScores.length * 0.65);
-        const mediumValue = Math.round(cvScores.length * 0.25);
-        const lowValue = Math.round(cvScores.length * 0.1);
-        const averageCV = cvScores.length > 0 ? Math.round((cvScores.reduce((a: number, b: number) => a + b, 0) / cvScores.length) * 10) / 10 : 0;
+        const maxCvScore = cvScores.length > 0 ? Math.max(...cvScores) : 5;
+        let cvPositive, cvNegative, cvNeutral;
+
+        if (maxCvScore <= 5) {
+          // Escala 1-5: 1-2 negativo, 3 neutral, 4-5 positivo
+          cvPositive = cvScores.filter((score: number) => score >= 4).length;
+          cvNegative = cvScores.filter((score: number) => score <= 2).length;
+          cvNeutral = cvScores.filter((score: number) => score === 3).length;
+        } else if (maxCvScore <= 7) {
+          // Escala 1-7: 1-3 negativo, 4 neutral, 5-7 positivo
+          cvPositive = cvScores.filter((score: number) => score >= 5).length;
+          cvNegative = cvScores.filter((score: number) => score <= 3).length;
+          cvNeutral = cvScores.filter((score: number) => score === 4).length;
+        } else {
+          // Escala 1-10: 1-4 negativo, 5-6 neutral, 7-10 positivo
+          cvPositive = cvScores.filter((score: number) => score >= 7).length;
+          cvNegative = cvScores.filter((score: number) => score <= 4).length;
+          cvNeutral = cvScores.filter((score: number) => score >= 5 && score <= 6).length;
+        }
+        const cvScore = cvScores.length > 0 ? Math.round(((cvPositive - cvNegative) / cvScores.length) * 100) : 0;
 
         return {
           responses: { count: cvScores.length, timeAgo: '26s' },
-          score: averageCV,
+          score: cvScore,
           distribution: [
-            { label: 'High Value', percentage: highValue, color: '#10B981' },
-            { label: 'Medium Value', percentage: mediumValue, color: '#F59E0B' },
-            { label: 'Low Value', percentage: lowValue, color: '#EF4444' }
+            { label: 'Positivo', percentage: cvPositive, color: '#10B981' },
+            { label: 'Neutral', percentage: cvNeutral, color: '#F59E0B' },
+            { label: 'Negativo', percentage: cvNegative, color: '#EF4444' }
           ],
           monthlyData: smartVOCData?.monthlyCVData || [],
           loyaltyEvolution: {
-            promoters: highValue,
+            promoters: cvPositive,
             promotersTrend: 'up' as const,
-            detractors: lowValue,
+            detractors: cvNegative,
             detractorsTrend: 'down' as const,
-            neutrals: mediumValue,
+            neutrals: cvNeutral,
             neutralsTrend: 'down' as const,
             changePercentage: 14
           }
