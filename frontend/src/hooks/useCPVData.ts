@@ -10,6 +10,7 @@ interface CPVData {
   csatPercentage: number; // % de registros 4 y 5
   cesPercentage: number;  // % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
   cvValue: number;        // Cognitive Value: % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
+  nevValue: number;       // Net Emotional Value: % Emociones positivas - % Emociones negativas
   peakValue?: number;     // Valor pico para el gráfico
 }
 
@@ -87,12 +88,15 @@ export const useCPVData = (researchId: string) => {
         csatPercentage: 0,
         cesPercentage: 0,
         cvValue: 0,
+        nevValue: 0,
         peakValue: 0
       };
     }
 
     const csatScores: number[] = [];
     const cesScores: number[] = [];
+    const cvScores: number[] = [];
+    const nevScores: number[] = [];
     const npsScores: number[] = [];
 
     const parseResponseValue = (response: any): number => {
@@ -122,6 +126,14 @@ export const useCPVData = (researchId: string) => {
               if (responseValue > 0) {
                 cesScores.push(responseValue);
               }
+            } else if (response.questionKey.toLowerCase().includes('cv')) {
+              if (responseValue > 0) {
+                cvScores.push(responseValue);
+              }
+            } else if (response.questionKey.toLowerCase().includes('nev')) {
+              if (responseValue > 0) {
+                nevScores.push(responseValue);
+              }
             } else if (response.questionKey.toLowerCase().includes('nps')) {
               if (responseValue > 0) {
                 npsScores.push(responseValue);
@@ -144,8 +156,18 @@ export const useCPVData = (researchId: string) => {
     const cesPercentage = cesPositivePercentage - cesNegativePercentage; // Ecuación CES
 
     // Calcular CV (Cognitive Value): % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
-    // CV usa los mismos datos de CES pero es un cálculo separado
-    const cvValue = cesPositivePercentage - cesNegativePercentage; // Ecuación CV
+    const cvPositiveScores = cvScores.filter(score => score >= 4 && score <= 5).length;
+    const cvNegativeScores = cvScores.filter(score => score >= 1 && score <= 2).length;
+    const cvPositivePercentage = cvScores.length > 0 ? Math.round((cvPositiveScores / cvScores.length) * 100) : 0;
+    const cvNegativePercentage = cvScores.length > 0 ? Math.round((cvNegativeScores / cvScores.length) * 100) : 0;
+    const cvValue = cvPositivePercentage - cvNegativePercentage; // Ecuación CV
+
+    // Calcular NEV (Net Emotional Value): % Emociones positivas - % Emociones negativas
+    const nevPositiveScores = nevScores.filter(score => score >= 4 && score <= 5).length;
+    const nevNegativeScores = nevScores.filter(score => score >= 1 && score <= 2).length;
+    const nevPositivePercentage = nevScores.length > 0 ? Math.round((nevPositiveScores / nevScores.length) * 100) : 0;
+    const nevNegativePercentage = nevScores.length > 0 ? Math.round((nevNegativeScores / nevScores.length) * 100) : 0;
+    const nevValue = nevPositivePercentage - nevNegativePercentage; // Ecuación NEV
 
     // Calcular CPV usando la ecuación: CPV = CSAT / CES
     let cpvValue = 0;
@@ -193,6 +215,7 @@ export const useCPVData = (researchId: string) => {
       csatPercentage,
       cesPercentage,
       cvValue,
+      nevValue,
       peakValue
     };
   };
@@ -211,6 +234,7 @@ export const useCPVData = (researchId: string) => {
       csatPercentage: 0, // % de registros 4 y 5 - se calculará con datos reales
       cesPercentage: 0,  // % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS - se calculará con datos reales
       cvValue: 0,        // Cognitive Value - se calculará con datos reales
+      nevValue: 0,       // Net Emotional Value - se calculará con datos reales
       peakValue: 0 // Valor pico - se calculará con datos reales
     }
   };

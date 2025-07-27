@@ -387,7 +387,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 type="Linear Scale question"
                 conditionality="Conditionality disabled"
                 required={true}
-                question="Is there value in your solution over the memory of customers?"
+                question="This was the best app my eyes had see"
                 responses={{ count: 0, timeAgo: '0s' }}
                 score={finalCPVData.cvValue}
                 distribution={[
