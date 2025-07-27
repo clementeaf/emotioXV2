@@ -18,6 +18,7 @@ import { NPSQuestion } from './NPSQuestion';
 import { QuestionResults } from './QuestionResults';
 import QuestionSelector from './QuestionSelector';
 import { TrustRelationshipFlow } from './TrustRelationshipFlow';
+import { VOCQuestion } from './VOCQuestion';
 import { SmartVOCResultsProps } from './types';
 
 // Hook real para obtener las preguntas de SmartVOC
@@ -410,6 +411,11 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               {/* 2.5.- Question: Net Promoter Score (NPS) */}
               <NPSQuestion
                 monthlyData={[]}
+              />
+
+              {/* 2.6.- Question: Voice of Customer (VOC) */}
+              <VOCQuestion
+                comments={[]}
               />
             </div>
           </div>
