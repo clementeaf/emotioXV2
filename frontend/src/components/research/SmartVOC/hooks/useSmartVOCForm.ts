@@ -76,10 +76,34 @@ export const useSmartVOCForm = (researchId: string) => {
       // Solo actualizar si hay preguntas reales de la API (configuración existente)
       // console.log('✅ [DIAGNÓSTICO] Datos de API recibidos. Objeto completo:', smartVocData);
 
-      // Actualizar formData con los datos cargados
+      // Actualizar formData con los datos cargados, preservando configuraciones por defecto
       setFormData({
         researchId: smartVocData.researchId || researchId,
-        questions: smartVocData.questions || [],
+        questions: smartVocData.questions.map(q => {
+          // Preservar configuración por defecto para CSAT si no está definida
+          if (q.type === QuestionType.SMARTVOC_CSAT && (!q.config || !q.config.type)) {
+            return {
+              ...q,
+              config: {
+                ...q.config,
+                type: 'stars',
+                companyName: q.config?.companyName || ''
+              }
+            };
+          }
+          // Preservar configuración por defecto para NEV si no está definida
+          if (q.type === QuestionType.SMARTVOC_NEV && (!q.config || !q.config.type)) {
+            return {
+              ...q,
+              config: {
+                ...q.config,
+                type: 'emojis',
+                companyName: q.config?.companyName || ''
+              }
+            };
+          }
+          return q;
+        }) || [],
         randomizeQuestions: smartVocData.randomizeQuestions || false,
         smartVocRequired: smartVocData.smartVocRequired !== undefined ? smartVocData.smartVocRequired : true,
         metadata: smartVocData.metadata || {
@@ -182,6 +206,16 @@ export const useSmartVOCForm = (researchId: string) => {
         };
       }),
     };
+
+    console.log('[useSmartVOCForm] 🎯 Sending data to backend:', {
+      cleanedData,
+      smartVocId,
+      questions: cleanedData.questions.map(q => ({
+        id: q.id,
+        type: q.type,
+        config: q.config
+      }))
+    });
 
     saveMutation.mutate({ ...cleanedData, smartVocId });
   }, [formData, filterEditedQuestions, validateForm, setValidationErrors, saveMutation, smartVocId]);

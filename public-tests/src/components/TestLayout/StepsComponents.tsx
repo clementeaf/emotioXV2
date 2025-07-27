@@ -157,15 +157,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         console.log('[StepsComponents] 🎯 ENTRANDO EN CASE SMARTVOC_NEV/DETAILED!');
         return (
           <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                Selecciona tus emociones
-              </h3>
-              <p className="text-sm text-neutral-600">
-                Selecciona hasta 3 emociones que mejor describan tu experiencia
-              </p>
-            </div>
-
             {/* Primera fila - 7 emociones */}
             <div className="grid grid-cols-7 gap-2">
               {['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado'].map((emotion) => (

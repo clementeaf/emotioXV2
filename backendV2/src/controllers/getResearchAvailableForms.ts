@@ -147,7 +147,9 @@ function extractSmartVOCConfig(item: DynamoDBItem): StepConfiguration[] {
         companyName: question.companyName || '',
         required: question.required !== false,
         choices: question.choices || [],
-        metadata: parseJsonField(question.metadata) || {}
+        metadata: parseJsonField(question.metadata) || {},
+        // ✅ INCLUIR LA CONFIGURACIÓN ORIGINAL DE LA PREGUNTA
+        ...(question.config && { ...question.config })
       };
 
       configurations.push({
@@ -296,7 +298,7 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
           }
           break;
 
-                case 'SMART_VOC_FORM':
+        case 'SMART_VOC_FORM':
           // Para smart voc, extraer questionKey y configuración de cada pregunta
           const parsedQuestions = parseJsonField(item.questions);
 
@@ -386,8 +388,8 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
-          message: 'Error interno del servidor al obtener los tipos de formularios.',
-          error: error.message,
+        message: 'Error interno del servidor al obtener los tipos de formularios.',
+        error: error.message,
       }),
     };
   }

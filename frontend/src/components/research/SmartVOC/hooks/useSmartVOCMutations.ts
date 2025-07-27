@@ -70,10 +70,14 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
           const description = q.description || q.title || ' ';
           // 2. Añadir el campo 'required'
           const required = q.type !== QuestionType.SMARTVOC_VOC;
-          // 3. Limpiar 'companyName' si está vacío en la configuración
+          // 3. Preservar configuración existente y limpiar solo companyName si está vacío
           const config = { ...q.config };
           if ('companyName' in config && config.companyName === '') {
             delete config.companyName;
+          }
+          // 4. Asegurar que CSAT tenga el tipo correcto
+          if (q.type === QuestionType.SMARTVOC_CSAT && (!config.type || config.type === 'scale')) {
+            config.type = 'stars';
           }
           return {
             ...q,

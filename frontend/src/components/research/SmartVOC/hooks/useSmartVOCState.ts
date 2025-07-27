@@ -20,10 +20,8 @@ export const useSmartVOCState = (researchId: string) => {
         instructions: '',
         showConditionally: false,
         config: {
-          type: 'scale',
-          scaleRange: { start: 1, end: 5 },
-          startLabel: '',
-          endLabel: ''
+          type: 'stars',
+          companyName: ''
         }
       },
       {
@@ -62,7 +60,7 @@ export const useSmartVOCState = (researchId: string) => {
         instructions: '',
         showConditionally: false,
         config: {
-          type: 'hierarchy'
+          type: 'emojis'
         }
       },
       {
@@ -104,10 +102,27 @@ export const useSmartVOCState = (researchId: string) => {
 
   // Función para actualizar una pregunta específica
   const updateQuestion = useCallback((id: string, updates: Partial<SmartVOCQuestion>) => {
-    setFormData(prev => ({
-      ...prev,
-      questions: prev.questions.map(q => q.id === id ? { ...q, ...updates } : q)
-    }));
+    console.log('[useSmartVOCState] 🎯 updateQuestion called:', {
+      id,
+      updates,
+      hasConfig: !!updates.config,
+      configType: updates.config?.type
+    });
+
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        questions: prev.questions.map(q => q.id === id ? { ...q, ...updates } : q)
+      };
+
+      console.log('[useSmartVOCState] 🎯 formData updated:', {
+        questionCount: newFormData.questions.length,
+        updatedQuestion: newFormData.questions.find(q => q.id === id),
+        updatedQuestionConfig: newFormData.questions.find(q => q.id === id)?.config
+      });
+
+      return newFormData;
+    });
   }, []);
 
   // Función para actualizar configuraciones generales
@@ -147,10 +162,8 @@ export const useSmartVOCState = (researchId: string) => {
           instructions: '',
           showConditionally: false,
           config: {
-            type: 'scale',
-            scaleRange: { start: 1, end: 5 },
-            startLabel: '',
-            endLabel: ''
+            type: 'stars',
+            companyName: ''
           }
         },
         {
@@ -189,7 +202,8 @@ export const useSmartVOCState = (researchId: string) => {
           instructions: '',
           showConditionally: false,
           config: {
-            type: 'emojis'
+            type: 'emojis',
+            companyName: ''
           }
         },
         {

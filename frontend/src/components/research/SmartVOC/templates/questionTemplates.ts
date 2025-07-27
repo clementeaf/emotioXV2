@@ -60,7 +60,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     instructions: '',
     showConditionally: false,
     config: {
-      type: 'hierarchy'
+      type: 'emojis',
+      companyName: ''
     }
   },
   [QuestionType.SMARTVOC_VOC]: {

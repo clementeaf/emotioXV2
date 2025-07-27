@@ -75,9 +75,19 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             <select
               className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               value={question.config.type || 'stars'}
-              onChange={(e) => onUpdateQuestion(question.id, {
-                config: { ...question.config, type: e.target.value as any }
-              })}
+              onChange={(e) => {
+                const newType = e.target.value as any;
+                console.log('[SmartVOCQuestions] 🎯 CSAT type changed:', {
+                  questionId: question.id,
+                  oldType: question.config.type,
+                  newType: newType,
+                  oldConfig: question.config,
+                  newConfig: { ...question.config, type: newType }
+                });
+                onUpdateQuestion(question.id, {
+                  config: { ...question.config, type: newType }
+                });
+              }}
               disabled={disabled}
             >
               <option value="stars">Estrellas</option>

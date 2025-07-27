@@ -151,11 +151,26 @@ const QuestionComponent: React.FC<{
           />
         )}
         {question.type === 'emoji' && (
-          <EmojiRangeQuestion
-            emojis={question.config?.emojis}
-            value={value}
-            onChange={handleChange}
-          />
+          <>
+            {console.log('[QuestionComponent] ⭐ Renderizando emoji/stars:', {
+              questionType: question.type,
+              configType: question.config?.type,
+              min: question.config?.min,
+              max: question.config?.max,
+              startLabel: question.config?.startLabel,
+              endLabel: question.config?.endLabel
+            })}
+            <EmojiRangeQuestion
+              emojis={question.config?.emojis}
+              value={value}
+              onChange={handleChange}
+              type={question.config?.type || 'emojis'}
+              min={question.config?.min}
+              max={question.config?.max}
+              startLabel={question.config?.startLabel}
+              endLabel={question.config?.endLabel}
+            />
+          </>
         )}
         {question.type === 'text' && (
           <>
@@ -196,15 +211,6 @@ const QuestionComponent: React.FC<{
               value
             })}
             <div className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Selecciona tus emociones
-                </h3>
-                <p className="text-sm text-neutral-600">
-                  Selecciona hasta 3 emociones que mejor describan tu experiencia
-                </p>
-              </div>
-
               {/* Primera fila - 7 emociones */}
               <div className="grid grid-cols-7 gap-2">
                 {['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado'].map((emotion) => (
@@ -300,26 +306,66 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     />
   ),
 
-  smartvoc_csat: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Pregunta CSAT'),
-        questionKey: currentQuestionKey,
-        type: 'scale',
-        config: {
-          min: 1,
-          max: 5,
-          leftLabel: 'Muy insatisfecho',
-          rightLabel: 'Muy satisfecho',
-          startLabel: 'Muy insatisfecho',
-          endLabel: 'Muy satisfecho'
-        },
-        choices: [],
-        description: String(contentConfiguration?.description || '¿Qué tan satisfecho estás con nuestro servicio?')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  smartvoc_csat: ({ contentConfiguration, currentQuestionKey }) => {
+    console.log('[TestLayoutRenderer] 🎯 smartvoc_csat - CONFIGURACIÓN COMPLETA:', {
+      contentConfiguration,
+      currentQuestionKey,
+      configType: contentConfiguration?.type,
+      allKeys: Object.keys(contentConfiguration || {}),
+      fullConfig: JSON.stringify(contentConfiguration, null, 2)
+    });
+
+    // 🎯 DETERMINAR EL TIPO DE VISUALIZACIÓN DESDE LA CONFIGURACIÓN
+    const displayType = contentConfiguration?.type || 'stars';
+
+    console.log('[TestLayoutRenderer] 🎯 smartvoc_csat - TIPO DETERMINADO:', {
+      displayType,
+      willRenderStars: displayType === 'stars',
+      willRenderNumbers: displayType === 'numbers'
+    });
+
+    // 🎯 CONFIGURACIÓN BASE PARA CSAT
+    const baseConfig = {
+      min: 1,
+      max: 5,
+      leftLabel: 'Muy insatisfecho',
+      rightLabel: 'Muy satisfecho',
+      startLabel: 'Muy insatisfecho',
+      endLabel: 'Muy satisfecho'
+    };
+
+    // 🎯 CONFIGURACIÓN ESPECÍFICA SEGÚN EL TIPO DE VISUALIZACIÓN
+    const config = {
+      ...baseConfig,
+      type: displayType, // Agregar el tipo de visualización
+      ...(displayType === 'stars' && {
+        leftLabel: '1 - Muy insatisfecho',
+        rightLabel: '5 - Muy satisfecho',
+        startLabel: '1 - Muy insatisfecho',
+        endLabel: '5 - Muy satisfecho'
+      }),
+      ...(displayType === 'numbers' && {
+        leftLabel: '1',
+        rightLabel: '5',
+        startLabel: '1 - Muy insatisfecho',
+        endLabel: '5 - Muy satisfecho'
+      })
+    };
+
+    return (
+      <QuestionComponent
+        question={{
+          title: String(contentConfiguration?.title || 'Pregunta CSAT'),
+          questionKey: currentQuestionKey,
+          type: displayType === 'stars' ? 'emoji' : 'scale', // Usar 'emoji' para estrellas, 'scale' para números
+          config: config,
+          choices: [],
+          description: String(contentConfiguration?.description || '¿Qué tan satisfecho estás con nuestro servicio?')
+        }}
+        currentStepKey={currentQuestionKey}
+      />
+    );
+  },
 
   smartvoc_ces: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
