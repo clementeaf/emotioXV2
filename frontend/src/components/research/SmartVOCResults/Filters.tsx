@@ -121,12 +121,9 @@ export function Filters({ className, researchId }: FiltersProps) {
       const container = containerRef.current;
       const contentHeight = container.scrollHeight;
 
-      // Establecer una altura mínima y máxima
+      // Solo altura mínima, sin límite máximo para evitar scrollbar
       const minHeight = 400; // Altura mínima en píxeles
-      const maxHeight = window.innerHeight * 0.8; // 80% de la altura de la ventana
-
       let calculatedHeight = Math.max(minHeight, contentHeight);
-      calculatedHeight = Math.min(maxHeight, calculatedHeight);
 
       // Agregar un pequeño padding para evitar que el contenido toque los bordes
       calculatedHeight += 20;
@@ -185,7 +182,7 @@ export function Filters({ className, researchId }: FiltersProps) {
       className={`p-4 ${className} ${isAdjusting ? 'ring-2 ring-blue-200' : ''}`}
       style={{
         height: typeof dynamicHeight === 'number' ? `${dynamicHeight}px` : dynamicHeight,
-        overflowY: typeof dynamicHeight === 'number' ? 'auto' : 'visible',
+        overflowY: 'hidden', // Nunca mostrar scrollbar
         transition: 'height 0.3s ease-in-out'
       }}
     >
