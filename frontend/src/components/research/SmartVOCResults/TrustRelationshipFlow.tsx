@@ -26,7 +26,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
-        <p className="text-sm text-gray-600 mb-2">{label}</p>
+        <p className="text-sm text-gray-600 mb-2">Hora: {label}</p>
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2">
             <div
@@ -34,7 +34,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-sm font-medium" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}%
+              {entry.name}: {entry.value}
             </span>
           </div>
         ))}
@@ -71,6 +71,14 @@ export const TrustRelationshipFlow = ({ data, className, hasData = true }: Trust
     className: className
   });
 
+  // Calcular métricas actuales (último punto de datos)
+  const currentData = data.length > 0 ? data[data.length - 1] : null;
+  const currentTime = new Date().toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+
   return (
     <Card className={cn('p-6', className)}>
       <div className="space-y-4">
@@ -87,7 +95,7 @@ export const TrustRelationshipFlow = ({ data, className, hasData = true }: Trust
         </div>
       </div>
 
-      <div className="h-64 mt-6">
+      <div className="h-64 mt-6 relative">
         {!hasData || data.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -103,57 +111,76 @@ export const TrustRelationshipFlow = ({ data, className, hasData = true }: Trust
             </div>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                vertical={false}
-                stroke="#E5E7EB"
-              />
-              <XAxis
-                dataKey="stage"
-                axisLine={false}
-                tickLine={false}
-                stroke="#9CA3AF"
-                fontSize={12}
-                tickMargin={10}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                stroke="#9CA3AF"
-                fontSize={12}
-                domain={[0, 100]}
-                tickMargin={10}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend content={<CustomLegend />} />
-              <Line
-                type="monotone"
-                dataKey="nps"
-                name="NPS"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                dot={{ r: 0 }}
-                activeDot={{ r: 6, strokeWidth: 0 }}
-                isAnimationActive={true}
-                animationDuration={1000}
-                animationEasing="ease-out"
-              />
-              <Line
-                type="monotone"
-                dataKey="nev"
-                name="NEV"
-                stroke="#8B5CF6"
-                strokeWidth={2}
-                dot={{ r: 0 }}
-                activeDot={{ r: 6, strokeWidth: 0 }}
-                isAnimationActive={true}
-                animationDuration={1000}
-                animationEasing="ease-out"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#E5E7EB"
+                />
+                <XAxis
+                  dataKey="stage"
+                  axisLine={false}
+                  tickLine={false}
+                  stroke="#9CA3AF"
+                  fontSize={12}
+                  tickMargin={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  stroke="#9CA3AF"
+                  fontSize={12}
+                  domain={[0, 12]}
+                  ticks={[0, 4, 8, 12]}
+                  tickFormatter={(value) => `${value}k`}
+                  tickMargin={10}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend content={<CustomLegend />} />
+                <Line
+                  type="monotone"
+                  dataKey="nps"
+                  name="NPS"
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: '#3B82F6', stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  isAnimationActive={true}
+                  animationDuration={1000}
+                  animationEasing="ease-out"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="nev"
+                  name="NEV"
+                  stroke="#8B5CF6"
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: '#8B5CF6', stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  isAnimationActive={true}
+                  animationDuration={1000}
+                  animationEasing="ease-out"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+
+            {/* Métricas en el lado derecho */}
+            {currentData && (
+              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-sm">
+                <div className="text-right space-y-1">
+                  <div className="text-xs text-gray-500">{currentTime}</div>
+                  <div className="text-sm font-semibold text-blue-600">
+                    NPS {currentData.nps.toFixed(2)}
+                  </div>
+                  <div className="text-sm font-semibold text-purple-600">
+                    NEV {currentData.nev.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </Card>

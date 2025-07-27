@@ -232,6 +232,9 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 impact={finalCPVData.impact}
                 trend={finalCPVData.trend}
                 hasData={hasCPVData}
+                csatPercentage={finalCPVData.csatPercentage}
+                cesPercentage={finalCPVData.cesPercentage}
+                peakValue={finalCPVData.peakValue}
               />
             )}
           </div>
