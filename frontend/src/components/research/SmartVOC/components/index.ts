@@ -1,5 +1,7 @@
 export * from './AddQuestionButton';
 export * from './ConfirmationModal';
+export * from './EmotionHierarchySelector';
+export * from './EmotionPreview';
 export * from './ErrorModal';
 export * from './JsonPreviewModal';
 export * from './SmartVOCFooter';

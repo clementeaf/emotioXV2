@@ -5,9 +5,11 @@ import { Switch } from '@/components/ui/Switch';
 
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { UI_TEXTS } from '../constants';
+import { EMOTION_SELECTOR_CONFIGS } from '../constants/emotionHierarchy';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
 
 import { AddQuestionModal } from './AddQuestionModal';
+import { EmotionPreview } from './EmotionPreview';
 
 /**
  * Componente para gestionar las preguntas de SmartVOC
@@ -205,19 +207,28 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                   disabled={disabled}
                 >
                   <option value="emojis">Escala emocional completa</option>
-                  <option value="emojis_detailed">Emojis detallados (20 estados)</option>
+                  <option value="hierarchy">Jerarquía de Valor Emocional</option>
+                  <option value="detailed">Emociones Detalladas (20 estados)</option>
                   <option value="quadrants">4 Estadios emocionales</option>
                 </select>
               </div>
               <div className="bg-amber-50 p-3 rounded-md space-y-2">
-                <p className="text-sm font-medium text-amber-800">Escala de valoración diferente</p>
+                <p className="text-sm font-medium text-amber-800">Nueva jerarquía de valor emocional</p>
                 <div className="flex flex-col gap-1 text-xs text-amber-700">
-                  <p>• 20 estados de ánimo diferentes</p>
-                  <p>• Categorizados en 2 grandes grupos: Emociones positivas y negativas</p>
-                  <p>• Estas emociones se clasifican en 4 estadios</p>
+                  <p>• <strong>Destroying:</strong> Irritated, Hurried, Neglected, Unhappy, Unsatisfied, Stressed, Disappointment, Frustrated</p>
+                  <p>• <strong>Attention:</strong> Interesting, Energetic, Stimulated, Exploratory, Indulgent</p>
+                  <p>• <strong>Recommendation:</strong> Trusting, Valued, Cared for, Focused, Safe</p>
+                  <p>• <strong>Advocacy:</strong> Happy, Pleased</p>
                 </div>
               </div>
             </div>
+            
+            {/* Vista previa del selector de emociones */}
+            {question.config.type && (
+              <div className="mt-4">
+                <EmotionPreview type={question.config.type} />
+              </div>
+            )}
           </div>
         );
 
