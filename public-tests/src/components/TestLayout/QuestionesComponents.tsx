@@ -1,4 +1,5 @@
 import React from 'react';
+import { DetailedEmotionSelector, EmotionHierarchySelector } from './EmotionHierarchyComponents';
 import { ScaleRangeQuestionProps, SingleAndMultipleChoiceQuestionProps } from './types';
 
 export function ScaleRangeQuestion({
@@ -206,3 +207,37 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
     </div>
   );
 };
+
+// Nuevos componentes para jerarquía de emociones
+export interface EmotionHierarchyQuestionProps {
+  selectedCluster?: string;
+  onClusterSelect?: (clusterId: string) => void;
+}
+
+export const EmotionHierarchyQuestion: React.FC<EmotionHierarchyQuestionProps> = ({
+  selectedCluster,
+  onClusterSelect,
+}) => (
+  <EmotionHierarchySelector
+    selectedCluster={selectedCluster}
+    onClusterSelect={onClusterSelect}
+  />
+);
+
+export interface DetailedEmotionQuestionProps {
+  selectedEmotions?: string[];
+  onEmotionSelect?: (emotionId: string) => void;
+  maxSelections?: number;
+}
+
+export const DetailedEmotionQuestion: React.FC<DetailedEmotionQuestionProps> = ({
+  selectedEmotions = [],
+  onEmotionSelect,
+  maxSelections = 3,
+}) => (
+  <DetailedEmotionSelector
+    selectedEmotions={selectedEmotions}
+    onEmotionSelect={onEmotionSelect}
+    maxSelections={maxSelections}
+  />
+);

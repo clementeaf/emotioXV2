@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import { EMOTION_SELECTOR_CONFIGS } from '../constants/emotionHierarchy';
-import { EmotionHierarchySelector, DetailedEmotionSelector } from './EmotionHierarchySelector';
+import { DetailedEmotionSelector, EmotionHierarchySelector } from './EmotionHierarchySelector';
 
 interface EmotionPreviewProps {
   type: string;
@@ -56,30 +56,7 @@ export const EmotionPreview: React.FC<EmotionPreviewProps> = ({
           </div>
         );
 
-      case 'emojis':
-        return (
-          <div className="p-6 bg-white rounded-lg border border-gray-200">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                Escala Emocional Completa
-              </h3>
-              <p className="text-sm text-neutral-600">
-                Selecciona el emoji que mejor representa tu experiencia
-              </p>
-            </div>
-            <div className="flex justify-center items-center gap-6">
-              {EMOTION_SELECTOR_CONFIGS.emojis.emojis.map((emoji, idx) => (
-                <button
-                  key={emoji}
-                  className="text-4xl transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full p-2"
-                  aria-label={`Seleccionar ${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
+
 
       case 'quadrants':
         return (
@@ -132,4 +109,4 @@ export const EmotionPreview: React.FC<EmotionPreviewProps> = ({
       {renderPreview()}
     </div>
   );
-}; 
+};

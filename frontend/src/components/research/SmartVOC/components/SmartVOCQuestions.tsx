@@ -5,11 +5,9 @@ import { Switch } from '@/components/ui/Switch';
 
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { UI_TEXTS } from '../constants';
-import { EMOTION_SELECTOR_CONFIGS } from '../constants/emotionHierarchy';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
 
 import { AddQuestionModal } from './AddQuestionModal';
-import { EmotionPreview } from './EmotionPreview';
 
 /**
  * Componente para gestionar las preguntas de SmartVOC
@@ -198,19 +196,12 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-neutral-900">NEV</span>
-                <select
-                  className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  value={question.config.type}
-                  onChange={(e) => onUpdateQuestion(question.id, {
-                    config: { ...question.config, type: e.target.value as any }
-                  })}
-                  disabled={disabled}
-                >
-                  <option value="emojis">Escala emocional completa</option>
-                  <option value="hierarchy">Jerarquía de Valor Emocional</option>
-                  <option value="detailed">Emociones Detalladas (20 estados)</option>
-                  <option value="quadrants">4 Estadios emocionales</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-neutral-900">Jerarquía de Valor Emocional</span>
+                  <div className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                    Seleccionado
+                  </div>
+                </div>
               </div>
               <div className="bg-amber-50 p-3 rounded-md space-y-2">
                 <p className="text-sm font-medium text-amber-800">Nueva jerarquía de valor emocional</p>
@@ -222,13 +213,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                 </div>
               </div>
             </div>
-            
-            {/* Vista previa del selector de emociones */}
-            {question.config.type && (
-              <div className="mt-4">
-                <EmotionPreview type={question.config.type} />
-              </div>
-            )}
+
+
           </div>
         );
 

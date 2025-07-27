@@ -60,8 +60,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     instructions: '',
     showConditionally: false,
     config: {
-      type: 'emojis',
-      emotions: ['Felicidad', 'Tristeza', 'Enojo', 'Miedo', 'Sorpresa', 'Disgusto']
+      type: 'hierarchy'
     }
   },
   [QuestionType.SMARTVOC_VOC]: {

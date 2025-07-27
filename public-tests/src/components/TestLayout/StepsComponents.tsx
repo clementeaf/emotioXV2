@@ -7,7 +7,7 @@ import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { LoadingModal } from './LoadingModal';
-import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
+import { DetailedEmotionQuestion, EmotionHierarchyQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
 
@@ -166,12 +166,28 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
             onChange={(value) => handleValueChange(value.toString())}
           />
         );
-      case 'emoji':
+
+      case 'hierarchy':
         return (
-          <EmojiRangeQuestion
-            emojis={(question.config?.emojis as string[]) || ['😡', '😕', '😐', '🙂', '😄']}
-            value={selectedValue ? parseInt(selectedValue, 10) : undefined}
-            onChange={(value) => handleValueChange(value.toString())}
+          <EmotionHierarchyQuestion
+            selectedCluster={selectedValue}
+            onClusterSelect={(clusterId) => handleValueChange(clusterId)}
+          />
+        );
+      case 'detailed':
+        return (
+          <DetailedEmotionQuestion
+            selectedEmotions={selectedValue ? selectedValue.split(',').filter(Boolean) : []}
+            onEmotionSelect={(emotionId) => {
+              const currentEmotions = selectedValue ? selectedValue.split(',').filter(Boolean) : [];
+              const newEmotions = currentEmotions.includes(emotionId)
+                ? currentEmotions.filter(id => id !== emotionId)
+                : currentEmotions.length < 3
+                  ? [...currentEmotions, emotionId]
+                  : currentEmotions;
+              handleValueChange(newEmotions.join(','));
+            }}
+            maxSelections={3}
           />
         );
       case 'text':

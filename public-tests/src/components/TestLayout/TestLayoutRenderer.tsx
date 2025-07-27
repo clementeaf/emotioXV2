@@ -325,21 +325,33 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     />
   ),
 
-  smartvoc_nev: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Pregunta NEV'),
-        questionKey: currentQuestionKey,
-        type: 'emoji',
-        config: {
-          emojis: ['😡', '😕', '😐', '🙂', '😄']
-        },
-        choices: [],
-        description: String(contentConfiguration?.description || '¿Cómo te sientes con nuestro servicio?')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  smartvoc_nev: ({ contentConfiguration, currentQuestionKey }) => {
+    // Determinar el tipo de selector basado en la configuración
+    const selectorType = contentConfiguration?.type || 'hierarchy';
+
+    return (
+      <QuestionComponent
+        question={{
+          title: String(contentConfiguration?.title || 'Pregunta NEV'),
+          questionKey: currentQuestionKey,
+          type: selectorType,
+          config: {
+            // Configuración específica para cada tipo
+            ...(selectorType === 'hierarchy' && {
+              clusters: ['advocacy', 'recommendation', 'attention', 'destroying']
+            }),
+            ...(selectorType === 'detailed' && {
+              maxSelections: 3,
+              emotions: ['happy', 'pleased', 'trusting', 'valued', 'cared_for', 'focused', 'safe', 'interesting', 'energetic', 'stimulated', 'exploratory', 'indulgent', 'irritated', 'hurried', 'neglected', 'unhappy', 'unsatisfied', 'stressed', 'disappointment', 'frustrated']
+            })
+          },
+          choices: [],
+          description: String(contentConfiguration?.description || '¿Cómo te sientes con nuestro servicio?')
+        }}
+        currentStepKey={currentQuestionKey}
+      />
+    );
+  },
 
   smartvoc_voc: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent

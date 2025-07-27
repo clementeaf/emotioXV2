@@ -31,7 +31,7 @@ export const EMOTION_CLUSTERS: EmotionCluster[] = [
     value: 1,
     emotions: [
       'Irritated',
-      'Hurried', 
+      'Hurried',
       'Neglected',
       'Unhappy',
       'Unsatisfied',
@@ -95,21 +95,21 @@ export const ALL_EMOTIONS: EmotionOption[] = [
   { id: 'stressed', name: 'Stressed', cluster: 'destroying', value: 1, color: '#ef4444' },
   { id: 'disappointment', name: 'Disappointment', cluster: 'destroying', value: 1, color: '#ef4444' },
   { id: 'frustrated', name: 'Frustrated', cluster: 'destroying', value: 1, color: '#ef4444' },
-  
+
   // Attention Cluster
   { id: 'interesting', name: 'Interesting', cluster: 'attention', value: 2, color: '#16a34a' },
   { id: 'energetic', name: 'Energetic', cluster: 'attention', value: 2, color: '#16a34a' },
   { id: 'stimulated', name: 'Stimulated', cluster: 'attention', value: 2, color: '#16a34a' },
   { id: 'exploratory', name: 'Exploratory', cluster: 'attention', value: 2, color: '#16a34a' },
   { id: 'indulgent', name: 'Indulgent', cluster: 'attention', value: 2, color: '#16a34a' },
-  
+
   // Recommendation Cluster
   { id: 'trusting', name: 'Trusting', cluster: 'recommendation', value: 3, color: '#22c55e' },
   { id: 'valued', name: 'Valued', cluster: 'recommendation', value: 3, color: '#22c55e' },
   { id: 'cared_for', name: 'Cared for', cluster: 'recommendation', value: 3, color: '#22c55e' },
   { id: 'focused', name: 'Focused', cluster: 'recommendation', value: 3, color: '#22c55e' },
   { id: 'safe', name: 'Safe', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  
+
   // Advocacy Cluster
   { id: 'happy', name: 'Happy', cluster: 'advocacy', value: 4, color: '#86efac' },
   { id: 'pleased', name: 'Pleased', cluster: 'advocacy', value: 4, color: '#86efac' }
@@ -119,15 +119,7 @@ export const ALL_EMOTIONS: EmotionOption[] = [
  * Configuraciones de visualización para diferentes tipos de selector
  */
 export const EMOTION_SELECTOR_CONFIGS = {
-  // Configuración original de emojis (mantener compatibilidad)
-  emojis: {
-    type: 'emojis',
-    name: 'Escala emocional completa',
-    description: 'Selección simple con emojis básicos',
-    emojis: ['😡', '😕', '😐', '🙂', '😄']
-  },
-  
-  // Nueva configuración basada en la jerarquía
+  // Configuración basada en la jerarquía
   hierarchy: {
     type: 'hierarchy',
     name: 'Jerarquía de Valor Emocional',
@@ -135,7 +127,7 @@ export const EMOTION_SELECTOR_CONFIGS = {
     clusters: EMOTION_CLUSTERS,
     emotions: ALL_EMOTIONS
   },
-  
+
   // Configuración detallada con todas las emociones
   detailed: {
     type: 'detailed',
@@ -144,7 +136,7 @@ export const EMOTION_SELECTOR_CONFIGS = {
     emotions: ALL_EMOTIONS,
     clusters: EMOTION_CLUSTERS
   },
-  
+
   // Configuración de cuadrantes (mantener compatibilidad)
   quadrants: {
     type: 'quadrants',
@@ -178,4 +170,4 @@ export const getClusterById = (clusterId: string): EmotionCluster | undefined =>
  */
 export const getEmotionById = (emotionId: string): EmotionOption | undefined => {
   return ALL_EMOTIONS.find(emotion => emotion.id === emotionId);
-}; 
+};

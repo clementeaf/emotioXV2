@@ -62,7 +62,7 @@ export const useSmartVOCState = (researchId: string) => {
         instructions: '',
         showConditionally: false,
         config: {
-          type: 'emojis'
+          type: 'hierarchy'
         }
       },
       {

@@ -30,7 +30,8 @@ export const QUESTION_TYPE_MAP = {
 
   // Tipos adicionales para StepsComponents
   scale: 'scale',
-  emoji: 'emoji',
+  hierarchy: 'hierarchy',
+  detailed: 'detailed',
   text: 'text',
   choice: 'choice',
   pending: 'pending'
