@@ -1,20 +1,19 @@
-import { Target, ChevronDown } from 'lucide-react';
-import { 
-  ComposedChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import { ChevronDown, Target } from 'lucide-react';
+import {
+  Area,
+  Bar,
+  CartesianGrid,
+  ComposedChart,
   ResponsiveContainer,
-  Area
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { CircularProgress } from '@/components/ui/CircularProgress';
-
-import Progress from './ui/Progress';
+import Progress from '@/components/ui/progress';
 
 interface NPSQuestionProps {
   monthlyData: Array<{
@@ -33,7 +32,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-sm text-gray-600 mb-2">{label}</p>
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2">
-            <div 
+            <div
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
@@ -48,7 +47,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// Componente personalizado para la leyenda
 const CustomLegend = () => (
   <div className="flex items-center gap-6 mb-2">
     <div className="flex items-center gap-2">
@@ -71,6 +69,8 @@ const CustomLegend = () => (
 );
 
 export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
+  const hasData = monthlyData.length > 0;
+
   return (
     <Card className="p-6 space-y-6">
       <div className="space-y-4">
@@ -83,8 +83,8 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Responses</span>
-            <span className="text-2xl font-semibold">28,635</span>
-            <span className="text-sm text-gray-500">26s</span>
+            <span className="text-2xl font-semibold">{hasData ? '28,635' : '0'}</span>
+            <span className="text-sm text-gray-500">{hasData ? '26s' : '0s'}</span>
           </div>
         </div>
 
@@ -92,22 +92,22 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Promoters</span>
-              <span className="text-sm font-medium">78%</span>
+              <span className="text-sm font-medium">{hasData ? '78%' : '0%'}</span>
             </div>
-            <Progress 
-              value={78} 
-              className="h-2" 
+            <Progress
+              value={hasData ? 78 : 0}
+              className="h-2"
               indicatorClassName="bg-green-500"
             />
           </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Detractors</span>
-              <span className="text-sm font-medium">22%</span>
+              <span className="text-sm font-medium">{hasData ? '22%' : '0%'}</span>
             </div>
-            <Progress 
-              value={22} 
-              className="h-2" 
+            <Progress
+              value={hasData ? 22 : 0}
+              className="h-2"
               indicatorClassName="bg-red-500"
             />
           </div>
@@ -123,104 +123,122 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
 
         <div className="flex justify-end">
           <div className="w-24 h-24">
-            <CircularProgress value={63} size={96} strokeWidth={8} />
+            <CircularProgress value={hasData ? 63 : 0} size={96} strokeWidth={8} />
           </div>
         </div>
 
         <div className="h-[480px]">
-          <div className="flex justify-between items-center mb-4">
-            <CustomLegend />
-            <div className="relative inline-block">
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white">
-                <span>Year</span>
-                <ChevronDown size={16} />
-              </button>
+          {!hasData && (
+            <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <div className="text-center">
+                <div className="text-gray-400 mb-2">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500 font-medium">No hay datos disponibles</p>
+                <p className="text-gray-400 text-sm">Los datos de NPS aparecerán aquí cuando se recopilen respuestas</p>
+              </div>
             </div>
-          </div>
-          <ResponsiveContainer width="100%" height="90%">
-            <ComposedChart data={monthlyData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }} barGap={15}>
-              <defs>
-                <linearGradient id="npsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4338CA" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#4338CA" stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                vertical={true}
-                stroke="#E5E7EB"
-                opacity={0.4}
-              />
-              <XAxis 
-                dataKey="month" 
-                axisLine={false}
-                tickLine={false}
-                stroke="#9CA3AF"
-                fontSize={12}
-                padding={{ left: 10, right: 10 }}
-              />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                stroke="#9CA3AF"
-                fontSize={12}
-                domain={[0, 100]}
-                hide={true}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar 
-                dataKey="detractors" 
-                stackId="a" 
-                fill="#F89E9E"
-                fillOpacity={0.9}
-                radius={[20, 20, 20, 20]}
-                name="Detractors"
-                barSize={20}
-              />
-              <Bar 
-                dataKey="neutrals" 
-                stackId="a" 
-                fill="#E5E7EB"
-                fillOpacity={0.9}
-                radius={[20, 20, 20, 20]}
-                name="Neutrals"
-                barSize={20}
-              />
-              <Bar 
-                dataKey="promoters" 
-                stackId="a" 
-                fill="#8DD1A1"
-                fillOpacity={0.9}
-                radius={[20, 20, 20, 20]}
-                name="Promoters"
-                barSize={20}
-              />
-              <Area
-                type="natural"
-                dataKey="npsRatio"
-                stroke="#3B52E8"
-                strokeWidth={4}
-                fillOpacity={1}
-                fill="url(#npsGradient)"
-                dot={false}
-                activeDot={{ r: 8, strokeWidth: 2, stroke: '#ffffff' }}
-                name="NPS Ratio"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          )}
+
+          {hasData && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <CustomLegend />
+                <div className="relative inline-block">
+                  <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white">
+                    <span>Year</span>
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height="90%">
+                <ComposedChart data={monthlyData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }} barGap={15}>
+                  <defs>
+                    <linearGradient id="npsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4338CA" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#4338CA" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={true}
+                    stroke="#E5E7EB"
+                    opacity={0.4}
+                  />
+                  <XAxis
+                    dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                    stroke="#9CA3AF"
+                    fontSize={12}
+                    padding={{ left: 10, right: 10 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    stroke="#9CA3AF"
+                    fontSize={12}
+                    domain={[0, 100]}
+                    hide={true}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar
+                    dataKey="detractors"
+                    stackId="a"
+                    fill="#F89E9E"
+                    fillOpacity={0.9}
+                    radius={[20, 20, 20, 20]}
+                    name="Detractors"
+                    barSize={20}
+                  />
+                  <Bar
+                    dataKey="neutrals"
+                    stackId="a"
+                    fill="#E5E7EB"
+                    fillOpacity={0.9}
+                    radius={[20, 20, 20, 20]}
+                    name="Neutrals"
+                    barSize={20}
+                  />
+                  <Bar
+                    dataKey="promoters"
+                    stackId="a"
+                    fill="#8DD1A1"
+                    fillOpacity={0.9}
+                    radius={[20, 20, 20, 20]}
+                    name="Promoters"
+                    barSize={20}
+                  />
+                  <Area
+                    type="natural"
+                    dataKey="npsRatio"
+                    stroke="#3B52E8"
+                    strokeWidth={4}
+                    fillOpacity={1}
+                    fill="url(#npsGradient)"
+                    dot={false}
+                    activeDot={{ r: 8, strokeWidth: 2, stroke: '#ffffff' }}
+                    name="NPS Ratio"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </>
+          )}
         </div>
 
         <div className="border-t border-gray-200 pt-4">
           <div className="mb-2">
             <h3 className="text-lg font-medium">Loyalty's Evolution</h3>
             <div className="text-green-600 font-medium">
-              +16% Since last month
+              {hasData ? '+16% Since last month' : 'No hay datos disponibles'}
             </div>
           </div>
 
           <div className="flex mt-4">
             <div className="flex-1 flex flex-col items-center">
-              <div className="text-lg font-semibold text-gray-700">35%</div>
+              <div className="text-lg font-semibold text-gray-700">{hasData ? '35%' : '0%'}</div>
               <div className="my-2">
                 <div className="rounded-full bg-green-100 p-1.5">
                   <svg className="w-4 h-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
@@ -230,9 +248,9 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
               </div>
               <span className="text-sm text-gray-600">Promoters</span>
             </div>
-            
+
             <div className="flex-1 flex flex-col items-center">
-              <div className="text-lg font-semibold text-gray-700">26%</div>
+              <div className="text-lg font-semibold text-gray-700">{hasData ? '26%' : '0%'}</div>
               <div className="my-2">
                 <div className="rounded-full bg-red-100 p-1.5">
                   <svg className="w-4 h-4 text-red-600" viewBox="0 0 20 20" fill="currentColor">
@@ -242,9 +260,9 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
               </div>
               <span className="text-sm text-gray-600">Detractors</span>
             </div>
-            
+
             <div className="flex-1 flex flex-col items-center">
-              <div className="text-lg font-semibold text-gray-700">39%</div>
+              <div className="text-lg font-semibold text-gray-700">{hasData ? '39%' : '0%'}</div>
               <div className="my-2">
                 <div className="rounded-full bg-gray-200 p-1.5">
                   <svg className="w-4 h-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
@@ -259,4 +277,4 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
       </div>
     </Card>
   );
-} 
+}

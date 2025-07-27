@@ -11,8 +11,10 @@ import { smartVOCFormService } from '@/services/smartVOCFormService';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 import { CPVCard } from './CPVCard';
+import { EmotionalStates } from './EmotionalStates';
 import { Filters } from './Filters';
 import { MetricCard } from './MetricCard';
+import { NPSQuestion } from './NPSQuestion';
 import { QuestionResults } from './QuestionResults';
 import QuestionSelector from './QuestionSelector';
 import { TrustRelationshipFlow } from './TrustRelationshipFlow';
@@ -351,12 +353,12 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 conditionality="Conditionality disabled"
                 required={true}
                 question="How would you rate your overall satisfaction level with [company]?"
-                responses={{ count: 28635, timeAgo: '26s' }}
-                score={53}
+                responses={{ count: 0, timeAgo: '0s' }}
+                score={0}
                 distribution={[
-                  { label: 'Promoters', percentage: 70, color: '#10B981' },
-                  { label: 'Neutrals', percentage: 10, color: '#F59E0B' },
-                  { label: 'Detractors', percentage: 20, color: '#EF4444' }
+                  { label: 'Promoters', percentage: 0, color: '#10B981' },
+                  { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
+                  { label: 'Detractors', percentage: 0, color: '#EF4444' }
                 ]}
               />
 
@@ -368,12 +370,12 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 conditionality="Conditionality disabled"
                 required={true}
                 question="It was easy for me to handle my issue today"
-                responses={{ count: 24625, timeAgo: '28s' }}
-                score={45}
+                responses={{ count: 0, timeAgo: '0s' }}
+                score={0}
                 distribution={[
-                  { label: 'Little effort', percentage: 70, color: '#10B981' },
-                  { label: 'Neutrals', percentage: 10, color: '#F59E0B' },
-                  { label: 'Much effort', percentage: 20, color: '#EF4444' }
+                  { label: 'Little effort', percentage: 0, color: '#10B981' },
+                  { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
+                  { label: 'Much effort', percentage: 0, color: '#EF4444' }
                 ]}
               />
 
@@ -385,13 +387,29 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 conditionality="Conditionality disabled"
                 required={true}
                 question="This was the best app my eyes had see"
-                responses={{ count: 31162, timeAgo: '25s' }}
-                score={61}
+                responses={{ count: 0, timeAgo: '0s' }}
+                score={0}
                 distribution={[
-                  { label: 'Worth', percentage: 70, color: '#10B981' },
-                  { label: 'Neutrals', percentage: 10, color: '#F59E0B' },
-                  { label: 'Worthless', percentage: 20, color: '#EF4444' }
+                  { label: 'Worth', percentage: 0, color: '#10B981' },
+                  { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
+                  { label: 'Worthless', percentage: 0, color: '#EF4444' }
                 ]}
+              />
+
+              {/* 2.4.- Question: Net Emotional Value (NEV) */}
+              <EmotionalStates
+                emotionalStates={[]}
+                longTermClusters={[]}
+                shortTermClusters={[]}
+                totalResponses={0}
+                responseTime="0s"
+                positivePercentage={0}
+                negativePercentage={0}
+              />
+
+              {/* 2.5.- Question: Net Promoter Score (NPS) */}
+              <NPSQuestion
+                monthlyData={[]}
               />
             </div>
           </div>
