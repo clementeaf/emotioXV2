@@ -100,20 +100,9 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
         return (
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-900">CES</span>
-            <select
-              className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              value={`${question.config.scaleRange?.start}-${question.config.scaleRange?.end}`}
-              onChange={(e) => {
-                const [start, end] = e.target.value.split('-').map(Number);
-                onUpdateQuestion(question.id, {
-                  config: { ...question.config, scaleRange: { start, end } }
-                });
-              }}
-              disabled={disabled}
-            >
-              <option value="1-7">Escala 1-7</option>
-              <option value="1-5">Escala 1-5</option>
-            </select>
+            <div className="text-sm text-neutral-600 bg-neutral-100 px-3 py-2 rounded-lg">
+              Escala fija 1-5
+            </div>
           </div>
         );
 

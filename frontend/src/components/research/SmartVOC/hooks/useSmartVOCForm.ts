@@ -102,6 +102,19 @@ export const useSmartVOCForm = (researchId: string) => {
               }
             };
           }
+          // Preservar configuración por defecto para CES si no está definida
+          if (q.type === QuestionType.SMARTVOC_CES && (!q.config || !q.config.scaleRange)) {
+            return {
+              ...q,
+              config: {
+                ...q.config,
+                type: 'scale',
+                scaleRange: { start: 1, end: 5 },
+                startLabel: q.config?.startLabel || '',
+                endLabel: q.config?.endLabel || ''
+              }
+            };
+          }
           return q;
         }) || [],
         randomizeQuestions: smartVocData.randomizeQuestions || false,

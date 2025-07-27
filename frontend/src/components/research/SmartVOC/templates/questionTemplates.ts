@@ -24,7 +24,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     showConditionally: false,
     config: {
       type: 'scale',
-      scaleRange: { start: 1, end: 7 }
+      scaleRange: { start: 1, end: 5 }
     }
   },
   [QuestionType.SMARTVOC_CV]: {

@@ -375,7 +375,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
         type: 'scale',
         config: {
           min: 1,
-          max: 7,
+          max: 5,
           leftLabel: 'Muy fácil',
           rightLabel: 'Muy difícil',
           startLabel: 'Muy fácil',

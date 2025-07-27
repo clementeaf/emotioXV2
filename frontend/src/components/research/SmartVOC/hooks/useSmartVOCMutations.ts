@@ -79,6 +79,10 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
           if (q.type === QuestionType.SMARTVOC_CSAT && (!config.type || config.type === 'scale')) {
             config.type = 'stars';
           }
+          // 5. Asegurar que CES tenga escala 1-5
+          if (q.type === QuestionType.SMARTVOC_CES && (!config.scaleRange || config.scaleRange.end !== 5)) {
+            config.scaleRange = { start: 1, end: 5 };
+          }
           return {
             ...q,
             description,

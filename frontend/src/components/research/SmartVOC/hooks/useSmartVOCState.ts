@@ -33,7 +33,7 @@ export const useSmartVOCState = (researchId: string) => {
         showConditionally: false,
         config: {
           type: 'scale',
-          scaleRange: { start: 1, end: 7 },
+          scaleRange: { start: 1, end: 5 },
           startLabel: '',
           endLabel: ''
         }
@@ -175,7 +175,7 @@ export const useSmartVOCState = (researchId: string) => {
           showConditionally: false,
           config: {
             type: 'scale',
-            scaleRange: { start: 1, end: 7 },
+            scaleRange: { start: 1, end: 5 },
             startLabel: '',
             endLabel: ''
           }
