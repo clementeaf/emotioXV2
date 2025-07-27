@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import { CognitiveTaskQuestion } from '../types';
 
-import { AnalysisTabType, CommentsList, AnalysisTabs, SentimentAnalysisPanel, ThemesPanel, KeywordsPanel } from './';
+import { AnalysisTabs, AnalysisTabType, CommentsList, KeywordsPanel, SentimentAnalysisPanel, ThemesPanel } from './';
 
 interface MainContentProps {
   data: CognitiveTaskQuestion;
@@ -12,8 +12,8 @@ interface MainContentProps {
   themeImageSrc?: string;
 }
 
-export function MainContent({ 
-  data, 
+export function MainContent({
+  data,
   initialActiveTab = 'sentiment',
   themeImageSrc
 }: MainContentProps) {
@@ -47,6 +47,10 @@ export function MainContent({
           selectedItems={selectedItems}
           onToggleSelection={toggleItemSelection}
           onSelectAll={handleSelectAll}
+          questionId={data.questionNumber}
+          questionType={data.questionType}
+          required={data.required}
+          conditionalityDisabled={data.conditionalityDisabled}
         />
       )}
 
@@ -64,8 +68,8 @@ export function MainContent({
         )}
 
         {activeTab === 'themes' && (
-          <ThemesPanel 
-            themes={data.themes} 
+          <ThemesPanel
+            themes={data.themes}
             imageSrc={themeImageSrc}
           />
         )}
@@ -76,4 +80,4 @@ export function MainContent({
       </div>
     </div>
   );
-} 
+}

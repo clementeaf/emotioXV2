@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import React from 'react';
 import {
   CognitiveTaskHeader,
-  EmptyState,
   ErrorState,
   LoadingState,
   QuestionContainer
@@ -62,142 +61,66 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     );
   }
 
-  // Mostrar estado vacío
-  if (isSuccess && !hasData) {
-    return (
-      <div className="space-y-6">
-        <CognitiveTaskHeader title="2.0.- Cognitive task" />
-        <EmptyState
-          title="No hay datos de tareas cognitivas"
-          message="Aún no se han registrado respuestas para las tareas cognitivas de esta investigación."
-          actionText="Recargar datos"
-          onAction={refetch}
-        />
-      </div>
-    );
-  }
+  // Preguntas de ejemplo (puedes reemplazar por datos reales en el futuro)
+  const questions = [
+    {
+      key: 'question-3-1',
+      questionId: '3.1',
+      questionType: 'short_text' as const,
+      questionText: '¿Cuál es tu color favorito?',
+      required: true,
+      conditionalityDisabled: true,
+      hasNewData: true,
+      sentimentResults: [],
+      themes: [],
+      keywords: [],
+      sentimentAnalysis: { text: '', actionables: [] },
+    },
+    {
+      key: 'question-3-2',
+      questionId: '3.2',
+      questionType: 'long_text' as const,
+      questionText: 'Describe una experiencia memorable.',
+      required: true,
+      conditionalityDisabled: true,
+      hasNewData: true,
+      sentimentResults: [],
+      themes: [],
+      keywords: [],
+      sentimentAnalysis: { text: '', actionables: [] },
+    },
+  ];
 
-  // Renderizar datos si existen
-  if (isSuccess && hasData) {
-    return (
-      <div className="space-y-6">
-        <CognitiveTaskHeader title="2.0.- Cognitive task" />
-
-        {processedData.map((questionData) => {
-          console.log('[CognitiveTaskResults] 📊 Procesando pregunta:', questionData);
-
-          // Determinar el tipo de vista basado en el tipo de pregunta
-          let viewType: any = 'sentiment';
-          let dataProps: any = {};
-
-          switch (questionData.questionType) {
-            case 'cognitive_long_text':
-            case 'cognitive_short_text':
-              viewType = 'sentiment';
-              dataProps = {
-                sentimentData: {
-                  id: questionData.questionId,
-                  questionNumber: questionData.questionId,
-                  questionText: questionData.questionText,
-                  questionType: questionData.questionType,
-                  required: true,
-                  conditionalityDisabled: false,
-                  sentimentResults: questionData.sentimentData?.responses.map((resp, index) => ({
-                    id: index.toString(),
-                    text: resp.text,
-                    sentiment: resp.sentiment
-                  })) || [],
-                  themes: questionData.sentimentData?.themes || [],
-                  keywords: questionData.sentimentData?.keywords || [],
-                  sentimentAnalysis: questionData.sentimentData?.analysis
-                }
-              };
-              break;
-
-            case 'cognitive_multiple_choice':
-            case 'cognitive_single_choice':
-              viewType = 'choice';
-              dataProps = {
-                choiceData: questionData.choiceData
-              };
-              break;
-
-            case 'cognitive_ranking':
-              viewType = 'ranking';
-              dataProps = {
-                rankingData: questionData.rankingData
-              };
-              break;
-
-            case 'cognitive_linear_scale':
-              viewType = 'linear_scale';
-              dataProps = {
-                linearScaleData: questionData.linearScaleData
-              };
-              break;
-
-            case 'cognitive_preference_test':
-              viewType = 'preference';
-              dataProps = {
-                preferenceTestData: questionData.preferenceTestData
-              };
-              break;
-
-            case 'cognitive_image_selection':
-              viewType = 'image_selection';
-              dataProps = {
-                imageSelectionData: questionData.imageSelectionData
-              };
-              break;
-
-            case 'cognitive_navigation_flow':
-              viewType = 'navigation_flow';
-              dataProps = {
-                navigationFlowData: questionData.navigationFlowData
-              };
-              break;
-
-            default:
-              // Para tipos no implementados, mostrar un placeholder
-              return (
-                <div key={questionData.questionId} className="w-full bg-white rounded-lg border border-neutral-200 mb-6 p-6">
-                  <div className="text-center text-gray-500">
-                    <p>Tipo de pregunta no implementado: {questionData.questionType}</p>
-                    <p>Pregunta: {questionData.questionText}</p>
-                  </div>
-                </div>
-              );
-          }
-
-          return (
-            <QuestionContainer
-              key={questionData.questionId}
-              questionId={questionData.questionId}
-              questionType={questionData.questionType}
-              conditionalityDisabled={false}
-              required={true}
-              hasNewData={false}
-              viewType={viewType}
-              onFilter={handleFilter}
-              onUpdate={handleUpdate}
-              {...dataProps}
-            />
-          );
-        })}
-      </div>
-    );
-  }
-
-  // Estado por defecto
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <CognitiveTaskHeader title="2.0.- Cognitive task" />
-      <EmptyState
-        title="Estado desconocido"
-        message="No se pudo determinar el estado de los datos."
-        actionText="Recargar"
-        onAction={refetch}
-      />
+      {questions.map((q) => (
+        <QuestionContainer
+          key={q.key}
+          questionId={q.questionId}
+          questionType={q.questionType}
+          conditionalityDisabled={q.conditionalityDisabled}
+          required={q.required}
+          hasNewData={q.hasNewData}
+          viewType="sentiment"
+          sentimentData={{
+            id: q.questionId,
+            questionNumber: q.questionId,
+            questionText: q.questionText,
+            questionType: q.questionType,
+            required: q.required,
+            conditionalityDisabled: q.conditionalityDisabled,
+            sentimentResults: q.sentimentResults,
+            themes: q.themes,
+            keywords: q.keywords,
+            sentimentAnalysis: q.sentimentAnalysis
+          }}
+          initialActiveTab="sentiment"
+          themeImageSrc={''}
+          onFilter={() => {}}
+          onUpdate={() => {}}
+        />
+      ))}
     </div>
   );
 };
