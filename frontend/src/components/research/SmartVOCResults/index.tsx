@@ -16,7 +16,6 @@ import { Filters } from './Filters';
 import { MetricCard } from './MetricCard';
 import { NPSQuestion } from './NPSQuestion';
 import { QuestionResults } from './QuestionResults';
-import QuestionSelector from './QuestionSelector';
 import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { VOCQuestion } from './VOCQuestion';
 import { SmartVOCResultsProps } from './types';
@@ -271,12 +270,12 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
         </div>
 
         {/* Selector de preguntas SmartVOC - Solo se muestra cuando hay datos */}
-        {!questionsLoading && !questionsError && smartVOCQuestions.length > 0 && (
+        {/* {!questionsLoading && !questionsError && smartVOCQuestions.length > 0 && (
           <QuestionSelector
             questions={smartVOCQuestions}
             smartVOCData={smartVOCData}
           />
-        )}
+        )} */}
 
         {questionsLoading && (
           <div className="flex items-center justify-center h-32">

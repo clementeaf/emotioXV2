@@ -4,7 +4,6 @@
 import React, { useState } from 'react';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
-import { QuestionResults } from './QuestionResults';
 
 interface QuestionSelectorProps {
   questions: SmartVOCQuestion[];
@@ -298,42 +297,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
 
   return (
     <div className="space-y-6">
-      {/* Selector de preguntas */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Seleccionar Pregunta SmartVOC</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {uniqueQuestions.map((question) => (
-            <button
-              key={question.id}
-              onClick={() => setSelectedQuestion(question)}
-              className={`p-3 rounded-lg border transition-all duration-200 text-left ${selectedQuestion?.id === question.id
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-            >
-              <div className="font-medium text-sm">{getQuestionTitle(question)}</div>
-              <div className="text-xs text-gray-500 mt-1">{getQuestionType(question.type)}</div>
-              <div className="text-xs text-gray-400 mt-1">ID: {question.id}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Componente de resultados de la pregunta seleccionada */}
-      {selectedQuestion && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <QuestionResults
-            questionNumber={`${uniqueQuestions.findIndex(q => q.id === selectedQuestion.id) + 1}`}
-            title={getQuestionTitle(selectedQuestion)}
-            type={getQuestionType(selectedQuestion.type)}
-            conditionality="Conditionality disabled"
-            required={true}
-            question={selectedQuestion.description || getQuestionTitle(selectedQuestion)}
-            {...getQuestionData(selectedQuestion)}
-          />
-        </div>
-      )}
     </div>
   );
 };
