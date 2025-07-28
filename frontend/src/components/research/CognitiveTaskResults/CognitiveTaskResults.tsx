@@ -18,9 +18,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
   const params = useParams();
   const researchId = propResearchId || params?.research as string || params?.id as string;
 
-  console.log('[CognitiveTaskResults] 🔍 Params:', params);
-  console.log('[CognitiveTaskResults] 🎯 Research ID:', researchId);
-
   const {
     loadingState,
     error,
@@ -134,6 +131,16 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       questionId: '3.7',
       questionType: 'rating' as const, // Usar tipo permitido
       questionText: 'Navigation Test.',
+      required: true,
+      conditionalityDisabled: true,
+      hasNewData: false,
+      // Estructura lista para datos reales
+    },
+    {
+      key: 'question-3-7-detail',
+      questionId: '3.7-detail',
+      questionType: 'rating' as const, // Usar tipo permitido
+      questionText: 'Navigation Task Result (detalle de paso).',
       required: true,
       conditionalityDisabled: true,
       hasNewData: false,

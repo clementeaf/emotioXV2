@@ -24,12 +24,17 @@ export function QuestionInfo({
   return (
     <div className="p-5 border-b border-neutral-200">
       <div className="flex items-center flex-wrap gap-4">
-        <span className="font-medium text-neutral-800 mr-2">{questionId}.- Question</span>
+        <span className="font-medium text-neutral-800 mr-2">
+          {(questionId === '3.7' || questionId === '3.7-detail') ? '3.7.- Navigation Test' : `${questionId}.- Question`}
+        </span>
         <div className="flex items-center gap-2 ml-2">
-          {questionType === 'short_text' && (
+          {(questionId === '3.7' || questionId === '3.7-detail') && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Navigation Test</span>
+          )}
+          {questionType === 'short_text' && questionId !== '3.7' && questionId !== '3.7-detail' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Short Text question</span>
           )}
-          {questionType === 'long_text' && (
+          {questionType === 'long_text' && questionId !== '3.7' && questionId !== '3.7-detail' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Long Text question</span>
           )}
           {questionType === 'multiple_choice' && questionId === '3.3' && (
@@ -38,10 +43,7 @@ export function QuestionInfo({
           {questionType === 'multiple_choice' && questionId === '3.4' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Multiple Choice question</span>
           )}
-          {(questionType === 'rating' || questionType === 'linear_scale') && questionId === '3.6' && (
-            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Ranking question</span>
-          )}
-          {(questionType === 'rating' || questionType === 'linear_scale') && questionId !== '3.6' && (
+          {(questionType === 'rating' || questionType === 'linear_scale') && questionId !== '3.7' && questionId !== '3.7-detail' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Linear Scale question</span>
           )}
           {conditionalityDisabled && (
