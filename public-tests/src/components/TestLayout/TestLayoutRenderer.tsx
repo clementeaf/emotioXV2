@@ -236,8 +236,8 @@ const QuestionComponent: React.FC<{
                     key={emotion}
                     onClick={() => handleChange(emotion)}
                     className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
-                        ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
-                        : 'bg-green-100 border-green-200 text-green-800 hover:bg-green-200'
+                      ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
+                      : 'bg-green-100 border-green-200 text-green-800 hover:bg-green-200'
                       }`}
                   >
                     {emotion}
@@ -252,8 +252,8 @@ const QuestionComponent: React.FC<{
                     key={emotion}
                     onClick={() => handleChange(emotion)}
                     className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
-                        ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
-                        : 'bg-green-200 border-green-300 text-green-900 hover:bg-green-300'
+                      ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
+                      : 'bg-green-200 border-green-300 text-green-900 hover:bg-green-300'
                       }`}
                   >
                     {emotion}
@@ -268,8 +268,8 @@ const QuestionComponent: React.FC<{
                     key={emotion}
                     onClick={() => handleChange(emotion)}
                     className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
-                        ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
-                        : 'bg-red-100 border-red-200 text-red-800 hover:bg-red-200'
+                      ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
+                      : 'bg-red-100 border-red-200 text-red-800 hover:bg-red-200'
                       }`}
                   >
                     {emotion}
@@ -385,9 +385,12 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
           title: String(contentConfiguration?.title || 'CSAT'),
           questionKey: currentQuestionKey,
           type: displayType === 'stars' ? 'emoji' : 'scale',
-          config: config,
+          config: {
+            ...config,
+            instructions: contentConfiguration?.instructions
+          },
           choices: [],
-          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué tan satisfecho estás con nuestro servicio?')
+          description: String(contentConfiguration?.description || '¿Qué tan satisfecho estás con nuestro servicio?')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -412,10 +415,11 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             leftLabel: startLabel,
             rightLabel: endLabel,
             startLabel: startLabel,
-            endLabel: endLabel
+            endLabel: endLabel,
+            instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué tan fácil fue completar esta tarea?')
+          description: String(contentConfiguration?.description || '¿Qué tan fácil fue completar esta tarea?')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -460,7 +464,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     return (
       <QuestionComponent
         question={{
-          title: String(contentConfiguration?.title || 'Pregunta CV'),
+          title: String(contentConfiguration?.title || 'CV'),
           questionKey: currentQuestionKey,
           type: 'scale',
           config: {
@@ -469,10 +473,11 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             leftLabel,
             rightLabel,
             startLabel,
-            endLabel
+            endLabel,
+            instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué tan valioso consideras este servicio?')
+          description: String(contentConfiguration?.description || '¿Qué tan valioso consideras este servicio?')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -514,10 +519,11 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             leftLabel,
             rightLabel,
             startLabel,
-            endLabel
+            endLabel,
+            instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué tan probable es que recomiendes nuestro servicio?')
+          description: String(contentConfiguration?.description || '¿Qué tan probable es que recomiendes nuestro servicio?')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -548,7 +554,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Cómo te sientes con nuestro servicio?')
+          description: String(contentConfiguration?.description || '¿Cómo te sientes con nuestro servicio?')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -562,10 +568,11 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
         questionKey: currentQuestionKey,
         type: 'text',
         config: {
-          placeholder: contentConfiguration?.placeholder || 'Escribe tu opinión aquí...'
+          placeholder: contentConfiguration?.placeholder || 'Escribe tu opinión aquí...',
+          instructions: contentConfiguration?.instructions
         },
         choices: [],
-        description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué opinas sobre nuestro servicio?')
+        description: String(contentConfiguration?.description || '¿Qué opinas sobre nuestro servicio?')
       }}
       currentStepKey={currentQuestionKey}
     />
