@@ -3,6 +3,7 @@
 import { useCognitiveTaskResults } from '@/hooks/useCognitiveTaskResults';
 import { useParams } from 'next/navigation';
 import React from 'react';
+import { Filters } from '../../research/SmartVOCResults/Filters';
 import {
   CognitiveTaskHeader,
   ErrorState,
@@ -149,35 +150,40 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
   ];
 
   return (
-    <div className="space-y-8">
-      <CognitiveTaskHeader title="2.0.- Cognitive task" />
-      {questions.map((q) => (
-        <QuestionContainer
-          key={q.key}
-          questionId={q.questionId}
-          questionType={q.questionType}
-          conditionalityDisabled={q.conditionalityDisabled}
-          required={q.required}
-          hasNewData={q.hasNewData}
-          viewType="sentiment"
-          sentimentData={{
-            id: q.questionId,
-            questionNumber: q.questionId,
-            questionText: q.questionText,
-            questionType: q.questionType,
-            required: q.required,
-            conditionalityDisabled: q.conditionalityDisabled,
-            sentimentResults: q.sentimentResults,
-            themes: q.themes,
-            keywords: q.keywords,
-            sentimentAnalysis: q.sentimentAnalysis
-          }}
-          initialActiveTab="sentiment"
-          themeImageSrc={''}
-          onFilter={() => { }}
-          onUpdate={() => { }}
-        />
-      ))}
+    <div className="flex gap-8">
+      <div className="flex-1 space-y-8">
+        <CognitiveTaskHeader title="2.0.- Cognitive task" />
+        {questions.map((q) => (
+          <QuestionContainer
+            key={q.key}
+            questionId={q.questionId}
+            questionType={q.questionType}
+            conditionalityDisabled={q.conditionalityDisabled}
+            required={q.required}
+            hasNewData={q.hasNewData}
+            viewType="sentiment"
+            sentimentData={{
+              id: q.questionId,
+              questionNumber: q.questionId,
+              questionText: q.questionText,
+              questionType: q.questionType,
+              required: q.required,
+              conditionalityDisabled: q.conditionalityDisabled,
+              sentimentResults: q.sentimentResults,
+              themes: q.themes,
+              keywords: q.keywords,
+              sentimentAnalysis: q.sentimentAnalysis
+            }}
+            initialActiveTab="sentiment"
+            themeImageSrc={''}
+            onFilter={() => { }}
+            onUpdate={() => { }}
+          />
+        ))}
+      </div>
+      <div className="w-80 shrink-0 mt-[52px]">
+        <Filters researchId={questions[0]?.questionId || ''} />
+      </div>
     </div>
   );
 };
