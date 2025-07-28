@@ -205,6 +205,11 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     finalData: finalTrustFlowData
   });
 
+  // Obtener el valor real de Cognitive Value (CV) desde smartVOCData
+  const cvValue = smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0
+    ? (smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length).toFixed(2)
+    : '0.00';
+
   return (
     <div className={cn('pt-4', className)}>
       {/* Contenido superior sin sidebar */}
@@ -329,10 +334,10 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
           {/* Cognitive Value */}
           <MetricCard
             title="Cognitive Value"
-            score={finalCPVData.cvValue}
+            score={parseFloat(cvValue)}
             question="Is there value in your solution over the memory of customers?"
             data={[]}
-            hasData={hasCPVData}
+            hasData={!!(smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0)}
           />
         </div>
       </div>
