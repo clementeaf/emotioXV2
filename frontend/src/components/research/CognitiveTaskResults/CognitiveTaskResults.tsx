@@ -89,6 +89,56 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       keywords: [],
       sentimentAnalysis: { text: '', actionables: [] },
     },
+    {
+      key: 'question-3-3',
+      questionId: '3.3',
+      questionType: 'multiple_choice' as const, // Usar el tipo permitido
+      questionText: 'Pregunta de selección única.',
+      required: false,
+      conditionalityDisabled: true,
+      hasNewData: false,
+      // Estructura lista para datos reales
+    },
+    {
+      key: 'question-3-4',
+      questionId: '3.4',
+      questionType: 'multiple_choice' as const,
+      questionText: 'Pregunta de selección múltiple.',
+      required: true,
+      conditionalityDisabled: true,
+      hasNewData: false,
+      // Estructura lista para datos reales
+    },
+    {
+      key: 'question-3-5',
+      questionId: '3.5',
+      questionType: 'rating' as const,
+      questionText: 'Pregunta de escala lineal.',
+      required: true,
+      conditionalityDisabled: true,
+      hasNewData: false,
+      // Estructura lista para datos reales
+    },
+    {
+      key: 'question-3-6',
+      questionId: '3.6',
+      questionType: 'rating' as const, // Usar tipo permitido
+      questionText: 'Pregunta de ranking.',
+      required: true,
+      conditionalityDisabled: true,
+      hasNewData: false,
+      // Estructura lista para datos reales
+    },
+    {
+      key: 'question-3-7',
+      questionId: '3.7',
+      questionType: 'rating' as const, // Usar tipo permitido
+      questionText: 'Navigation Test.',
+      required: true,
+      conditionalityDisabled: true,
+      hasNewData: false,
+      // Estructura lista para datos reales
+    },
   ];
 
   return (
@@ -117,8 +167,8 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           }}
           initialActiveTab="sentiment"
           themeImageSrc={''}
-          onFilter={() => {}}
-          onUpdate={() => {}}
+          onFilter={() => { }}
+          onUpdate={() => { }}
         />
       ))}
     </div>

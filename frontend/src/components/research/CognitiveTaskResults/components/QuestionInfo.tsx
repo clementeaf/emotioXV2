@@ -32,6 +32,18 @@ export function QuestionInfo({
           {questionType === 'long_text' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Long Text question</span>
           )}
+          {questionType === 'multiple_choice' && questionId === '3.3' && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Single Choice question</span>
+          )}
+          {questionType === 'multiple_choice' && questionId === '3.4' && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Multiple Choice question</span>
+          )}
+          {(questionType === 'rating' || questionType === 'linear_scale') && questionId === '3.6' && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Ranking question</span>
+          )}
+          {(questionType === 'rating' || questionType === 'linear_scale') && questionId !== '3.6' && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Linear Scale question</span>
+          )}
           {conditionalityDisabled && (
             <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm font-medium">Conditionally disabled</span>
           )}
