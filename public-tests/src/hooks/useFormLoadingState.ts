@@ -66,14 +66,14 @@ export const useFormLoadingState = ({
         (response: any) => response.questionKey === questionKey
       );
 
-      if (existingResponse?.response) {
-        console.log(`[useFormLoadingState] ✅ Datos encontrados en backend para ${questionKey}:`, existingResponse.response);
-        setFormValues(existingResponse.response as Record<string, unknown>);
+      if (existingResponse?.responses?.[0]?.response) {
+        console.log(`[useFormLoadingState] ✅ Datos encontrados en backend para ${questionKey}:`, existingResponse.responses[0].response);
+        setFormValues(existingResponse.responses[0].response as Record<string, unknown>);
         setHasLoadedData(true);
         setIsLoading(false);
 
         // Callback opcional cuando se cargan los datos
-        stableOnDataLoaded(existingResponse.response as Record<string, unknown>);
+        stableOnDataLoaded(existingResponse.responses[0].response as Record<string, unknown>);
         return;
       }
     }

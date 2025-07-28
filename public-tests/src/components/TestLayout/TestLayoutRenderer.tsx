@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useDebugSteps } from '../../hooks/useDebugSteps';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
+import { useFormLoadingState } from '../../hooks/useFormLoadingState';
 import { useMobileStepVerification } from '../../hooks/useMobileStepVerification';
 import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
 import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
@@ -30,7 +31,15 @@ const QuestionComponent: React.FC<{
   };
   currentStepKey: string;
 }> = ({ question, currentStepKey }) => {
-  const { setFormData, getFormData } = useFormDataStore();
+  // 🎯 USAR EL HOOK CORRECTO PARA PERSISTENCIA
+  const {
+    isLoading,
+    hasLoadedData,
+    formValues,
+    saveToStore
+  } = useFormLoadingState({
+    questionKey: currentStepKey
+  });
 
   // 🎯 INICIALIZAR VALOR CORRECTO DESDE EL INICIO
   const initialValue = question.type === 'choice' && question.config?.multiple ? [] : undefined;
@@ -47,10 +56,9 @@ const QuestionComponent: React.FC<{
 
   // Cargar valor guardado
   React.useEffect(() => {
-    const savedData = getFormData(currentStepKey);
     console.log('[QuestionComponent] 🔍 Cargando datos guardados:', {
       currentStepKey,
-      savedData,
+      formValues,
       questionType: question.type,
       questionTitle: question.title,
       isMultiple: question.config?.multiple,
@@ -58,8 +66,8 @@ const QuestionComponent: React.FC<{
       currentValue: value
     });
 
-    if (savedData) {
-      const savedValue = savedData.value || savedData.selectedValue;
+    if (formValues && Object.keys(formValues).length > 0) {
+      const savedValue = formValues.value || formValues.selectedValue;
       // 🎯 MANEJAR VALORES NULL/UNDEFINED PARA TEXTAREA
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (savedValue === null || savedValue === undefined)) {
         setValue('');
@@ -67,7 +75,7 @@ const QuestionComponent: React.FC<{
         setValue(savedValue);
       }
 
-      console.log('[QuestionComponent] ✅ Valor cargado desde savedData:', {
+      console.log('[QuestionComponent] ✅ Valor cargado desde formValues:', {
         currentStepKey,
         savedValue,
         questionType: question.type
@@ -92,7 +100,7 @@ const QuestionComponent: React.FC<{
         });
       }
     }
-  }, [currentStepKey, getFormData, question.type, question.config?.multiple, value]);
+  }, [currentStepKey, formValues, question.type, question.config?.multiple, value]);
 
   const handleChange = (newValue: any) => {
     console.log('[QuestionComponent] 🔄 Cambio de valor:', {
@@ -103,8 +111,13 @@ const QuestionComponent: React.FC<{
     });
 
     setValue(newValue);
-    setFormData(currentStepKey, { value: newValue });
+    saveToStore({ value: newValue });
   };
+
+  // 🎯 MODAL DE CARGA
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-full">Cargando...</div>;
+  }
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
@@ -114,6 +127,11 @@ const QuestionComponent: React.FC<{
       {question.description && (
         <p className="text-gray-600 text-center max-w-2xl">
           {question.description}
+        </p>
+      )}
+      {question.config?.instructions && (
+        <p className="text-sm text-gray-500 text-center max-w-2xl mt-2">
+          {question.config.instructions}
         </p>
       )}
 
@@ -202,9 +220,9 @@ const QuestionComponent: React.FC<{
             />
           </>
         )}
-        {(question.type === 'smartvoc_nev' || question.type === 'detailed') && (
+        {(question.type === 'smartvoc_nev' || question.type === 'detailed' || question.type === 'emojis') && (
           <>
-            {console.log('[QuestionComponent] 🎯 Renderizando smartvoc_nev/detailed:', {
+            {console.log('[QuestionComponent] 🎯 Renderizando smartvoc_nev/detailed/emojis:', {
               questionType: question.type,
               questionTitle: question.title,
               currentStepKey,
@@ -217,7 +235,10 @@ const QuestionComponent: React.FC<{
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className="p-3 rounded-lg border-2 text-sm font-medium bg-green-100 border-green-200 text-green-800 hover:bg-green-200"
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
+                        ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
+                        : 'bg-green-100 border-green-200 text-green-800 hover:bg-green-200'
+                      }`}
                   >
                     {emotion}
                   </button>
@@ -230,7 +251,10 @@ const QuestionComponent: React.FC<{
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className="p-3 rounded-lg border-2 text-sm font-medium bg-green-200 border-green-300 text-green-900 hover:bg-green-300"
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
+                        ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
+                        : 'bg-green-200 border-green-300 text-green-900 hover:bg-green-300'
+                      }`}
                   >
                     {emotion}
                   </button>
@@ -243,7 +267,10 @@ const QuestionComponent: React.FC<{
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className="p-3 rounded-lg border-2 text-sm font-medium bg-red-100 border-red-200 text-red-800 hover:bg-red-200"
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
+                        ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
+                        : 'bg-red-100 border-red-200 text-red-800 hover:bg-red-200'
+                      }`}
                   >
                     {emotion}
                   </button>
@@ -355,38 +382,45 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     return (
       <QuestionComponent
         question={{
-          title: String(contentConfiguration?.title || 'Pregunta CSAT'),
+          title: String(contentConfiguration?.title || 'CSAT'),
           questionKey: currentQuestionKey,
-          type: displayType === 'stars' ? 'emoji' : 'scale', // Usar 'emoji' para estrellas, 'scale' para números
+          type: displayType === 'stars' ? 'emoji' : 'scale',
           config: config,
           choices: [],
-          description: String(contentConfiguration?.description || '¿Qué tan satisfecho estás con nuestro servicio?')
+          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué tan satisfecho estás con nuestro servicio?')
         }}
         currentStepKey={currentQuestionKey}
       />
     );
   },
 
-  smartvoc_ces: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Pregunta CES'),
-        questionKey: currentQuestionKey,
-        type: 'scale',
-        config: {
-          min: 1,
-          max: 5,
-          leftLabel: 'Muy fácil',
-          rightLabel: 'Muy difícil',
-          startLabel: 'Muy fácil',
-          endLabel: 'Muy difícil'
-        },
-        choices: [],
-        description: String(contentConfiguration?.description || '¿Qué tan fácil fue completar esta tarea?')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  smartvoc_ces: ({ contentConfiguration, currentQuestionKey }) => {
+    // 🎯 USAR CONFIGURACIÓN DEL BACKEND
+    const scaleRange = contentConfiguration?.scaleRange || { start: 1, end: 5 };
+    const startLabel = contentConfiguration?.startLabel || 'Muy fácil';
+    const endLabel = contentConfiguration?.endLabel || 'Muy difícil';
+
+    return (
+      <QuestionComponent
+        question={{
+          title: String(contentConfiguration?.title || 'CES'),
+          questionKey: currentQuestionKey,
+          type: 'scale',
+          config: {
+            min: scaleRange.start,
+            max: scaleRange.end,
+            leftLabel: startLabel,
+            rightLabel: endLabel,
+            startLabel: startLabel,
+            endLabel: endLabel
+          },
+          choices: [],
+          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué tan fácil fue completar esta tarea?')
+        }}
+        currentStepKey={currentQuestionKey}
+      />
+    );
+  },
 
   smartvoc_cv: ({ contentConfiguration, currentQuestionKey }) => {
     // 🎯 DETERMINAR ESCALA DINÁMICAMENTE
@@ -438,7 +472,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             endLabel
           },
           choices: [],
-          description: String(contentConfiguration?.description || '¿Qué tan valioso consideras este servicio?')
+          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué tan valioso consideras este servicio?')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -471,7 +505,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     return (
       <QuestionComponent
         question={{
-          title: String(contentConfiguration?.title || 'Pregunta NPS'),
+          title: String(contentConfiguration?.title || 'NPS'),
           questionKey: currentQuestionKey,
           type: 'scale',
           config: {
@@ -483,7 +517,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             endLabel
           },
           choices: [],
-          description: String(contentConfiguration?.description || '¿Qué tan probable es que recomiendes nuestro servicio?')
+          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué tan probable es que recomiendes nuestro servicio?')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -491,8 +525,8 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   },
 
   smartvoc_nev: ({ contentConfiguration, currentQuestionKey }) => {
-    // 🎯 SIEMPRE USAR 'detailed' PARA smartvoc_nev (NO el tipo del contentConfiguration)
-    const selectorType = 'detailed'; // Sin espacios
+    // 🎯 USAR EL TIPO DEL BACKEND
+    const selectorType = contentConfiguration?.type || 'detailed';
 
     console.log('[TestLayoutRenderer] 🎯 smartvoc_nev:', {
       selectorType,
@@ -504,16 +538,17 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     return (
       <QuestionComponent
         question={{
-          title: String(contentConfiguration?.title || 'Pregunta NEV'),
+          title: String(contentConfiguration?.title || 'NEV'),
           questionKey: currentQuestionKey,
           type: selectorType,
           config: {
             // Configuración específica para detailed
             maxSelections: 3,
-            emotions: ['feliz', 'satisfecho', 'confiado', 'valorado', 'cuidado', 'seguro', 'enfocado', 'indulgente', 'estimulado', 'exploratorio', 'interesado', 'energico', 'descontento', 'frustrado', 'irritado', 'decepcion', 'estresado', 'infeliz', 'desatendido', 'apresurado']
+            emotions: ['feliz', 'satisfecho', 'confiado', 'valorado', 'cuidado', 'seguro', 'enfocado', 'indulgente', 'estimulado', 'exploratorio', 'interesado', 'energico', 'descontento', 'frustrado', 'irritado', 'decepcion', 'estresado', 'infeliz', 'desatendido', 'apresurado'],
+            instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || '¿Cómo te sientes con nuestro servicio?')
+          description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Cómo te sientes con nuestro servicio?')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -523,14 +558,14 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   smartvoc_voc: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
       question={{
-        title: String(contentConfiguration?.title || 'Pregunta VOC'),
+        title: String(contentConfiguration?.title || 'VOC'),
         questionKey: currentQuestionKey,
         type: 'text',
         config: {
-          placeholder: 'Escribe tu opinión aquí...'
+          placeholder: contentConfiguration?.placeholder || 'Escribe tu opinión aquí...'
         },
         choices: [],
-        description: String(contentConfiguration?.description || '¿Qué opinas sobre nuestro servicio?')
+        description: String(contentConfiguration?.description || contentConfiguration?.instructions || '¿Qué opinas sobre nuestro servicio?')
       }}
       currentStepKey={currentQuestionKey}
     />

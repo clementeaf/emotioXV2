@@ -77,7 +77,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
               title = 'Gracias por participar';
               break;
             case 'smartvoc_csat':
-              title = 'Pregunta CSAT';
+              title = String(stepConfig.contentConfiguration?.title || 'CSAT');
               break;
             case 'cognitive_navigation_flow':
               title = 'Navegación Cognitiva';
@@ -195,7 +195,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   });
 
   const existingResponse = moduleResponses?.responses?.find(
-    response => response.questionKey === currentQuestionKey
+    (moduleResponse: any) => moduleResponse.questionKey === currentQuestionKey
   );
 
   // 🎯 VERIFICAR SI HAY DATOS PERSISTIDOS LOCALMENTE

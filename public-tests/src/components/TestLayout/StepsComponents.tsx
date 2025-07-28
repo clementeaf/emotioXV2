@@ -154,6 +154,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     switch (questionType) {
       case 'smartvoc_nev':
       case 'detailed':
+      case 'emojis':
         console.log('[StepsComponents] 🎯 ENTRANDO EN CASE SMARTVOC_NEV/DETAILED!');
         return (
           <div className="space-y-6">
@@ -428,11 +429,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
           <p className="text-sm text-green-600">✓ Tus respuestas han sido cargadas</p>
         )}
       </div>
-      <div className="bg-red-100 p-4 rounded-lg">
-        <p className="text-red-800">DEBUG: QuestionComponent se está renderizando</p>
-        <p className="text-red-800">Tipo: {questionType}</p>
-        <p className="text-red-800">Título: {question.title}</p>
-      </div>
+
       {renderedContent}
     </div>
   );
