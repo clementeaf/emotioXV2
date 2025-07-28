@@ -83,7 +83,7 @@ export const useSidebarLogic = ({
               title = 'Gracias por participar';
               break;
             case 'smartvoc_csat':
-              title = 'Pregunta CSAT';
+              title = String(stepConfig.contentConfiguration?.title || 'CSAT');
               break;
             case 'cognitive_navigation_flow':
               title = 'Navegación Cognitiva';

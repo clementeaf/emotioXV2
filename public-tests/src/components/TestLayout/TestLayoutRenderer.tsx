@@ -107,11 +107,38 @@ const QuestionComponent: React.FC<{
       currentStepKey,
       newValue,
       questionType: question.type,
-      questionTitle: question.title
+      questionTitle: question.title,
+      currentValue: value,
+      maxSelections: question.config?.maxSelections
     });
 
-    setValue(newValue);
-    saveToStore({ value: newValue });
+    // 🎯 MANEJAR SELECCIÓN MÚLTIPLE PARA NEV
+    if (question.type === 'emojis' && question.config?.maxSelections > 1) {
+      const currentSelections = Array.isArray(value) ? value : (value ? [value] : []);
+
+      if (currentSelections.includes(newValue)) {
+        // Si ya está seleccionado, removerlo
+        const updatedSelections = currentSelections.filter(item => item !== newValue);
+        setValue(updatedSelections);
+        saveToStore({ value: updatedSelections });
+      } else {
+        // Si no está seleccionado y no excede el límite, agregarlo
+        if (currentSelections.length < question.config.maxSelections) {
+          const updatedSelections = [...currentSelections, newValue];
+          setValue(updatedSelections);
+          saveToStore({ value: updatedSelections });
+        } else {
+          // Si excede el límite, reemplazar la última selección
+          const updatedSelections = [...currentSelections.slice(1), newValue];
+          setValue(updatedSelections);
+          saveToStore({ value: updatedSelections });
+        }
+      }
+    } else {
+      // 🎯 SELECCIÓN ÚNICA (comportamiento original)
+      setValue(newValue);
+      saveToStore({ value: newValue });
+    }
   };
 
   // 🎯 MODAL DE CARGA
@@ -124,7 +151,7 @@ const QuestionComponent: React.FC<{
       <h2 className="text-2xl font-bold text-gray-800 text-center">
         {question.title}
       </h2>
-      {question.description && (
+      {question.description && question.description.trim() !== '' && (
         <p className="text-gray-600 text-center max-w-2xl">
           {question.description}
         </p>
@@ -235,7 +262,7 @@ const QuestionComponent: React.FC<{
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
                       ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
                       : 'bg-green-100 border-green-200 text-green-800 hover:bg-green-200'
                       }`}
@@ -251,7 +278,7 @@ const QuestionComponent: React.FC<{
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
                       ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
                       : 'bg-green-200 border-green-300 text-green-900 hover:bg-green-300'
                       }`}
@@ -267,7 +294,7 @@ const QuestionComponent: React.FC<{
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${value === emotion
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
                       ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
                       : 'bg-red-100 border-red-200 text-red-800 hover:bg-red-200'
                       }`}
@@ -390,7 +417,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || '¿Qué tan satisfecho estás con nuestro servicio?')
+          description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -419,7 +446,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || '¿Qué tan fácil fue completar esta tarea?')
+          description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -477,7 +504,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || '¿Qué tan valioso consideras este servicio?')
+          description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -523,7 +550,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || '¿Qué tan probable es que recomiendes nuestro servicio?')
+          description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -554,7 +581,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
             instructions: contentConfiguration?.instructions
           },
           choices: [],
-          description: String(contentConfiguration?.description || '¿Cómo te sientes con nuestro servicio?')
+          description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
       />
@@ -572,7 +599,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
           instructions: contentConfiguration?.instructions
         },
         choices: [],
-        description: String(contentConfiguration?.description || '¿Qué opinas sobre nuestro servicio?')
+        description: String(contentConfiguration?.description || '')
       }}
       currentStepKey={currentQuestionKey}
     />
