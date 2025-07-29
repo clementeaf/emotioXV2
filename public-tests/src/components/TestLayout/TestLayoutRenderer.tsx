@@ -293,7 +293,9 @@ const TestLayoutRenderer: React.FC = () => {
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
   const isConfigurationPending = questionType === 'demographics' && !hasConfiguredQuestions;
 
-  const formData = getFormData(currentQuestionKey);
+  const rawFormData = getFormData(currentQuestionKey);
+  // 🎯 EXTRAER EL VALOR REAL DE LOS DATOS DEL FORMULARIO
+  const formData: Record<string, unknown> = rawFormData?.value !== undefined ? { value: rawFormData.value } : rawFormData || {};
 
   return (
     <div className="flex flex-col h-full">

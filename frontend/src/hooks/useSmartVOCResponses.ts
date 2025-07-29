@@ -207,8 +207,22 @@ export const useSmartVOCResponses = (researchId: string) => {
                 cesScores.push(responseValue);
               }
             } else if (response.questionKey.toLowerCase().includes('nev')) {
-              if (responseValue > 0) {
-                nevScores.push(responseValue);
+              // 🎯 NEV ahora devuelve array de emociones, no valor numérico
+              if (response.response && response.response.value && Array.isArray(response.response.value)) {
+                // Contar emociones positivas vs negativas
+                const emotions = response.response.value;
+                const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
+                const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
+
+                const positiveCount = emotions.filter((emotion: string) => positiveEmotions.includes(emotion)).length;
+                const negativeCount = emotions.filter((emotion: string) => negativeEmotions.includes(emotion)).length;
+
+                // Calcular score NEV: (positivas - negativas) / total * 100
+                const totalEmotions = emotions.length;
+                if (totalEmotions > 0) {
+                  const nevScore = Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
+                  nevScores.push(nevScore);
+                }
               }
             } else if (response.questionKey.toLowerCase().includes('cv')) {
               if (responseValue > 0) {
@@ -295,8 +309,24 @@ export const useSmartVOCResponses = (researchId: string) => {
 
       const dateNevScores = dateResponses
         .filter(r => r.questionKey.toLowerCase().includes('nev'))
-        .map(r => parseResponseValue(r.response))
-        .filter(score => score > 0);
+        .map(r => {
+          // 🎯 Procesar NEV como array de emociones
+          if (r.response && r.response.value && Array.isArray(r.response.value)) {
+            const emotions = r.response.value;
+            const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
+            const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
+
+            const positiveCount = emotions.filter((emotion: string) => positiveEmotions.includes(emotion)).length;
+            const negativeCount = emotions.filter((emotion: string) => negativeEmotions.includes(emotion)).length;
+
+            const totalEmotions = emotions.length;
+            if (totalEmotions > 0) {
+              return Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
+            }
+          }
+          return 0;
+        })
+        .filter(score => score !== 0);
 
       const avgNps = dateNpsScores.length > 0 ? dateNpsScores.reduce((a, b) => a + b, 0) / dateNpsScores.length : 0;
       const avgNev = dateNevScores.length > 0 ? dateNevScores.reduce((a, b) => a + b, 0) / dateNevScores.length : 0;

@@ -198,6 +198,16 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   // Debug logs
   console.log('[SmartVOCResults] 📊 CPV Data:', cpvData ? '✅' : '❌', '| Loading:', cpvLoading, '| Error:', cpvError ? '❌' : '✅');
   console.log('[SmartVOCResults] 📊 Trust Flow Data:', trustFlowData.length > 0 ? '✅' : '❌', '| Loading:', trustFlowLoading, '| Error:', trustFlowError ? '❌' : '✅');
+  console.log('[SmartVOCResults] 📊 SmartVOC Data:', smartVOCData ? '✅' : '❌', '| Loading:', smartVOCLoading, '| Error:', smartVOCError ? '❌' : '✅');
+  console.log('[SmartVOCResults] 🔍 SmartVOC Data Details:', {
+    hasData: !!smartVOCData,
+    totalResponses: smartVOCData?.totalResponses || 0,
+    nevScores: smartVOCData?.nevScores || [],
+    nevScoresLength: smartVOCData?.nevScores?.length || 0,
+    csatScores: smartVOCData?.csatScores || [],
+    npsScores: smartVOCData?.npsScores || [],
+    cvScores: smartVOCData?.cvScores || []
+  });
   console.log('[SmartVOCResults] 🔍 Trust Flow Data Details:', {
     dataLength: trustFlowData.length,
     data: trustFlowData,
@@ -209,6 +219,59 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   const cvValue = smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0
     ? (smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length).toFixed(2)
     : '0.00';
+
+  // 🎯 PROCESAR DATOS DE NEV PARA EmotionalStates
+  const processNEVData = () => {
+    if (!smartVOCData || !smartVOCData.nevScores || smartVOCData.nevScores.length === 0) {
+      return {
+        emotionalStates: [],
+        longTermClusters: [],
+        shortTermClusters: [],
+        totalResponses: 0,
+        positivePercentage: 0,
+        negativePercentage: 0
+      };
+    }
+
+    // Calcular porcentajes de emociones positivas vs negativas
+    const totalResponses = smartVOCData.totalResponses || 0;
+    const nevScores = smartVOCData.nevScores;
+
+    // Calcular promedio de scores NEV
+    const averageNEVScore = nevScores.reduce((a, b) => a + b, 0) / nevScores.length;
+
+    // El score NEV ya viene como porcentaje (-100 a +100), convertirlo a 0-100
+    const positivePercentage = Math.max(0, Math.min(100, (averageNEVScore + 100) / 2));
+    const negativePercentage = 100 - positivePercentage;
+
+    // Crear estados emocionales basados en los datos
+    const emotionalStates = [
+      { name: 'Positive Emotions', value: positivePercentage, isPositive: true },
+      { name: 'Negative Emotions', value: negativePercentage, isPositive: false }
+    ];
+
+    // Clusters de ejemplo (pueden ser calculados basados en los datos reales)
+    const longTermClusters = [
+      { name: 'Trust', value: positivePercentage * 0.8, trend: 'up' as const },
+      { name: 'Loyalty', value: positivePercentage * 0.6, trend: 'up' as const }
+    ];
+
+    const shortTermClusters = [
+      { name: 'Satisfaction', value: positivePercentage * 0.9, trend: 'up' as const },
+      { name: 'Engagement', value: positivePercentage * 0.7, trend: 'up' as const }
+    ];
+
+    return {
+      emotionalStates,
+      longTermClusters,
+      shortTermClusters,
+      totalResponses,
+      positivePercentage,
+      negativePercentage
+    };
+  };
+
+  const nevData = processNEVData();
 
   return (
     <div className={cn('pt-4', className)}>
@@ -358,12 +421,18 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 conditionality="Conditionality disabled"
                 required={true}
                 question="How would you rate your overall satisfaction level with [company]?"
-                responses={{ count: 0, timeAgo: '0s' }}
-                score={finalCPVData.csatPercentage}
+                responses={{
+                  count: smartVOCData?.totalResponses || 0,
+                  timeAgo: '0s'
+                }}
+                score={smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0
+                  ? parseFloat((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length).toFixed(2))
+                  : 0.00
+                }
                 distribution={[
-                  { label: 'Promoters', percentage: 0, color: '#10B981' },
-                  { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
-                  { label: 'Detractors', percentage: 0, color: '#EF4444' }
+                  { label: 'Promoters', percentage: smartVOCData?.promoters || 0, color: '#10B981' },
+                  { label: 'Neutrals', percentage: smartVOCData?.neutrals || 0, color: '#F59E0B' },
+                  { label: 'Detractors', percentage: smartVOCData?.detractors || 0, color: '#EF4444' }
                 ]}
               />
 
@@ -403,13 +472,13 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
               {/* 2.4.- Question: Net Emotional Value (NEV) */}
               <EmotionalStates
-                emotionalStates={[]}
-                longTermClusters={[]}
-                shortTermClusters={[]}
-                totalResponses={0}
+                emotionalStates={nevData.emotionalStates}
+                longTermClusters={nevData.longTermClusters}
+                shortTermClusters={nevData.shortTermClusters}
+                totalResponses={nevData.totalResponses}
                 responseTime="0s"
-                positivePercentage={0}
-                negativePercentage={0}
+                positivePercentage={nevData.positivePercentage}
+                negativePercentage={nevData.negativePercentage}
               />
 
               {/* 2.5.- Question: Net Promoter Score (NPS) */}

@@ -49,6 +49,19 @@ export function EmotionalStates({
   // Verificar si hay datos disponibles
   const hasData = emotionalStates.length > 0;
 
+  // 🎯 DEBUG: Log de los datos recibidos
+  console.log('[EmotionalStates] 🔍 Datos recibidos:', {
+    emotionalStates,
+    longTermClusters,
+    shortTermClusters,
+    totalResponses,
+    positivePercentage: customPositivePercentage,
+    negativePercentage: customNegativePercentage,
+    hasData,
+    calculatedPositive: calculatedPositivePercentage,
+    calculatedNegative: calculatedNegativePercentage
+  });
+
   return (
     <Card className={cn('p-6 pb-14', className)}>
       {/* Encabezado de la pregunta */}
@@ -162,7 +175,7 @@ export function EmotionalStates({
                     <div
                       className="absolute text-xs font-medium"
                       style={{
-                        bottom: `${state.value * 10}%`,
+                        bottom: `${state.value}%`,
                         transform: 'translateY(-100%)'
                       }}
                     >
@@ -176,7 +189,7 @@ export function EmotionalStates({
                         state.isPositive ? 'bg-[#4ADE80]' : 'bg-[#F87171]'
                       )}
                       style={{
-                        height: `${state.value * 10}%`,
+                        height: `${state.value}%`,
                         left: '50%',
                         transform: 'translateX(-50%)'
                       }}
