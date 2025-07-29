@@ -33,24 +33,10 @@ interface User {
 
 const mainNavItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
-  { id: 'new-research', label: 'New Research', href: '/dashboard/research/new' },
-  { id: 'research-history', label: "Research's History", href: '/dashboard/research-history' },
-  { id: 'research', label: 'Research', href: '/dashboard/research' },
+  { id: 'new-research', label: 'Nueva Investigación', href: '/dashboard/research/new' },
+  { id: 'research-history', label: 'Historial de Investigaciones', href: '/dashboard/research-history' },
+  { id: 'research', label: 'Investigaciones', href: '/dashboard/research' },
 ];
-
-const getTimeAgo = (date: Date) => {
-  const now = new Date();
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-
-  if (diffInMinutes < 1) { return 'just now'; }
-  if (diffInMinutes < 60) { return `${diffInMinutes}m ago`; }
-
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) { return `${diffInHours}h ago`; }
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  return `${diffInDays}d ago`;
-};
 
 // Añadir la interfaz para el modal de confirmación
 interface DeleteConfirmationModalProps {

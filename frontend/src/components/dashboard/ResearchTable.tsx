@@ -193,23 +193,21 @@ function ResearchTableContent() {
 
   return (
     <div className="bg-white overflow-hidden">
-      <div className="flex justify-between items-center p-6 border-b border-neutral-200">
-        <div className="flex flex-col">
-          <h2 className="text-xl font-semibold text-neutral-900">Research Projects</h2>
-          <p className="text-sm text-neutral-500 mt-1">
-            Última actualización: {lastUpdate}
-          </p>
-        </div>
-        <button
-          onClick={handleRefresh}
-          className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
-          title="Actualizar"
-        >
-          <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold text-neutral-900">Proyectos de Investigación</h2>
+        <p className="text-sm text-neutral-500 mt-1">
+          Última actualización: {lastUpdate}
+        </p>
       </div>
+      <button
+        onClick={handleRefresh}
+        className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+        title="Actualizar"
+      >
+        <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
 
       {error && (
         <Alert variant="destructive" className="m-6">
@@ -345,29 +343,31 @@ function ResearchTableContent() {
         )}
       </div>
 
-      {showDeleteModal && projectToDelete && (
-        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>¿Eliminar investigación?</DialogTitle>
-              <DialogDescription>
-                ¿Estás seguro de que deseas eliminar la investigación "{projectToDelete.name}"? Esta acción no se puede deshacer.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end space-x-4 mt-6">
-              <DialogClose asChild>
-                <Button variant="outline" onClick={cancelDeleteResearch}>
-                  Cancelar
+      {
+        showDeleteModal && projectToDelete && (
+          <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>¿Eliminar investigación?</DialogTitle>
+                <DialogDescription>
+                  ¿Estás seguro de que deseas eliminar la investigación "{projectToDelete?.name}"? Esta acción no se puede deshacer.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end space-x-4 mt-6">
+                <DialogClose asChild>
+                  <Button variant="outline" onClick={cancelDeleteResearch}>
+                    Cancelar
+                  </Button>
+                </DialogClose>
+                <Button variant="destructive" onClick={confirmDeleteResearch}>
+                  Eliminar
                 </Button>
-              </DialogClose>
-              <Button variant="destructive" onClick={confirmDeleteResearch}>
-                Eliminar
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )
+      }
+    </div >
   );
 }
 

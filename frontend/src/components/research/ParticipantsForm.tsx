@@ -20,7 +20,7 @@ interface Participant {
 export function ParticipantsForm({ className }: ParticipantsFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  
+
   // Datos de ejemplo
   const [participants] = useState<Participant[]>([
     { id: '001', name: 'John Doe', email: 'john.doe@example.com', status: 'completed', completedAt: '2023-06-15' },
@@ -35,13 +35,13 @@ export function ParticipantsForm({ className }: ParticipantsFormProps) {
 
   // Filtrar participantes basado en la búsqueda y el estado seleccionado
   const filteredParticipants = participants.filter(participant => {
-    const matchesSearch = 
-      participant.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch =
+      participant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       participant.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       participant.id.includes(searchTerm);
-    
+
     const matchesStatus = selectedStatus === 'all' || participant.status === selectedStatus;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -143,14 +143,14 @@ export function ParticipantsForm({ className }: ParticipantsFormProps) {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center space-x-2">
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               className="text-blue-600 hover:text-blue-800 text-xs"
                             >
                               View
                             </button>
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               className="text-neutral-600 hover:text-neutral-800 text-xs"
                             >
                               Edit
@@ -195,7 +195,7 @@ export function ParticipantsForm({ className }: ParticipantsFormProps) {
         </div>
 
         <footer className="flex items-center justify-between px-8 py-4 bg-neutral-50 border-t border-neutral-100">
-          <p className="text-sm text-neutral-500">Last updated: 15 Jun 2023</p>
+          <p className="text-sm text-neutral-500">Última actualización: 15 Jun 2023</p>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -214,4 +214,4 @@ export function ParticipantsForm({ className }: ParticipantsFormProps) {
       </div>
     </div>
   );
-} 
+}
