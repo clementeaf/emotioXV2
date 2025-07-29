@@ -33,28 +33,7 @@ interface User {
 
 const mainNavItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
-  {
-    id: 'new-research',
-    label: 'New Research',
-    href: '/dashboard/research/new',
-    getDynamicLabel: (hasDraft: boolean, currentStep?: string, lastUpdated?: Date) => {
-      if (!hasDraft) { return 'New Research'; }
-      const timeAgo = lastUpdated ? getTimeAgo(lastUpdated) : '';
-      const stepText = {
-        basic: 'Basic Data',
-        configuration: 'Configuration',
-        review: 'Review'
-      }[currentStep || 'basic'];
-      return (
-        <div className="flex flex-col">
-          <span>New Research</span>
-          <span className="text-xs text-neutral-500">
-            {stepText} • {timeAgo}
-          </span>
-        </div>
-      );
-    }
-  },
+  { id: 'new-research', label: 'New Research', href: '/dashboard/research/new' },
   { id: 'research-history', label: "Research's History", href: '/dashboard/research-history' },
   { id: 'research', label: 'Research', href: '/dashboard/research' },
 ];
@@ -316,7 +295,6 @@ function SidebarContent({ className }: SidebarProps) {
       <nav className="space-y-1">
         {mainNavItems.map((item) => {
           const isActive = pathname === item.href;
-          const label = item.getDynamicLabel ? item.getDynamicLabel(hasDraft, currentDraft?.step, currentDraft?.lastUpdated) : item.label;
 
           return (
             <Link
@@ -329,7 +307,7 @@ function SidebarContent({ className }: SidebarProps) {
                   : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'
               )}
             >
-              {label}
+              {item.label}
             </Link>
           );
         })}
