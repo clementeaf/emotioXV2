@@ -57,7 +57,6 @@ const mainNavItems = [
   },
   { id: 'research-history', label: "Research's History", href: '/dashboard/research-history' },
   { id: 'research', label: 'Research', href: '/dashboard/research' },
-  { id: 'emotions', label: 'Emotions', href: '/dashboard/emotions' },
 ];
 
 const getTimeAgo = (date: Date) => {

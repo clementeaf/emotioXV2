@@ -12,11 +12,16 @@ export const ResearchHistoryContent = memo(() => {
     <div className="space-y-6">
       <ClientSelectorSection />
 
-      <div className="grid grid-cols-12 gap-6">
-        <ValueChartSection />
-        <ClientInfoSection client={selectedClient} />
-        <ResearchListSection clientId={clientId} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <ValueChartSection />
+        </div>
+        <div>
+          <ClientInfoSection client={selectedClient} />
+        </div>
       </div>
+
+      <ResearchListSection clientId={clientId} />
     </div>
   );
 });

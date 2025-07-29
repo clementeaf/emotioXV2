@@ -31,6 +31,46 @@ interface ResearchTableProps {
   className?: string;
 }
 
+// Componente Skeleton para las filas de la tabla
+function TableSkeleton() {
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-neutral-200">
+        <thead className="border-b border-neutral-200">
+          <tr key="header-row">
+            <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>
+            <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Estado</th>
+            <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Fecha</th>
+            <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Acciones</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-neutral-200">
+          {/* Skeleton rows */}
+          {Array.from({ length: 5 }).map((_, index) => (
+            <tr key={`skeleton-row-${index}`} className="hover:bg-neutral-50">
+              <td className="px-6 py-4">
+                <div className="h-4 bg-neutral-200 rounded animate-pulse w-3/4"></div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="h-6 bg-neutral-200 rounded-full animate-pulse w-20"></div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="h-4 bg-neutral-200 rounded animate-pulse w-24"></div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex space-x-2">
+                  <div className="h-8 bg-neutral-200 rounded-md animate-pulse w-12"></div>
+                  <div className="h-8 w-8 bg-neutral-200 rounded-md animate-pulse"></div>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function ResearchTableContent() {
   const router = useRouter();
   const [research, setResearch] = useState<Research[]>([]);
@@ -232,9 +272,7 @@ function ResearchTableContent() {
 
       <div className="min-w-full">
         {isLoading ? (
-          <div className="p-8 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
+          <TableSkeleton />
         ) : research.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-neutral-500">No hay investigaciones disponibles.</p>

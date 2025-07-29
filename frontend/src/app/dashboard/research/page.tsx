@@ -18,12 +18,14 @@ export default function ResearchPage() {
     return null;
   }
   return (
-    <div className="bg-white rounded-xl shadow p-6 min-h-[400px]">
-      <ErrorBoundary>
-        <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
-          <ResearchListWithSuspense />
-        </Suspense>
-      </ErrorBoundary>
+    <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] flex flex-col justify-start">
+      <div className="mx-auto px-6 py-8 w-full">
+        <ErrorBoundary>
+          <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
+            <ResearchListWithSuspense />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
     </div>
   );
 }
