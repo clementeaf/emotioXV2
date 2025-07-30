@@ -27,7 +27,11 @@ interface ChoiceResultsProps {
 export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
   // Debug logs
   console.log('[ChoiceResults] 📊 Data received:', data);
-  console.log('[ChoiceResults] 🎯 Options:', data.options);
+  console.log('[ChoiceResults] 🎯 Options:', data.options.map(opt => ({
+    text: opt.text,
+    count: opt.count,
+    percentage: opt.percentage
+  })));
 
   // Verificar que los datos sean válidos
   if (!data || !data.options || !Array.isArray(data.options)) {

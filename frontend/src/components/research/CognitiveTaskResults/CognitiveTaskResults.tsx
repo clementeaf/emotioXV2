@@ -31,10 +31,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     hasData
   } = useCognitiveTaskResults(researchId);
 
-  const handleFilter = () => {
-    // console.log('Filtrar resultados');
-  };
-
   const handleUpdate = () => {
     refetch();
   };
@@ -54,15 +50,10 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     );
   }
 
-  // Debug logs
-  console.log('[CognitiveTaskResults] 📊 Processed data:', processedData);
-  console.log('[CognitiveTaskResults] 📊 Has data:', hasData);
-  console.log('[CognitiveTaskResults] 📊 Loading:', isLoading);
-
   // Usar datos reales procesados del hook
   const questions = processedData.map((data, index) => {
     // Mapear tipos de pregunta cognitiva a tipos de visualización
-    const getViewType = (questionType: string) => {
+    const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
       switch (questionType) {
         case 'cognitive_short_text':
         case 'cognitive_long_text':
@@ -86,26 +77,21 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     };
 
     // Mapear tipos de pregunta a tipos de visualización
-    const getQuestionType = (questionType: string) => {
+    const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' => {
       switch (questionType) {
         case 'cognitive_short_text':
           return 'short_text';
         case 'cognitive_long_text':
           return 'long_text';
         case 'cognitive_single_choice':
-          return 'single_choice';
         case 'cognitive_multiple_choice':
           return 'multiple_choice';
         case 'cognitive_ranking':
-          return 'ranking';
         case 'cognitive_linear_scale':
-          return 'linear_scale';
         case 'cognitive_preference_test':
-          return 'preference_test';
         case 'cognitive_image_selection':
-          return 'image_selection';
         case 'cognitive_navigation_flow':
-          return 'navigation_flow';
+          return 'rating';
         default:
           return 'short_text';
       }
@@ -131,17 +117,21 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           const sentimentResult = {
             id: resp.id || `sentiment-${data.questionId}-${index}`,
             text: resp.text,
+            sentiment: resp.sentiment, // Add missing sentiment property
             mood: resp.sentiment === 'positive' ? 'Positive' : resp.sentiment === 'negative' ? 'Negative' : 'Neutral',
             selected: false
           };
 
-          // Debug log para cada resultado de sentimiento
-          console.log(`[CognitiveTaskResults] 🎯 SentimentResult ${index}:`, sentimentResult);
-
           return sentimentResult;
         }),
-        themes: data.sentimentData.themes || [],
-        keywords: data.sentimentData.keywords || [],
+        themes: (data.sentimentData.themes || []).map((theme, index) => ({
+          id: `theme-${index}`,
+          ...theme
+        })),
+        keywords: (data.sentimentData.keywords || []).map((keyword, index) => ({
+          id: `keyword-${index}`,
+          ...keyword
+        })),
         sentimentAnalysis: data.sentimentData.analysis || { text: '', actionables: [] }
       } : undefined,
 
@@ -164,31 +154,38 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           totalResponses: data.choiceData.totalResponses
         }
       }),
-      rankingData: data.rankingData,
-      linearScaleData: data.linearScaleData,
+      rankingData: data.rankingData ? {
+        ...data.rankingData,
+        options: data.rankingData.options.map(option => ({
+          ...option,
+          distribution: {
+            1: option.distribution[1] || 0,
+            2: option.distribution[2] || 0,
+            3: option.distribution[3] || 0,
+            4: option.distribution[4] || 0,
+            5: option.distribution[5] || 0,
+            6: option.distribution[6] || 0
+          }
+        }))
+      } : undefined,
+      linearScaleData: data.linearScaleData ? {
+        ...data.linearScaleData,
+        responses: [] // Add missing required property
+      } : undefined,
       ratingData: data.ratingData,
       preferenceTestData: data.preferenceTestData,
-      imageSelectionData: data.imageSelectionData,
+      imageSelectionData: data.imageSelectionData ? {
+        ...data.imageSelectionData,
+        images: data.imageSelectionData.images.map((img, index) => ({
+          id: `img-${index}`,
+          ...img
+        }))
+      } : undefined,
       navigationFlowData: data.navigationFlowData,
       initialActiveTab: 'sentiment' as const,
       themeImageSrc: '',
     };
   });
-
-  // Debug log final
-  console.log('[CognitiveTaskResults] 📊 Questions processed:', questions.map(q => ({
-    questionId: q.questionId,
-    questionType: q.questionType,
-    hasSentimentData: !!q.sentimentData,
-    sentimentResultsCount: q.sentimentData?.sentimentResults?.length || 0,
-    hasChoiceData: !!q.choiceData,
-    choiceDataOptions: q.choiceData?.options?.length || 0,
-    choiceDataTotalResponses: q.choiceData?.totalResponses || 0,
-    hasRankingData: !!q.rankingData,
-    hasLinearScaleData: !!q.linearScaleData,
-    hasPreferenceTestData: !!q.preferenceTestData,
-    hasNavigationFlowData: !!q.navigationFlowData
-  })));
 
   return (
     <div className="flex gap-8">
@@ -213,13 +210,13 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             navigationFlowData={q.navigationFlowData}
             initialActiveTab={q.initialActiveTab}
             themeImageSrc={q.themeImageSrc}
-            onFilter={handleFilter}
+            onFilter={() => { }}
             onUpdate={handleUpdate}
           />
         ))}
       </div>
       <div className="w-80 shrink-0 mt-[52px]">
-        <Filters researchId={questions[0]?.questionId || ''} />
+        <Filters researchId={propResearchId || ''} />
       </div>
     </div>
   );

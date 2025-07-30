@@ -43,7 +43,7 @@ export interface ProcessedCognitiveData {
 
   // Datos específicos por tipo
   sentimentData?: {
-    responses: Array<{ text: string; sentiment: 'positive' | 'negative' | 'neutral' }>;
+    responses: Array<{ id: string; text: string; sentiment: 'positive' | 'negative' | 'neutral' }>;
     themes?: Array<{ name: string; count: number }>;
     keywords?: Array<{ name: string; count: number }>;
     analysis?: { text: string; actionables?: string[] };
@@ -51,13 +51,14 @@ export interface ProcessedCognitiveData {
 
   choiceData?: {
     question: string;
-    options: Array<{ text: string; count: number; percentage: number; color?: string }>;
+    options: Array<{ id: string; text: string; count: number; percentage: number; color?: string }>;
     totalResponses: number;
     responseDuration?: string;
   };
 
   rankingData?: {
     options: Array<{
+      id: string;
       text: string;
       mean: number;
       responseTime: string;
@@ -87,6 +88,7 @@ export interface ProcessedCognitiveData {
   preferenceTestData?: {
     question: string;
     options: Array<{
+      id: string;
       name: string;
       image?: string;
       selected: number;
@@ -167,9 +169,20 @@ export function useCognitiveTaskResults(researchId: string) {
   const [error, setError] = useState<string | null>(null);
   const [participantResponses, setParticipantResponses] = useState<ParticipantResponse[]>([]);
   const [processedData, setProcessedData] = useState<ProcessedCognitiveData[]>([]);
+  const [researchConfig, setResearchConfig] = useState<any>(null);
 
   // Función para procesar datos por tipo de pregunta
   const processDataByType = (responses: ParticipantResponse[]): ProcessedCognitiveData[] => {
+    console.log('[useCognitiveTaskResults] 🔍 processDataByType called with:', {
+      researchConfig: !!researchConfig,
+      responsesLength: responses.length,
+      researchConfigData: researchConfig
+    });
+
+    if (!researchConfig) {
+      console.log('[useCognitiveTaskResults] ⚠️ No researchConfig available, returning empty array');
+      return [];
+    }
     if (!responses.length) return [];
 
     const questionMap = new Map<string, ProcessedCognitiveData>();
@@ -182,12 +195,6 @@ export function useCognitiveTaskResults(researchId: string) {
         if (!questionKey?.startsWith('cognitive_')) {
           return;
         }
-
-        console.log(`[useCognitiveTaskResults] 🧠 Procesando respuesta cognitiva:`, {
-          questionKey,
-          questionType: response.questionType,
-          response: response.response
-        });
 
         if (!questionMap.has(questionKey)) {
           questionMap.set(questionKey, {
@@ -249,20 +256,54 @@ export function useCognitiveTaskResults(researchId: string) {
           case 'cognitive_multiple_choice':
           case 'cognitive_single_choice':
             if (!questionData.choiceData) {
+              // Buscar la configuración de la pregunta en researchConfig
+              const questionConfig = researchConfig.questions?.find((q: any) => q.questionKey === questionKey);
+
               questionData.choiceData = {
-                question: `Pregunta ${questionKey}`,
+                question: questionConfig?.title || `Pregunta ${questionKey}`,
                 options: [],
                 totalResponses: 0
               };
+
+              // Inicializar opciones basándose en la configuración real
+              if (questionConfig?.choices) {
+                questionConfig.choices.forEach((choice: any, index: number) => {
+                  questionData.choiceData!.options.push({
+                    id: choice.id || `option-${index + 1}`,
+                    text: choice.text,
+                    count: 0,
+                    percentage: 0, // Se calculará después
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
+                  });
+                });
+              }
             }
 
             // Procesar opciones de selección
-            const selectedOption = response.response?.value || response.response?.selected || response.response;
+            let selectedOption = '';
+
+            // Extraer la opción seleccionada de diferentes formatos posibles
+            if (response.response?.value) {
+              selectedOption = response.response.value;
+            } else if (response.response?.selected) {
+              selectedOption = response.response.selected;
+            } else if (response.response?.choice) {
+              selectedOption = response.response.choice;
+            } else if (response.response?.answer) {
+              selectedOption = response.response.answer;
+            } else if (typeof response.response === 'string') {
+              selectedOption = response.response;
+            } else if (response.response) {
+              selectedOption = JSON.stringify(response.response);
+            }
+
             if (selectedOption) {
+              // Buscar la opción seleccionada y incrementar su count
               const existingOption = questionData.choiceData.options.find(opt => opt.text === selectedOption);
               if (existingOption) {
                 existingOption.count = (existingOption.count || 0) + 1;
               } else {
+                // Agregar la nueva opción seleccionada
                 questionData.choiceData.options.push({
                   id: `option-${questionData.choiceData.options.length + 1}`,
                   text: selectedOption,
@@ -329,9 +370,6 @@ export function useCognitiveTaskResults(researchId: string) {
               };
             }
 
-            // Procesar test de preferencia
-            console.log(`[useCognitiveTaskResults] 📊 Procesando preference_test:`, response.response);
-
             const preferenceSelection = response.response?.selected || response.response?.preference || response.response;
             if (preferenceSelection) {
               // Extraer el nombre de la preferencia de manera segura
@@ -350,7 +388,6 @@ export function useCognitiveTaskResults(researchId: string) {
                 preferenceName = String(preferenceSelection);
               }
 
-              console.log(`[useCognitiveTaskResults] 🎯 Preference name extracted:`, preferenceName);
 
               const existingOption = questionData.preferenceTestData.options.find(opt => opt.name === preferenceName);
               if (existingOption) {
@@ -380,9 +417,6 @@ export function useCognitiveTaskResults(researchId: string) {
                 selectedImageIndex: undefined
               };
             }
-
-            // Procesar navigation flow
-            console.log(`[useCognitiveTaskResults] 🧭 Procesando navigation_flow:`, response.response);
 
             const navResponse = response.response;
             if (navResponse) {
@@ -414,8 +448,6 @@ export function useCognitiveTaskResults(researchId: string) {
                   participantId: participant.participantId
                 }));
                 questionData.navigationFlowData.visualClickPoints.push(...pointsWithParticipantId);
-                console.log(`[useCognitiveTaskResults] 🎯 Procesando ${navResponse.visualClickPoints.length} puntos visuales de visualClickPoints del participante ${participant.participantId}`);
-                console.log(`[useCognitiveTaskResults] 📊 Total acumulado de visualClickPoints: ${questionData.navigationFlowData.visualClickPoints.length}`);
               }
 
               // 🎯 PROCESAR allClicksTracking - ACUMULAR en lugar de sobrescribir
@@ -429,15 +461,11 @@ export function useCognitiveTaskResults(researchId: string) {
                   participantId: participant.participantId
                 }));
                 questionData.navigationFlowData.allClicksTracking.push(...clicksWithParticipantId);
-                console.log(`[useCognitiveTaskResults] 🔥 Procesando ${navResponse.allClicksTracking.length} clics de allClicksTracking del participante ${participant.participantId}`);
-                console.log(`[useCognitiveTaskResults] 📊 Total acumulado de allClicksTracking: ${questionData.navigationFlowData.allClicksTracking.length}`);
               }
             }
             break;
 
           case 'cognitive_navigation_flow':
-            // Este tipo se maneja en NavigationTestResults
-            console.log(`[useCognitiveTaskResults] 🧭 Procesando navigation_flow:`, response.response);
             break;
 
           case 'cognitive_image_selection':
@@ -464,13 +492,6 @@ export function useCognitiveTaskResults(researchId: string) {
           opt.percentage = total > 0 ? Math.round(((opt.count || 0) / total) * 100) : 0;
         });
         questionData.choiceData.totalResponses = total;
-
-        // Debug log para choice data
-        console.log(`[useCognitiveTaskResults] 🎯 Choice data processed:`, {
-          questionId: questionData.questionId,
-          options: questionData.choiceData.options,
-          totalResponses: questionData.choiceData.totalResponses
-        });
       }
 
       // Calcular promedio para linear scale
@@ -492,13 +513,6 @@ export function useCognitiveTaskResults(researchId: string) {
           opt.percentage = total > 0 ? Math.round((opt.selected / total) * 100) : 0;
         });
         questionData.preferenceTestData.totalSelections = total;
-
-        // Log para debuggear preference test
-        console.log(`[useCognitiveTaskResults] 🎯 PreferenceTest data:`, {
-          questionId: questionData.questionId,
-          options: questionData.preferenceTestData.options,
-          totalSelections: questionData.preferenceTestData.totalSelections
-        });
       }
 
       // Generar análisis de sentimiento para texto
@@ -534,70 +548,43 @@ export function useCognitiveTaskResults(researchId: string) {
     setError(null);
 
     try {
-      console.log(`[useCognitiveTaskResults] 🔍 Cargando datos para research: ${researchId}`);
+      const configResponse = await fetch(`https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev/research/${researchId}/cognitive-task`);
+      const configData = await configResponse.json();
+      setResearchConfig(configData);
 
       const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
 
       if (!response.data || !Array.isArray(response.data)) {
         throw new Error('Formato de respuesta inválido');
       }
-
-      console.log(`[useCognitiveTaskResults] ✅ Datos cargados: ${response.data.length} participantes`);
-
-      // Filtrar solo respuestas de tareas cognitivas
       const cognitiveResponses = response.data.filter((participant: any) => {
-        console.log(`[useCognitiveTaskResults] 🔍 Revisando participante:`, participant.participantId);
-        console.log(`[useCognitiveTaskResults] 📝 Respuestas del participante:`, participant.responses);
-
         const hasCognitiveResponses = participant.responses?.some((response: any) => {
           const isCognitive = response.questionKey?.startsWith('cognitive_');
-          console.log(`[useCognitiveTaskResults] 🧠 Respuesta ${response.questionKey}:`, isCognitive ? '✅ COGNITIVA' : '❌ NO COGNITIVA');
           return isCognitive;
         });
-
-        console.log(`[useCognitiveTaskResults] 👤 Participante ${participant.participantId} tiene respuestas cognitivas:`, hasCognitiveResponses);
         return hasCognitiveResponses;
-      });
-
-      console.log(`[useCognitiveTaskResults] 📊 Respuestas cognitivas: ${cognitiveResponses.length} participantes`);
-
-      // Log detallado de las respuestas cognitivas
-      cognitiveResponses.forEach((participant: any, index: number) => {
-        console.log(`[useCognitiveTaskResults] 👤 Participante ${index + 1}:`, participant.participantId);
-        participant.responses.forEach((response: any, respIndex: number) => {
-          if (response.questionType?.startsWith('cognitive_')) {
-            console.log(`[useCognitiveTaskResults] 🧠 Respuesta cognitiva ${respIndex + 1}:`, {
-              questionKey: response.questionKey,
-              questionType: response.questionType,
-              response: response.response,
-              timestamp: response.timestamp
-            });
-          }
-        });
       });
 
       setParticipantResponses(cognitiveResponses);
 
-      // Procesar datos por tipo de pregunta
-      const processed = processDataByType(cognitiveResponses);
-      console.log(`[useCognitiveTaskResults] ✅ Datos procesados:`, processed);
+      // Solo procesar si tenemos tanto las respuestas como la configuración
+      if (researchConfig && cognitiveResponses.length > 0) {
+        console.log('[useCognitiveTaskResults] 🎯 Both researchConfig and responses available, processing data...');
 
-      // Log detallado de cada pregunta procesada
-      processed.forEach((questionData, index) => {
-        console.log(`[useCognitiveTaskResults] 📊 Pregunta ${index + 1}:`, {
-          questionId: questionData.questionId,
-          questionType: questionData.questionType,
-          totalResponses: questionData.totalResponses,
-          hasSentimentData: !!questionData.sentimentData,
-          hasChoiceData: !!questionData.choiceData,
-          hasRankingData: !!questionData.rankingData,
-          hasLinearScaleData: !!questionData.linearScaleData,
-          hasPreferenceTestData: !!questionData.preferenceTestData,
-          hasNavigationFlowData: !!questionData.navigationFlowData
+        // Procesar datos por tipo de pregunta
+        const processed = processDataByType(cognitiveResponses);
+        console.log('[useCognitiveTaskResults] 📊 Processing result:', {
+          processedLength: processed.length,
+          processed
         });
-      });
 
-      setProcessedData(processed);
+        setProcessedData(processed);
+      } else {
+        console.log('[useCognitiveTaskResults] ⏳ Waiting for both researchConfig and responses...', {
+          hasResearchConfig: !!researchConfig,
+          responsesLength: cognitiveResponses.length
+        });
+      }
 
       setLoadingState('success');
 
@@ -615,14 +602,25 @@ export function useCognitiveTaskResults(researchId: string) {
 
   // Cargar datos al montar el componente o cambiar researchId
   useEffect(() => {
-    console.log(`[useCognitiveTaskResults] 🔄 useEffect triggered - researchId: ${researchId}`);
     if (researchId) {
-      console.log(`[useCognitiveTaskResults] 🚀 Iniciando carga de datos para research: ${researchId}`);
       loadData();
-    } else {
-      console.log(`[useCognitiveTaskResults] ⚠️ No researchId proporcionado`);
     }
   }, [researchId]);
+
+  // Reprocesar datos cuando researchConfig cambie
+  useEffect(() => {
+    if (researchConfig && participantResponses.length > 0) {
+      console.log('[useCognitiveTaskResults] 🔄 researchConfig changed, reprocessing data...');
+
+      const processed = processDataByType(participantResponses);
+      console.log('[useCognitiveTaskResults] 📊 Reprocessing result:', {
+        processedLength: processed.length,
+        processed
+      });
+
+      setProcessedData(processed);
+    }
+  }, [researchConfig, participantResponses]);
 
   return {
     // Estado

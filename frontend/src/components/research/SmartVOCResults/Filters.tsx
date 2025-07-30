@@ -24,12 +24,6 @@ interface FiltersProps {
 
 export function Filters({ className, researchId }: FiltersProps) {
   const { data: demographicsData, isLoading, error } = useDemographicsData(researchId);
-
-  // Debug logs
-  console.log('[Filters] 🔍 Props:', { researchId });
-  console.log('[Filters] 📊 Demographics data:', demographicsData);
-  console.log('[Filters] ⏳ Loading:', isLoading);
-  console.log('[Filters] ❌ Error:', error);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dynamicHeight, setDynamicHeight] = useState<number | 'auto'>('auto');
   const [isAdjusting, setIsAdjusting] = useState(false);
