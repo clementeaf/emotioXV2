@@ -6,8 +6,8 @@ import React from 'react';
 import { Filters } from '../../research/SmartVOCResults/Filters';
 import {
   CognitiveTaskHeader,
+  CognitiveTaskResultsSkeleton,
   ErrorState,
-  LoadingState,
   QuestionContainer
 } from './components';
 
@@ -41,12 +41,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
 
   // Mostrar loading
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <CognitiveTaskHeader title="2.0.- Cognitive task" />
-        <LoadingState message="Cargando resultados de tareas cognitivas..." />
-      </div>
-    );
+    return <CognitiveTaskResultsSkeleton />;
   }
 
   // Mostrar error
@@ -59,95 +54,129 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     );
   }
 
-  // Preguntas de ejemplo (puedes reemplazar por datos reales en el futuro)
-  const questions = [
-    {
-      key: 'question-3-1',
-      questionId: '3.1',
-      questionType: 'short_text' as const,
-      questionText: '¿Cuál es tu color favorito?',
+  // Debug logs
+  console.log('[CognitiveTaskResults] 📊 Processed data:', processedData);
+  console.log('[CognitiveTaskResults] 📊 Has data:', hasData);
+  console.log('[CognitiveTaskResults] 📊 Loading:', isLoading);
+
+  // Usar datos reales procesados del hook
+  const questions = processedData.map((data, index) => {
+    // Mapear tipos de pregunta cognitiva a tipos de visualización
+    const getViewType = (questionType: string) => {
+      switch (questionType) {
+        case 'cognitive_short_text':
+        case 'cognitive_long_text':
+          return 'sentiment';
+        case 'cognitive_single_choice':
+        case 'cognitive_multiple_choice':
+          return 'choice';
+        case 'cognitive_ranking':
+          return 'ranking';
+        case 'cognitive_linear_scale':
+          return 'linear_scale';
+        case 'cognitive_preference_test':
+          return 'preference';
+        case 'cognitive_image_selection':
+          return 'image_selection';
+        case 'cognitive_navigation_flow':
+          return 'navigation_flow';
+        default:
+          return 'sentiment';
+      }
+    };
+
+    // Mapear tipos de pregunta a tipos de visualización
+    const getQuestionType = (questionType: string) => {
+      switch (questionType) {
+        case 'cognitive_short_text':
+          return 'short_text';
+        case 'cognitive_long_text':
+          return 'long_text';
+        case 'cognitive_single_choice':
+          return 'single_choice';
+        case 'cognitive_multiple_choice':
+          return 'multiple_choice';
+        case 'cognitive_ranking':
+          return 'ranking';
+        case 'cognitive_linear_scale':
+          return 'linear_scale';
+        case 'cognitive_preference_test':
+          return 'preference_test';
+        case 'cognitive_image_selection':
+          return 'image_selection';
+        case 'cognitive_navigation_flow':
+          return 'navigation_flow';
+        default:
+          return 'short_text';
+      }
+    };
+
+    return {
+      key: `question-${data.questionId}`,
+      questionId: data.questionId,
+      questionType: getQuestionType(data.questionType),
+      questionText: data.questionText,
       required: true,
       conditionalityDisabled: true,
-      hasNewData: true,
-      sentimentResults: [],
-      themes: [],
-      keywords: [],
-      sentimentAnalysis: { text: '', actionables: [] },
-    },
-    {
-      key: 'question-3-2',
-      questionId: '3.2',
-      questionType: 'long_text' as const,
-      questionText: 'Describe una experiencia memorable.',
-      required: true,
-      conditionalityDisabled: true,
-      hasNewData: true,
-      sentimentResults: [],
-      themes: [],
-      keywords: [],
-      sentimentAnalysis: { text: '', actionables: [] },
-    },
-    {
-      key: 'question-3-3',
-      questionId: '3.3',
-      questionType: 'multiple_choice' as const, // Usar el tipo permitido
-      questionText: 'Pregunta de selección única.',
-      required: false,
-      conditionalityDisabled: true,
-      hasNewData: false,
-      // Estructura lista para datos reales
-    },
-    {
-      key: 'question-3-4',
-      questionId: '3.4',
-      questionType: 'multiple_choice' as const,
-      questionText: 'Pregunta de selección múltiple.',
-      required: true,
-      conditionalityDisabled: true,
-      hasNewData: false,
-      // Estructura lista para datos reales
-    },
-    {
-      key: 'question-3-5',
-      questionId: '3.5',
-      questionType: 'rating' as const,
-      questionText: 'Pregunta de escala lineal.',
-      required: true,
-      conditionalityDisabled: true,
-      hasNewData: false,
-      // Estructura lista para datos reales
-    },
-    {
-      key: 'question-3-6',
-      questionId: '3.6',
-      questionType: 'rating' as const, // Usar tipo permitido
-      questionText: 'Pregunta de ranking.',
-      required: true,
-      conditionalityDisabled: true,
-      hasNewData: false,
-      // Estructura lista para datos reales
-    },
-    {
-      key: 'question-3-7',
-      questionId: '3.7',
-      questionType: 'rating' as const, // Usar tipo permitido
-      questionText: 'Navigation Test.',
-      required: true,
-      conditionalityDisabled: true,
-      hasNewData: false,
-      // Estructura lista para datos reales
-    },
-    {
-      key: 'question-3-7-detail',
-      questionId: '3.7-detail',
-      questionType: 'rating' as const, // Usar tipo permitido
-      questionText: 'Navigation Task Result (detalle de paso).',
-      required: true,
-      conditionalityDisabled: true,
-      hasNewData: false,
-      // Estructura lista para datos reales
-    },
-  ];
+      hasNewData: data.totalResponses > 0,
+      viewType: getViewType(data.questionType),
+      sentimentData: data.sentimentData ? {
+        id: data.questionId,
+        questionNumber: data.questionId,
+        questionText: data.questionText,
+        questionType: getQuestionType(data.questionType),
+        required: true,
+        conditionalityDisabled: true,
+        sentimentResults: data.sentimentData.responses.map((resp, index) => {
+          const sentimentResult = {
+            id: resp.id || `sentiment-${data.questionId}-${index}`,
+            text: resp.text,
+            mood: resp.sentiment === 'positive' ? 'Positive' : resp.sentiment === 'negative' ? 'Negative' : 'Neutral',
+            selected: false
+          };
+
+          // Debug log para cada resultado de sentimiento
+          console.log(`[CognitiveTaskResults] 🎯 SentimentResult ${index}:`, sentimentResult);
+
+          return sentimentResult;
+        }),
+        themes: data.sentimentData.themes || [],
+        keywords: data.sentimentData.keywords || [],
+        sentimentAnalysis: data.sentimentData.analysis || { text: '', actionables: [] }
+      } : undefined,
+
+      // Debug log para cada pregunta
+      ...(data.sentimentData && {
+        _debug: {
+          questionId: data.questionId,
+          responsesCount: data.sentimentData.responses.length,
+          responses: data.sentimentData.responses.slice(0, 3) // Primeras 3 respuestas para debug
+        }
+      }),
+      choiceData: data.choiceData,
+      rankingData: data.rankingData,
+      linearScaleData: data.linearScaleData,
+      ratingData: data.ratingData,
+      preferenceTestData: data.preferenceTestData,
+      imageSelectionData: data.imageSelectionData,
+      navigationFlowData: data.navigationFlowData,
+      initialActiveTab: 'sentiment' as const,
+      themeImageSrc: '',
+    };
+  });
+
+  // Debug log final
+  console.log('[CognitiveTaskResults] 📊 Questions processed:', questions.map(q => ({
+    questionId: q.questionId,
+    questionType: q.questionType,
+    hasSentimentData: !!q.sentimentData,
+    sentimentResultsCount: q.sentimentData?.sentimentResults?.length || 0,
+    hasChoiceData: !!q.choiceData,
+    hasRankingData: !!q.rankingData,
+    hasLinearScaleData: !!q.linearScaleData,
+    hasPreferenceTestData: !!q.preferenceTestData,
+    hasNavigationFlowData: !!q.navigationFlowData
+  })));
 
   return (
     <div className="flex gap-8">
@@ -161,23 +190,19 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             conditionalityDisabled={q.conditionalityDisabled}
             required={q.required}
             hasNewData={q.hasNewData}
-            viewType="sentiment"
-            sentimentData={{
-              id: q.questionId,
-              questionNumber: q.questionId,
-              questionText: q.questionText,
-              questionType: q.questionType,
-              required: q.required,
-              conditionalityDisabled: q.conditionalityDisabled,
-              sentimentResults: q.sentimentResults,
-              themes: q.themes,
-              keywords: q.keywords,
-              sentimentAnalysis: q.sentimentAnalysis
-            }}
-            initialActiveTab="sentiment"
-            themeImageSrc={''}
-            onFilter={() => { }}
-            onUpdate={() => { }}
+            viewType={q.viewType}
+            sentimentData={q.sentimentData}
+            choiceData={q.choiceData}
+            rankingData={q.rankingData}
+            linearScaleData={q.linearScaleData}
+            ratingData={q.ratingData}
+            preferenceTestData={q.preferenceTestData}
+            imageSelectionData={q.imageSelectionData}
+            navigationFlowData={q.navigationFlowData}
+            initialActiveTab={q.initialActiveTab}
+            themeImageSrc={q.themeImageSrc}
+            onFilter={handleFilter}
+            onUpdate={handleUpdate}
           />
         ))}
       </div>

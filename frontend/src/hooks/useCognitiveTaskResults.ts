@@ -213,9 +213,36 @@ export function useCognitiveTaskResults(researchId: string) {
                 keywords: []
               };
             }
+
+            // Extraer el texto de la respuesta
+            let responseText = '';
+            if (typeof response.response === 'string') {
+              responseText = response.response;
+            } else if (response.response && typeof response.response === 'object') {
+              responseText = response.response.text || response.response.value || JSON.stringify(response.response);
+            }
+
+            // Clasificar sentimiento básico
+            let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
+            if (responseText.length > 0) {
+              const positiveWords = ['bueno', 'excelente', 'me gusta', 'genial', 'perfecto', 'amazing', 'great', 'good', 'love', 'like'];
+              const negativeWords = ['malo', 'terrible', 'no me gusta', 'horrible', 'pésimo', 'bad', 'terrible', 'hate', 'dislike', 'awful'];
+
+              const lowerText = responseText.toLowerCase();
+              const positiveCount = positiveWords.filter(word => lowerText.includes(word)).length;
+              const negativeCount = negativeWords.filter(word => lowerText.includes(word)).length;
+
+              if (positiveCount > negativeCount) {
+                sentiment = 'positive';
+              } else if (negativeCount > positiveCount) {
+                sentiment = 'negative';
+              }
+            }
+
             questionData.sentimentData.responses.push({
-              text: response.response.text || response.response,
-              sentiment: response.response.sentiment || 'neutral'
+              id: `sentiment-${questionData.sentimentData.responses.length + 1}-${participant.participantId}`,
+              text: responseText,
+              sentiment: sentiment
             });
             break;
 
@@ -228,7 +255,22 @@ export function useCognitiveTaskResults(researchId: string) {
                 totalResponses: 0
               };
             }
+
             // Procesar opciones de selección
+            const selectedOption = response.response?.value || response.response?.selected || response.response;
+            if (selectedOption) {
+              const existingOption = questionData.choiceData.options.find(opt => opt.text === selectedOption);
+              if (existingOption) {
+                existingOption.percentage += 1;
+              } else {
+                questionData.choiceData.options.push({
+                  id: `option-${questionData.choiceData.options.length + 1}`,
+                  text: selectedOption,
+                  percentage: 1,
+                  color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
+                });
+              }
+            }
             break;
 
           case 'cognitive_linear_scale':
@@ -241,7 +283,12 @@ export function useCognitiveTaskResults(researchId: string) {
                 totalResponses: 0
               };
             }
+
             // Procesar escala lineal
+            const scaleValue = response.response?.value || response.response;
+            if (typeof scaleValue === 'number') {
+              questionData.linearScaleData.distribution[scaleValue] = (questionData.linearScaleData.distribution[scaleValue] || 0) + 1;
+            }
             break;
 
           case 'cognitive_ranking':
@@ -250,7 +297,25 @@ export function useCognitiveTaskResults(researchId: string) {
                 options: []
               };
             }
+
             // Procesar ranking
+            const rankingData = response.response?.ranking || response.response;
+            if (Array.isArray(rankingData)) {
+              rankingData.forEach((item, index) => {
+                const existingOption = questionData.rankingData!.options.find(opt => opt.text === item);
+                if (existingOption) {
+                  existingOption.mean = (existingOption.mean + (index + 1)) / 2;
+                } else {
+                  questionData.rankingData!.options.push({
+                    id: `rank-${questionData.rankingData!.options.length + 1}`,
+                    text: String(item),
+                    mean: index + 1,
+                    responseTime: '0s',
+                    distribution: {}
+                  });
+                }
+              });
+            }
             break;
 
           case 'cognitive_preference_test':
@@ -262,17 +327,24 @@ export function useCognitiveTaskResults(researchId: string) {
                 totalParticipants: responses.length
               };
             }
+
             // Procesar test de preferencia
             console.log(`[useCognitiveTaskResults] 📊 Procesando preference_test:`, response.response);
 
-            // Agregar datos mock para demostración
-            if (!questionData.preferenceTestData.options.length) {
-              questionData.preferenceTestData.options = [
-                { name: 'Opción A', selected: 1, percentage: 100, color: '#3B82F6' },
-                { name: 'Opción B', selected: 0, percentage: 0, color: '#10B981' }
-              ];
-              questionData.preferenceTestData.totalSelections = 1;
-              questionData.preferenceTestData.preferenceAnalysis = 'Análisis de preferencias basado en la respuesta del participante.';
+            const preferenceSelection = response.response?.selected || response.response?.preference || response.response;
+            if (preferenceSelection) {
+              const existingOption = questionData.preferenceTestData.options.find(opt => opt.name === preferenceSelection);
+              if (existingOption) {
+                existingOption.selected += 1;
+              } else {
+                questionData.preferenceTestData.options.push({
+                  id: `pref-${questionData.preferenceTestData.options.length + 1}`,
+                  name: String(preferenceSelection),
+                  selected: 1,
+                  percentage: 0,
+                  color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
+                });
+              }
             }
             break;
 
@@ -364,6 +436,67 @@ export function useCognitiveTaskResults(researchId: string) {
       });
     });
 
+    // Calcular porcentajes y métricas finales
+    questionMap.forEach((questionData) => {
+      // Calcular porcentajes para choice data
+      if (questionData.choiceData) {
+        const total = questionData.choiceData.options.reduce((sum, opt) => sum + opt.percentage, 0);
+        questionData.choiceData.options.forEach(opt => {
+          opt.percentage = total > 0 ? Math.round((opt.percentage / total) * 100) : 0;
+        });
+        questionData.choiceData.totalResponses = total;
+      }
+
+      // Calcular promedio para linear scale
+      if (questionData.linearScaleData) {
+        const values = Object.entries(questionData.linearScaleData.distribution).map(([value, count]) => ({
+          value: parseInt(value),
+          count
+        }));
+        const total = values.reduce((sum, item) => sum + item.count, 0);
+        const average = values.reduce((sum, item) => sum + (item.value * item.count), 0) / total;
+        questionData.linearScaleData.average = Math.round(average * 10) / 10;
+        questionData.linearScaleData.totalResponses = total;
+      }
+
+      // Calcular porcentajes para preference test
+      if (questionData.preferenceTestData) {
+        const total = questionData.preferenceTestData.options.reduce((sum, opt) => sum + opt.selected, 0);
+        questionData.preferenceTestData.options.forEach(opt => {
+          opt.percentage = total > 0 ? Math.round((opt.selected / total) * 100) : 0;
+        });
+        questionData.preferenceTestData.totalSelections = total;
+
+        // Log para debuggear preference test
+        console.log(`[useCognitiveTaskResults] 🎯 PreferenceTest data:`, {
+          questionId: questionData.questionId,
+          options: questionData.preferenceTestData.options,
+          totalSelections: questionData.preferenceTestData.totalSelections
+        });
+      }
+
+      // Generar análisis de sentimiento para texto
+      if (questionData.sentimentData && questionData.sentimentData.responses.length > 0) {
+        const positiveCount = questionData.sentimentData.responses.filter(r => r.sentiment === 'positive').length;
+        const negativeCount = questionData.sentimentData.responses.filter(r => r.sentiment === 'negative').length;
+        const neutralCount = questionData.sentimentData.responses.filter(r => r.sentiment === 'neutral').length;
+
+        const total = questionData.sentimentData.responses.length;
+        const positivePercentage = Math.round((positiveCount / total) * 100);
+        const negativePercentage = Math.round((negativeCount / total) * 100);
+        const neutralPercentage = Math.round((neutralCount / total) * 100);
+
+        questionData.sentimentData.analysis = {
+          text: `Análisis de sentimiento: ${positivePercentage}% positivo, ${negativePercentage}% negativo, ${neutralPercentage}% neutral.`,
+          actionables: [
+            positivePercentage > 50 ? 'La mayoría de respuestas son positivas' : '',
+            negativePercentage > 30 ? 'Considerar mejorar aspectos negativos' : '',
+            neutralPercentage > 50 ? 'Necesita más engagement' : ''
+          ].filter(Boolean)
+        };
+      }
+    });
+
     return Array.from(questionMap.values());
   };
 
@@ -422,6 +555,22 @@ export function useCognitiveTaskResults(researchId: string) {
       // Procesar datos por tipo de pregunta
       const processed = processDataByType(cognitiveResponses);
       console.log(`[useCognitiveTaskResults] ✅ Datos procesados:`, processed);
+
+      // Log detallado de cada pregunta procesada
+      processed.forEach((questionData, index) => {
+        console.log(`[useCognitiveTaskResults] 📊 Pregunta ${index + 1}:`, {
+          questionId: questionData.questionId,
+          questionType: questionData.questionType,
+          totalResponses: questionData.totalResponses,
+          hasSentimentData: !!questionData.sentimentData,
+          hasChoiceData: !!questionData.choiceData,
+          hasRankingData: !!questionData.rankingData,
+          hasLinearScaleData: !!questionData.linearScaleData,
+          hasPreferenceTestData: !!questionData.preferenceTestData,
+          hasNavigationFlowData: !!questionData.navigationFlowData
+        });
+      });
+
       setProcessedData(processed);
 
       setLoadingState('success');

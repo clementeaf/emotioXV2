@@ -54,6 +54,14 @@ export function MainContent({
         />
       )}
 
+      {/* Debug: Mostrar si no hay sentimentResults */}
+      {!data.sentimentResults && (
+        <div className="p-4 text-center text-gray-500">
+          <p>No hay datos de sentimiento disponibles</p>
+          <p className="text-sm">data.sentimentResults: {JSON.stringify(data.sentimentResults)}</p>
+        </div>
+      )}
+
       {/* Panel derecho: Análisis de sentimiento */}
       <div className="max-h-[500px] overflow-y-auto">
         {/* Pestañas */}

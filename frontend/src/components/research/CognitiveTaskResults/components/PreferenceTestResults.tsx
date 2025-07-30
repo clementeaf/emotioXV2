@@ -26,6 +26,16 @@ interface PreferenceTestResultsProps {
 }
 
 export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
+  // Verificar que los datos sean válidos
+  if (!data || !data.options || !Array.isArray(data.options)) {
+    console.error('[PreferenceTestResults] ❌ Datos inválidos:', data);
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-500">No hay datos de preferencias disponibles.</p>
+      </div>
+    );
+  }
+
   const {
     question,
     description,
@@ -57,7 +67,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
   const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   // Encontrar opciones más y menos preferidas
-  const sortedOptions = [...options].sort((a, b) => b.selected - a.selected);
+  const sortedOptions = [...options].filter(opt => opt && opt.name && typeof opt.name === 'string').sort((a, b) => b.selected - a.selected);
   const topPreferred = sortedOptions[0];
   const leastPreferredOption = sortedOptions[sortedOptions.length - 1];
 
@@ -93,7 +103,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
         </div>
 
         {/* Preferencia más alta */}
-        {topPreferred && (
+        {topPreferred && topPreferred.name && (
           <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
             <h4 className="text-md font-semibold text-green-800 mb-2">Opción Más Preferida</h4>
             <div className="flex items-center space-x-4">
@@ -111,7 +121,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
                     <span className="text-green-600 font-semibold text-xs">
-                      {topPreferred.name.charAt(0)}
+                      {typeof topPreferred.name === 'string' ? topPreferred.name.charAt(0) : '?'}
                     </span>
                   </div>
                 )}

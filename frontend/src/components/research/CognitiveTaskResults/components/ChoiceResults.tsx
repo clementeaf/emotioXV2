@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 
 // Interfaz para las opciones/respuestas
 export interface ChoiceOption {
@@ -25,6 +24,16 @@ interface ChoiceResultsProps {
 }
 
 export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
+  // Verificar que los datos sean válidos
+  if (!data || !data.options || !Array.isArray(data.options)) {
+    console.error('[ChoiceResults] ❌ Datos inválidos:', data);
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-500">No hay datos de selección disponibles.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-0">
       {/* Panel izquierdo: Opciones y porcentajes */}
@@ -37,9 +46,9 @@ export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
                 <span className="text-sm font-medium text-neutral-900">{option.percentage}%</span>
               </div>
               <div className="w-full bg-neutral-200 rounded-full h-2.5">
-                <div 
+                <div
                   className={`h-2.5 rounded-full ${option.color ? '' : 'bg-blue-600'}`}
-                  style={{ 
+                  style={{
                     width: `${option.percentage}%`,
                     backgroundColor: option.color || undefined
                   }}
@@ -87,7 +96,7 @@ export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
         {imageSrc && (
           <div className="mt-6">
             <div className="relative">
-              <img 
+              <img
                 src={imageSrc}
                 alt="Question visualization"
                 className="w-full rounded-md object-cover h-[200px]"
@@ -107,4 +116,4 @@ export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
       </div>
     </div>
   );
-} 
+}

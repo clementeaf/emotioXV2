@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { moduleResponsesAPI } from '@/config/api';
+import { useEffect, useState } from 'react';
 import { CPVData } from '../../../shared/interfaces/websocket-events.interface';
 
 export const useCPVData = (researchId: string) => {
@@ -7,8 +8,102 @@ export const useCPVData = (researchId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simular carga de datos
-    setIsLoading(false);
+    const fetchCPVData = async () => {
+      if (!researchId) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        console.log(`[useCPVData] 🔍 Obteniendo datos CPV para research: ${researchId}`);
+
+        // Usar el endpoint de SmartVOC que ya tenemos funcionando
+        const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
+
+        if (response.data) {
+          // Procesar los datos de SmartVOC para obtener métricas CPV
+          const smartVOCResponses = response.data;
+
+          // Extraer scores de CSAT, CES, NPS, NEV, CV
+          const csatScores: number[] = [];
+          const cesScores: number[] = [];
+          const npsScores: number[] = [];
+          const nevScores: number[] = [];
+          const cvScores: number[] = [];
+
+          smartVOCResponses.forEach((participant: any) => {
+            if (participant.responses && Array.isArray(participant.responses)) {
+              participant.responses.forEach((response: any) => {
+                if (response.questionKey && response.response) {
+                  const responseValue = parseFloat(response.response);
+                  if (!isNaN(responseValue) && responseValue > 0) {
+                    if (response.questionKey.toLowerCase().includes('csat')) {
+                      csatScores.push(responseValue);
+                    } else if (response.questionKey.toLowerCase().includes('ces')) {
+                      cesScores.push(responseValue);
+                    } else if (response.questionKey.toLowerCase().includes('nps')) {
+                      npsScores.push(responseValue);
+                    } else if (response.questionKey.toLowerCase().includes('nev')) {
+                      nevScores.push(responseValue);
+                    } else if (response.questionKey.toLowerCase().includes('cv')) {
+                      cvScores.push(responseValue);
+                    }
+                  }
+                }
+              });
+            }
+          });
+
+          // Calcular métricas CPV
+          const totalResponses = smartVOCResponses.length;
+          const cpvValue = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
+          const satisfaction = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
+
+          // Calcular porcentajes
+          const csatPercentage = csatScores.length > 0 ? Math.round((csatScores.filter(score => score >= 4).length / csatScores.length) * 100) : 0;
+          const cesPercentage = cesScores.length > 0 ? Math.round((cesScores.filter(score => score <= 2).length / cesScores.length) * 100) : 0;
+
+          // Calcular retención basada en NPS
+          const promoters = npsScores.filter(score => score >= 9).length;
+          const neutrals = npsScores.filter(score => score >= 7 && score <= 8).length;
+          const retention = totalResponses > 0 ? Math.round(((promoters + neutrals) / totalResponses) * 100) : 0;
+
+          // Determinar impacto y tendencia
+          const impact = totalResponses > 0 && promoters > (npsScores.length - promoters - neutrals) ? 'Alto' : totalResponses > 0 ? 'Medio' : 'Bajo';
+          const trend = totalResponses > 0 && promoters > (npsScores.length - promoters - neutrals) ? 'Positiva' : totalResponses > 0 ? 'Neutral' : 'Negativa';
+
+          // Calcular valores pico
+          const peakValue = Math.max(cpvValue, satisfaction, retention);
+
+          const cpvData: CPVData = {
+            cpvValue,
+            satisfaction,
+            retention,
+            impact,
+            trend,
+            csatPercentage,
+            cesPercentage,
+            cvValue: cvScores.length > 0 ? Math.round((cvScores.reduce((a, b) => a + b, 0) / cvScores.length) * 10) / 10 : 0,
+            nevValue: nevScores.length > 0 ? Math.round((nevScores.reduce((a, b) => a + b, 0) / nevScores.length) * 10) / 10 : 0,
+            npsValue: npsScores.length > 0 ? Math.round(((promoters - (npsScores.length - promoters - neutrals)) / npsScores.length) * 100) : 0,
+            peakValue
+          };
+
+          console.log(`[useCPVData] ✅ Datos CPV procesados:`, cpvData);
+          setData(cpvData);
+        } else {
+          console.warn(`[useCPVData] ⚠️ No se recibieron datos`);
+          setError('No se recibieron datos del servidor');
+        }
+      } catch (err: any) {
+        console.error(`[useCPVData] ❌ Error obteniendo datos CPV:`, err);
+        setError(err.message || 'Error desconocido');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCPVData();
   }, [researchId]);
 
   return {

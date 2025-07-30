@@ -1,6 +1,5 @@
 import { ChevronDown, Target } from 'lucide-react';
 import {
-  Area,
   Bar,
   CartesianGrid,
   ComposedChart,
@@ -15,6 +14,68 @@ import { Card } from '@/components/ui/Card';
 import { CircularProgress } from '@/components/ui/CircularProgress';
 import Progress from '@/components/ui/progress';
 
+// Componente Skeleton para NPSQuestion
+const NPSQuestionSkeleton = () => {
+  return (
+    <Card className="p-6 space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-64 h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-20 h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-24 h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-16 h-6 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-16 h-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-12 h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-8 h-4 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-12 h-4 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-2 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-12 h-4 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-2 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="w-64 h-4 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+
+        <div className="flex justify-end">
+          <div className="w-24 h-24 bg-gray-200 rounded-full animate-pulse"></div>
+        </div>
+
+        <div className="h-[480px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-3 bg-gray-200 rounded-full flex items-center justify-center animate-pulse">
+              <div className="w-6 h-6 bg-gray-300 rounded"></div>
+            </div>
+            <div className="w-32 h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="w-48 h-3 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
 interface NPSQuestionProps {
   monthlyData: Array<{
     month: string;
@@ -28,23 +89,18 @@ interface NPSQuestionProps {
   detractors?: number;
   neutrals?: number;
   totalResponses?: number;
+  isLoading?: boolean; // Nueva prop para loading
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
-        <p className="text-sm text-gray-600 mb-2">{label}</p>
+      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <p className="text-sm font-medium text-gray-900">{label}</p>
         {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-sm font-medium">
-              {entry.name}: {entry.value}%
-            </span>
-          </div>
+          <p key={index} className="text-sm text-gray-600" style={{ color: entry.color }}>
+            {entry.name}: {entry.value}
+          </p>
         ))}
       </div>
     );
@@ -53,22 +109,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const CustomLegend = () => (
-  <div className="flex items-center gap-6 mb-2">
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-      <span className="text-sm text-gray-700">NPS Ratio</span>
+  <div className="flex items-center space-x-4 text-sm">
+    <div className="flex items-center space-x-2">
+      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+      <span className="text-gray-600">Promoters</span>
     </div>
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full bg-[#8DD1A1]"></div>
-      <span className="text-sm text-gray-700">Promoters</span>
+    <div className="flex items-center space-x-2">
+      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+      <span className="text-gray-600">Neutrals</span>
     </div>
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full bg-gray-200"></div>
-      <span className="text-sm text-gray-700">Neutrals</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full bg-[#F89E9E]"></div>
-      <span className="text-sm text-gray-700">Detractors</span>
+    <div className="flex items-center space-x-2">
+      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+      <span className="text-gray-600">Detractors</span>
     </div>
   </div>
 );
@@ -79,7 +131,8 @@ export function NPSQuestion({
   promoters = 0,
   detractors = 0,
   neutrals = 0,
-  totalResponses = 0
+  totalResponses = 0,
+  isLoading = false
 }: NPSQuestionProps) {
   const hasData = monthlyData.length > 0;
 
@@ -87,6 +140,11 @@ export function NPSQuestion({
   const total = promoters + detractors + neutrals;
   const promotersPercentage = total > 0 ? Math.round((promoters / total) * 100) : 0;
   const detractorsPercentage = total > 0 ? Math.round((detractors / total) * 100) : 0;
+
+  // Si está cargando, mostrar skeleton
+  if (isLoading) {
+    return <NPSQuestionSkeleton />;
+  }
 
   return (
     <Card className="p-6 space-y-6">
@@ -202,42 +260,22 @@ export function NPSQuestion({
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar
-                    dataKey="detractors"
-                    stackId="a"
-                    fill="#F89E9E"
-                    fillOpacity={0.9}
-                    radius={[20, 20, 20, 20]}
-                    name="Detractors"
-                    barSize={20}
+                    dataKey="promoters"
+                    name="Promoters"
+                    fill="#10B981"
+                    radius={[4, 4, 0, 0]}
                   />
                   <Bar
                     dataKey="neutrals"
-                    stackId="a"
-                    fill="#E5E7EB"
-                    fillOpacity={0.9}
-                    radius={[20, 20, 20, 20]}
                     name="Neutrals"
-                    barSize={20}
+                    fill="#F59E0B"
+                    radius={[4, 4, 0, 0]}
                   />
                   <Bar
-                    dataKey="promoters"
-                    stackId="a"
-                    fill="#8DD1A1"
-                    fillOpacity={0.9}
-                    radius={[20, 20, 20, 20]}
-                    name="Promoters"
-                    barSize={20}
-                  />
-                  <Area
-                    type="natural"
-                    dataKey="npsRatio"
-                    stroke="#3B52E8"
-                    strokeWidth={4}
-                    fillOpacity={1}
-                    fill="url(#npsGradient)"
-                    dot={false}
-                    activeDot={{ r: 8, strokeWidth: 2, stroke: '#ffffff' }}
-                    name="NPS Ratio"
+                    dataKey="detractors"
+                    name="Detractors"
+                    fill="#EF4444"
+                    radius={[4, 4, 0, 0]}
                   />
                 </ComposedChart>
               </ResponsiveContainer>

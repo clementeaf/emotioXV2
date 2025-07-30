@@ -1,19 +1,52 @@
 'use client';
 
-import { ArrowUpRight, Info } from 'lucide-react';
-import { ReactNode, useState } from 'react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { ArrowUp, Info } from 'lucide-react';
+import { useState } from 'react';
 
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 
 import { CPVChartData } from './types';
 
-// Componente Tooltip personalizado
-interface UITooltipProps {
-  content: ReactNode;
-  children: ReactNode;
-}
+// Componente Skeleton para CPVCard
+const CPVCardSkeleton = () => {
+  return (
+    <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white h-96">
+      <div className="absolute top-4 right-4 z-20">
+        <div className="flex bg-white/20 rounded-lg p-1">
+          {['Hoy', 'Semana', 'Mes'].map((period) => (
+            <button
+              key={period}
+              className="px-3 py-1 text-xs rounded-md bg-white/20 text-white/60"
+              disabled
+            >
+              {period}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative z-10 p-6 pt-16">
+        <div className="w-full mb-6">
+          <div className="flex items-center gap-5">
+            <h3 className="text-lg font-medium leading-tight">Valor percibido por el cliente</h3>
+            <div className="w-4 h-4 bg-white/20 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center h-48">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
+              <div className="w-8 h-8 bg-white/40 rounded"></div>
+            </div>
+            <div className="w-24 h-6 bg-white/20 rounded animate-pulse mb-2"></div>
+            <div className="w-48 h-4 bg-white/20 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};
 
 const UITooltip = ({ content, children }: UITooltipProps) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -51,26 +84,30 @@ interface CPVCardProps {
   csatPercentage?: number; // % de registros 4 y 5
   cesPercentage?: number;  // % de registros 1 y 2
   peakValue?: number;      // Valor pico para el gráfico
+  isLoading?: boolean;     // Nueva prop para loading
 }
 
-const TimeRangeSelector = ({ timeRange, onChange }: {
-  timeRange: 'Today' | 'Week' | 'Month';
-  onChange: (range: 'Today' | 'Week' | 'Month') => void;
-}) => {
+const TimeRangeSelector = ({ timeRange, onChange }: { timeRange: 'Today' | 'Week' | 'Month'; onChange: (range: 'Today' | 'Week' | 'Month') => void }) => {
+  const periods = [
+    { key: 'Today' as const, label: 'Hoy' },
+    { key: 'Week' as const, label: 'Semana' },
+    { key: 'Month' as const, label: 'Mes' }
+  ];
+
   return (
-    <div className="flex items-center bg-white/10 rounded-lg p-1">
-      {(['Today', 'Week', 'Month'] as const).map((range) => (
+    <div className="flex bg-white/20 rounded-lg p-1">
+      {periods.map((period) => (
         <button
-          key={range}
+          key={period.key}
+          onClick={() => onChange(period.key)}
           className={cn(
-            'px-3 py-1.5 text-xs font-medium rounded transition-all',
-            timeRange === range
+            'px-3 py-1 text-xs rounded-md transition-colors',
+            timeRange === period.key
               ? 'bg-white text-blue-600'
-              : 'text-white/80 hover:bg-white/5'
+              : 'text-white/60 hover:text-white'
           )}
-          onClick={() => onChange(range)}
         >
-          {range === 'Today' ? 'Hoy' : range === 'Week' ? 'Semana' : 'Mes'}
+          {period.label}
         </button>
       ))}
     </div>
@@ -90,7 +127,8 @@ export const CPVCard = ({
   hasData = true,
   csatPercentage = 0,
   cesPercentage = 0,
-  peakValue = 0
+  peakValue = 0,
+  isLoading = false
 }: CPVCardProps) => {
   const percentChange = 2.5; // Valor de ejemplo para el cambio porcentual
 
@@ -102,8 +140,14 @@ export const CPVCard = ({
     hasData: hasData,
     csatPercentage,
     cesPercentage,
-    peakValue
+    peakValue,
+    isLoading
   });
+
+  // Si está cargando, mostrar skeleton
+  if (isLoading) {
+    return <CPVCardSkeleton />;
+  }
 
   // Si no hay datos, mostrar mensaje informativo
   if (!hasData) {
@@ -146,7 +190,6 @@ export const CPVCard = ({
 
   return (
     <Card className={cn('relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white h-96', className)}>
-      {/* Selector de tiempo en la parte superior */}
       <div className="absolute top-4 right-4 z-20">
         <TimeRangeSelector
           timeRange={timeRange}
@@ -154,76 +197,60 @@ export const CPVCard = ({
         />
       </div>
 
-      {/* Contenido principal */}
       <div className="relative z-10 p-6 pt-16">
-        {/* Métricas principales */}
-        <div className="grid grid-cols-12 gap-4 mb-4">
-          {/* CPV Estimation */}
-          <div className="col-span-6">
-            <div className="flex items-baseline">
-              <span className="text-4xl font-bold tracking-tight">{value.toFixed(2)}</span>
-              <div className={cn(
-                'flex items-center px-1.5 py-0.5 rounded ml-2 self-start mt-2',
-                percentChange >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-              )}>
-                <ArrowUpRight className="w-3 h-3 mr-0.5" />
-                <span className="text-xs font-medium">+{percentChange}%</span>
-              </div>
-            </div>
-            <p className="mt-1 text-sm text-white/70">CPV Estimation</p>
-            <p className="text-xs text-white/60">Customer Perceived Value</p>
-          </div>
-
-          {/* Valor pico */}
-          <div className="col-span-6 flex justify-end">
-            <div className="bg-white/20 rounded-lg p-3 text-right">
-              <span className="text-2xl font-bold">{peakValue.toFixed(2)}</span>
-            </div>
+        <div className="w-full mb-6">
+          <div className="flex items-center gap-5">
+            <h3 className="text-lg font-medium leading-tight">Valor percibido por el cliente</h3>
+            <UITooltip content="Medida que indica cuánto valor perciben los clientes en relación al precio pagado">
+              <Info className="w-4 h-4 mt-1 text-white/60 hover:text-white cursor-help transition-colors" />
+            </UITooltip>
           </div>
         </div>
 
-        {/* Gráfico de fondo */}
-        <div className="absolute bottom-0 left-0 right-0 h-48 -ml-6">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={trendData}
-              margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="cpvGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                tick={false}
-                padding={{ left: 0, right: 0 }}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={false}
-                domain={[0, 100]}
-                padding={{ top: 10, bottom: 10 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#ffffff"
-                strokeWidth={2}
-                fill="url(#cpvGradient)"
-                isAnimationActive={true}
-                animationDuration={1500}
-                animationEasing="ease-out"
-                dot={false}
-                activeDot={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-bold">{value.toFixed(2)}</span>
+            <div className="flex items-center gap-1 text-green-400">
+              <ArrowUp className="w-4 h-4" />
+              <span className="text-sm">+{percentChange}%</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-white/60">CPV Estimation</div>
+            <div className="text-xs text-white/40">Customer Perceived Value</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold">{satisfaction.toFixed(1)}</div>
+            <div className="text-xs text-white/60">Satisfaction</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold">{retention}%</div>
+            <div className="text-xs text-white/60">Retention</div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-white/60">Impact:</span>
+            <span className={`px-2 py-1 rounded-full text-xs ${impact === 'Alto' ? 'bg-green-500/20 text-green-300' :
+                impact === 'Medio' ? 'bg-yellow-500/20 text-yellow-300' :
+                  'bg-red-500/20 text-red-300'
+              }`}>
+              {impact}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-white/60">Trend:</span>
+            <span className={`px-2 py-1 rounded-full text-xs ${trend === 'Positiva' ? 'bg-green-500/20 text-green-300' :
+                trend === 'Neutral' ? 'bg-yellow-500/20 text-yellow-300' :
+                  'bg-red-500/20 text-red-300'
+              }`}>
+              {trend}
+            </span>
+          </div>
         </div>
       </div>
     </Card>

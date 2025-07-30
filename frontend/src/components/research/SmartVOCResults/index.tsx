@@ -308,6 +308,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 csatPercentage={finalCPVData.csatPercentage}
                 cesPercentage={finalCPVData.cesPercentage}
                 peakValue={finalCPVData.peakValue}
+                isLoading={cpvLoading}
               />
             )}
           </div>
@@ -332,6 +333,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               <TrustRelationshipFlow
                 data={finalTrustFlowDataForDemo}
                 hasData={hasTrustFlowDataForDemo}
+                isLoading={trustFlowLoading}
               />
             )}
           </div>
@@ -510,6 +512,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 detractors={smartVOCData?.detractors || 0}
                 neutrals={smartVOCData?.neutrals || 0}
                 totalResponses={smartVOCData?.totalResponses || 0}
+                isLoading={smartVOCLoading}
               />
 
               {/* 2.6.- Question: Voice of Customer (VOC) */}

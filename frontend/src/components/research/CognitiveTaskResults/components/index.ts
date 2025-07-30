@@ -31,4 +31,4 @@ export { RatingResults, type RatingData } from './RatingResults';
 export { DebugInfo } from './DebugInfo';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
-export { LoadingState } from './LoadingState';
+export { CognitiveTaskResultsSkeleton, LoadingState } from './LoadingState';

@@ -24,6 +24,12 @@ interface FiltersProps {
 
 export function Filters({ className, researchId }: FiltersProps) {
   const { data: demographicsData, isLoading, error } = useDemographicsData(researchId);
+
+  // Debug logs
+  console.log('[Filters] 🔍 Props:', { researchId });
+  console.log('[Filters] 📊 Demographics data:', demographicsData);
+  console.log('[Filters] ⏳ Loading:', isLoading);
+  console.log('[Filters] ❌ Error:', error);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dynamicHeight, setDynamicHeight] = useState<number | 'auto'>('auto');
   const [isAdjusting, setIsAdjusting] = useState(false);
@@ -205,6 +211,26 @@ export function Filters({ className, researchId }: FiltersProps) {
               <div>Total de participantes: {totalParticipants}</div>
               <div>Países: {demographicsData?.countries?.length || 0}</div>
               <div>Rangos de edad: {demographicsData?.ageRanges?.length || 0}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {isLoading && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-center">
+              <div className="w-4 h-4 bg-gray-200 rounded animate-pulse mr-2"></div>
+              <span className="text-sm text-gray-600">Cargando filtros...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <div className="text-sm text-red-800">
+              <div>Error al cargar filtros</div>
+              <div className="text-xs">{error}</div>
             </div>
           </div>
         )}
