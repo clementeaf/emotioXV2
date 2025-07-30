@@ -36,6 +36,26 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
     );
   }
 
+  // Función para extraer el nombre de la opción de manera segura
+  const extractOptionName = (option: any): string => {
+    if (typeof option.name === 'string') {
+      return option.name;
+    } else if (typeof option.name === 'object' && option.name !== null) {
+      return option.name.name ||
+        option.name.text ||
+        option.name.label ||
+        option.name.value ||
+        option.name.title ||
+        JSON.stringify(option.name);
+    } else {
+      return String(option.name || 'Opción sin nombre');
+    }
+  };
+
+  // Debug log para ver los datos recibidos
+  console.log('[PreferenceTestResults] 📊 Data received:', data);
+  console.log('[PreferenceTestResults] 🎯 Options:', data.options.map(opt => ({ name: opt.name, extracted: extractOptionName(opt) })));
+
   const {
     question,
     description,
@@ -50,14 +70,14 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
 
   // Preparar datos para gráficos
   const barChartData = options.map(option => ({
-    name: option.name,
+    name: extractOptionName(option),
     selections: option.selected,
     percentage: option.percentage,
     color: option.color || '#3B82F6'
   }));
 
   const pieChartData = options.map(option => ({
-    name: option.name,
+    name: extractOptionName(option),
     value: option.selected,
     percentage: option.percentage,
     color: option.color || '#3B82F6'
@@ -67,7 +87,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
   const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   // Encontrar opciones más y menos preferidas
-  const sortedOptions = [...options].filter(opt => opt && opt.name && typeof opt.name === 'string').sort((a, b) => b.selected - a.selected);
+  const sortedOptions = [...options].filter(opt => opt && opt.name).sort((a, b) => b.selected - a.selected);
   const topPreferred = sortedOptions[0];
   const leastPreferredOption = sortedOptions[sortedOptions.length - 1];
 
@@ -103,7 +123,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
         </div>
 
         {/* Preferencia más alta */}
-        {topPreferred && topPreferred.name && (
+        {topPreferred && (
           <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
             <h4 className="text-md font-semibold text-green-800 mb-2">Opción Más Preferida</h4>
             <div className="flex items-center space-x-4">
@@ -111,7 +131,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
                 {topPreferred.image ? (
                   <img
                     src={topPreferred.image}
-                    alt={topPreferred.name}
+                    alt={extractOptionName(topPreferred)}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -121,13 +141,13 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
                     <span className="text-green-600 font-semibold text-xs">
-                      {typeof topPreferred.name === 'string' ? topPreferred.name.charAt(0) : '?'}
+                      {extractOptionName(topPreferred).charAt(0)}
                     </span>
                   </div>
                 )}
               </div>
               <div>
-                <div className="text-lg font-semibold text-green-900">{topPreferred.name}</div>
+                <div className="text-lg font-semibold text-green-900">{extractOptionName(topPreferred)}</div>
                 <div className="text-sm text-green-700">
                   {topPreferred.selected} selecciones ({topPreferred.percentage}%)
                 </div>
@@ -221,14 +241,14 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
               {options.map((option, index) => (
                 <tr key={option.id || `option-${index}`} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                    {option.name}
+                    {extractOptionName(option)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border flex items-center justify-center">
                       {option.image ? (
                         <img
                           src={option.image}
-                          alt={option.name}
+                          alt={extractOptionName(option)}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
@@ -238,7 +258,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                           <span className="text-gray-600 font-semibold text-xs">
-                            {option.name.charAt(0)}
+                            {extractOptionName(option).charAt(0)}
                           </span>
                         </div>
                       )}
@@ -269,8 +289,8 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
         <h4 className="text-md font-semibold text-gray-800 mb-2">Análisis de Preferencias</h4>
         <div className="text-sm text-gray-600 space-y-1">
-          <p>• <strong>Opción más preferida:</strong> {topPreferred?.name} ({topPreferred?.percentage}%)</p>
-          <p>• <strong>Opción menos preferida:</strong> {leastPreferredOption?.name} ({leastPreferredOption?.percentage}%)</p>
+          <p>• <strong>Opción más preferida:</strong> {topPreferred ? extractOptionName(topPreferred) : 'N/A'} ({topPreferred?.percentage || 0}%)</p>
+          <p>• <strong>Opción menos preferida:</strong> {leastPreferredOption ? extractOptionName(leastPreferredOption) : 'N/A'} ({leastPreferredOption?.percentage || 0}%)</p>
           <p>• <strong>Total de selecciones:</strong> {totalSelections}</p>
           <p>• <strong>Participantes:</strong> {totalParticipants}</p>
           {preferenceAnalysis && (
@@ -290,7 +310,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
                   {option.image ? (
                     <img
                       src={option.image}
-                      alt={option.name}
+                      alt={extractOptionName(option)}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -300,12 +320,12 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                       <span className="text-gray-600 font-semibold text-lg">
-                        {option.name.charAt(0)}
+                        {extractOptionName(option).charAt(0)}
                       </span>
                     </div>
                   )}
                 </div>
-                <div className="text-sm font-medium text-gray-900 mb-1">{option.name}</div>
+                <div className="text-sm font-medium text-gray-900 mb-1">{extractOptionName(option)}</div>
                 <div className="text-xs text-gray-600">{option.selected} selecciones</div>
                 <div className="text-xs text-purple-600 font-medium">{option.percentage}%</div>
               </div>

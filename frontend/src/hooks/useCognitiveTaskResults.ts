@@ -51,7 +51,7 @@ export interface ProcessedCognitiveData {
 
   choiceData?: {
     question: string;
-    options: Array<{ text: string; percentage: number; color?: string }>;
+    options: Array<{ text: string; count: number; percentage: number; color?: string }>;
     totalResponses: number;
     responseDuration?: string;
   };
@@ -261,12 +261,13 @@ export function useCognitiveTaskResults(researchId: string) {
             if (selectedOption) {
               const existingOption = questionData.choiceData.options.find(opt => opt.text === selectedOption);
               if (existingOption) {
-                existingOption.percentage += 1;
+                existingOption.count = (existingOption.count || 0) + 1;
               } else {
                 questionData.choiceData.options.push({
                   id: `option-${questionData.choiceData.options.length + 1}`,
                   text: selectedOption,
-                  percentage: 1,
+                  count: 1,
+                  percentage: 0, // Se calculará después
                   color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
                 });
               }
@@ -333,13 +334,31 @@ export function useCognitiveTaskResults(researchId: string) {
 
             const preferenceSelection = response.response?.selected || response.response?.preference || response.response;
             if (preferenceSelection) {
-              const existingOption = questionData.preferenceTestData.options.find(opt => opt.name === preferenceSelection);
+              // Extraer el nombre de la preferencia de manera segura
+              let preferenceName = '';
+              if (typeof preferenceSelection === 'string') {
+                preferenceName = preferenceSelection;
+              } else if (typeof preferenceSelection === 'object' && preferenceSelection !== null) {
+                // Intentar extraer el nombre de diferentes propiedades posibles
+                preferenceName = preferenceSelection.name ||
+                  preferenceSelection.text ||
+                  preferenceSelection.label ||
+                  preferenceSelection.value ||
+                  preferenceSelection.title ||
+                  JSON.stringify(preferenceSelection);
+              } else {
+                preferenceName = String(preferenceSelection);
+              }
+
+              console.log(`[useCognitiveTaskResults] 🎯 Preference name extracted:`, preferenceName);
+
+              const existingOption = questionData.preferenceTestData.options.find(opt => opt.name === preferenceName);
               if (existingOption) {
                 existingOption.selected += 1;
               } else {
                 questionData.preferenceTestData.options.push({
                   id: `pref-${questionData.preferenceTestData.options.length + 1}`,
-                  name: String(preferenceSelection),
+                  name: preferenceName,
                   selected: 1,
                   percentage: 0,
                   color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
@@ -440,11 +459,18 @@ export function useCognitiveTaskResults(researchId: string) {
     questionMap.forEach((questionData) => {
       // Calcular porcentajes para choice data
       if (questionData.choiceData) {
-        const total = questionData.choiceData.options.reduce((sum, opt) => sum + opt.percentage, 0);
+        const total = questionData.choiceData.options.reduce((sum, opt) => sum + (opt.count || 0), 0);
         questionData.choiceData.options.forEach(opt => {
-          opt.percentage = total > 0 ? Math.round((opt.percentage / total) * 100) : 0;
+          opt.percentage = total > 0 ? Math.round(((opt.count || 0) / total) * 100) : 0;
         });
         questionData.choiceData.totalResponses = total;
+
+        // Debug log para choice data
+        console.log(`[useCognitiveTaskResults] 🎯 Choice data processed:`, {
+          questionId: questionData.questionId,
+          options: questionData.choiceData.options,
+          totalResponses: questionData.choiceData.totalResponses
+        });
       }
 
       // Calcular promedio para linear scale

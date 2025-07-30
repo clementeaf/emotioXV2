@@ -5,6 +5,7 @@
 export interface ChoiceOption {
   id: string;
   text: string;
+  count: number;
   percentage: number;
   color?: string; // Color opcional para la barra
 }
@@ -24,6 +25,10 @@ interface ChoiceResultsProps {
 }
 
 export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
+  // Debug logs
+  console.log('[ChoiceResults] 📊 Data received:', data);
+  console.log('[ChoiceResults] 🎯 Options:', data.options);
+
   // Verificar que los datos sean válidos
   if (!data || !data.options || !Array.isArray(data.options)) {
     console.error('[ChoiceResults] ❌ Datos inválidos:', data);
@@ -43,7 +48,9 @@ export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
             <div key={option.id} className="flex flex-col">
               <div className="flex justify-between mb-1">
                 <span className="text-sm font-medium text-neutral-900">{option.text}</span>
-                <span className="text-sm font-medium text-neutral-900">{option.percentage}%</span>
+                <span className="text-sm font-medium text-neutral-900">
+                  {option.percentage}% ({option.count} respuestas)
+                </span>
               </div>
               <div className="w-full bg-neutral-200 rounded-full h-2.5">
                 <div

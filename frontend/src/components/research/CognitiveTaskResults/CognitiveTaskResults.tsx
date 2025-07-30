@@ -154,6 +154,16 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         }
       }),
       choiceData: data.choiceData,
+
+      // Debug log para choice data
+      ...(data.choiceData && {
+        _choiceDebug: {
+          questionId: data.questionId,
+          optionsCount: data.choiceData.options.length,
+          options: data.choiceData.options,
+          totalResponses: data.choiceData.totalResponses
+        }
+      }),
       rankingData: data.rankingData,
       linearScaleData: data.linearScaleData,
       ratingData: data.ratingData,
@@ -172,6 +182,8 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     hasSentimentData: !!q.sentimentData,
     sentimentResultsCount: q.sentimentData?.sentimentResults?.length || 0,
     hasChoiceData: !!q.choiceData,
+    choiceDataOptions: q.choiceData?.options?.length || 0,
+    choiceDataTotalResponses: q.choiceData?.totalResponses || 0,
     hasRankingData: !!q.rankingData,
     hasLinearScaleData: !!q.linearScaleData,
     hasPreferenceTestData: !!q.preferenceTestData,
