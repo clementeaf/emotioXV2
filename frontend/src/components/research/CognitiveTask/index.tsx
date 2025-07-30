@@ -4,16 +4,16 @@ import { Loader2 } from 'lucide-react';
 import React from 'react';
 
 import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
-import { Spinner } from '@/components/ui/Spinner';
+
 import { cn } from '@/lib/utils';
 
 import { ConfirmationModal } from '../SmartVOC/components/ConfirmationModal';
 
 import {
-    CognitiveTaskFooter,
-    CognitiveTaskHeader,
-    ErrorModal,
-    JsonPreviewModal
+  CognitiveTaskFooter,
+  CognitiveTaskHeader,
+  ErrorModal,
+  JsonPreviewModal
 } from './components';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { ProgressBar } from './components/ProgressBar';
@@ -91,7 +91,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         // console.log('[CognitiveTaskForm] Preguntas con archivos:', questionsWithFiles.length);
         questionsWithFiles.forEach(q => {
           // console.log(`[CognitiveTaskForm] Pregunta ${q.id} (${q.type}) tiene ${q.files?.length || 0} archivos:`,
-        //   q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key})));
+          //   q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key})));
         });
       }
     } else {
@@ -241,7 +241,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
  * Componente para mostrar el progreso de carga de archivos
  */
 const FileProgressIndicator = ({ progress, isLoading }: { progress: number; isLoading: boolean }) => {
-  if (!isLoading) {return null;}
+  if (!isLoading) { return null; }
 
   return (
     <div className="my-2">
@@ -265,7 +265,7 @@ const FileItem = ({ file, onDelete }: { file: any; onDelete: () => void }) => {
           {file.type?.startsWith('image/') && file.url && (
             <div className="relative w-12 h-12 overflow-hidden rounded border bg-gray-100 flex items-center justify-center">
               {file.isLoading ? (
-                <Spinner size="sm" />
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
               ) : (
                 <img src={file.url} alt={file.name} className="object-contain w-full h-full" />
               )}

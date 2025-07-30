@@ -167,12 +167,6 @@ export function NavigationTestResults({
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="font-medium text-lg">{step.description}</h3>
-          <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-md text-sm">
-            New data was obtained. Please update graph
-            <button className="ml-2 bg-blue-600 text-white px-2 py-0.5 rounded text-xs">
-              Update
-            </button>
-          </div>
         </div>
 
         <div className="p-2 border-b border-gray-200">

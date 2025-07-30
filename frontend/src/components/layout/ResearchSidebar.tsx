@@ -65,7 +65,6 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-md font-medium text-neutral-900 truncate">Usuario</p>
-            <p className="text-md text-neutral-500 truncate">Cargando...</p>
           </div>
         </div>
       );
@@ -194,7 +193,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     <div>
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>
-          {isLoading ? 'Cargando nombre...' : researchName}
+          {researchName}
         </h2>
       </div>
 
@@ -319,13 +318,9 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
         >
-          {isCheckingContent ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          )}
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
           {isCheckingContent ? 'Verificando...' : 'Publicar investigación'}
         </button>
         {!isPublishEnabled && !isCheckingContent && (

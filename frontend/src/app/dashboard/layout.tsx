@@ -28,9 +28,5 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <Suspense fallback={<div className="p-4 text-center">Cargando layout...</div>}>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
-    </Suspense>
-  );
+  return <DashboardLayoutContent>{children}</DashboardLayoutContent>;
 }

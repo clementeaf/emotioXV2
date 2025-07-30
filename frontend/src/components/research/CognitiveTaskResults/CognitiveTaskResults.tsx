@@ -31,14 +31,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     hasData
   } = useCognitiveTaskResults(researchId);
 
-  const handleUpdate = () => {
-    refetch();
-  };
 
-  // Mostrar loading
-  if (isLoading) {
-    return <CognitiveTaskResultsSkeleton />;
-  }
 
   // Mostrar error
   if (isError && error) {
@@ -191,6 +184,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     <div className="flex gap-8">
       <div className="flex-1 space-y-8">
         <CognitiveTaskHeader title="2.0.- Cognitive task" />
+
         {questions.map((q) => (
           <QuestionContainer
             key={q.key}
@@ -210,8 +204,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             navigationFlowData={q.navigationFlowData}
             initialActiveTab={q.initialActiveTab}
             themeImageSrc={q.themeImageSrc}
-            onFilter={() => { }}
-            onUpdate={handleUpdate}
+            isLoading={isLoading}
           />
         ))}
       </div>

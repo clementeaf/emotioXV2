@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { FiFilter } from 'react-icons/fi';
+
 
 // Interfaz para la distribución de votos en una escala
 export interface RankingDistribution {
@@ -71,8 +70,8 @@ export function RankingResults({ data }: RankingResultsProps) {
 
       {/* Filas para cada opción */}
       {sortedOptions.map((option) => (
-        <div 
-          key={option.id} 
+        <div
+          key={option.id}
           className="grid grid-cols-[200px_repeat(6,1fr)_120px_120px] gap-2 px-4 py-4 border-b border-neutral-200 hover:bg-neutral-50"
         >
           {/* Nombre de la opción */}
@@ -83,9 +82,9 @@ export function RankingResults({ data }: RankingResultsProps) {
           {/* Distribución de puntuación (1-6) */}
           {[1, 2, 3, 4, 5, 6].map(num => (
             <div key={num} className="flex items-end justify-center h-[60px]">
-              <div 
-                className="w-[70%] bg-blue-300 rounded-sm" 
-                style={{ 
+              <div
+                className="w-[70%] bg-blue-300 rounded-sm"
+                style={{
                   height: getBarHeight(option.distribution[num as keyof RankingDistribution])
                 }}
               ></div>
@@ -97,15 +96,12 @@ export function RankingResults({ data }: RankingResultsProps) {
             {option.mean.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace('.', ',')}
           </div>
 
-          {/* Tiempo de respuesta y filtro */}
-          <div className="text-center text-neutral-500 flex items-center justify-between">
+          {/* Tiempo de respuesta */}
+          <div className="text-center text-neutral-500 flex items-center justify-center">
             <span>{option.responseTime}</span>
-            <button className="text-neutral-400 hover:text-neutral-600">
-              <FiFilter className="w-4 h-4" />
-            </button>
           </div>
         </div>
       ))}
     </div>
   );
-} 
+}

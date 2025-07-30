@@ -1,7 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useDemographicsData } from '@/hooks/useDemographicsData';
 
@@ -229,18 +228,7 @@ export function Filters({ className, researchId }: FiltersProps) {
           </div>
         )}
 
-        {/* Notification box */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-blue-800">
-              <div>New data was obtained</div>
-              <div>Please, update study</div>
-            </div>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
-              Update
-            </Button>
-          </div>
-        </div>
+
 
         <div className="space-y-4">
           {filterSections.map((section) => {

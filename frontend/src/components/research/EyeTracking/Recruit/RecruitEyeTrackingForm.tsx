@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
-import { Spinner } from '@/components/ui/Spinner';
+
 import { cn } from '@/lib/utils';
 import { DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
 
@@ -901,7 +901,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     className="px-4 py-2 h-[40px] rounded-lg bg-red-600 text-white shadow hover:bg-red-700 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[180px] mt-8"
                   >
                     {isDeleting ? (
-                      <span className="flex items-center gap-2"><Spinner size="sm" /> Eliminando...</span>
+                      <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div> Eliminando...</span>
                     ) : (
                       <span className="flex items-center gap-2"><Trash2 size={18} /> Eliminar datos</span>
                     )}
@@ -914,7 +914,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                   >
                     {saving ? (
                       <div className="flex items-center gap-2">
-                        <Spinner size="sm" />
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
                         <span>Guardando...</span>
                       </div>
                     ) : getSaveButtonText()}

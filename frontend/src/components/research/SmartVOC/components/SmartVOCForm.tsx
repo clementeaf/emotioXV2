@@ -2,7 +2,7 @@ import React from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { Spinner } from '@/components/ui/Spinner';
+
 import { cn } from '@/lib/utils';
 
 
@@ -51,13 +51,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
 
   // console.log('isDeleteModalOpen: ', isDeleteModalOpen);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40">
-        <Spinner />
-      </div>
-    );
-  }
+
 
   return (
     <DndProvider backend={HTML5Backend}>

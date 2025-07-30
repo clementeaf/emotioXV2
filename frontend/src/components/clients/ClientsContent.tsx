@@ -11,13 +11,13 @@ import { ClientSelector } from '@/components/clients/ClientSelector';
 import { ClientsResearchList } from '@/components/clients/ClientsResearchList';
 import { HelpSection } from '@/components/clients/HelpSection';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
 import { researchAPI } from '@/lib/api';
 import {
-    adaptResearchData,
-    filterResearchByClient,
-    findBestResearch,
-    type BestResearchData
+  adaptResearchData,
+  filterResearchByClient,
+  findBestResearch,
+  type BestResearchData
 } from '@/utils/research';
 
 export const ClientsContent = () => {
@@ -80,10 +80,6 @@ export const ClientsContent = () => {
             <div className="mb-6">
               <ClientSelector onClientChange={handleClientChange} />
             </div>
-
-            {isLoadingResearch && (
-              <LoadingSpinner message="Cargando datos de investigación..." />
-            )}
 
             {!isLoadingResearch && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
