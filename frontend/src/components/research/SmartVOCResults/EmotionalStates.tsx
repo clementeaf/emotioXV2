@@ -140,7 +140,7 @@ export function EmotionalStates({
             <div className="relative h-[360px] mt-8 pb-10">
               {/* Fondo cuadriculado */}
               <div className="absolute inset-0 bottom-10">
-                {[10, 5, 0].map((value, i) => (
+                {[100, 50, 0].map((value, i) => (
                   <div
                     key={value}
                     className="border-t border-gray-200"
@@ -156,7 +156,7 @@ export function EmotionalStates({
 
               {/* Valores del eje Y */}
               <div className="absolute left-0 h-[calc(100%-40px)]">
-                {[10, 5, 0].map((value, i) => (
+                {[100, 50, 0].map((value, i) => (
                   <div
                     key={value}
                     className="absolute text-sm text-gray-500"

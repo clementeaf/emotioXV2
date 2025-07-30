@@ -23,6 +23,11 @@ interface NPSQuestionProps {
     detractors: number;
     npsRatio: number;
   }>;
+  npsScore?: number;
+  promoters?: number;
+  detractors?: number;
+  neutrals?: number;
+  totalResponses?: number;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -68,8 +73,20 @@ const CustomLegend = () => (
   </div>
 );
 
-export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
+export function NPSQuestion({
+  monthlyData,
+  npsScore = 0,
+  promoters = 0,
+  detractors = 0,
+  neutrals = 0,
+  totalResponses = 0
+}: NPSQuestionProps) {
   const hasData = monthlyData.length > 0;
+
+  // Calcular porcentajes
+  const total = promoters + detractors + neutrals;
+  const promotersPercentage = total > 0 ? Math.round((promoters / total) * 100) : 0;
+  const detractorsPercentage = total > 0 ? Math.round((detractors / total) * 100) : 0;
 
   return (
     <Card className="p-6 space-y-6">
@@ -83,8 +100,8 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Responses</span>
-            <span className="text-2xl font-semibold">{hasData ? '28,635' : '0'}</span>
-            <span className="text-sm text-gray-500">{hasData ? '26s' : '0s'}</span>
+            <span className="text-2xl font-semibold">{totalResponses}</span>
+            <span className="text-sm text-gray-500">0s</span>
           </div>
         </div>
 
@@ -92,10 +109,10 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Promoters</span>
-              <span className="text-sm font-medium">{hasData ? '78%' : '0%'}</span>
+              <span className="text-sm font-medium">{promotersPercentage}%</span>
             </div>
             <Progress
-              value={hasData ? 78 : 0}
+              value={promotersPercentage}
               className="h-2"
               indicatorClassName="bg-green-500"
             />
@@ -103,10 +120,10 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Detractors</span>
-              <span className="text-sm font-medium">{hasData ? '22%' : '0%'}</span>
+              <span className="text-sm font-medium">{detractorsPercentage}%</span>
             </div>
             <Progress
-              value={hasData ? 22 : 0}
+              value={detractorsPercentage}
               className="h-2"
               indicatorClassName="bg-red-500"
             />
@@ -123,7 +140,7 @@ export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
 
         <div className="flex justify-end">
           <div className="w-24 h-24">
-            <CircularProgress value={hasData ? 63 : 0} size={96} strokeWidth={8} />
+            <CircularProgress value={npsScore} size={96} strokeWidth={8} />
           </div>
         </div>
 

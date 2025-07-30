@@ -379,25 +379,34 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
           {/* Customer Satisfaction */}
           <MetricCard
             title="Customer Satisfaction"
-            score={finalCPVData.csatPercentage}
+            score={smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0
+              ? parseFloat((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length).toFixed(2))
+              : 0
+            }
             question="How are feeling your customers when they interact with you?"
             data={[]}
-            hasData={hasCPVData}
+            hasData={!!(smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0)}
           />
 
           {/* Customer Effort Score */}
           <MetricCard
             title="Customer Effort Score"
-            score={finalCPVData.cesPercentage}
+            score={smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0
+              ? parseFloat((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length).toFixed(2))
+              : 0
+            }
             question="How much effort do they need to do to complete a task?"
             data={[]}
-            hasData={hasCPVData}
+            hasData={!!(smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0)}
           />
 
           {/* Cognitive Value */}
           <MetricCard
             title="Cognitive Value"
-            score={parseFloat(cvValue)}
+            score={smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0
+              ? parseFloat((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length).toFixed(2))
+              : 0
+            }
             question="Is there value in your solution over the memory of customers?"
             data={[]}
             hasData={!!(smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0)}
@@ -444,8 +453,14 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 conditionality="Conditionality disabled"
                 required={true}
                 question="It was easy for me to handle my issue too"
-                responses={{ count: 0, timeAgo: '0s' }}
-                score={finalCPVData.cesPercentage}
+                responses={{
+                  count: smartVOCData?.totalResponses || 0,
+                  timeAgo: '0s'
+                }}
+                score={smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0
+                  ? parseFloat((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length).toFixed(2))
+                  : 0.00
+                }
                 distribution={[
                   { label: 'Little effort', percentage: 0, color: '#10B981' },
                   { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
@@ -461,8 +476,14 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 conditionality="Conditionality disabled"
                 required={true}
                 question="This was the best app my eyes had see"
-                responses={{ count: 0, timeAgo: '0s' }}
-                score={finalCPVData.cvValue}
+                responses={{
+                  count: smartVOCData?.totalResponses || 0,
+                  timeAgo: '0s'
+                }}
+                score={smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0
+                  ? parseFloat((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length).toFixed(2))
+                  : 0.00
+                }
                 distribution={[
                   { label: 'Worth', percentage: 0, color: '#10B981' },
                   { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
@@ -483,12 +504,45 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
               {/* 2.5.- Question: Net Promoter Score (NPS) */}
               <NPSQuestion
-                monthlyData={[]}
+                monthlyData={smartVOCData?.monthlyNPSData || []}
+                npsScore={smartVOCData?.npsScore || 0}
+                promoters={smartVOCData?.promoters || 0}
+                detractors={smartVOCData?.detractors || 0}
+                neutrals={smartVOCData?.neutrals || 0}
+                totalResponses={smartVOCData?.totalResponses || 0}
               />
 
               {/* 2.6.- Question: Voice of Customer (VOC) */}
               <VOCQuestion
-                comments={[]}
+                comments={smartVOCData?.vocResponses?.map(response => {
+                  // Función para detectar si el texto es válido o solo caracteres aleatorios
+                  const isValidComment = (text: string) => {
+                    // Si tiene menos de 3 caracteres, probablemente es spam
+                    if (text.length < 3) return false;
+
+                    // Si son solo caracteres repetidos (como "aaaa" o "1111")
+                    if (/^(.)\1+$/.test(text)) return false;
+
+                    // Si son solo caracteres aleatorios sin vocales (como "fbgfhfh")
+                    if (!/[aeiouáéíóúü]/i.test(text) && text.length > 5) return false;
+
+                    // Si son solo números
+                    if (/^\d+$/.test(text)) return false;
+
+                    // Si son solo caracteres especiales
+                    if (/^[^a-zA-Z0-9\s]+$/.test(text)) return false;
+
+                    return true;
+                  };
+
+                  const isValid = isValidComment(response.text);
+
+                  return {
+                    text: response.text,
+                    mood: isValid ? 'Positive' : 'Neutral', // Comentarios inválidos son neutrales
+                    selected: false
+                  };
+                }) || []}
               />
             </div>
           </div>
