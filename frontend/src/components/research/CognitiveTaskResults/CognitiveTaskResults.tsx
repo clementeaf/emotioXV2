@@ -360,41 +360,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     finalQuestions = createQuestionsFromConfig();
   }
 
-  console.log('[CognitiveTaskResults] 🔍 Preguntas del backend:', {
-    researchConfig: researchConfig,
-    questionsCount: finalQuestions.length,
-    questions: finalQuestions.map((q: any) => ({
-      key: q.key,
-      title: q.questionText,
-      type: q.questionType,
-      viewType: q.viewType
-    }))
-  });
-
-  console.log('[CognitiveTaskResults] 🔍 DEBUG - Datos completos:', {
-    processedDataLength: processedData.length,
-    researchConfigExists: !!researchConfig,
-    researchConfigQuestions: researchConfig?.questions?.map((q: any) => ({
-      id: q.id,
-      title: q.title,
-      type: q.type,
-      questionKey: q.questionKey
-    })),
-    finalQuestions: finalQuestions.map((q: any) => ({
-      questionId: q.questionId,
-      questionText: q.questionText,
-      questionType: q.questionType
-    }))
-  });
-
-  console.log('[CognitiveTaskResults] 🔍 DEBUG - ¿Qué lógica se está usando?', {
-    tieneProcessedData: processedData.length > 0,
-    tieneResearchConfig: !!researchConfig?.questions,
-    usandoProcessedData: processedData.length > 0,
-    usandoResearchConfig: !processedData.length && !!researchConfig?.questions,
-    usandoFallback: !processedData.length && !researchConfig?.questions
-  });
-
   return (
     <div className="flex gap-8">
       <div className="flex-1 space-y-8">

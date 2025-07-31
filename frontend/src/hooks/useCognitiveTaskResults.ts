@@ -173,12 +173,6 @@ export function useCognitiveTaskResults(researchId: string) {
 
   // Función para procesar datos por tipo de pregunta
   const processDataByType = (responses: ParticipantResponse[]): ProcessedCognitiveData[] => {
-    console.log('[useCognitiveTaskResults] 🔍 processDataByType called with:', {
-      researchConfig: !!researchConfig,
-      responsesLength: responses.length,
-      researchConfigData: researchConfig
-    });
-
     if (!responses.length) return [];
 
     const questionMap = new Map<string, ProcessedCognitiveData>();
@@ -297,18 +291,11 @@ export function useCognitiveTaskResults(researchId: string) {
             }
 
             if (selectedOption) {
-              console.log(`[useCognitiveTaskResults] 🎯 Processing selected option for ${questionKey}:`, selectedOption);
 
-              // Buscar la opción seleccionada y incrementar su count
               const existingOption = questionData.choiceData.options.find(opt => opt.text === selectedOption);
               if (existingOption) {
                 existingOption.count = (existingOption.count || 0) + 1;
-                console.log(`[useCognitiveTaskResults] ✅ Found existing option, incremented count:`, existingOption);
               } else {
-                console.log(`[useCognitiveTaskResults] ⚠️ Selected option not found in available options:`, selectedOption);
-                console.log(`[useCognitiveTaskResults] 📋 Available options:`, questionData.choiceData.options.map(opt => opt.text));
-
-                // Agregar la nueva opción seleccionada
                 questionData.choiceData.options.push({
                   id: `option-${questionData.choiceData.options.length + 1}`,
                   text: selectedOption,
@@ -595,18 +582,10 @@ export function useCognitiveTaskResults(researchId: string) {
 
       // Procesar datos después de tener tanto la configuración como las respuestas
       if (cognitiveResponses.length > 0) {
-        console.log('[useCognitiveTaskResults] 🎯 Processing responses with config...');
-
-        // Procesar datos por tipo de pregunta
         const processed = processDataByType(cognitiveResponses);
-        console.log('[useCognitiveTaskResults] 📊 Processing result:', {
-          processedLength: processed.length,
-          processed
-        });
 
         setProcessedData(processed);
       } else {
-        console.log('[useCognitiveTaskResults] ⏳ No cognitive responses found');
         setProcessedData([]);
       }
 

@@ -24,26 +24,9 @@ export const useDemographicsData = (researchId: string) => {
       }
 
       try {
-        console.log(`[useDemographicsData] 🔍 Obteniendo datos demográficos para research: ${researchId}`);
-
         const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
 
         if (response.data) {
-          console.log(`[useDemographicsData] ✅ Datos recibidos:`, response.data);
-
-          // Debug: Buscar respuestas demográficas específicamente
-          response.data.forEach((participant: any, index: number) => {
-            console.log(`[useDemographicsData] 🔍 Procesando participante ${index + 1}:`, participant.participantId);
-
-            if (participant.responses) {
-              participant.responses.forEach((response: any) => {
-                if (response.questionKey === 'demographics') {
-                  console.log(`[useDemographicsData] 📊 Encontrada respuesta demográfica:`, response.response);
-                }
-              });
-            }
-          });
-
           const demographicsData = processDemographicsData(response.data);
           setData(demographicsData);
         } else {
@@ -72,8 +55,6 @@ export const useDemographicsData = (researchId: string) => {
         participants: []
       };
     }
-
-    console.log(`[useDemographicsData] 🔍 Procesando ${responses.length} participantes`);
 
     // Contadores para cada categoría
     const countryCounts: Record<string, number> = {};
@@ -131,11 +112,6 @@ export const useDemographicsData = (researchId: string) => {
           }
         });
       }
-
-      // Log de progreso cada 5 participantes
-      if ((index + 1) % 5 === 0) {
-        console.log(`[useDemographicsData] 📊 Procesados ${index + 1}/${responses.length} participantes`);
-      }
     });
 
     // Convertir contadores a arrays con formato y ordenar por count
@@ -187,16 +163,6 @@ export const useDemographicsData = (researchId: string) => {
         label: `${new Date().toLocaleDateString('es-ES')}, ${label.length > 15 ? `${label.substring(0, 15)}...` : label}`,
         count
       }));
-
-    console.log('[useDemographicsData] 📊 Datos demográficos procesados:', {
-      totalParticipants: responses.length,
-      countries: countries.length,
-      ageRanges: ageRanges.length,
-      genders: genders.length,
-      educationLevels: educationLevels.length,
-      userIds: userIds.length,
-      participants: participants.length
-    });
 
     return {
       countries,
