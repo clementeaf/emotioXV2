@@ -1,16 +1,34 @@
 import { ApiClient } from '../lib/api-client';
 import {
   CreateModuleResponseDto,
-  GroupedResponsesResponse,
   ParticipantResponsesDocument,
   UpdateModuleResponseDto
 } from '../shared/interfaces/module-response.interface';
+
+interface QuestionResponse {
+  participantId: string;
+  value: any;
+  timestamp: string;
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface QuestionWithResponses {
+  questionKey: string;
+  responses: QuestionResponse[];
+}
+
+interface GroupedResponsesResponse {
+  data: QuestionWithResponses[];
+  status: number;
+}
 
 export class ModuleResponseService {
   private apiClient: ApiClient;
 
   constructor() {
-    this.apiClient = new ApiClient();
+    this.apiClient = new ApiClient(process.env.NEXT_PUBLIC_API_URL || '');
   }
 
   /**
@@ -23,7 +41,7 @@ export class ModuleResponseService {
     try {
       const response = await this.apiClient.get(
         `/module-responses?researchId=${researchId}&participantId=${participantId}`
-      );
+      ) as Response;
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -45,7 +63,7 @@ export class ModuleResponseService {
    */
   async getResponsesByResearch(researchId: string): Promise<ParticipantResponsesDocument[]> {
     try {
-      const response = await this.apiClient.get(`/module-responses/research/${researchId}`);
+      const response = await this.apiClient.get(`/module-responses/research/${researchId}`) as Response;
 
       if (!response.ok) {
         throw new Error(`Error al obtener respuestas del research: ${response.statusText}`);
@@ -65,7 +83,7 @@ export class ModuleResponseService {
    */
   async getResponsesGroupedByQuestion(researchId: string): Promise<GroupedResponsesResponse> {
     try {
-      const response = await this.apiClient.get(`/module-responses/grouped-by-question/${researchId}`);
+      const response = await this.apiClient.get(`/module-responses/grouped-by-question/${researchId}`) as Response;
 
       if (!response.ok) {
         throw new Error(`Error al obtener respuestas agrupadas: ${response.statusText}`);
@@ -84,7 +102,7 @@ export class ModuleResponseService {
    */
   async saveResponse(data: CreateModuleResponseDto): Promise<ParticipantResponsesDocument> {
     try {
-      const response = await this.apiClient.post('/module-responses', data);
+      const response = await this.apiClient.post('/module-responses', data) as Response;
 
       if (!response.ok) {
         throw new Error(`Error al guardar respuesta: ${response.statusText}`);
@@ -103,7 +121,7 @@ export class ModuleResponseService {
    */
   async updateResponse(id: string, data: UpdateModuleResponseDto): Promise<ParticipantResponsesDocument> {
     try {
-      const response = await this.apiClient.put(`/module-responses/${id}`, data);
+      const response = await this.apiClient.put(`/module-responses/${id}`, data) as Response;
 
       if (!response.ok) {
         throw new Error(`Error al actualizar respuesta: ${response.statusText}`);
@@ -125,7 +143,7 @@ export class ModuleResponseService {
       const response = await this.apiClient.post('/module-responses/complete', {
         researchId,
         participantId
-      });
+      }) as Response;
 
       if (!response.ok) {
         throw new Error(`Error al marcar como completado: ${response.statusText}`);
@@ -144,10 +162,7 @@ export class ModuleResponseService {
    */
   async deleteAllResponses(researchId: string, participantId: string): Promise<void> {
     try {
-      const response = await this.apiClient.delete('/module-responses', {
-        researchId,
-        participantId
-      });
+      const response = await this.apiClient.delete(`/module-responses?researchId=${researchId}&participantId=${participantId}`) as Response;
 
       if (!response.ok) {
         throw new Error(`Error al eliminar respuestas: ${response.statusText}`);

@@ -1,6 +1,5 @@
 import React from 'react';
-import { useGroupedResponses, useQuestionStats } from '../../hooks/useGroupedResponses';
-import { QuestionWithResponses } from '../../shared/interfaces/module-response.interface';
+import { useResearchData } from '../../hooks/useResearchData';
 
 interface GroupedResponsesViewerProps {
   researchId: string;
@@ -11,7 +10,7 @@ interface GroupedResponsesViewerProps {
  * Esta estructura es más eficiente para análisis estadísticos
  */
 export const GroupedResponsesViewer: React.FC<GroupedResponsesViewerProps> = ({ researchId }) => {
-  const { data, isLoading, error } = useGroupedResponses(researchId);
+  const { groupedResponses: data, isLoading, error } = useResearchData(researchId);
 
   if (isLoading) {
     return (
@@ -31,7 +30,7 @@ export const GroupedResponsesViewer: React.FC<GroupedResponsesViewerProps> = ({ 
     );
   }
 
-  if (!data?.data || data.data.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <h3 className="text-gray-800 font-medium">No hay respuestas disponibles</h3>
@@ -45,12 +44,12 @@ export const GroupedResponsesViewer: React.FC<GroupedResponsesViewerProps> = ({ 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h2 className="text-blue-800 font-semibold text-lg">Resumen de Respuestas</h2>
         <p className="text-blue-600 text-sm mt-1">
-          Total de preguntas: {data.data.length} |
-          Total de participantes: {new Set(data.data.flatMap(q => q.responses.map(r => r.participantId))).size}
+          Total de preguntas: {data.length} |
+          Total de participantes: {new Set(data.flatMap((q: any) => q.responses.map((r: any) => r.participantId))).size}
         </p>
       </div>
 
-      {data.data.map((questionData) => (
+      {data.map((questionData: any) => (
         <QuestionResponseCard key={questionData.questionKey} questionData={questionData} />
       ))}
     </div>
@@ -60,9 +59,20 @@ export const GroupedResponsesViewer: React.FC<GroupedResponsesViewerProps> = ({ 
 /**
  * Componente para mostrar las respuestas de una pregunta específica
  */
-const QuestionResponseCard: React.FC<{ questionData: QuestionWithResponses }> = ({ questionData }) => {
+const QuestionResponseCard: React.FC<{ questionData: any }> = ({ questionData }) => {
   const { questionKey, responses } = questionData;
-  const { stats } = useQuestionStats(researchId, questionKey);
+
+  // Calcular estadísticas básicas
+  const stats = {
+    totalResponses: responses.length,
+    uniqueParticipants: new Set(responses.map((r: any) => r.participantId)).size,
+    averageValue: responses.length > 0 ? responses.reduce((acc: number, r: any) => acc + (typeof r.value === 'number' ? r.value : 0), 0) / responses.length : 0,
+    valueDistribution: responses.reduce((acc: any, r: any) => {
+      const key = typeof r.value === 'string' ? r.value : JSON.stringify(r.value);
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
@@ -100,10 +110,10 @@ const QuestionResponseCard: React.FC<{ questionData: QuestionWithResponses }> = 
           <h4 className="text-sm font-medium text-gray-700 mb-2">Distribución de valores:</h4>
           <div className="flex flex-wrap gap-2">
             {Object.entries(stats.valueDistribution)
-              .sort(([, a], [, b]) => b - a)
+              .sort(([, a], [, b]) => (b as number) - (a as number))
               .map(([value, count]) => (
                 <div key={value} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                  {value}: {count}
+                  {value}: {count as number}
                 </div>
               ))}
           </div>
@@ -115,9 +125,9 @@ const QuestionResponseCard: React.FC<{ questionData: QuestionWithResponses }> = 
         <h4 className="text-sm font-medium text-gray-700 mb-2">Respuestas recientes:</h4>
         <div className="space-y-2 max-h-40 overflow-y-auto">
           {responses
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .slice(0, 5)
-            .map((response, index) => (
+            .map((response: any, index: number) => (
               <div key={`${response.participantId}-${index}`} className="flex items-center justify-between text-sm">
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-500 text-xs">

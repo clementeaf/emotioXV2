@@ -1,6 +1,19 @@
 import { moduleResponsesAPI } from '@/config/api';
 import { useEffect, useState } from 'react';
-import { CPVData } from '../../../shared/interfaces/websocket-events.interface';
+
+interface CPVData {
+  cpvValue: number;
+  satisfaction: number;
+  retention: number;
+  impact: string;
+  trend: string;
+  csatPercentage: number;
+  cesPercentage: number;
+  cvValue: number;
+  nevValue: number;
+  npsValue: number;
+  peakValue: number;
+}
 
 export const useCPVData = (researchId: string) => {
   const [data, setData] = useState<CPVData | null>(null);

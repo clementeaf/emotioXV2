@@ -8,6 +8,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { API_HTTP_ENDPOINT, navigateToPublicTests } from '@/api/endpoints';
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
+import { useResearchList, useResearchById } from '@/hooks/useResearchList';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
@@ -147,52 +148,27 @@ function SidebarContent({ className }: SidebarProps) {
     }
   };
 
-  // Cargar la investigación más reciente
+  // Usar el hook centralizado para obtener research data
+  const { data: allResearch = [], isLoading: isLoadingResearchData } = useResearchList();
+
+  // Procesar research reciente desde los datos centralizados
   useEffect(() => {
-    const fetchMostRecentResearch = async () => {
-      setIsLoadingResearch(true);
+    if (allResearch.length > 0) {
+      const sortedResearch = allResearch
+        .sort((a: Research, b: Research) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map((item: Research) => ({
+          id: item.id,
+          name: typeof item.name === 'string' && item.name ? item.name : 'Sin nombre',
+          technique: typeof item.technique === 'string' && item.technique ? item.technique : 'Unknown',
+          createdAt: item.createdAt
+        }));
+      setRecentResearch(sortedResearch);
       setShowNoResearchMessage(false);
-      try {
-        const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Error fetching research:', errorText);
-          setShowNoResearchMessage(true);
-          return;
-        }
-
-        const data = await response.json();
-        const researchData = data?.data || data;
-        if (Array.isArray(researchData) && researchData.length > 0) {
-          const sortedResearch = researchData
-            .sort((a: Research, b: Research) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 5)
-            .map((item: Research) => ({
-              id: item.id,
-              name: typeof item.name === 'string' && item.name ? item.name : 'Sin nombre',
-              technique: typeof item.technique === 'string' && item.technique ? item.technique : 'Unknown',
-              createdAt: item.createdAt
-            }));
-          setRecentResearch(sortedResearch);
-        } else {
-          setShowNoResearchMessage(true);
-        }
-      } catch (error) {
-        console.error('Error fetching research:', error);
-        setShowNoResearchMessage(true);
-      } finally {
-        setIsLoadingResearch(false);
-      }
-    };
-
-    fetchMostRecentResearch();
-  }, []);
+    } else {
+      setShowNoResearchMessage(true);
+    }
+  }, [allResearch]);
 
   // Cargar nombre de la investigación actual si estamos en modo investigación
   useEffect(() => {
@@ -345,7 +321,7 @@ function SidebarContent({ className }: SidebarProps) {
 
   // Sección de investigaciones recientes
   function RecentResearchSection() {
-    if (researchId) return null; // No mostrar si estamos en modo investigación
+    // Mostrar siempre, pero resaltar la investigación actual si existe
 
     return (
       <div className="border-t border-neutral-200 pt-4 mt-4">

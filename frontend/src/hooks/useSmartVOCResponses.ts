@@ -62,11 +62,11 @@ export const useSmartVOCResponses = (researchId: string) => {
       try {
         console.log(`[useSmartVOCResponses] 🔍 Obteniendo resultados SmartVOC para research: ${researchId}`);
 
-        // TEMPORAL: Usar endpoint existente mientras se despliega el nuevo
-        const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
+        // Usar el nuevo endpoint agrupado por pregunta (más eficiente)
+        const response = await moduleResponsesAPI.getResponsesGroupedByQuestion(researchId);
 
         if (response.data) {
-          console.log(`[useSmartVOCResponses] ✅ Datos recibidos del endpoint existente`);
+          console.log(`[useSmartVOCResponses] ✅ Datos recibidos del endpoint agrupado`);
           console.log(`[useSmartVOCResponses] 📊 Respuesta completa:`, response.data);
 
           // Procesar datos SmartVOC desde las respuestas
@@ -112,9 +112,9 @@ export const useSmartVOCResponses = (researchId: string) => {
     fetchSmartVOCResults();
   }, [researchId]);
 
-  // Función para procesar datos SmartVOC desde respuestas existentes
-  const processSmartVOCData = (responses: any[]): SmartVOCResults => {
-    if (!responses || responses.length === 0) {
+  // Función para procesar datos SmartVOC desde la nueva estructura agrupada por pregunta
+  const processSmartVOCData = (groupedResponses: any[]): SmartVOCResults => {
+    if (!groupedResponses || groupedResponses.length === 0) {
       return {
         totalResponses: 0,
         uniqueParticipants: 0,
@@ -177,65 +177,65 @@ export const useSmartVOCResponses = (researchId: string) => {
       return String(response);
     };
 
-    // Procesar cada participante
-    responses.forEach(participant => {
-      if (participant.responses && Array.isArray(participant.responses)) {
-        participant.responses.forEach((response: any) => {
-          if (response.questionKey && response.questionKey.toLowerCase().includes('smartvoc')) {
-            const smartVOCResponse = {
-              ...response,
-              participantId: participant.participantId,
-              participantName: 'Participante',
-              timestamp: response.timestamp || new Date().toISOString()
-            };
+    // Procesar cada pregunta agrupada
+    groupedResponses.forEach(questionGroup => {
+      if (questionGroup.questionKey && questionGroup.questionKey.toLowerCase().includes('smartvoc')) {
+        // Procesar cada respuesta de esta pregunta
+        questionGroup.responses.forEach((response: any) => {
+          const smartVOCResponse = {
+            questionKey: questionGroup.questionKey,
+            response: response.value,
+            participantId: response.participantId,
+            participantName: 'Participante',
+            timestamp: response.timestamp || new Date().toISOString()
+          };
 
-            allSmartVOCResponses.push(smartVOCResponse);
+          allSmartVOCResponses.push(smartVOCResponse);
 
-            const responseValue = parseResponseValue(response.response);
+          const responseValue = parseResponseValue(response.value);
 
-            // Categorizar por tipo de pregunta
-            if (response.questionKey.toLowerCase().includes('nps')) {
-              if (responseValue > 0) {
-                npsScores.push(responseValue);
-              }
-            } else if (response.questionKey.toLowerCase().includes('csat')) {
-              if (responseValue > 0) {
-                csatScores.push(responseValue);
-              }
-            } else if (response.questionKey.toLowerCase().includes('ces')) {
-              if (responseValue > 0) {
-                cesScores.push(responseValue);
-              }
-            } else if (response.questionKey.toLowerCase().includes('nev')) {
-              // 🎯 NEV ahora devuelve array de emociones, no valor numérico
-              if (response.response && response.response.value && Array.isArray(response.response.value)) {
-                // Contar emociones positivas vs negativas
-                const emotions = response.response.value;
-                const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
-                const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
-
-                const positiveCount = emotions.filter((emotion: string) => positiveEmotions.includes(emotion)).length;
-                const negativeCount = emotions.filter((emotion: string) => negativeEmotions.includes(emotion)).length;
-
-                // Calcular score NEV: (positivas - negativas) / total * 100
-                const totalEmotions = emotions.length;
-                if (totalEmotions > 0) {
-                  const nevScore = Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
-                  nevScores.push(nevScore);
-                }
-              }
-            } else if (response.questionKey.toLowerCase().includes('cv')) {
-              if (responseValue > 0) {
-                cvScores.push(responseValue);
-              }
-            } else if (response.questionKey.toLowerCase().includes('voc')) {
-              vocResponses.push({
-                text: parseResponseText(response.response),
-                participantId: participant.participantId,
-                participantName: 'Participante',
-                timestamp: response.timestamp
-              });
+          // Categorizar por tipo de pregunta
+          if (questionGroup.questionKey.toLowerCase().includes('nps')) {
+            if (responseValue > 0) {
+              npsScores.push(responseValue);
             }
+          } else if (questionGroup.questionKey.toLowerCase().includes('csat')) {
+            if (responseValue > 0) {
+              csatScores.push(responseValue);
+            }
+          } else if (questionGroup.questionKey.toLowerCase().includes('ces')) {
+            if (responseValue > 0) {
+              cesScores.push(responseValue);
+            }
+          } else if (questionGroup.questionKey.toLowerCase().includes('nev')) {
+            // 🎯 NEV ahora devuelve array de emociones, no valor numérico
+            if (response.value && Array.isArray(response.value)) {
+              // Contar emociones positivas vs negativas
+              const emotions = response.value;
+              const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
+              const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
+
+              const positiveCount = emotions.filter((emotion: string) => positiveEmotions.includes(emotion)).length;
+              const negativeCount = emotions.filter((emotion: string) => negativeEmotions.includes(emotion)).length;
+
+              // Calcular score NEV: (positivas - negativas) / total * 100
+              const totalEmotions = emotions.length;
+              if (totalEmotions > 0) {
+                const nevScore = Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
+                nevScores.push(nevScore);
+              }
+            }
+          } else if (questionGroup.questionKey.toLowerCase().includes('cv')) {
+            if (responseValue > 0) {
+              cvScores.push(responseValue);
+            }
+          } else if (questionGroup.questionKey.toLowerCase().includes('voc')) {
+            vocResponses.push({
+              text: parseResponseText(response.value),
+              participantId: response.participantId,
+              participantName: 'Participante',
+              timestamp: response.timestamp
+            });
           }
         });
       }
@@ -243,7 +243,7 @@ export const useSmartVOCResponses = (researchId: string) => {
 
     // Calcular métricas
     const totalResponses = allSmartVOCResponses.length;
-    const uniqueParticipants = responses.length;
+    const uniqueParticipants = new Set(allSmartVOCResponses.map(r => r.participantId)).size;
 
     // Calcular NPS - Manejar escalas 0-6 y 0-10 dinámicamente
     const maxNpsScore = npsScores.length > 0 ? Math.max(...npsScores) : 10;
@@ -374,8 +374,6 @@ export const useSmartVOCResponses = (researchId: string) => {
       cesScores,
       nevScores,
       cvScores,
-
-      // Métricas CV
       cvScore,
       cvPositive,
       cvNegative,

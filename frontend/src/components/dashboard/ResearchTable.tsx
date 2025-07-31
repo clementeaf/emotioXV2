@@ -11,11 +11,12 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/Dialog';
+import { useResearchList } from '@/hooks/useResearchList';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 
 interface Research {
@@ -73,56 +74,14 @@ function TableSkeleton() {
 
 function ResearchTableContent() {
   const router = useRouter();
-  const [research, setResearch] = useState<Research[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<string>(new Date().toLocaleString());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Research | null>(null);
 
-  const fetchResearch = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error al obtener las investigaciones: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const researchData = data?.data || data;
-
-      // Verificar que cada item tenga un ID válido antes de agregarlo
-      const validResearch = Array.isArray(researchData)
-        ? researchData.filter(item => item && item.id)
-        : [];
-
-      setResearch(validResearch);
-    } catch (error) {
-      console.error('Error:', error);
-      setError(error instanceof Error ? error.message : 'Error al cargar las investigaciones');
-      setResearch([]);
-    } finally {
-      // Actualizar timestamp después de cada solicitud, no durante el renderizado
-      setLastUpdate(new Date().toLocaleString());
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchResearch();
-  }, [fetchResearch]);
+  // Usar el hook centralizado para obtener research data
+  const { data: research = [], isLoading, error, refetch } = useResearchList();
 
   const handleRefresh = () => {
-    fetchResearch();
+    refetch();
   };
 
   const handleViewResearch = (item: Research) => {
@@ -142,7 +101,6 @@ function ResearchTableContent() {
   const confirmDeleteResearch = async () => {
     if (!projectToDelete || !projectToDelete.id) {
       console.error('Error: No se puede eliminar una investigación sin ID válido');
-      setError('No se puede eliminar la investigación - ID no válido');
       setShowDeleteModal(false);
       setProjectToDelete(null);
       return;
@@ -160,12 +118,12 @@ function ResearchTableContent() {
         throw new Error('Error al eliminar la investigación');
       }
 
-      setResearch(research.filter(r => r.id !== projectToDelete.id));
+      // Refetch data after deletion
+      refetch();
       setShowDeleteModal(false);
       setProjectToDelete(null);
     } catch (error) {
       console.error('Error al eliminar:', error);
-      setError(error instanceof Error ? error.message : 'Error al eliminar la investigación');
     }
   };
 
@@ -196,7 +154,7 @@ function ResearchTableContent() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-neutral-900">Proyectos de Investigación</h2>
         <p className="text-sm text-neutral-500 mt-1">
-          Última actualización: {lastUpdate}
+          Última actualización: {new Date().toLocaleString()}
         </p>
       </div>
       <button
@@ -245,7 +203,7 @@ function ResearchTableContent() {
                       Ver detalles técnicos
                     </summary>
                     <pre className="mt-1 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 overflow-auto">
-                      {error}
+                      {error?.message || 'Error desconocido'}
                     </pre>
                   </details>
                 )}

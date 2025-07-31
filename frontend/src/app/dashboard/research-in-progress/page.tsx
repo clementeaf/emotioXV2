@@ -9,7 +9,7 @@ import { researchInProgressAPI, setupAuthToken } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 import { Activity, CheckCircle, Clock, ExternalLink, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 interface ResearchStatus {
   status: {
@@ -44,7 +44,7 @@ interface Participant {
   lastActivity: string;
 }
 
-export default function ResearchInProgressPage() {
+function ResearchInProgressContent() {
   const searchParams = useSearchParams();
   const researchId = searchParams?.get('research');
   const { token, authLoading } = useAuth();
@@ -356,5 +356,13 @@ export default function ResearchInProgressPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function ResearchInProgressPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResearchInProgressContent />
+    </Suspense>
   );
 }

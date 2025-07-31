@@ -94,11 +94,13 @@ export function CommentsList({
                   {extractTextValue(comment.text)}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${comment.mood === 'Positive' ? 'bg-green-100 text-green-700' :
-                      comment.mood === 'Negative' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-700'
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${comment.sentiment === 'positive' ? 'bg-green-100 text-green-700' :
+                      comment.sentiment === 'negative' ? 'bg-red-100 text-red-700' :
+                        comment.sentiment === 'neutral' ? 'bg-gray-100 text-gray-700' :
+                          comment.sentiment === 'green' ? 'bg-green-200 text-green-900' :
+                            'bg-gray-100 text-gray-700'
                     }`}>
-                    {comment.mood}
+                    {comment.sentiment}
                   </span>
                   <span className="text-xs text-neutral-500">
                     {comment.selected ? 'Selected' : 'Not selected'}

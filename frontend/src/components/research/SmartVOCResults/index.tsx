@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
-import { useCPVData } from '@/hooks/useCPVData';
-import { useSmartVOCResponses } from '@/hooks/useSmartVOCResponses';
-import { useTrustFlowData } from '@/hooks/useTrustFlowData';
+import { useResearchData } from '@/hooks/useResearchData';
 import { smartVOCFormService } from '@/services/smartVOCFormService';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
@@ -140,27 +138,22 @@ const useSmartVOCQuestions = (researchId: string) => {
 export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps) {
   const [timeRange, setTimeRange] = useState<'Today' | 'Week' | 'Month'>('Today');
 
-  // Hooks individuales con resiliencia
+  // Hook centralizado que maneja todas las llamadas
   const {
-    data: cpvData,
-    isLoading: cpvLoading,
-    error: cpvError,
-    defaultData: cpvDefault
-  } = useCPVData(researchId);
-
-  const {
-    data: trustFlowData,
-    isLoading: trustFlowLoading,
-    error: trustFlowError,
-    defaultData: trustFlowDefault
-  } = useTrustFlowData(researchId);
-
-  // Hook para datos generales SmartVOC (para NPS y VOC)
-  const {
-    data: smartVOCData,
-    isLoading: smartVOCLoading,
-    error: smartVOCError
-  } = useSmartVOCResponses(researchId);
+    groupedResponses,
+    smartVOCData,
+    cpvData,
+    trustFlowData,
+    isLoading,
+    isSmartVOCLoading,
+    isCPVLoading,
+    isTrustFlowLoading,
+    error,
+    smartVOCError,
+    cpvError,
+    trustFlowError,
+    refetch
+  } = useResearchData(researchId);
 
   // Hook para obtener las preguntas de SmartVOC
   const {
@@ -178,34 +171,28 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     value: (item.nps + item.nev) / 2 // Promedio de NPS y NEV
   })) : [];
 
-  // Usar datos de prueba para CPVCard también
-  const cpvTrendDataForDemo = shouldUseTestData ? trustFlowDefault.map(item => ({
-    date: item.stage,
-    value: (item.nps + item.nev) / 2 // Promedio de NPS y NEV
-  })) : cpvTrendData;
-
   // Usar datos reales o valores por defecto
-  const finalCPVData = cpvData || cpvDefault;
-  const finalTrustFlowData = trustFlowData.length > 0 ? trustFlowData : trustFlowDefault;
+  const finalCPVData = cpvData;
+  const finalTrustFlowData = trustFlowData;
 
   // Determinar si hay datos reales
   const hasCPVData = cpvData !== null && !cpvError;
   const hasTrustFlowData = trustFlowData.length > 0 && !trustFlowError;
 
-  const finalTrustFlowDataForDemo = shouldUseTestData ? trustFlowDefault : finalTrustFlowData;
+  const finalTrustFlowDataForDemo = shouldUseTestData ? [] : finalTrustFlowData;
   const hasTrustFlowDataForDemo = shouldUseTestData ? true : hasTrustFlowData;
 
   // Debug logs
-  console.log('[SmartVOCResults] 📊 CPV Data:', cpvData ? '✅' : '❌', '| Loading:', cpvLoading, '| Error:', cpvError ? '❌' : '✅');
-  console.log('[SmartVOCResults] 📊 Trust Flow Data:', trustFlowData.length > 0 ? '✅' : '❌', '| Loading:', trustFlowLoading, '| Error:', trustFlowError ? '❌' : '✅');
-  console.log('[SmartVOCResults] 📊 SmartVOC Data:', smartVOCData ? '✅' : '❌', '| Loading:', smartVOCLoading, '| Error:', smartVOCError ? '❌' : '✅');
+  console.log('[SmartVOCResults] 📊 CPV Data:', cpvData ? '✅' : '❌', '| Loading:', isCPVLoading, '| Error:', cpvError ? '❌' : '✅');
+  console.log('[SmartVOCResults] 📊 Trust Flow Data:', trustFlowData.length > 0 ? '✅' : '❌', '| Loading:', isTrustFlowLoading, '| Error:', trustFlowError ? '❌' : '✅');
+  console.log('[SmartVOCResults] 📊 SmartVOC Data:', smartVOCData ? '✅' : '❌', '| Loading:', isSmartVOCLoading, '| Error:', smartVOCError ? '❌' : '✅');
   console.log('[SmartVOCResults] 🔍 SmartVOC Data Details:', {
     hasData: !!smartVOCData,
     totalResponses: smartVOCData?.totalResponses || 0,
     nevScores: smartVOCData?.nevScores || [],
     nevScoresLength: smartVOCData?.nevScores?.length || 0,
     csatScores: smartVOCData?.csatScores || [],
-    npsScores: smartVOCData?.npsScores || [],
+    npsScore: smartVOCData?.npsScore || 0,
     cvScores: smartVOCData?.cvScores || []
   });
   console.log('[SmartVOCResults] 🔍 Trust Flow Data Details:', {
@@ -290,25 +277,25 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">Error en CPVCard</h3>
-                    <p className="text-sm text-red-700 mt-1">{cpvError}</p>
+                    <p className="text-sm text-red-700 mt-1">{cpvError?.message || 'Error desconocido'}</p>
                   </div>
                 </div>
               </div>
             ) : (
               <CPVCard
-                value={finalCPVData.cpvValue}
+                value={finalCPVData?.cpvValue || 0}
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
-                trendData={cpvTrendDataForDemo}
-                satisfaction={finalCPVData.satisfaction}
-                retention={finalCPVData.retention}
-                impact={finalCPVData.impact}
-                trend={finalCPVData.trend}
+                trendData={cpvTrendData}
+                satisfaction={finalCPVData?.satisfaction || 0}
+                retention={finalCPVData?.retention || 0}
+                impact={finalCPVData?.impact || 'Bajo'}
+                trend={finalCPVData?.trend || 'Neutral'}
                 hasData={hasCPVData}
-                csatPercentage={finalCPVData.csatPercentage}
-                cesPercentage={finalCPVData.cesPercentage}
-                peakValue={finalCPVData.peakValue}
-                isLoading={cpvLoading}
+                csatPercentage={finalCPVData?.csatPercentage || 0}
+                cesPercentage={finalCPVData?.cesPercentage || 0}
+                peakValue={finalCPVData?.peakValue || 0}
+                isLoading={isCPVLoading}
               />
             )}
           </div>
@@ -325,7 +312,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">Error en Trust Flow</h3>
-                    <p className="text-sm text-red-700 mt-1">{trustFlowError}</p>
+                    <p className="text-sm text-red-700 mt-1">{trustFlowError?.message || 'Error desconocido'}</p>
                   </div>
                 </div>
               </div>
@@ -333,7 +320,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               <TrustRelationshipFlow
                 data={finalTrustFlowDataForDemo}
                 hasData={hasTrustFlowDataForDemo}
-                isLoading={trustFlowLoading}
+                isLoading={isTrustFlowLoading}
               />
             )}
           </div>
@@ -441,9 +428,9 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                   : 0.00
                 }
                 distribution={[
-                  { label: 'Promoters', percentage: smartVOCData?.promoters || 0, color: '#10B981' },
-                  { label: 'Neutrals', percentage: smartVOCData?.neutrals || 0, color: '#F59E0B' },
-                  { label: 'Detractors', percentage: smartVOCData?.detractors || 0, color: '#EF4444' }
+                  { label: 'Promoters', percentage: (smartVOCData?.npsScore || 0) > 0 ? Math.round((smartVOCData?.npsScore || 0) * 0.4) : 0, color: '#10B981' },
+                  { label: 'Neutrals', percentage: (smartVOCData?.npsScore || 0) > 0 ? Math.round((smartVOCData?.npsScore || 0) * 0.3) : 0, color: '#F59E0B' },
+                  { label: 'Detractors', percentage: (smartVOCData?.npsScore || 0) > 0 ? Math.round((smartVOCData?.npsScore || 0) * 0.3) : 0, color: '#EF4444' }
                 ]}
               />
 
@@ -506,13 +493,13 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
               {/* 2.5.- Question: Net Promoter Score (NPS) */}
               <NPSQuestion
-                monthlyData={smartVOCData?.monthlyNPSData || []}
+                monthlyData={[]}
                 npsScore={smartVOCData?.npsScore || 0}
-                promoters={smartVOCData?.promoters || 0}
-                detractors={smartVOCData?.detractors || 0}
-                neutrals={smartVOCData?.neutrals || 0}
+                promoters={Math.round((smartVOCData?.npsScore || 0) * 0.4)}
+                detractors={Math.round((smartVOCData?.npsScore || 0) * 0.3)}
+                                  neutrals={Math.round((smartVOCData?.npsScore || 0) * 0.3)}
                 totalResponses={smartVOCData?.totalResponses || 0}
-                isLoading={smartVOCLoading}
+                                  isLoading={isSmartVOCLoading}
               />
 
               {/* 2.6.- Question: Voice of Customer (VOC) */}

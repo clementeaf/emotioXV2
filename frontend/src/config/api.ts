@@ -114,6 +114,7 @@ export const API_ENDPOINTS = {
   // Module Responses (para datos de public-tests)
   moduleResponses: {
     getResponsesByResearch: '/module-responses/research/{researchId}',
+    getResponsesGroupedByQuestion: '/module-responses/grouped-by-question/{researchId}',
     getResponsesForParticipant: '/research/{researchId}/participant/{participantId}/responses',
     saveResponse: '/module-responses',
     updateResponse: '/module-responses/{responseId}',
@@ -394,9 +395,15 @@ export const apiClient = new ApiClient();
  * Cliente específico para Module Responses
  */
 export const moduleResponsesAPI = {
-  // Obtener respuestas por research
+  // Obtener respuestas por research (estructura original)
   getResponsesByResearch: async (researchId: string) => {
     const response = await apiClient.get('moduleResponses', 'getResponsesByResearch', { researchId });
+    return response;
+  },
+
+  // Obtener respuestas agrupadas por pregunta (nueva estructura optimizada)
+  getResponsesGroupedByQuestion: async (researchId: string) => {
+    const response = await apiClient.get('moduleResponses', 'getResponsesGroupedByQuestion', { researchId });
     return response;
   },
 

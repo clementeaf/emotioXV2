@@ -48,6 +48,10 @@ api:
         method: GET
         cors: true
     - http:
+        path: /module-responses/grouped-by-question/{researchId}
+        method: GET
+        cors: true
+    - http:
         path: /module-responses
         method: DELETE
         cors: true

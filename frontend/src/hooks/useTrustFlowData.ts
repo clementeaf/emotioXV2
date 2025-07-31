@@ -1,6 +1,12 @@
 import { moduleResponsesAPI } from '@/config/api';
 import { useEffect, useState } from 'react';
-import { TrustFlowData } from '../../../shared/interfaces/websocket-events.interface';
+
+interface TrustFlowData {
+  stage: string;
+  nps: number;
+  nev: number;
+  timestamp: string;
+}
 
 export const useTrustFlowData = (researchId: string) => {
   const [data, setData] = useState<TrustFlowData[]>([]);
@@ -80,7 +86,7 @@ export const useTrustFlowData = (researchId: string) => {
               stage: new Date(date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
               nps: Math.round(avgNps * 10) / 10,
               nev: Math.round(avgNev * 10) / 10,
-              count: dateResponses.length
+              timestamp: date
             };
           }).sort((a, b) => new Date(a.stage).getTime() - new Date(b.stage).getTime());
 

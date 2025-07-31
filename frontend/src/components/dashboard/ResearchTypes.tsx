@@ -1,8 +1,7 @@
 'use client';
 
-import { ApiClient } from '@/config/api';
+import { useResearchList } from '@/hooks/useResearchList';
 import { ResearchTypesProps } from '@/interfaces/research';
-import { useEffect, useState } from 'react';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 
 interface Research {
@@ -14,43 +13,11 @@ interface Research {
 }
 
 function ResearchTypesContent() {
-  const [researchTypes, setResearchTypes] = useState<string[]>([]);
-  const [researchData, setResearchData] = useState<Research[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Usar el hook centralizado para obtener research data
+  const { data: researchData = [], isLoading, error } = useResearchList();
 
-  useEffect(() => {
-    const fetchResearchTypes = async () => {
-      try {
-        setIsLoading(true);
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-          setError('No hay token de autenticación');
-          return;
-        }
-
-        // Usar el cliente API configurado
-        const apiClient = new ApiClient();
-        apiClient.setAuthToken(token);
-
-        const data = await apiClient.get('research', 'getAll');
-
-        // Guardar los datos completos
-        setResearchData(data.data);
-
-        // Extraer tipos únicos de investigación
-        const uniqueTypes = [...new Set(data.data.map((research: Research) => research.technique))];
-        setResearchTypes(uniqueTypes);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error desconocido');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchResearchTypes();
-  }, []);
+  // Extraer tipos únicos de investigación
+  const researchTypes = Array.from(new Set(researchData.map((research: Research) => research.technique)));
 
   const getTypeDisplayName = (type: string) => {
     const typeNames: { [key: string]: string } = {

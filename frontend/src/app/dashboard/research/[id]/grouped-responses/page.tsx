@@ -1,17 +1,19 @@
+import { GroupedResponsesTest } from '../../../../../components/research/GroupedResponsesTest';
 import { GroupedResponsesViewer } from '../../../../../components/research/GroupedResponsesViewer';
+import { SmartVOCEndpointTest } from '../../../../../components/research/SmartVOCEndpointTest';
 
 interface GroupedResponsesPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
  * Página para visualizar respuestas agrupadas por pregunta
  * Esta estructura es más eficiente para análisis estadísticos
  */
-export default function GroupedResponsesPage({ params }: GroupedResponsesPageProps) {
-  const { id: researchId } = params;
+export default async function GroupedResponsesPage({ params }: GroupedResponsesPageProps) {
+  const { id: researchId } = await params;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -29,6 +31,18 @@ export default function GroupedResponsesPage({ params }: GroupedResponsesPagePro
             <span>•</span>
             <span>Estructura optimizada para escalabilidad</span>
           </div>
+        </div>
+
+        {/* Prueba del endpoint general */}
+        <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">🧪 Prueba del Endpoint General</h2>
+          <GroupedResponsesTest researchId={researchId} />
+        </div>
+
+        {/* Prueba del endpoint SmartVOC */}
+        <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">🧪 Prueba del Endpoint SmartVOC</h2>
+          <SmartVOCEndpointTest researchId={researchId} />
         </div>
 
         {/* Contenido principal */}

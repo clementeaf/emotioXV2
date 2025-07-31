@@ -936,7 +936,7 @@ export class ModuleResponseController {
    */
   async getResponsesGroupedByQuestion(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      const researchId = event.pathParameters?.id;
+      const researchId = event.pathParameters?.researchId;
 
       if (!researchId) {
         return {

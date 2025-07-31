@@ -48,6 +48,11 @@ const CPVCardSkeleton = () => {
   );
 };
 
+interface UITooltipProps {
+  content: React.ReactNode;
+  children: React.ReactNode;
+}
+
 const UITooltip = ({ content, children }: UITooltipProps) => {
   const [isVisible, setIsVisible] = useState(false);
 

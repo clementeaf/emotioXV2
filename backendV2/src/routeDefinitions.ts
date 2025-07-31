@@ -36,6 +36,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
 
   // Module Responses (Para todos los módulos de public-tests)
   { pathPattern: /^\/module-responses(\/complete)?$/, controllerType: 'module-responses' },
+  { pathPattern: /^\/module-responses\/grouped-by-question\/[^\/]+$/, controllerType: 'module-responses' },
   { pathPattern: /^\/module-responses\/[^\/]+$/, controllerType: 'module-responses' },
   { pathPattern: /^\/module-responses\/research\/[^\/]+$/, controllerType: 'module-responses' },
 

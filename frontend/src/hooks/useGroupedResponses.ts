@@ -1,6 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { moduleResponseService } from '../services/moduleResponseService';
-import { GroupedResponsesResponse } from '../shared/interfaces/module-response.interface';
+
+interface QuestionResponse {
+  participantId: string;
+  value: any;
+  timestamp: string;
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface QuestionWithResponses {
+  questionKey: string;
+  responses: QuestionResponse[];
+}
+
+interface GroupedResponsesResponse {
+  data: QuestionWithResponses[];
+  status: number;
+}
 
 /**
  * Hook personalizado para obtener respuestas agrupadas por pregunta
