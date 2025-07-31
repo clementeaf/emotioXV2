@@ -179,10 +179,6 @@ export function useCognitiveTaskResults(researchId: string) {
       researchConfigData: researchConfig
     });
 
-    if (!researchConfig) {
-      console.log('[useCognitiveTaskResults] ⚠️ No researchConfig available, returning empty array');
-      return [];
-    }
     if (!responses.length) return [];
 
     const questionMap = new Map<string, ProcessedCognitiveData>();
@@ -197,9 +193,13 @@ export function useCognitiveTaskResults(researchId: string) {
         }
 
         if (!questionMap.has(questionKey)) {
+          // Buscar el título en researchConfig si está disponible
+          const questionConfig = researchConfig?.questions?.find((q: any) => q.questionKey === questionKey);
+          const questionTitle = questionConfig?.title || `Pregunta ${questionKey}`;
+
           questionMap.set(questionKey, {
             questionId: questionKey,
-            questionText: `Pregunta ${questionKey}`,
+            questionText: questionTitle,
             questionType: response.questionType || questionKey,
             totalParticipants: responses.length,
             totalResponses: 0
@@ -257,7 +257,7 @@ export function useCognitiveTaskResults(researchId: string) {
           case 'cognitive_single_choice':
             if (!questionData.choiceData) {
               // Buscar la configuración de la pregunta en researchConfig
-              const questionConfig = researchConfig.questions?.find((q: any) => q.questionKey === questionKey);
+              const questionConfig = researchConfig?.questions?.find((q: any) => q.questionKey === questionKey);
 
               questionData.choiceData = {
                 question: questionConfig?.title || `Pregunta ${questionKey}`,
@@ -272,14 +272,9 @@ export function useCognitiveTaskResults(researchId: string) {
                     id: choice.id || `option-${index + 1}`,
                     text: choice.text,
                     count: 0,
-                    percentage: 0, // Se calculará después
-                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
+                    percentage: 0
                   });
                 });
-
-                console.log(`[useCognitiveTaskResults] 🎯 Initialized choice options for ${questionKey}:`, questionData.choiceData!.options);
-              } else {
-                console.log(`[useCognitiveTaskResults] ⚠️ No se encontraron opciones en la configuración para ${questionKey}`);
               }
             }
 
@@ -566,13 +561,16 @@ export function useCognitiveTaskResults(researchId: string) {
         console.warn('[useCognitiveTaskResults] No hay token de autenticación disponible');
       }
 
-      // Usar el endpoint correcto para cognitive task
-      const configResponse = await fetch(`https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev/research/${researchId}/cognitive-task`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
-      });
+      // Cargar configuración y respuestas en paralelo
+      const [configResponse, response] = await Promise.all([
+        fetch(`https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev/research/${researchId}/cognitive-task`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+          }
+        }),
+        moduleResponsesAPI.getResponsesByResearch(researchId)
+      ]);
 
       if (!configResponse.ok) {
         throw new Error(`Error ${configResponse.status}: ${configResponse.statusText}`);
@@ -581,11 +579,10 @@ export function useCognitiveTaskResults(researchId: string) {
       const configData = await configResponse.json();
       setResearchConfig(configData);
 
-      const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
-
       if (!response.data || !Array.isArray(response.data)) {
         throw new Error('Formato de respuesta inválido');
       }
+
       const cognitiveResponses = response.data.filter((participant: any) => {
         const hasCognitiveResponses = participant.responses?.some((response: any) => {
           const isCognitive = response.questionKey?.startsWith('cognitive_');
@@ -596,9 +593,9 @@ export function useCognitiveTaskResults(researchId: string) {
 
       setParticipantResponses(cognitiveResponses);
 
-      // Solo procesar si tenemos tanto las respuestas como la configuración
-      if (researchConfig && cognitiveResponses.length > 0) {
-        console.log('[useCognitiveTaskResults] 🎯 Both researchConfig and responses available, processing data...');
+      // Procesar datos después de tener tanto la configuración como las respuestas
+      if (cognitiveResponses.length > 0) {
+        console.log('[useCognitiveTaskResults] 🎯 Processing responses with config...');
 
         // Procesar datos por tipo de pregunta
         const processed = processDataByType(cognitiveResponses);
@@ -609,10 +606,8 @@ export function useCognitiveTaskResults(researchId: string) {
 
         setProcessedData(processed);
       } else {
-        console.log('[useCognitiveTaskResults] ⏳ Waiting for both researchConfig and responses...', {
-          hasResearchConfig: !!researchConfig,
-          responsesLength: cognitiveResponses.length
-        });
+        console.log('[useCognitiveTaskResults] ⏳ No cognitive responses found');
+        setProcessedData([]);
       }
 
       setLoadingState('success');
@@ -635,21 +630,6 @@ export function useCognitiveTaskResults(researchId: string) {
       loadData();
     }
   }, [researchId]);
-
-  // Reprocesar datos cuando researchConfig cambie
-  useEffect(() => {
-    if (researchConfig && participantResponses.length > 0) {
-      console.log('[useCognitiveTaskResults] 🔄 researchConfig changed, reprocessing data...');
-
-      const processed = processDataByType(participantResponses);
-      console.log('[useCognitiveTaskResults] 📊 Reprocessing result:', {
-        processedLength: processed.length,
-        processed
-      });
-
-      setProcessedData(processed);
-    }
-  }, [researchConfig, participantResponses]);
 
   return {
     // Estado

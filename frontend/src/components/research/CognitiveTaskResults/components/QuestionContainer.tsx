@@ -28,6 +28,7 @@ export type QuestionViewType = 'sentiment' | 'choice' | 'ranking' | 'linear_scal
 
 interface QuestionContainerProps {
   questionId: string;
+  questionText: string; // Agregar el título real de la pregunta
   questionType: string;
   conditionalityDisabled: boolean;
   required?: boolean;
@@ -52,6 +53,7 @@ interface QuestionContainerProps {
 
 export function QuestionContainer({
   questionId,
+  questionText,
   questionType,
   conditionalityDisabled,
   required = false,
@@ -74,6 +76,7 @@ export function QuestionContainer({
       {/* Sección de pregunta y estado */}
       <QuestionInfo
         questionId={questionId}
+        questionText={questionText}
         questionType={questionType}
         conditionalityDisabled={conditionalityDisabled}
         required={required}

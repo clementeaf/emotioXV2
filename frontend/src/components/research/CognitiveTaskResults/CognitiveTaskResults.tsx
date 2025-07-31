@@ -258,8 +258,8 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       };
 
       return {
-        key: `question-${question.questionKey}`,
-        questionId: question.questionKey,
+        key: `question-${question.id}`,
+        questionId: question.id,
         questionType: getQuestionType(question.type),
         questionText: question.title || question.description || `Pregunta ${question.id}`,
         required: question.required || false,
@@ -283,77 +283,8 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
   // Usar datos procesados cuando estén disponibles, o las preguntas de configuración
   let finalQuestions;
 
-  if (processedData.length > 0) {
-    // Usar datos procesados con respuestas reales
-    finalQuestions = processedData.map((data: any, index: number) => {
-      // Mapear tipos de pregunta cognitiva a tipos de visualización
-      const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
-        switch (questionType) {
-          case 'cognitive_short_text':
-          case 'cognitive_long_text':
-            return 'sentiment';
-          case 'cognitive_single_choice':
-          case 'cognitive_multiple_choice':
-            return 'choice';
-          case 'cognitive_ranking':
-            return 'ranking';
-          case 'cognitive_linear_scale':
-            return 'linear_scale';
-          case 'cognitive_preference_test':
-            return 'preference';
-          case 'cognitive_image_selection':
-            return 'image_selection';
-          case 'cognitive_navigation_flow':
-            return 'navigation_flow';
-          default:
-            return 'sentiment';
-        }
-      };
-
-      // Mapear tipos de pregunta a tipos de visualización
-      const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' => {
-        switch (questionType) {
-          case 'cognitive_short_text':
-            return 'short_text';
-          case 'cognitive_long_text':
-            return 'long_text';
-          case 'cognitive_single_choice':
-          case 'cognitive_multiple_choice':
-            return 'multiple_choice';
-          case 'cognitive_ranking':
-          case 'cognitive_linear_scale':
-          case 'cognitive_preference_test':
-          case 'cognitive_image_selection':
-          case 'cognitive_navigation_flow':
-            return 'rating';
-          default:
-            return 'short_text';
-        }
-      };
-
-      return {
-        key: `question-${data.questionId}`,
-        questionId: data.questionId,
-        questionType: getQuestionType(data.questionType),
-        questionText: data.questionText,
-        required: true,
-        conditionalityDisabled: true,
-        hasNewData: data.totalResponses > 0,
-        viewType: getViewType(data.questionType),
-        sentimentData: data.sentimentData,
-        choiceData: data.choiceData,
-        rankingData: data.rankingData,
-        linearScaleData: data.linearScaleData,
-        ratingData: data.ratingData,
-        preferenceTestData: data.preferenceTestData,
-        imageSelectionData: data.imageSelectionData,
-        navigationFlowData: data.navigationFlowData,
-        initialActiveTab: 'sentiment' as const,
-        themeImageSrc: '',
-      };
-    });
-  } else if (researchConfig?.questions) {
-    // Usar preguntas de configuración sin respuestas
+  if (researchConfig?.questions) {
+    // Siempre usar preguntas de configuración cuando estén disponibles
     finalQuestions = researchConfig.questions.map((question: any) => {
       // Mapear tipos de pregunta cognitiva a tipos de visualización
       const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
@@ -400,23 +331,26 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         }
       };
 
+      // Buscar datos procesados correspondientes a esta pregunta
+      const processedDataForQuestion = processedData.find((data: any) => data.questionId === question.questionKey);
+
       return {
-        key: `question-${question.questionKey}`,
-        questionId: question.questionKey,
+        key: `question-${question.id}`,
+        questionId: question.id,
         questionType: getQuestionType(question.type),
         questionText: question.title || question.description || `Pregunta ${question.id}`,
         required: question.required || false,
         conditionalityDisabled: question.showConditionally || false,
-        hasNewData: false,
+        hasNewData: processedDataForQuestion ? processedDataForQuestion.totalResponses > 0 : false,
         viewType: getViewType(question.type),
-        sentimentData: undefined,
-        choiceData: undefined,
-        rankingData: undefined,
-        linearScaleData: undefined,
-        ratingData: undefined,
-        preferenceTestData: undefined,
-        imageSelectionData: undefined,
-        navigationFlowData: undefined,
+        sentimentData: processedDataForQuestion?.sentimentData,
+        choiceData: processedDataForQuestion?.choiceData,
+        rankingData: processedDataForQuestion?.rankingData,
+        linearScaleData: processedDataForQuestion?.linearScaleData,
+        ratingData: processedDataForQuestion?.ratingData,
+        preferenceTestData: processedDataForQuestion?.preferenceTestData,
+        imageSelectionData: processedDataForQuestion?.imageSelectionData,
+        navigationFlowData: processedDataForQuestion?.navigationFlowData,
         initialActiveTab: 'sentiment' as const,
         themeImageSrc: '',
       };
@@ -437,6 +371,30 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     }))
   });
 
+  console.log('[CognitiveTaskResults] 🔍 DEBUG - Datos completos:', {
+    processedDataLength: processedData.length,
+    researchConfigExists: !!researchConfig,
+    researchConfigQuestions: researchConfig?.questions?.map((q: any) => ({
+      id: q.id,
+      title: q.title,
+      type: q.type,
+      questionKey: q.questionKey
+    })),
+    finalQuestions: finalQuestions.map((q: any) => ({
+      questionId: q.questionId,
+      questionText: q.questionText,
+      questionType: q.questionType
+    }))
+  });
+
+  console.log('[CognitiveTaskResults] 🔍 DEBUG - ¿Qué lógica se está usando?', {
+    tieneProcessedData: processedData.length > 0,
+    tieneResearchConfig: !!researchConfig?.questions,
+    usandoProcessedData: processedData.length > 0,
+    usandoResearchConfig: !processedData.length && !!researchConfig?.questions,
+    usandoFallback: !processedData.length && !researchConfig?.questions
+  });
+
   return (
     <div className="flex gap-8">
       <div className="flex-1 space-y-8">
@@ -446,6 +404,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           <QuestionContainer
             key={q.key}
             questionId={q.questionId}
+            questionText={q.questionText}
             questionType={q.questionType}
             conditionalityDisabled={q.conditionalityDisabled}
             required={q.required}

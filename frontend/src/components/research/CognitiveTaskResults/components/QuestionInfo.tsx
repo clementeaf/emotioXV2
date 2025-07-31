@@ -4,6 +4,7 @@
 
 interface QuestionInfoProps {
   questionId: string;
+  questionText: string; // Agregar el título real de la pregunta
   questionType: string;
   conditionalityDisabled: boolean;
   required: boolean;
@@ -12,6 +13,7 @@ interface QuestionInfoProps {
 
 export function QuestionInfo({
   questionId,
+  questionText,
   questionType,
   conditionalityDisabled,
   required,
@@ -21,7 +23,7 @@ export function QuestionInfo({
     <div className="p-5 border-b border-neutral-200">
       <div className="flex items-center flex-wrap gap-4">
         <span className="font-medium text-neutral-800 mr-2">
-          {(questionId === '3.7' || questionId === '3.7-detail') ? '3.7.- Navigation Test' : `${questionId}.- Question`}
+          {questionText}
         </span>
         <div className="flex items-center gap-2 ml-2">
           {(questionId === '3.7' || questionId === '3.7-detail') && (
