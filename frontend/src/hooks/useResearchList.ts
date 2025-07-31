@@ -18,6 +18,8 @@ export const useResearchList = () => {
   return useQuery<Research[]>({
     queryKey: ['research', 'all'],
     queryFn: async () => {
+      console.log('[useResearchList] 🚀 Iniciando fetch de research/all');
+
       const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
         method: 'GET',
         headers: {
@@ -26,17 +28,25 @@ export const useResearchList = () => {
         }
       });
 
+      console.log('[useResearchList] 📡 Response status:', response.status);
+
       if (!response.ok) {
         throw new Error(`Error al obtener las investigaciones: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('[useResearchList] 📊 Raw response data:', data);
+
       const researchData = data?.data || data;
+      console.log('[useResearchList] 🔍 Processed research data:', researchData);
 
       // Verificar que cada item tenga un ID válido antes de agregarlo
-      return Array.isArray(researchData)
+      const filteredData = Array.isArray(researchData)
         ? researchData.filter(item => item && item.id)
         : [];
+
+      console.log('[useResearchList] ✅ Final filtered data:', filteredData);
+      return filteredData;
     },
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 5 * 60 * 1000, // 5 minutos

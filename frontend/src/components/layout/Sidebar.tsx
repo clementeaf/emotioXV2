@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
-import { API_HTTP_ENDPOINT, navigateToPublicTests } from '@/api/endpoints';
+import { navigateToPublicTests } from '@/api/endpoints';
 import { Button } from '@/components/ui/Button';
+import { useResearchList } from '@/hooks/useResearchList';
 import { researchAPI } from '@/lib/api';
-import { useResearchList, useResearchById } from '@/hooks/useResearchList';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
@@ -153,6 +153,12 @@ function SidebarContent({ className }: SidebarProps) {
 
   // Procesar research reciente desde los datos centralizados
   useEffect(() => {
+    console.log('[Sidebar] 🔍 Debug Research Data:', {
+      allResearchLength: allResearch.length,
+      isLoadingResearchData,
+      allResearch: allResearch
+    });
+
     if (allResearch.length > 0) {
       const sortedResearch = allResearch
         .sort((a: Research, b: Research) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -163,12 +169,17 @@ function SidebarContent({ className }: SidebarProps) {
           technique: typeof item.technique === 'string' && item.technique ? item.technique : 'Unknown',
           createdAt: item.createdAt
         }));
+
+      console.log('[Sidebar] ✅ Processed Recent Research:', sortedResearch);
       setRecentResearch(sortedResearch);
       setShowNoResearchMessage(false);
     } else {
+      console.log('[Sidebar] ❌ No research data available');
       setShowNoResearchMessage(true);
     }
-  }, [allResearch]);
+    // Actualizar el estado de carga
+    setIsLoadingResearch(isLoadingResearchData);
+  }, [allResearch, isLoadingResearchData]);
 
   // Cargar nombre de la investigación actual si estamos en modo investigación
   useEffect(() => {
