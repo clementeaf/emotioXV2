@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { z } from 'zod';
 import { getCorsHeaders } from '../middlewares/cors';
-import { CreateModuleResponseDtoSchema, UpdateModuleResponseDtoSchema } from '../models/moduleResponse.model';
+import { CreateModuleResponseDtoSchema, ParticipantResponsesDocument, UpdateModuleResponseDtoSchema } from '../models/moduleResponse.model';
 import { moduleResponseService } from '../services/moduleResponse.service';
 
 /**
@@ -28,28 +28,11 @@ export class ModuleResponseController {
 
       const data = JSON.parse(event.body);
 
-      // NUEVO: Logs detallados para debugging
-      console.log(`[ModuleResponseController.saveResponse] 📝 Recibiendo respuesta:`, {
-        researchId: data.researchId,
-        participantId: data.participantId,
-        questionKey: data.questionKey,
-        responsesCount: data.responses?.length || 0
-      });
-
       // Validar los datos utilizando el esquema
       const validatedData = CreateModuleResponseDtoSchema.parse(data);
 
-      console.log(`[ModuleResponseController.saveResponse] ✅ Guardando con questionKey: ${validatedData.questionKey} y ${validatedData.responses.length} respuestas`);
-
       // Guardar la respuesta (el servicio decide si es crear o actualizar)
       const savedResponse = await moduleResponseService.saveModuleResponse(validatedData);
-
-      console.log(`[ModuleResponseController.saveResponse] ✅ Respuesta guardada exitosamente:`, {
-        responseId: savedResponse.id,
-        questionKey: savedResponse.questionKey,
-        responsesCount: Array.isArray(savedResponse.responses) ? savedResponse.responses.length : 0,
-        quotaResult: savedResponse.quotaResult
-      });
 
       // 🎯 INCLUIR RESULTADO DE CUOTA EN LA RESPUESTA
       const responseData = {
@@ -386,8 +369,6 @@ export class ModuleResponseController {
         };
       }
 
-      console.log(`[ModuleResponseController.getSmartVOCResults] 🔍 Obteniendo resultados SmartVOC para research: ${researchId}`);
-
       // Obtener todos los participantes de la investigación
       const participants = await moduleResponseService.getParticipantsByResearch(researchId);
 
@@ -413,9 +394,6 @@ export class ModuleResponseController {
           })
         };
       }
-
-      console.log(`[ModuleResponseController.getSmartVOCResults] 📊 Encontrados ${participants.length} participantes`);
-
       // Función para parsear valores de respuesta
       const parseResponseValue = (response: any): number => {
         if (typeof response === 'number') return response;
@@ -511,8 +489,6 @@ export class ModuleResponseController {
           }
         }
       }
-
-      console.log(`[ModuleResponseController.getSmartVOCResults] 📈 Procesando ${allSmartVOCResponses.length} respuestas SmartVOC`);
 
       // Calcular métricas agregadas
       const totalResponses = allSmartVOCResponses.length;
@@ -639,21 +615,6 @@ export class ModuleResponseController {
         cvNeutral
       };
 
-      console.log(`[ModuleResponseController.getSmartVOCResults] ✅ Resultados procesados:`, {
-        totalResponses,
-        uniqueParticipants,
-        npsScore,
-        averageScore,
-        promoters,
-        detractors,
-        neutrals,
-        cpvValue,
-        cvScore,
-        cvPositive,
-        cvNegative,
-        cvNeutral
-      });
-
       return {
         statusCode: 200,
         headers: getCorsHeaders(event),
@@ -694,8 +655,6 @@ export class ModuleResponseController {
         };
       }
 
-      console.log(`[ModuleResponseController.getCPVResults] 🔍 Obteniendo resultados CPV para research: ${researchId}`);
-
       // Obtener todos los participantes de la investigación
       const participants = await moduleResponseService.getParticipantsByResearch(researchId);
 
@@ -716,8 +675,6 @@ export class ModuleResponseController {
           })
         };
       }
-
-      console.log(`[ModuleResponseController.getCPVResults] 📊 Encontrados ${participants.length} participantes`);
 
       // Función para parsear valores de respuesta
       const parseResponseValue = (response: any): number => {
@@ -760,8 +717,6 @@ export class ModuleResponseController {
         }
       }
 
-      console.log(`[ModuleResponseController.getCPVResults] 📈 Procesando ${csatScores.length} scores CSAT y ${npsScores.length} scores NPS`);
-
       // Calcular métricas específicas para CPVCard
       const cpvValue = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
       const satisfaction = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
@@ -798,7 +753,6 @@ export class ModuleResponseController {
         trend
       };
 
-      console.log(`[ModuleResponseController.getCPVResults] ✅ Resultados CPV procesados:`, result);
 
       return {
         statusCode: 200,
@@ -840,8 +794,6 @@ export class ModuleResponseController {
         };
       }
 
-      console.log(`[ModuleResponseController.getTrustFlowResults] 🔍 Obteniendo resultados Trust Flow para research: ${researchId}`);
-
       // Obtener todos los participantes de la investigación
       const participants = await moduleResponseService.getParticipantsByResearch(researchId);
 
@@ -860,8 +812,6 @@ export class ModuleResponseController {
           })
         };
       }
-
-      console.log(`[ModuleResponseController.getTrustFlowResults] 📊 Encontrados ${participants.length} participantes`);
 
       // Función para parsear valores de respuesta
       const parseResponseValue = (response: any): number => {
@@ -901,8 +851,6 @@ export class ModuleResponseController {
           }
         }
       }
-
-      console.log(`[ModuleResponseController.getTrustFlowResults] 📈 Procesando ${allResponses.length} respuestas NPS y NEV`);
 
       // Agrupar respuestas por fecha para time series
       const responsesByDate: { [key: string]: any[] } = {};
@@ -960,12 +908,6 @@ export class ModuleResponseController {
         uniqueDates: timeSeriesData.length
       };
 
-      console.log(`[ModuleResponseController.getTrustFlowResults] ✅ Resultados Trust Flow procesados:`, {
-        totalResponses: result.totalResponses,
-        uniqueDates: result.uniqueDates,
-        timeSeriesDataPoints: result.timeSeriesData.length
-      });
-
       return {
         statusCode: 200,
         headers: getCorsHeaders(event),
@@ -987,6 +929,122 @@ export class ModuleResponseController {
       };
     }
   }
+
+  /**
+   * Obtener respuestas agrupadas por pregunta para análisis estadísticos
+   * Esta estructura es más eficiente para análisis de múltiples participantes
+   */
+  async getResponsesGroupedByQuestion(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const researchId = event.pathParameters?.id;
+
+      if (!researchId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Se requiere researchId',
+            status: 400
+          })
+        };
+      }
+
+      // Obtener todas las respuestas del research
+      const allResponses = await moduleResponseService.getResponsesByResearch(researchId);
+
+      // Transformar la estructura: de participantes con respuestas a preguntas con respuestas
+      const groupedByQuestion = this.transformToQuestionBasedStructure(allResponses);
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: groupedByQuestion,
+          status: 200
+        })
+      };
+    } catch (error: any) {
+      console.error('Error al obtener respuestas agrupadas por pregunta:', error);
+
+      return {
+        statusCode: error.statusCode || 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: error.message || 'Error al obtener respuestas agrupadas por pregunta',
+          status: error.statusCode || 500
+        })
+      };
+    }
+  }
+
+  /**
+   * Transforma la estructura de participantes con respuestas a preguntas con respuestas
+   * @param participantResponses Array de documentos de respuestas de participantes
+   * @returns Array de preguntas con respuestas de todos los participantes
+   */
+  private transformToQuestionBasedStructure(
+    participantResponses: ParticipantResponsesDocument[]
+  ): Array<{
+    questionKey: string;
+    responses: Array<{
+      participantId: string;
+      value: any;
+      timestamp: string;
+      metadata: any;
+      createdAt: string;
+      updatedAt?: string;
+    }>;
+  }> {
+    // Mapa para agrupar respuestas por questionKey
+    const questionMap = new Map<string, Array<{
+      participantId: string;
+      value: any;
+      timestamp: string;
+      metadata: any;
+      createdAt: string;
+      updatedAt?: string;
+    }>>();
+
+    // Iterar sobre cada participante
+    participantResponses.forEach(participantDoc => {
+      const { participantId, responses } = participantDoc;
+
+      // Iterar sobre cada respuesta del participante
+      responses.forEach(response => {
+        const { questionKey, response: responseValue, timestamp, metadata, createdAt, updatedAt } = response;
+
+        // Si no existe el questionKey en el mapa, crear un array vacío
+        if (!questionMap.has(questionKey)) {
+          questionMap.set(questionKey, []);
+        }
+
+        // Agregar la respuesta al array correspondiente
+        if (responseValue !== null) {
+          questionMap.get(questionKey)!.push({
+            participantId,
+            value: typeof responseValue === 'object' && responseValue !== null && 'value' in responseValue
+              ? responseValue.value
+              : responseValue,
+            timestamp,
+            metadata: metadata || {},
+            createdAt,
+            updatedAt
+          });
+        }
+      });
+    });
+
+    // Convertir el mapa a array de objetos
+    const result = Array.from(questionMap.entries()).map(([questionKey, responses]) => ({
+      questionKey,
+      responses
+    }));
+
+    // Ordenar por questionKey para consistencia
+    result.sort((a, b) => a.questionKey.localeCompare(b.questionKey));
+
+    return result;
+  }
 }
 
 /**
@@ -997,7 +1055,6 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
   const resource = event.resource;
   const method = event.httpMethod;
   const actualPath = event.path;
-  const pathParameters = event.pathParameters;
 
   // Agregar encabezados CORS a las respuestas OPTIONS
   if (method === 'OPTIONS') {
@@ -1040,6 +1097,10 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
 
     if (resource === '/module-responses/trustflow/{researchId}' && method === 'GET') {
       return await controller.getTrustFlowResults(event);
+    }
+
+    if (resource === '/module-responses/grouped-by-question/{researchId}' && method === 'GET') {
+      return await controller.getResponsesGroupedByQuestion(event);
     }
 
     if (resource === '/module-responses' && method === 'DELETE') {

@@ -52,10 +52,6 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
     }
   };
 
-  // Debug log para ver los datos recibidos
-  console.log('[PreferenceTestResults] 📊 Data received:', data);
-  console.log('[PreferenceTestResults] 🎯 Options:', data.options.map(opt => ({ name: opt.name, extracted: extractOptionName(opt) })));
-
   const {
     question,
     description,
@@ -64,8 +60,6 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
     totalParticipants,
     responseTime,
     preferenceAnalysis,
-    mostPreferred,
-    leastPreferred
   } = data;
 
   // Preparar datos para gráficos

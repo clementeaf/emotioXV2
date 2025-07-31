@@ -274,7 +274,6 @@ export function useCognitiveTaskResults(researchId: string) {
 
             // Procesar opciones de selección
             let selectedOption = '';
-
             // Extraer la opción seleccionada de diferentes formatos posibles
             if (response.response?.value) {
               selectedOption = response.response.value;
@@ -290,20 +289,30 @@ export function useCognitiveTaskResults(researchId: string) {
               selectedOption = JSON.stringify(response.response);
             }
 
-            if (selectedOption) {
+            if (selectedOption && questionData.choiceData) {
+              // Para opción múltiple, selectedOption puede ser un array
+              const optionsToProcess = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
 
-              const existingOption = questionData.choiceData.options.find(opt => opt.text === selectedOption);
-              if (existingOption) {
-                existingOption.count = (existingOption.count || 0) + 1;
-              } else {
-                questionData.choiceData.options.push({
-                  id: `option-${questionData.choiceData.options.length + 1}`,
-                  text: selectedOption,
-                  count: 1,
-                  percentage: 0, // Se calculará después
-                  color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
-                });
-              }
+              optionsToProcess.forEach(option => {
+                // Buscar la opción por ID primero, luego por texto
+                let existingOption = questionData.choiceData!.options.find(opt => opt.id === option);
+                if (!existingOption) {
+                  existingOption = questionData.choiceData!.options.find(opt => opt.text === option);
+                }
+
+                if (existingOption) {
+                  existingOption.count = (existingOption.count || 0) + 1;
+                } else {
+                  // Si no se encuentra, agregar como nueva opción
+                  questionData.choiceData!.options.push({
+                    id: option,
+                    text: option,
+                    count: 1,
+                    percentage: 0, // Se calculará después
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
+                  });
+                }
+              });
             }
             break;
 
@@ -479,9 +488,9 @@ export function useCognitiveTaskResults(researchId: string) {
     questionMap.forEach((questionData) => {
       // Calcular porcentajes para choice data
       if (questionData.choiceData) {
-        const total = questionData.choiceData.options.reduce((sum, opt) => sum + (opt.count || 0), 0);
+        const total = questionData.choiceData.options.reduce((sum, opt) => sum + opt.count, 0);
         questionData.choiceData.options.forEach(opt => {
-          opt.percentage = total > 0 ? Math.round(((opt.count || 0) / total) * 100) : 0;
+          opt.percentage = total > 0 ? Math.round((opt.count / total) * 100) : 0;
         });
         questionData.choiceData.totalResponses = total;
       }

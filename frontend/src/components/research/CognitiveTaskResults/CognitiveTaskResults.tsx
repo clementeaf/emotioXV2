@@ -334,6 +334,13 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       // Buscar datos procesados correspondientes a esta pregunta
       const processedDataForQuestion = processedData.find((data: any) => data.questionId === question.questionKey);
 
+      console.log('[CognitiveTaskResults] 🔍 Pregunta:', question.questionKey, {
+        questionTitle: question.title,
+        processedDataForQuestion: processedDataForQuestion,
+        choiceData: processedDataForQuestion?.choiceData,
+        choiceOptions: processedDataForQuestion?.choiceData?.options
+      });
+
       return {
         key: `question-${question.id}`,
         questionId: question.id,

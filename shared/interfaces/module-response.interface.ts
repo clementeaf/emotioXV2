@@ -1,11 +1,11 @@
 /**
  * Tipos de respuestas posibles para los diferentes módulos
  */
-export type ModuleResponseValue = 
-  | string 
-  | string[] 
-  | number 
-  | boolean 
+export type ModuleResponseValue =
+  | string
+  | string[]
+  | number
+  | boolean
   | { [key: string]: any }
   | null;
 
@@ -100,4 +100,69 @@ export interface CreateModuleResponseDto {
  */
 export interface UpdateModuleResponseDto {
   response: ModuleResponseValue;
-} 
+}
+
+/**
+ * Interfaz para una respuesta individual en el formato agrupado por pregunta
+ */
+export interface QuestionResponse {
+  /**
+   * ID del participante que dio esta respuesta
+   */
+  participantId: string;
+
+  /**
+   * Valor de la respuesta (puede ser de diversos tipos según el módulo)
+   */
+  value: ModuleResponseValue;
+
+  /**
+   * Timestamp de cuándo se dio la respuesta
+   */
+  timestamp: string;
+
+  /**
+   * Metadata específica de la respuesta
+   */
+  metadata: Record<string, any>;
+
+  /**
+   * Timestamp de cuándo se creó la respuesta
+   */
+  createdAt: string;
+
+  /**
+   * Timestamp de cuándo se actualizó la respuesta (si aplica)
+   */
+  updatedAt?: string;
+}
+
+/**
+ * Interfaz para una pregunta con todas las respuestas de todos los participantes
+ */
+export interface QuestionWithResponses {
+  /**
+   * Clave única de la pregunta
+   */
+  questionKey: string;
+
+  /**
+   * Array de respuestas de todos los participantes para esta pregunta
+   */
+  responses: QuestionResponse[];
+}
+
+/**
+ * Interfaz para la respuesta del endpoint de respuestas agrupadas por pregunta
+ */
+export interface GroupedResponsesResponse {
+  /**
+   * Array de preguntas con sus respuestas
+   */
+  data: QuestionWithResponses[];
+
+  /**
+   * Código de estado HTTP
+   */
+  status: number;
+}
