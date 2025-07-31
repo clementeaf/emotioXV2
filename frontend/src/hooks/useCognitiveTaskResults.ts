@@ -558,7 +558,26 @@ export function useCognitiveTaskResults(researchId: string) {
     setError(null);
 
     try {
-      const configResponse = await fetch(`https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev/research/${researchId}/cognitive-task`);
+      // Obtener token usando el servicio correcto
+      const { default: tokenService } = await import('@/services/tokenService');
+      const token = tokenService.getToken();
+
+      if (!token) {
+        console.warn('[useCognitiveTaskResults] No hay token de autenticación disponible');
+      }
+
+      // Usar el endpoint correcto para cognitive task
+      const configResponse = await fetch(`https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev/research/${researchId}/cognitive-task`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+
+      if (!configResponse.ok) {
+        throw new Error(`Error ${configResponse.status}: ${configResponse.statusText}`);
+      }
+
       const configData = await configResponse.json();
       setResearchConfig(configData);
 
@@ -638,6 +657,7 @@ export function useCognitiveTaskResults(researchId: string) {
     error,
     participantResponses,
     processedData,
+    researchConfig,
 
     // Acciones
     refetch,

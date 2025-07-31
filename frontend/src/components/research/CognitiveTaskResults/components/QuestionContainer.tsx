@@ -47,8 +47,7 @@ interface QuestionContainerProps {
   themeImageSrc?: string;
   // Props específicos para la visualización de choice
   choiceImageSrc?: string;
-  // Estado de carga
-  isLoading?: boolean;
+
 }
 
 export function QuestionContainer({
@@ -68,8 +67,7 @@ export function QuestionContainer({
   navigationFlowData,
   initialActiveTab,
   themeImageSrc,
-  choiceImageSrc,
-  isLoading = false
+  choiceImageSrc
 }: QuestionContainerProps) {
   return (
     <div className="w-full bg-white rounded-lg border border-neutral-200 mb-6">
@@ -84,15 +82,7 @@ export function QuestionContainer({
 
       {/* Contenido principal según el tipo de visualización */}
       {viewType === 'sentiment' && (
-        isLoading ? (
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
-              <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-32 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        ) : sentimentData ? (
+        sentimentData ? (
           <MainContent
             data={sentimentData}
             initialActiveTab={initialActiveTab}
@@ -104,15 +94,7 @@ export function QuestionContainer({
       )}
 
       {viewType === 'choice' && (
-        isLoading ? (
-          <div className="p-6">
-            <div className="space-y-3">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/4"></div>
-              <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        ) : choiceData ? (
+        choiceData ? (
           <ChoiceResults
             data={choiceData}
             imageSrc={choiceImageSrc}
@@ -123,15 +105,7 @@ export function QuestionContainer({
       )}
 
       {viewType === 'ranking' && (
-        isLoading ? (
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
-              <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        ) : rankingData ? (
+        rankingData ? (
           <RankingResults
             data={rankingData}
           />
@@ -141,14 +115,7 @@ export function QuestionContainer({
       )}
 
       {viewType === 'linear_scale' && (
-        isLoading ? (
-          <div className="p-6">
-            <div className="space-y-3">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/4"></div>
-              <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        ) : linearScaleData ? (
+        linearScaleData ? (
           <LinearScaleResults
             data={linearScaleData}
           />
@@ -158,14 +125,7 @@ export function QuestionContainer({
       )}
 
       {viewType === 'rating' && (
-        isLoading ? (
-          <div className="p-6">
-            <div className="space-y-3">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/4"></div>
-              <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        ) : ratingData ? (
+        ratingData ? (
           <RatingResults
             data={ratingData}
           />
@@ -175,14 +135,7 @@ export function QuestionContainer({
       )}
 
       {viewType === 'preference' && (
-        isLoading ? (
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
-              <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        ) : preferenceTestData ? (
+        preferenceTestData ? (
           <PreferenceTestResults
             data={preferenceTestData}
           />
@@ -192,17 +145,7 @@ export function QuestionContainer({
       )}
 
       {viewType === 'image_selection' && (
-        isLoading ? (
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="h-24 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-24 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        ) : imageSelectionData ? (
+        imageSelectionData ? (
           <ImageSelectionResults
             data={imageSelectionData}
           />
@@ -212,14 +155,7 @@ export function QuestionContainer({
       )}
 
       {viewType === 'navigation_flow' && (
-        isLoading ? (
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
-              <div className="h-32 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        ) : navigationFlowData ? (
+        navigationFlowData ? (
           <NavigationFlowResults
             data={navigationFlowData}
           />

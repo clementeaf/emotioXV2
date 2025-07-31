@@ -6,7 +6,6 @@ import React from 'react';
 import { Filters } from '../../research/SmartVOCResults/Filters';
 import {
   CognitiveTaskHeader,
-  CognitiveTaskResultsSkeleton,
   ErrorState,
   QuestionContainer
 } from './components';
@@ -24,6 +23,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     error,
     participantResponses,
     processedData,
+    researchConfig,
     refetch,
     isLoading,
     isError,
@@ -43,141 +43,398 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     );
   }
 
-  // Usar datos reales procesados del hook
-  const questions = processedData.map((data, index) => {
-    // Mapear tipos de pregunta cognitiva a tipos de visualización
-    const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
-      switch (questionType) {
-        case 'cognitive_short_text':
-        case 'cognitive_long_text':
-          return 'sentiment';
-        case 'cognitive_single_choice':
-        case 'cognitive_multiple_choice':
-          return 'choice';
-        case 'cognitive_ranking':
-          return 'ranking';
-        case 'cognitive_linear_scale':
-          return 'linear_scale';
-        case 'cognitive_preference_test':
-          return 'preference';
-        case 'cognitive_image_selection':
-          return 'image_selection';
-        case 'cognitive_navigation_flow':
-          return 'navigation_flow';
-        default:
-          return 'sentiment';
-      }
-    };
+  // Crear preguntas desde la configuración real del backend
+  const createQuestionsFromConfig = () => {
+    if (!researchConfig?.questions) {
+      // Fallback: crear preguntas temporales mientras se carga la configuración
+      return [
+        {
+          key: 'question-cognitive_short_text',
+          questionId: 'cognitive_short_text',
+          questionType: 'short_text' as const,
+          questionText: 'Pregunta breve',
+          required: false,
+          conditionalityDisabled: false,
+          hasNewData: false,
+          viewType: 'sentiment' as const,
+          sentimentData: undefined,
+          choiceData: undefined,
+          rankingData: undefined,
+          linearScaleData: undefined,
+          ratingData: undefined,
+          preferenceTestData: undefined,
+          imageSelectionData: undefined,
+          navigationFlowData: undefined,
+          initialActiveTab: 'sentiment' as const,
+          themeImageSrc: '',
+        },
+        {
+          key: 'question-cognitive_long_text',
+          questionId: 'cognitive_long_text',
+          questionType: 'long_text' as const,
+          questionText: 'Crees que podría mejorar?',
+          required: false,
+          conditionalityDisabled: false,
+          hasNewData: false,
+          viewType: 'sentiment' as const,
+          sentimentData: undefined,
+          choiceData: undefined,
+          rankingData: undefined,
+          linearScaleData: undefined,
+          ratingData: undefined,
+          preferenceTestData: undefined,
+          imageSelectionData: undefined,
+          navigationFlowData: undefined,
+          initialActiveTab: 'sentiment' as const,
+          themeImageSrc: '',
+        },
+        {
+          key: 'question-cognitive_single_choice',
+          questionId: 'cognitive_single_choice',
+          questionType: 'multiple_choice' as const,
+          questionText: 'Cual de estos colores prefieres?',
+          required: false,
+          conditionalityDisabled: false,
+          hasNewData: false,
+          viewType: 'choice' as const,
+          sentimentData: undefined,
+          choiceData: undefined,
+          rankingData: undefined,
+          linearScaleData: undefined,
+          ratingData: undefined,
+          preferenceTestData: undefined,
+          imageSelectionData: undefined,
+          navigationFlowData: undefined,
+          initialActiveTab: 'sentiment' as const,
+          themeImageSrc: '',
+        },
+        {
+          key: 'question-cognitive_multiple_choice',
+          questionId: 'cognitive_multiple_choice',
+          questionType: 'multiple_choice' as const,
+          questionText: 'Cual de estas opciones prefieres?',
+          required: false,
+          conditionalityDisabled: false,
+          hasNewData: false,
+          viewType: 'choice' as const,
+          sentimentData: undefined,
+          choiceData: undefined,
+          rankingData: undefined,
+          linearScaleData: undefined,
+          ratingData: undefined,
+          preferenceTestData: undefined,
+          imageSelectionData: undefined,
+          navigationFlowData: undefined,
+          initialActiveTab: 'sentiment' as const,
+          themeImageSrc: '',
+        },
+        {
+          key: 'question-cognitive_linear_scale',
+          questionId: 'cognitive_linear_scale',
+          questionType: 'rating' as const,
+          questionText: 'Califica a la marca',
+          required: false,
+          conditionalityDisabled: false,
+          hasNewData: false,
+          viewType: 'linear_scale' as const,
+          sentimentData: undefined,
+          choiceData: undefined,
+          rankingData: undefined,
+          linearScaleData: undefined,
+          ratingData: undefined,
+          preferenceTestData: undefined,
+          imageSelectionData: undefined,
+          navigationFlowData: undefined,
+          initialActiveTab: 'sentiment' as const,
+          themeImageSrc: '',
+        },
+        {
+          key: 'question-cognitive_ranking',
+          questionId: 'cognitive_ranking',
+          questionType: 'rating' as const,
+          questionText: 'Cual es tu mayor preferencia',
+          required: false,
+          conditionalityDisabled: false,
+          hasNewData: false,
+          viewType: 'ranking' as const,
+          sentimentData: undefined,
+          choiceData: undefined,
+          rankingData: undefined,
+          linearScaleData: undefined,
+          ratingData: undefined,
+          preferenceTestData: undefined,
+          imageSelectionData: undefined,
+          navigationFlowData: undefined,
+          initialActiveTab: 'sentiment' as const,
+          themeImageSrc: '',
+        },
+        {
+          key: 'question-cognitive_navigation_flow',
+          questionId: 'cognitive_navigation_flow',
+          questionType: 'rating' as const,
+          questionText: 'Flujo de navegación',
+          required: false,
+          conditionalityDisabled: false,
+          hasNewData: false,
+          viewType: 'navigation_flow' as const,
+          sentimentData: undefined,
+          choiceData: undefined,
+          rankingData: undefined,
+          linearScaleData: undefined,
+          ratingData: undefined,
+          preferenceTestData: undefined,
+          imageSelectionData: undefined,
+          navigationFlowData: undefined,
+          initialActiveTab: 'sentiment' as const,
+          themeImageSrc: '',
+        },
+        {
+          key: 'question-cognitive_preference_test',
+          questionId: 'cognitive_preference_test',
+          questionType: 'rating' as const,
+          questionText: 'Cual de estas imagenes te parece mas adecuada?',
+          required: false,
+          conditionalityDisabled: false,
+          hasNewData: false,
+          viewType: 'preference' as const,
+          sentimentData: undefined,
+          choiceData: undefined,
+          rankingData: undefined,
+          linearScaleData: undefined,
+          ratingData: undefined,
+          preferenceTestData: undefined,
+          imageSelectionData: undefined,
+          navigationFlowData: undefined,
+          initialActiveTab: 'sentiment' as const,
+          themeImageSrc: '',
+        }
+      ];
+    }
 
-    // Mapear tipos de pregunta a tipos de visualización
-    const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' => {
-      switch (questionType) {
-        case 'cognitive_short_text':
-          return 'short_text';
-        case 'cognitive_long_text':
-          return 'long_text';
-        case 'cognitive_single_choice':
-        case 'cognitive_multiple_choice':
-          return 'multiple_choice';
-        case 'cognitive_ranking':
-        case 'cognitive_linear_scale':
-        case 'cognitive_preference_test':
-        case 'cognitive_image_selection':
-        case 'cognitive_navigation_flow':
-          return 'rating';
-        default:
-          return 'short_text';
-      }
-    };
+    return researchConfig.questions.map((question: any) => {
+      // Mapear tipos de pregunta cognitiva a tipos de visualización
+      const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
+        switch (questionType) {
+          case 'cognitive_short_text':
+          case 'cognitive_long_text':
+            return 'sentiment';
+          case 'cognitive_single_choice':
+          case 'cognitive_multiple_choice':
+            return 'choice';
+          case 'cognitive_ranking':
+            return 'ranking';
+          case 'cognitive_linear_scale':
+            return 'linear_scale';
+          case 'cognitive_preference_test':
+            return 'preference';
+          case 'cognitive_image_selection':
+            return 'image_selection';
+          case 'cognitive_navigation_flow':
+            return 'navigation_flow';
+          default:
+            return 'sentiment';
+        }
+      };
 
-    return {
-      key: `question-${data.questionId}`,
-      questionId: data.questionId,
-      questionType: getQuestionType(data.questionType),
-      questionText: data.questionText,
-      required: true,
-      conditionalityDisabled: true,
-      hasNewData: data.totalResponses > 0,
-      viewType: getViewType(data.questionType),
-      sentimentData: data.sentimentData ? {
-        id: data.questionId,
-        questionNumber: data.questionId,
-        questionText: data.questionText,
+      // Mapear tipos de pregunta a tipos de visualización
+      const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' => {
+        switch (questionType) {
+          case 'cognitive_short_text':
+            return 'short_text';
+          case 'cognitive_long_text':
+            return 'long_text';
+          case 'cognitive_single_choice':
+          case 'cognitive_multiple_choice':
+            return 'multiple_choice';
+          case 'cognitive_ranking':
+          case 'cognitive_linear_scale':
+          case 'cognitive_preference_test':
+          case 'cognitive_image_selection':
+          case 'cognitive_navigation_flow':
+            return 'rating';
+          default:
+            return 'short_text';
+        }
+      };
+
+      return {
+        key: `question-${question.questionKey}`,
+        questionId: question.questionKey,
+        questionType: getQuestionType(question.type),
+        questionText: question.title || question.description || `Pregunta ${question.id}`,
+        required: question.required || false,
+        conditionalityDisabled: question.showConditionally || false,
+        hasNewData: false,
+        viewType: getViewType(question.type),
+        sentimentData: undefined,
+        choiceData: undefined,
+        rankingData: undefined,
+        linearScaleData: undefined,
+        ratingData: undefined,
+        preferenceTestData: undefined,
+        imageSelectionData: undefined,
+        navigationFlowData: undefined,
+        initialActiveTab: 'sentiment' as const,
+        themeImageSrc: '',
+      };
+    });
+  };
+
+  // Usar datos procesados cuando estén disponibles, o las preguntas de configuración
+  let finalQuestions;
+
+  if (processedData.length > 0) {
+    // Usar datos procesados con respuestas reales
+    finalQuestions = processedData.map((data: any, index: number) => {
+      // Mapear tipos de pregunta cognitiva a tipos de visualización
+      const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
+        switch (questionType) {
+          case 'cognitive_short_text':
+          case 'cognitive_long_text':
+            return 'sentiment';
+          case 'cognitive_single_choice':
+          case 'cognitive_multiple_choice':
+            return 'choice';
+          case 'cognitive_ranking':
+            return 'ranking';
+          case 'cognitive_linear_scale':
+            return 'linear_scale';
+          case 'cognitive_preference_test':
+            return 'preference';
+          case 'cognitive_image_selection':
+            return 'image_selection';
+          case 'cognitive_navigation_flow':
+            return 'navigation_flow';
+          default:
+            return 'sentiment';
+        }
+      };
+
+      // Mapear tipos de pregunta a tipos de visualización
+      const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' => {
+        switch (questionType) {
+          case 'cognitive_short_text':
+            return 'short_text';
+          case 'cognitive_long_text':
+            return 'long_text';
+          case 'cognitive_single_choice':
+          case 'cognitive_multiple_choice':
+            return 'multiple_choice';
+          case 'cognitive_ranking':
+          case 'cognitive_linear_scale':
+          case 'cognitive_preference_test':
+          case 'cognitive_image_selection':
+          case 'cognitive_navigation_flow':
+            return 'rating';
+          default:
+            return 'short_text';
+        }
+      };
+
+      return {
+        key: `question-${data.questionId}`,
+        questionId: data.questionId,
         questionType: getQuestionType(data.questionType),
+        questionText: data.questionText,
         required: true,
         conditionalityDisabled: true,
-        sentimentResults: data.sentimentData.responses.map((resp, index) => {
-          const sentimentResult = {
-            id: resp.id || `sentiment-${data.questionId}-${index}`,
-            text: resp.text,
-            sentiment: resp.sentiment, // Add missing sentiment property
-            mood: resp.sentiment === 'positive' ? 'Positive' : resp.sentiment === 'negative' ? 'Negative' : 'Neutral',
-            selected: false
-          };
-
-          return sentimentResult;
-        }),
-        themes: (data.sentimentData.themes || []).map((theme, index) => ({
-          id: `theme-${index}`,
-          ...theme
-        })),
-        keywords: (data.sentimentData.keywords || []).map((keyword, index) => ({
-          id: `keyword-${index}`,
-          ...keyword
-        })),
-        sentimentAnalysis: data.sentimentData.analysis || { text: '', actionables: [] }
-      } : undefined,
-
-      // Debug log para cada pregunta
-      ...(data.sentimentData && {
-        _debug: {
-          questionId: data.questionId,
-          responsesCount: data.sentimentData.responses.length,
-          responses: data.sentimentData.responses.slice(0, 3) // Primeras 3 respuestas para debug
+        hasNewData: data.totalResponses > 0,
+        viewType: getViewType(data.questionType),
+        sentimentData: data.sentimentData,
+        choiceData: data.choiceData,
+        rankingData: data.rankingData,
+        linearScaleData: data.linearScaleData,
+        ratingData: data.ratingData,
+        preferenceTestData: data.preferenceTestData,
+        imageSelectionData: data.imageSelectionData,
+        navigationFlowData: data.navigationFlowData,
+        initialActiveTab: 'sentiment' as const,
+        themeImageSrc: '',
+      };
+    });
+  } else if (researchConfig?.questions) {
+    // Usar preguntas de configuración sin respuestas
+    finalQuestions = researchConfig.questions.map((question: any) => {
+      // Mapear tipos de pregunta cognitiva a tipos de visualización
+      const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
+        switch (questionType) {
+          case 'cognitive_short_text':
+          case 'cognitive_long_text':
+            return 'sentiment';
+          case 'cognitive_single_choice':
+          case 'cognitive_multiple_choice':
+            return 'choice';
+          case 'cognitive_ranking':
+            return 'ranking';
+          case 'cognitive_linear_scale':
+            return 'linear_scale';
+          case 'cognitive_preference_test':
+            return 'preference';
+          case 'cognitive_image_selection':
+            return 'image_selection';
+          case 'cognitive_navigation_flow':
+            return 'navigation_flow';
+          default:
+            return 'sentiment';
         }
-      }),
-      choiceData: data.choiceData,
+      };
 
-      // Debug log para choice data
-      ...(data.choiceData && {
-        _choiceDebug: {
-          questionId: data.questionId,
-          optionsCount: data.choiceData.options.length,
-          options: data.choiceData.options,
-          totalResponses: data.choiceData.totalResponses
+      // Mapear tipos de pregunta a tipos de visualización
+      const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' => {
+        switch (questionType) {
+          case 'cognitive_short_text':
+            return 'short_text';
+          case 'cognitive_long_text':
+            return 'long_text';
+          case 'cognitive_single_choice':
+          case 'cognitive_multiple_choice':
+            return 'multiple_choice';
+          case 'cognitive_ranking':
+          case 'cognitive_linear_scale':
+          case 'cognitive_preference_test':
+          case 'cognitive_image_selection':
+          case 'cognitive_navigation_flow':
+            return 'rating';
+          default:
+            return 'short_text';
         }
-      }),
-      rankingData: data.rankingData ? {
-        ...data.rankingData,
-        options: data.rankingData.options.map(option => ({
-          ...option,
-          distribution: {
-            1: option.distribution[1] || 0,
-            2: option.distribution[2] || 0,
-            3: option.distribution[3] || 0,
-            4: option.distribution[4] || 0,
-            5: option.distribution[5] || 0,
-            6: option.distribution[6] || 0
-          }
-        }))
-      } : undefined,
-      linearScaleData: data.linearScaleData ? {
-        ...data.linearScaleData,
-        responses: [] // Add missing required property
-      } : undefined,
-      ratingData: data.ratingData,
-      preferenceTestData: data.preferenceTestData,
-      imageSelectionData: data.imageSelectionData ? {
-        ...data.imageSelectionData,
-        images: data.imageSelectionData.images.map((img, index) => ({
-          id: `img-${index}`,
-          ...img
-        }))
-      } : undefined,
-      navigationFlowData: data.navigationFlowData,
-      initialActiveTab: 'sentiment' as const,
-      themeImageSrc: '',
-    };
+      };
+
+      return {
+        key: `question-${question.questionKey}`,
+        questionId: question.questionKey,
+        questionType: getQuestionType(question.type),
+        questionText: question.title || question.description || `Pregunta ${question.id}`,
+        required: question.required || false,
+        conditionalityDisabled: question.showConditionally || false,
+        hasNewData: false,
+        viewType: getViewType(question.type),
+        sentimentData: undefined,
+        choiceData: undefined,
+        rankingData: undefined,
+        linearScaleData: undefined,
+        ratingData: undefined,
+        preferenceTestData: undefined,
+        imageSelectionData: undefined,
+        navigationFlowData: undefined,
+        initialActiveTab: 'sentiment' as const,
+        themeImageSrc: '',
+      };
+    });
+  } else {
+    // Fallback con preguntas temporales
+    finalQuestions = createQuestionsFromConfig();
+  }
+
+  console.log('[CognitiveTaskResults] 🔍 Preguntas del backend:', {
+    researchConfig: researchConfig,
+    questionsCount: finalQuestions.length,
+    questions: finalQuestions.map((q: any) => ({
+      key: q.key,
+      title: q.questionText,
+      type: q.questionType,
+      viewType: q.viewType
+    }))
   });
 
   return (
@@ -185,7 +442,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       <div className="flex-1 space-y-8">
         <CognitiveTaskHeader title="2.0.- Cognitive task" />
 
-        {questions.map((q) => (
+        {finalQuestions.map((q: any) => (
           <QuestionContainer
             key={q.key}
             questionId={q.questionId}
@@ -204,7 +461,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             navigationFlowData={q.navigationFlowData}
             initialActiveTab={q.initialActiveTab}
             themeImageSrc={q.themeImageSrc}
-            isLoading={isLoading}
           />
         ))}
       </div>
