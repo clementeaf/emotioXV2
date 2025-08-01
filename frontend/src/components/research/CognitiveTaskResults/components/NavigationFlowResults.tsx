@@ -157,6 +157,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   } = useNavigationFlowConfig();
 
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+  const [expandedImageId, setExpandedImageId] = useState<string | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
   const [realImages, setRealImages] = useState<ImageFile[]>([]);
@@ -174,6 +175,15 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     researchId,
     visualClickPoints: backendVisualClickPoints
   } = data;
+
+  // Funciones para manejar la vista de selección de imágenes
+  const handleImageSelect = (imageIndex: number) => {
+    setSelectedImageIndex(imageIndex);
+  };
+
+  const handleImageExpand = (imageId: string) => {
+    setExpandedImageId(expandedImageId === imageId ? null : imageId);
+  };
 
   // 🎯 PROCESAR DATOS DE NAVEGACIÓN
   useEffect(() => {
@@ -337,6 +347,119 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     setImgRenderSize({ width, height });
   };
 
+  // Función para renderizar la vista de selección de imágenes (como PreferenceTestResults)
+  const renderImageSelection = () => {
+    const images = realImages.length > 0 ? realImages : placeholderImages;
+
+    return (
+      <div className="p-6">
+        <div className="space-y-4">
+          {images.map((image, index) => {
+            const stepNumber = index + 1;
+            const isExpanded = expandedImageId === image.id;
+
+            return (
+              <div key={image.id || `step-${index}`} className="bg-white border border-gray-200 rounded-lg p-4">
+                {/* Step Header */}
+                <div className="flex items-center space-x-4">
+                  {/* Thumbnail */}
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border flex-shrink-0">
+                    <img
+                      src={image.url}
+                      alt={image.name || `Imagen ${stepNumber}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+
+                  {/* Step Label */}
+                  <div className="flex-1">
+                    <h4 className="text-md font-medium text-gray-900">Imagen {stepNumber}</h4>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="flex-1">
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.random() * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Metrics */}
+                  <div className="flex items-center space-x-4 text-sm">
+                    <span className="text-gray-600">15s</span>
+                    <span className="text-blue-600 font-medium">100%</span>
+                    <div className="flex items-center space-x-1">
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span className="text-gray-600">47</span>
+                    </div>
+                  </div>
+
+                  {/* Show Details Button */}
+                  <button
+                    onClick={() => handleImageExpand(image.id)}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    {isExpanded ? 'Hide details' : 'Show details'}
+                  </button>
+                </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Image Preview */}
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">Vista Previa</h5>
+                        <div className="w-full h-48 rounded-lg overflow-hidden bg-gray-100 border">
+                          <img
+                            src={image.url}
+                            alt={image.name || `Imagen ${stepNumber}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Metrics Details */}
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">Métricas</h5>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Tiempo promedio:</span>
+                            <span className="text-sm font-medium">15s</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Tasa de completación:</span>
+                            <span className="text-sm font-medium">100%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Participantes:</span>
+                            <span className="text-sm font-medium">47</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   function getImageDrawRect(
     imgNatural: { width: number, height: number },
     imgRender: { width: number, height: number }
@@ -392,197 +515,205 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
   return (
     <div className="space-y-6 p-6">
-      {/* Seleccionar Imagen */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Seleccionar Imagen
-        </label>
-        <div className="flex space-x-2">
-          {realImages.map((image, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setSelectedImageIndex(index);
-              }}
-              className={`px-4 py-2 rounded-lg border transition-colors ${currentImageIndex === index
-                ? 'bg-blue-500 text-white border-blue-500'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-            >
-              Imagen {index + 1}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Vista de selección de imágenes (por defecto) */}
+      {!expandedImageId && renderImageSelection()}
 
-      <div className="mb-6">
-        <div
-          className="relative w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
-          style={{ aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : undefined }}
-        >
-          {loadingImages ? (
-            <div className="flex items-center justify-center h-64 bg-gray-50">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="text-sm text-gray-600">Cargando imagen real...</p>
-              </div>
+      {/* Vista expandida con heatmap (lo que actualmente ya muestra) */}
+      {expandedImageId && (
+        <div className="space-y-6">
+          {/* Seleccionar Imagen */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Seleccionar Imagen
+            </label>
+            <div className="flex space-x-2">
+              {realImages.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setSelectedImageIndex(index);
+                  }}
+                  className={`px-4 py-2 rounded-lg border transition-colors ${currentImageIndex === index
+                    ? 'bg-blue-500 text-white border-blue-500'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                >
+                  Imagen {index + 1}
+                </button>
+              ))}
             </div>
-          ) : (
-            <>
-              <img
-                ref={imageRef}
-                src={selectedImage.url}
-                alt={selectedImage.name || `Imagen ${currentImageIndex + 1}`}
-                className="w-full h-auto object-contain bg-white"
-                loading="lazy"
-                style={{ display: 'block' }}
-                onLoad={handleImageLoad}
-              />
-              {/* Capa transparente azulada con 30% de opacidad */}
-              <TransparentOverlay />
-            </>
-          )}
-
-          <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded z-20">
-            {loadingImages ? 'Cargando...' : `Imagen ${currentImageIndex + 1}`}
           </div>
 
-          {imageNaturalSize && imgRenderSize && !loadingImages && (
-            (() => {
-              const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
-              return (
-                <div
-                  className="absolute top-0 left-0"
-                  style={{ width: imgRenderSize.width, height: imgRenderSize.height, pointerEvents: 'none' }}
-                >
-                  {availableHitzones.map((hitzone: ConvertedHitZone) => {
-                    const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
-                    const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
-                    const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
-                    const height = (hitzone.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
+          <div className="mb-6">
+            <div
+              className="relative w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
+              style={{ aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : undefined }}
+            >
+              {loadingImages ? (
+                <div className="flex items-center justify-center h-64 bg-gray-50">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Cargando imagen real...</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <img
+                    ref={imageRef}
+                    src={selectedImage.url}
+                    alt={selectedImage.name || `Imagen ${currentImageIndex + 1}`}
+                    className="w-full h-auto object-contain bg-white"
+                    loading="lazy"
+                    style={{ display: 'block' }}
+                    onLoad={handleImageLoad}
+                  />
+                  {/* Capa transparente azulada con 30% de opacidad */}
+                  <TransparentOverlay />
+                </>
+              )}
 
-                    return (
-                      <div
-                        key={hitzone.id}
-                        className="absolute transition-all duration-300"
-                        style={{
-                          left,
-                          top,
-                          width,
-                          height,
-                          pointerEvents: 'none',
-                        }}
-                        title={`Zona interactiva: ${hitzone.id}`}
-                      >
-                      </div>
-                    );
-                  })}
+              <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded z-20">
+                {loadingImages ? 'Cargando...' : `Imagen ${currentImageIndex + 1}`}
+              </div>
 
-                  {config.showHeatmap && !showHeatmapMode && currentImageClickPoints.length > 0 && (
-                    <>
-                      {currentImageClickPoints.map((point, index) => {
-
-                        if ((point.isCorrect && !config.showCorrectClicks) ||
-                          (!point.isCorrect && !config.showIncorrectClicks)) {
-                          return null;
-                        }
-
-                        return (
-                          <div
-                            key={`${point.timestamp}-${index}`}
-                            className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
-                              }`}
-                            style={{
-                              left: point.x - 4,
-                              top: point.y - 4,
-                              zIndex: 10
-                            }}
-                            title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}`}
-                          />
-                        );
-                      })}
-                    </>
-                  )}
-
-                  {config.showHeatmap && !showHeatmapMode && allClicksTracking && Array.isArray(allClicksTracking) && (
-                    <>
-                      {allClicksTracking
-                        .filter(click => click.imageIndex === currentImageIndex)
-                        .map((click, index) => {
-                          if ((click.isCorrectHitzone && !config.showCorrectClicks) ||
-                            (!click.isCorrectHitzone && !config.showIncorrectClicks)) {
-                            return null;
-                          }
-
-                          return (
-                            <div
-                              key={`${click.timestamp}-${index}`}
-                              className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
-                                }`}
-                              style={{
-                                left: click.x - 4,
-                                top: click.y - 4,
-                                zIndex: 10
-                              }}
-                              title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}
-                            />
-                          );
-                        })}
-                    </>
-                  )}
-
-                  {/* 🎯 NUEVO: RENDERIZAR HEATMAPS */}
-                  {showHeatmapMode && heatmapAreas[currentImageIndex] && heatmapAreas[currentImageIndex].length > 0 && (
-                    <>
-                      {heatmapAreas[currentImageIndex].map((area, index) => {
-                        if ((area.isCorrect && !config.showCorrectClicks) ||
-                          (!area.isCorrect && !config.showIncorrectClicks)) {
-                          return null;
-                        }
-
-                        const left = offsetX + area.x - area.radius;
-                        const top = offsetY + area.y - area.radius;
-                        const diameter = area.radius * 2;
+              {imageNaturalSize && imgRenderSize && !loadingImages && (
+                (() => {
+                  const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+                  return (
+                    <div
+                      className="absolute top-0 left-0"
+                      style={{ width: imgRenderSize.width, height: imgRenderSize.height, pointerEvents: 'none' }}
+                    >
+                      {availableHitzones.map((hitzone: ConvertedHitZone) => {
+                        const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
+                        const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
+                        const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
+                        const height = (hitzone.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
 
                         return (
                           <div
-                            key={`heatmap-${index}`}
-                            className="absolute rounded-full pointer-events-none"
+                            key={hitzone.id}
+                            className="absolute transition-all duration-300"
                             style={{
                               left,
                               top,
-                              width: diameter,
-                              height: diameter,
-                              background: (() => {
-                                // 🎯 NUEVO: Sistema de colores progresivos con 90% de intensidad
-                                const baseOpacity = area.colorLevel === 'yellow' ? 0.6 : 0.7; // Aumentado a ~90% de intensidad
-                                const intensityOpacity = area.intensity * 0.2; // Reducido para no exceder 90%
-
-                                switch (area.colorLevel) {
-                                  case 'red':
-                                    return `radial-gradient(circle, rgba(239, 68, 68, ${baseOpacity + intensityOpacity}) 0%, rgba(239, 68, 68, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
-                                  case 'orange':
-                                    return `radial-gradient(circle, rgba(249, 115, 22, ${baseOpacity + intensityOpacity}) 0%, rgba(249, 115, 22, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
-                                  case 'yellow':
-                                  default:
-                                    return `radial-gradient(circle, rgba(234, 179, 8, ${baseOpacity + intensityOpacity}) 0%, rgba(234, 179, 8, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
-                                }
-                              })(),
-                              border: 'none', // 🎯 NUEVO: Sin bordes
-                              zIndex: 15
+                              width,
+                              height,
+                              pointerEvents: 'none',
                             }}
-                            title={`Área de calor - ${area.clicks.length} clicks - Nivel: ${area.colorLevel === 'red' ? '🔴 Máxima coincidencia' : area.colorLevel === 'orange' ? '🟠 Coincidencia moderada' : '🟡 Coincidencia inicial'}`}
-                          />
+                            title={`Zona interactiva: ${hitzone.id}`}
+                          >
+                          </div>
                         );
                       })}
-                    </>
-                  )}
-                </div>
-              );
-            })()
-          )}
+
+                      {config.showHeatmap && !showHeatmapMode && currentImageClickPoints.length > 0 && (
+                        <>
+                          {currentImageClickPoints.map((point, index) => {
+
+                            if ((point.isCorrect && !config.showCorrectClicks) ||
+                              (!point.isCorrect && !config.showIncorrectClicks)) {
+                              return null;
+                            }
+
+                            return (
+                              <div
+                                key={`${point.timestamp}-${index}`}
+                                className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
+                                  }`}
+                                style={{
+                                  left: point.x - 4,
+                                  top: point.y - 4,
+                                  zIndex: 10
+                                }}
+                                title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}`}
+                              />
+                            );
+                          })}
+                        </>
+                      )}
+
+                      {config.showHeatmap && !showHeatmapMode && allClicksTracking && Array.isArray(allClicksTracking) && (
+                        <>
+                          {allClicksTracking
+                            .filter(click => click.imageIndex === currentImageIndex)
+                            .map((click, index) => {
+                              if ((click.isCorrectHitzone && !config.showCorrectClicks) ||
+                                (!click.isCorrectHitzone && !config.showIncorrectClicks)) {
+                                return null;
+                              }
+
+                              return (
+                                <div
+                                  key={`${click.timestamp}-${index}`}
+                                  className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
+                                    }`}
+                                  style={{
+                                    left: click.x - 4,
+                                    top: click.y - 4,
+                                    zIndex: 10
+                                  }}
+                                  title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}
+                                />
+                              );
+                            })}
+                        </>
+                      )}
+
+                      {/* 🎯 NUEVO: RENDERIZAR HEATMAPS */}
+                      {showHeatmapMode && heatmapAreas[currentImageIndex] && heatmapAreas[currentImageIndex].length > 0 && (
+                        <>
+                          {heatmapAreas[currentImageIndex].map((area, index) => {
+                            if ((area.isCorrect && !config.showCorrectClicks) ||
+                              (!area.isCorrect && !config.showIncorrectClicks)) {
+                              return null;
+                            }
+
+                            const left = offsetX + area.x - area.radius;
+                            const top = offsetY + area.y - area.radius;
+                            const diameter = area.radius * 2;
+
+                            return (
+                              <div
+                                key={`heatmap-${index}`}
+                                className="absolute rounded-full pointer-events-none"
+                                style={{
+                                  left,
+                                  top,
+                                  width: diameter,
+                                  height: diameter,
+                                  background: (() => {
+                                    // 🎯 NUEVO: Sistema de colores progresivos con 90% de intensidad
+                                    const baseOpacity = area.colorLevel === 'yellow' ? 0.6 : 0.7; // Aumentado a ~90% de intensidad
+                                    const intensityOpacity = area.intensity * 0.2; // Reducido para no exceder 90%
+
+                                    switch (area.colorLevel) {
+                                      case 'red':
+                                        return `radial-gradient(circle, rgba(239, 68, 68, ${baseOpacity + intensityOpacity}) 0%, rgba(239, 68, 68, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
+                                      case 'orange':
+                                        return `radial-gradient(circle, rgba(249, 115, 22, ${baseOpacity + intensityOpacity}) 0%, rgba(249, 115, 22, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
+                                      case 'yellow':
+                                      default:
+                                        return `radial-gradient(circle, rgba(234, 179, 8, ${baseOpacity + intensityOpacity}) 0%, rgba(234, 179, 8, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
+                                    }
+                                  })(),
+                                  border: 'none', // 🎯 NUEVO: Sin bordes
+                                  zIndex: 15
+                                }}
+                                title={`Área de calor - ${area.clicks.length} clicks - Nivel: ${area.colorLevel === 'red' ? '🔴 Máxima coincidencia' : area.colorLevel === 'orange' ? '🟠 Coincidencia moderada' : '🟡 Coincidencia inicial'}`}
+                              />
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
