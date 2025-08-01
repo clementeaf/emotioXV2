@@ -1,6 +1,7 @@
 import { smartVocFixedAPI } from '@/lib/smart-voc-api';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import cognitiveTaskAPI from '../services/cognitiveTaskService';
 import { moduleResponseService } from '../services/moduleResponseService';
 import { useResearchById } from './useResearchList';
 
@@ -145,10 +146,13 @@ const globalAPISingleton = GlobalAPISingleton.getInstance();
 const globalStates = {
   smartVOCFormData: new Map<string, any>(),
   groupedResponsesData: new Map<string, any>(),
+  cognitiveTaskConfig: new Map<string, any>(),
   smartVOCFormLoading: new Map<string, boolean>(),
   groupedResponsesLoading: new Map<string, boolean>(),
+  cognitiveTaskConfigLoading: new Map<string, boolean>(),
   smartVOCFormError: new Map<string, Error | null>(),
   groupedResponsesError: new Map<string, Error | null>(),
+  cognitiveTaskConfigError: new Map<string, Error | null>(),
 };
 
 interface QuestionResponse {
@@ -203,6 +207,48 @@ interface SmartVOCResults {
   smartVOCResponses: any[];
 }
 
+interface CognitiveTaskConfig {
+  id: string;
+  researchId: string;
+  questions: Array<{
+    id: string;
+    questionKey: string;
+    title: string;
+    description?: string;
+    type: string;
+    required: boolean;
+    choices?: Array<{
+      id: string;
+      text: string;
+      isQualify: boolean;
+      isDisqualify: boolean;
+    }>;
+    answerPlaceholder?: string;
+    deviceFrame?: boolean;
+    files?: any[];
+    showConditionally?: boolean;
+  }>;
+  randomizeQuestions: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CombinedQuestionData {
+  questionKey: string;
+  title: string;
+  description?: string;
+  type: string;
+  required: boolean;
+  options?: Array<{
+    id: string;
+    text: string;
+    responses: number;
+    percentage: number;
+  }>;
+  totalResponses: number;
+  responses: any[];
+}
+
 /**
  * Hook global único para obtener todos los datos de research
  * Evita llamadas duplicadas usando singleton global y estados compartidos
@@ -220,6 +266,10 @@ export const useGlobalResearchData = (researchId: string) => {
   const [isGroupedResponsesLoading, setIsGroupedResponsesLoading] = useState<boolean>(globalStates.groupedResponsesLoading.get(researchId) || false);
   const [groupedResponsesError, setGroupedResponsesError] = useState<Error | null>(globalStates.groupedResponsesError.get(researchId) || null);
 
+  const [cognitiveTaskConfig, setCognitiveTaskConfig] = useState<CognitiveTaskConfig | null>(globalStates.cognitiveTaskConfig.get(researchId) || null);
+  const [isCognitiveTaskConfigLoading, setIsCognitiveTaskConfigLoading] = useState<boolean>(globalStates.cognitiveTaskConfigLoading.get(researchId) || false);
+  const [cognitiveTaskConfigError, setCognitiveTaskConfigError] = useState<Error | null>(globalStates.cognitiveTaskConfigError.get(researchId) || null);
+
   // Registrar componente al montar
   useEffect(() => {
     if (researchId) {
@@ -231,6 +281,40 @@ export const useGlobalResearchData = (researchId: string) => {
         globalAPISingleton.unregisterComponent(researchId);
       }
     };
+  }, [researchId]);
+
+  // Cargar configuración de Cognitive Task
+  useEffect(() => {
+    if (!researchId) return;
+
+    const loadCognitiveTaskConfig = async () => {
+      // Si ya tenemos datos, no cargar de nuevo
+      if (globalStates.cognitiveTaskConfig.has(researchId)) {
+        setCognitiveTaskConfig(globalStates.cognitiveTaskConfig.get(researchId));
+        return;
+      }
+
+      // Marcar como cargando globalmente
+      globalStates.cognitiveTaskConfigLoading.set(researchId, true);
+      setIsCognitiveTaskConfigLoading(true);
+      setCognitiveTaskConfigError(null);
+
+      try {
+        const data = await cognitiveTaskAPI.getByResearchId(researchId);
+        globalStates.cognitiveTaskConfig.set(researchId, data as any);
+        setCognitiveTaskConfig(data as any);
+      } catch (error) {
+        console.warn('[useGlobalResearchData] Error obteniendo configuración Cognitive Task:', error);
+        globalStates.cognitiveTaskConfigError.set(researchId, error as Error);
+        setCognitiveTaskConfigError(error as Error);
+        setCognitiveTaskConfig(null);
+      } finally {
+        globalStates.cognitiveTaskConfigLoading.set(researchId, false);
+        setIsCognitiveTaskConfigLoading(false);
+      }
+    };
+
+    loadCognitiveTaskConfig();
   }, [researchId]);
 
   // Cargar SmartVOC form usando solo singleton
@@ -371,6 +455,20 @@ export const useGlobalResearchData = (researchId: string) => {
     gcTime: 10 * 60 * 1000,
   });
 
+  // Función para combinar configuración con respuestas
+  const combinedCognitiveTaskData = useQuery<CombinedQuestionData[]>({
+    queryKey: ['combinedCognitiveTaskData', researchId],
+    queryFn: () => {
+      if (!cognitiveTaskConfig || !groupedResponsesData || !groupedResponsesData.data) {
+        throw new Error('No configuration or responses data available');
+      }
+      return combineCognitiveTaskData(cognitiveTaskConfig, groupedResponsesData.data);
+    },
+    enabled: !!cognitiveTaskConfig && !!groupedResponsesData && !!groupedResponsesData.data,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
   return {
     // Datos básicos del research (reutiliza useResearchById)
     researchData: researchQuery.data,
@@ -386,6 +484,16 @@ export const useGlobalResearchData = (researchId: string) => {
     groupedResponses: groupedResponsesData?.data || [],
     isLoading: isGroupedResponsesLoading,
     error: groupedResponsesError,
+
+    // Configuración de Cognitive Task
+    cognitiveTaskConfig,
+    isCognitiveTaskConfigLoading,
+    cognitiveTaskConfigError,
+
+    // Datos combinados de Cognitive Task
+    combinedCognitiveTaskData: combinedCognitiveTaskData.data || [],
+    isCombinedCognitiveTaskLoading: combinedCognitiveTaskData.isLoading,
+    combinedCognitiveTaskError: combinedCognitiveTaskData.error,
 
     // Datos derivados
     smartVOCData: smartVOCData.data,
@@ -429,6 +537,20 @@ export const useGlobalResearchData = (researchId: string) => {
         globalAPISingleton.getSmartVOCForm(researchId).then(data => {
           globalStates.smartVOCFormData.set(researchId, data);
           setSmartVOCFormData(data);
+        });
+      }
+    },
+    refetchCognitiveTaskConfig: () => {
+      // Limpiar datos globales y recargar
+      globalStates.cognitiveTaskConfig.delete(researchId);
+      globalStates.cognitiveTaskConfigError.delete(researchId);
+      setCognitiveTaskConfig(null);
+      setCognitiveTaskConfigError(null);
+
+      if (researchId) {
+        cognitiveTaskAPI.getByResearchId(researchId).then(data => {
+          globalStates.cognitiveTaskConfig.set(researchId, data as any);
+          setCognitiveTaskConfig(data as any);
         });
       }
     },
@@ -629,6 +751,47 @@ function processTrustFlowData(groupedResponses: QuestionWithResponses[]): TrustF
       timestamp: date
     };
   }).sort((a, b) => new Date(a.stage).getTime() - new Date(b.stage).getTime());
+}
+
+// Función para combinar configuración con respuestas
+function combineCognitiveTaskData(config: CognitiveTaskConfig, groupedResponses: QuestionWithResponses[]): CombinedQuestionData[] {
+  return config.questions.map(question => {
+    // Encontrar respuestas para esta pregunta
+    const questionResponses = groupedResponses.find(q => q.questionKey === question.questionKey);
+    const responses = questionResponses?.responses || [];
+
+    // Procesar opciones si existen
+    let processedOptions = undefined;
+    if (question.choices && question.choices.length > 0) {
+      processedOptions = question.choices.map(choice => {
+        const choiceResponses = responses.filter(r => {
+          const responseValue = parseResponseValue(r.value);
+          return responseValue.toString() === choice.id;
+        });
+
+        const responseCount = choiceResponses.length;
+        const percentage = responses.length > 0 ? Math.round((responseCount / responses.length) * 100) : 0;
+
+        return {
+          id: choice.id,
+          text: choice.text,
+          responses: responseCount,
+          percentage
+        };
+      });
+    }
+
+    return {
+      questionKey: question.questionKey,
+      title: question.title,
+      description: question.description,
+      type: question.type,
+      required: question.required,
+      options: processedOptions,
+      totalResponses: responses.length,
+      responses: responses
+    };
+  });
 }
 
 // Funciones auxiliares

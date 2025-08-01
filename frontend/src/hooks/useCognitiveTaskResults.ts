@@ -172,7 +172,7 @@ export function useCognitiveTaskResults(researchId: string) {
   const [researchConfig, setResearchConfig] = useState<any>(null);
 
   // Función para procesar datos por tipo de pregunta
-  const processDataByType = (responses: ParticipantResponse[]): ProcessedCognitiveData[] => {
+  const processDataByType = (responses: ParticipantResponse[], configData: any): ProcessedCognitiveData[] => {
     if (!responses.length) return [];
 
     const questionMap = new Map<string, ProcessedCognitiveData>();
@@ -186,13 +186,15 @@ export function useCognitiveTaskResults(researchId: string) {
           return;
         }
 
-        if (!questionMap.has(questionKey)) {
-          // Buscar el título en researchConfig si está disponible
-          const questionConfig = researchConfig?.questions?.find((q: any) => q.questionKey === questionKey);
+        // Buscar el título en configData si está disponible
+        const questionConfig = configData?.questions?.find((q: any) => q.questionKey === questionKey);
+        const questionId = questionConfig?.id || questionKey;
+
+        if (!questionMap.has(questionId)) {
           const questionTitle = questionConfig?.title || `Pregunta ${questionKey}`;
 
-          questionMap.set(questionKey, {
-            questionId: questionKey,
+          questionMap.set(questionId, { // 🎯 FIX: Usar questionId como clave del Map
+            questionId: questionId,
             questionText: questionTitle,
             questionType: response.questionType || questionKey,
             totalParticipants: responses.length,
@@ -200,7 +202,7 @@ export function useCognitiveTaskResults(researchId: string) {
           });
         }
 
-        const questionData = questionMap.get(questionKey)!;
+        const questionData = questionMap.get(questionId)!;
         questionData.totalResponses++;
 
         // Procesar según el tipo de pregunta
@@ -250,9 +252,7 @@ export function useCognitiveTaskResults(researchId: string) {
           case 'cognitive_multiple_choice':
           case 'cognitive_single_choice':
             if (!questionData.choiceData) {
-              // Buscar la configuración de la pregunta en researchConfig
-              const questionConfig = researchConfig?.questions?.find((q: any) => q.questionKey === questionKey);
-
+              // 🎯 FIX: Usar questionConfig que ya se encontró antes del switch
               questionData.choiceData = {
                 question: questionConfig?.title || `Pregunta ${questionKey}`,
                 options: [],
@@ -591,7 +591,8 @@ export function useCognitiveTaskResults(researchId: string) {
 
       // Procesar datos después de tener tanto la configuración como las respuestas
       if (cognitiveResponses.length > 0) {
-        const processed = processDataByType(cognitiveResponses);
+        // 🎯 FIX: Pasar configData directamente en lugar de depender del estado researchConfig
+        const processed = processDataByType(cognitiveResponses, configData);
 
         setProcessedData(processed);
       } else {

@@ -332,10 +332,12 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       };
 
       // Buscar datos procesados correspondientes a esta pregunta
-      const processedDataForQuestion = processedData.find((data: any) => data.questionId === question.questionKey);
+      // 🎯 FIX: Usar question.id para hacer match con el questionId del hook
+      const processedDataForQuestion = processedData.find((data: any) => data.questionId === question.id);
 
-      console.log('[CognitiveTaskResults] 🔍 Pregunta:', question.questionKey, {
+      console.log('[CognitiveTaskResults] 🔍 Pregunta:', question.id, {
         questionTitle: question.title,
+        questionKey: question.questionKey,
         processedDataForQuestion: processedDataForQuestion,
         choiceData: processedDataForQuestion?.choiceData,
         choiceOptions: processedDataForQuestion?.choiceData?.options
