@@ -79,10 +79,9 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
 
   return (
     <div className="p-6">
-      {/* Header con título y tags */}
+      {/* Header con tags solamente (sin título duplicado) */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{question}</h3>
+        <div className="flex items-center justify-end mb-4">
           <div className="flex items-center space-x-2">
             <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium">
               Navigation Test
