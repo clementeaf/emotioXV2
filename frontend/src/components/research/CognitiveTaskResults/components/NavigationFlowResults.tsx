@@ -392,60 +392,6 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
   return (
     <div className="space-y-6 p-6">
-      {/* Información de participantes */}
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-medium text-blue-800">
-              Datos de Navegación
-            </h3>
-            <p className="text-xs text-blue-600">
-              {Array.isArray(data) ? `${data.length} participantes` : '1 participante'} •
-              {allClicksTracking.length} clics totales •
-              {Object.keys(visualClickPoints).length} imágenes con datos
-            </p>
-            {/* 🎯 DEBUG: Mostrar información adicional */}
-            <p className="text-xs text-red-600 mt-1">
-              DEBUG: allClicksTracking.length = {allClicksTracking.length} | visualClickPoints keys = {Object.keys(visualClickPoints).join(', ')}
-            </p>
-            {/* 🎯 NUEVO: Control de modo de visualización */}
-            <div className="mt-2 flex items-center space-x-2">
-              <button
-                onClick={() => setShowHeatmapMode(!showHeatmapMode)}
-                className={`px-3 py-1 text-xs rounded-lg border transition-colors ${showHeatmapMode
-                  ? 'bg-blue-500 text-white border-blue-500'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-              >
-                {showHeatmapMode ? '🌡️ Heatmap' : '🔘 Clicks'}
-              </button>
-              {showHeatmapMode && heatmapAreas[currentImageIndex] && (
-                <span className="text-xs text-blue-600">
-                  {heatmapAreas[currentImageIndex].length} áreas de calor
-                </span>
-              )}
-              {/* 🎯 NUEVO: Leyenda de colores */}
-              {showHeatmapMode && (
-                <div className="mt-2 text-xs text-gray-600">
-                  <div className="flex items-center space-x-2">
-                    <span>🟡 Inicial</span>
-                    <span>🟠 Moderada</span>
-                    <span>🔴 Máxima</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="text-xs text-blue-600">
-            {Array.isArray(data) && data.map((p, i) => (
-              <span key={p.participantId} className="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded mr-1 mb-1">
-                P{i + 1}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Seleccionar Imagen */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
