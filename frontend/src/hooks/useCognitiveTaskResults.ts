@@ -363,40 +363,42 @@ export function useCognitiveTaskResults(researchId: string) {
 
           case 'cognitive_preference_test':
             if (!questionData.preferenceTestData) {
+              // 🎯 FIX: Inicializar opciones desde questionConfig.files
               questionData.preferenceTestData = {
-                question: `Pregunta ${questionKey}`,
+                question: questionConfig?.title || `Pregunta ${questionKey}`,
                 options: [],
                 totalSelections: 0,
                 totalParticipants: responses.length
               };
+
+              // Inicializar opciones basándose en la configuración de archivos
+              if (questionConfig?.files) {
+                questionConfig.files.forEach((file: any, index: number) => {
+                  questionData.preferenceTestData!.options.push({
+                    id: file.id,
+                    name: file.name || `Imagen ${index + 1}`,
+                    image: file.url || file.fileUrl || `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`,
+                    selected: 0,
+                    percentage: 0,
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
+                  });
+                });
+              }
             }
 
-            const preferenceSelection = response.response?.selected || response.response?.preference || response.response;
-            if (preferenceSelection) {
-              // Extraer el nombre de la preferencia de manera segura
-              let preferenceName = '';
-              if (typeof preferenceSelection === 'string') {
-                preferenceName = preferenceSelection;
-              } else if (typeof preferenceSelection === 'object' && preferenceSelection !== null) {
-                // Intentar extraer el nombre de diferentes propiedades posibles
-                preferenceName = preferenceSelection.name ||
-                  preferenceSelection.text ||
-                  preferenceSelection.label ||
-                  preferenceSelection.value ||
-                  preferenceSelection.title ||
-                  JSON.stringify(preferenceSelection);
-              } else {
-                preferenceName = String(preferenceSelection);
-              }
-
-
-              const existingOption = questionData.preferenceTestData.options.find(opt => opt.name === preferenceName);
+            // 🎯 FIX: Extraer selectedValue correctamente
+            const selectedValue = response.response?.selectedValue || response.response?.selected || response.response?.preference || response.response;
+            if (selectedValue) {
+              // Buscar la opción que corresponde a este selectedValue
+              const existingOption = questionData.preferenceTestData.options.find(opt => opt.id === selectedValue);
               if (existingOption) {
                 existingOption.selected += 1;
               } else {
+                // Si no se encuentra, agregar como nueva opción (fallback)
                 questionData.preferenceTestData.options.push({
-                  id: `pref-${questionData.preferenceTestData.options.length + 1}`,
-                  name: preferenceName,
+                  id: selectedValue,
+                  name: `Opción ${questionData.preferenceTestData.options.length + 1}`,
+                  image: undefined,
                   selected: 1,
                   percentage: 0,
                   color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
