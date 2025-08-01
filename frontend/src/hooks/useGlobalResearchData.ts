@@ -22,28 +22,28 @@ class GlobalAPISingleton {
     const key = `smartVOCForm-${researchId}`;
 
     if (this.promises.has(key)) {
-      console.log(`[GlobalAPISingleton] Esperando promesa existente para ${key}`);
+      console.log(`[GlobalAPISingleton] 🔄 Esperando promesa existente para ${key}`);
       return await this.promises.get(key);
     }
 
-    console.log(`[GlobalAPISingleton] Creando nueva promesa para ${key}`);
+    console.log(`[GlobalAPISingleton] 🚀 Creando nueva promesa para ${key}`);
     const promise = smartVocFixedAPI.getByResearchId(researchId);
     this.promises.set(key, promise);
     this.isInitialized.set(key, true);
 
     try {
       const result = await promise;
-      console.log(`[GlobalAPISingleton] Promesa completada para ${key}`);
+      console.log(`[GlobalAPISingleton] ✅ Promesa completada para ${key}`);
       return result;
     } catch (error) {
-      console.warn(`[GlobalAPISingleton] Error en promesa para ${key}:`, error);
+      console.warn(`[GlobalAPISingleton] ❌ Error en promesa para ${key}:`, error);
       throw error;
     } finally {
       // Limpiar después de 10 segundos
       setTimeout(() => {
         this.promises.delete(key);
         this.isInitialized.delete(key);
-        console.log(`[GlobalAPISingleton] Limpiando promesa para ${key}`);
+        console.log(`[GlobalAPISingleton] 🧹 Limpiando promesa para ${key}`);
       }, 10000);
     }
   }
@@ -52,28 +52,28 @@ class GlobalAPISingleton {
     const key = `groupedResponses-${researchId}`;
 
     if (this.promises.has(key)) {
-      console.log(`[GlobalAPISingleton] Esperando promesa existente para ${key}`);
+      console.log(`[GlobalAPISingleton] 🔄 Esperando promesa existente para ${key}`);
       return await this.promises.get(key);
     }
 
-    console.log(`[GlobalAPISingleton] Creando nueva promesa para ${key}`);
+    console.log(`[GlobalAPISingleton] 🚀 Creando nueva promesa para ${key}`);
     const promise = moduleResponseService.getResponsesGroupedByQuestion(researchId);
     this.promises.set(key, promise);
     this.isInitialized.set(key, true);
 
     try {
       const result = await promise;
-      console.log(`[GlobalAPISingleton] Promesa completada para ${key}`);
+      console.log(`[GlobalAPISingleton] ✅ Promesa completada para ${key}`);
       return result;
     } catch (error) {
-      console.warn(`[GlobalAPISingleton] Error en promesa para ${key}:`, error);
+      console.warn(`[GlobalAPISingleton] ❌ Error en promesa para ${key}:`, error);
       throw error;
     } finally {
       // Limpiar después de 10 segundos
       setTimeout(() => {
         this.promises.delete(key);
         this.isInitialized.delete(key);
-        console.log(`[GlobalAPISingleton] Limpiando promesa para ${key}`);
+        console.log(`[GlobalAPISingleton] 🧹 Limpiando promesa para ${key}`);
       }, 10000);
     }
   }
@@ -135,41 +135,41 @@ interface SmartVOCResults {
 }
 
 /**
- * Hook centralizado para obtener todos los datos de research
- * Evita llamadas duplicadas usando React Query con caching
+ * Hook global único para obtener todos los datos de research
+ * Evita llamadas duplicadas usando singleton global
  */
-export const useResearchData = (researchId: string) => {
+export const useGlobalResearchData = (researchId: string) => {
   // Query para datos básicos del research (reutiliza useResearchById)
   const researchQuery = useResearchById(researchId);
 
-  // Query para datos de SmartVOC form con singleton
+  // Query para datos de SmartVOC form con singleton global
   const smartVOCFormQuery = useQuery({
     queryKey: ['smartVOCForm', researchId],
     queryFn: async () => {
       try {
         return await globalAPISingleton.getSmartVOCForm(researchId);
       } catch (error) {
-        console.warn('[useResearchData] Error obteniendo SmartVOC form, devolviendo null:', error);
+        console.warn('[useGlobalResearchData] Error obteniendo SmartVOC form, devolviendo null:', error);
         return null;
       }
     },
     enabled: !!researchId,
-    staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
-    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
     retry: false,
   });
 
-  // Query principal para datos agrupados con singleton
+  // Query principal para datos agrupados con singleton global
   const groupedResponsesQuery = useQuery<GroupedResponsesResponse>({
     queryKey: ['groupedResponses', researchId],
     queryFn: async () => {
       try {
         return await globalAPISingleton.getGroupedResponses(researchId);
       } catch (error) {
-        console.warn('[useResearchData] Error obteniendo respuestas agrupadas, devolviendo datos vacíos:', error);
+        console.warn('[useGlobalResearchData] Error obteniendo respuestas agrupadas, devolviendo datos vacíos:', error);
         return {
           data: [],
           status: 404
@@ -177,12 +177,12 @@ export const useResearchData = (researchId: string) => {
       }
     },
     enabled: !!researchId,
-    staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
-    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
-    retry: false, // No reintentar en caso de error
+    retry: false,
   });
 
   // Derivar SmartVOC data desde groupedResponses
@@ -372,7 +372,7 @@ function processCPVData(groupedResponses: QuestionWithResponses[]): CPVData {
     }
   });
 
-  const totalResponses = groupedResponses.reduce((acc, q) => acc + q.responses.length, 0);
+  const totalResponses = groupedResponses.reduce((acc, q) => acc + (q.responses?.length || 0), 0);
   const cpvValue = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
   const satisfaction = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
 

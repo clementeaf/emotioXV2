@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
-import { useResearchData } from '@/hooks/useResearchData';
+import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 import { CPVCard } from './CPVCard';
@@ -17,9 +17,9 @@ import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { VOCQuestion } from './VOCQuestion';
 import { SmartVOCResultsProps } from './types';
 
-// Hook para obtener las preguntas de SmartVOC desde el hook centralizado
+// Hook para obtener las preguntas de SmartVOC desde el hook global
 const useSmartVOCQuestions = (researchId: string) => {
-  const { smartVOCFormData, isSmartVOCFormLoading, smartVOCFormError } = useResearchData(researchId);
+  const { smartVOCFormData, isSmartVOCFormLoading, smartVOCFormError } = useGlobalResearchData(researchId);
 
   // Preguntas por defecto si no hay configuración
   const defaultQuestions: SmartVOCQuestion[] = [
@@ -110,7 +110,7 @@ const useSmartVOCQuestions = (researchId: string) => {
 export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps) {
   const [timeRange, setTimeRange] = useState<'Today' | 'Week' | 'Month'>('Today');
 
-  // Hook centralizado que maneja todas las llamadas
+  // Hook global único que maneja todas las llamadas
   const {
     groupedResponses,
     smartVOCData,
@@ -125,7 +125,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     cpvError,
     trustFlowError,
     refetch
-  } = useResearchData(researchId);
+  } = useGlobalResearchData(researchId);
 
   // Hook para obtener las preguntas de SmartVOC
   const {
