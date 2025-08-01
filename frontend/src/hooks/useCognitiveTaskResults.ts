@@ -541,10 +541,10 @@ export function useCognitiveTaskResults(researchId: string) {
         questionData.preferenceTestData.totalSelections = total;
 
         // 🎯 NUEVO: Calcular tiempo promedio de respuesta por opción
-        if (questionData.preferenceTestData.responseTimesByOption) {
+        if (questionData.preferenceTestData?.responseTimesByOption) {
           // Calcular tiempo promedio por opción y agregarlo a las opciones
           questionData.preferenceTestData.options.forEach(option => {
-            const optionTimes = questionData.preferenceTestData.responseTimesByOption![option.id];
+            const optionTimes = questionData.preferenceTestData!.responseTimesByOption![option.id];
             if (optionTimes && optionTimes.length > 0) {
               const averageTime = Math.round(
                 optionTimes.reduce((sum, time) => sum + time, 0) / optionTimes.length

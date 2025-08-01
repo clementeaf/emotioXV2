@@ -44,7 +44,7 @@ export function QuestionInfo({
           {questionType === 'multiple_choice' && questionId === '3.4' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Multiple Choice question</span>
           )}
-          {(questionType === 'rating' || questionType === 'linear_scale') && questionId !== '3.7' && questionId !== '3.7-detail' && questionId !== '3.8' && questionType !== 'cognitive_preference_test' && (
+          {(questionType === 'rating' || questionType === 'linear_scale') && questionId !== '3.7' && questionId !== '3.7-detail' && questionId !== '3.8' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Linear Scale question</span>
           )}
           {(questionType === 'cognitive_preference_test' || questionType === 'preference_test') && questionId !== '3.8' && (
