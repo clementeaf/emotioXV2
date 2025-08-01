@@ -521,6 +521,22 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
       {/* Vista expandida con heatmap (lo que actualmente ya muestra) */}
       {expandedImageId && (
         <div className="space-y-6">
+          {/* Header con información de la prueba */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <h2 className="text-lg font-semibold text-gray-900">Flujo de navegación</h2>
+              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-md">
+                Navigation Test
+              </span>
+            </div>
+            <button
+              onClick={() => setExpandedImageId(null)}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Volver a la vista de selección
+            </button>
+          </div>
+
           {/* Seleccionar Imagen */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
