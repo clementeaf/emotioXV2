@@ -1,13 +1,13 @@
 "use client";
 
 import React, { createContext, useContext } from 'react';
-import { useResearchData } from '../../hooks/useResearchData';
+import { useGlobalResearchData } from '../../hooks/useGlobalResearchData';
 import { GroupedResponsesTest } from './GroupedResponsesTest';
 import { GroupedResponsesViewer } from './GroupedResponsesViewer';
 import { SmartVOCEndpointTest } from './SmartVOCEndpointTest';
 
 // Contexto para compartir datos entre componentes
-const ResearchDataContext = createContext<ReturnType<typeof useResearchData> | null>(null);
+const ResearchDataContext = createContext<ReturnType<typeof useGlobalResearchData> | null>(null);
 
 export const useResearchDataContext = () => {
   const context = useContext(ResearchDataContext);
@@ -23,7 +23,7 @@ interface ResearchDataProviderProps {
 }
 
 const ResearchDataProvider: React.FC<ResearchDataProviderProps> = ({ researchId, children }) => {
-  const researchData = useResearchData(researchId);
+  const researchData = useGlobalResearchData(researchId);
 
   return (
     <ResearchDataContext.Provider value={researchData}>

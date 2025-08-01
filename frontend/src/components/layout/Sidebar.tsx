@@ -7,7 +7,7 @@ import { Suspense, useEffect, useState } from 'react';
 
 import { navigateToPublicTests } from '@/api/endpoints';
 import { Button } from '@/components/ui/Button';
-import { useResearchData } from '@/hooks/useResearchData';
+import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { useResearchList } from '@/hooks/useResearchList';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -183,7 +183,7 @@ function SidebarContent({ className }: SidebarProps) {
   }, [allResearch, isLoadingResearchData]);
 
   // Usar el hook centralizado para obtener el nombre de la investigación actual
-  const { researchData: currentResearchData } = useResearchData(researchId || '');
+  const { researchData: currentResearchData } = useGlobalResearchData(researchId || '');
 
   // Actualizar el nombre de la investigación actual
   useEffect(() => {

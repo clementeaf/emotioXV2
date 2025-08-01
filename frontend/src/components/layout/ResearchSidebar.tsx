@@ -7,7 +7,7 @@ import { Suspense, useEffect, useState } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { useEyeTrackingSharedData } from '@/hooks/useEyeTrackingSharedData';
-import { useResearchData } from '@/hooks/useResearchData';
+import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -55,7 +55,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const currentSection = searchParams?.get('section') || 'welcome-screen';
 
   // Usar el hook centralizado para obtener research data
-  const { researchData, isResearchLoading: isLoadingResearch, researchError } = useResearchData(researchId || '');
+  const { researchData, isResearchLoading: isLoadingResearch, researchError } = useGlobalResearchData(researchId || '');
 
   // Usar el hook compartido para obtener eye-tracking data solo cuando sea necesario
   // Optimización: Solo cargar datos cuando realmente se necesiten para verificación
