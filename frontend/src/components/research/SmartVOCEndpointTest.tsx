@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useResearchData } from '../../hooks/useResearchData';
+import { useResearchDataContext } from './GroupedResponsesPage';
 
 interface SmartVOCEndpointTestProps {
   researchId: string;
@@ -12,7 +12,7 @@ interface SmartVOCEndpointTestProps {
  */
 export const SmartVOCEndpointTest: React.FC<SmartVOCEndpointTestProps> = ({ researchId }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { smartVOCData: data, isSmartVOCLoading: queryLoading, smartVOCError: error } = useResearchData(researchId);
+  const { smartVOCData: data, isSmartVOCLoading: queryLoading, smartVOCError: error } = useResearchDataContext();
 
   const handleTestEndpoint = async () => {
     setIsLoading(true);

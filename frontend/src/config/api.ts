@@ -47,7 +47,7 @@ export const API_ENDPOINTS = {
   },
 
   // Pantallas de bienvenida
-  welcomeScreen: {
+  'welcome-screen': {
     getByResearch: '/research/{researchId}/welcome-screen',
     create: '/research/{researchId}/welcome-screen',
     update: '/research/{researchId}/welcome-screen/{screenId}',
@@ -262,10 +262,6 @@ export class ApiClient {
       headers: this.defaultHeaders,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-    }
-
     return this.handleResponse<T>(response);
   }
 
@@ -339,8 +335,11 @@ export class ApiClient {
         errorData = { message: 'Error desconocido' };
       }
 
+      // Para errores 404, usar el mensaje específico del backend si está disponible
+      const errorMessage = errorData.message || `Error ${response.status}: ${response.statusText}`;
+
       throw new ApiError(
-        errorData.message || `Error ${response.status}: ${response.statusText}`,
+        errorMessage,
         response.status,
         errorData
       );

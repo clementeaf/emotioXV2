@@ -16,7 +16,7 @@ export { default as researchService } from './researchService';
 // Servicios de pantallas y formularios
 export { default as smartVOCFormService } from './smartVOCFormService';
 export { default as thankYouScreenService } from './thankYouScreenService';
-export { default as welcomeScreenService } from './welcomeScreenService';
+export { welcomeScreenService } from './welcomeScreen.service';
 
 // Servicios de eye tracking
 export { default as eyeTrackingRecruitService } from './eyeTrackingRecruitService';
@@ -36,4 +36,4 @@ export * from './eyeTrackingService';
 export * from './researchService';
 export * from './smartVOCFormService';
 export * from './thankYouScreenService';
-export * from './welcomeScreenService';
+export * from './welcomeScreen.service';

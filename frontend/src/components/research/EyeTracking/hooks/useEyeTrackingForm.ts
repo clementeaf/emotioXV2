@@ -5,6 +5,7 @@ import { QuestionType } from '../../../../../../shared/interfaces/question-types
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useFileUpload } from '@/hooks';
+import { useEyeTrackingData } from '@/hooks/useEyeTrackingData';
 import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 
 // Interfaz extendida que incluye propiedades de UI para la experiencia de carga
@@ -307,7 +308,7 @@ export function useEyeTrackingForm({
   // Función para guardar datos en localStorage
   const saveToLocalStorage = useCallback((data: EyeTrackingFormData) => {
     try {
-      if (!researchId) {return;}
+      if (!researchId) { return; }
 
       // Generamos un objeto simplificado para localStorage
       const stimuli = data.stimuli.items.map(item => ({
@@ -334,34 +335,26 @@ export function useEyeTrackingForm({
     }
   }, [researchId, logger]);
 
-  // Cargar estímulos desde localStorage al inicializar
+  // Usar el hook centralizado para obtener datos de eye-tracking
+  const { data: eyeTrackingData, isLoading: isLoadingEyeTracking } = useEyeTrackingData(researchId, {
+    type: 'build'
+  });
+
+  // Cargar datos cuando cambie la respuesta del hook centralizado
   useEffect(() => {
-    async function fetchData() {
-      setIsEmpty(false);
-      try {
-        if (!researchId) {
-          setIsEmpty(true);
-          return;
-        }
-        const apiResult = await eyeTrackingFixedAPI.getByResearchId(researchId);
-        const data = await apiResult.send();
-        if (!data) {
-          setIsEmpty(true);
-          return;
-        }
-        // Si hay datos, setear normalmente
-        setFormData(data);
-        setEyeTrackingId(data.id || null);
-      } catch (error) {
-        // Solo mostrar error si NO es 404/null
-        if (error && typeof error === 'object' && 'status' in error && (error as any).status !== 404) {
-          // Aquí podrías setear un modal de error si tienes uno
-        }
-        setIsEmpty(true);
-      }
+    if (isLoadingEyeTracking) return;
+
+    setIsEmpty(false);
+
+    if (!eyeTrackingData) {
+      setIsEmpty(true);
+      return;
     }
-    fetchData();
-  }, [researchId]);
+
+    // Si hay datos, setear normalmente
+    setFormData(eyeTrackingData);
+    setEyeTrackingId(eyeTrackingData.id || null);
+  }, [eyeTrackingData, isLoadingEyeTracking]);
 
   // Limpiar localStorage después de guardar exitosamente
   useEffect(() => {
@@ -525,25 +518,25 @@ export function useEyeTrackingForm({
 
     // Verificar cada estímulo
     let isValid = true;
-    const invalidItems: Array<{id: string, reason: string}> = [];
+    const invalidItems: Array<{ id: string, reason: string }> = [];
 
     items.forEach((item, index) => {
       if (!item.id) {
         logger.error(`useEyeTrackingForm.validateStimuliData - Estímulo ${index} sin ID`);
         isValid = false;
-        invalidItems.push({id: `unknown-${index}`, reason: 'Sin ID'});
+        invalidItems.push({ id: `unknown-${index}`, reason: 'Sin ID' });
       }
 
       if (!item.fileUrl) {
         logger.error(`useEyeTrackingForm.validateStimuliData - Estímulo ${index} (${item.id}) sin fileUrl`);
         isValid = false;
-        invalidItems.push({id: item.id, reason: 'Sin URL'});
+        invalidItems.push({ id: item.id, reason: 'Sin URL' });
       }
 
       if (!item.s3Key) {
         logger.error(`useEyeTrackingForm.validateStimuliData - Estímulo ${index} (${item.id}) sin s3Key`);
         isValid = false;
-        invalidItems.push({id: item.id, reason: 'Sin clave S3'});
+        invalidItems.push({ id: item.id, reason: 'Sin clave S3' });
       }
     });
 

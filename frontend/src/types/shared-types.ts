@@ -107,21 +107,12 @@ export const DEFAULT_RESEARCH_CONFIG: Partial<ResearchConfig> = {
   currentParticipants: 0
 };
 
-// Tipos de pantalla de bienvenida
-export interface WelcomeScreen {
-  id: string;
-  researchId: string;
-  title: string;
-  content: string;
-  order: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+// Tipos de pantalla de bienvenida - Importados desde shared/
+export {
+  DEFAULT_WELCOME_SCREEN_CONFIG,
+  DEFAULT_WELCOME_SCREEN_VALIDATION
+} from '../../../shared/interfaces/welcome-screen.interface';
 
-export interface WelcomeScreenFormData {
-  title: string;
-  content: string;
-  order: number;
-  isActive: boolean;
-}
+export type {
+  WelcomeScreenConfig, WelcomeScreenFormData, WelcomeScreenRecord, WelcomeScreenValidation
+} from '../../../shared/interfaces/welcome-screen.interface';

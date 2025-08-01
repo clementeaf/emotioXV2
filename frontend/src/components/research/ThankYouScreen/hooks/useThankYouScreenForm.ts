@@ -73,13 +73,21 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         throw new Error('No autenticado');
       }
       try {
-        return await thankYouScreenFixedAPI.getByResearchId(researchId).send();
+        const response = await thankYouScreenFixedAPI.getByResearchId(researchId).send();
+
+        // Si la respuesta indica notFound, manejarlo como caso normal
+        if (response && response.notFound) {
+          return { notFound: true };
+        }
+
+        return response;
       } catch (error: any) {
         // Si es 404 o cualquier error relacionado con "not found", devolver objeto especial notFound
         if (error?.statusCode === 404 ||
           error?.message?.includes('not found') ||
           error?.message?.includes('THANK_YOU_SCREEN_NOT_FOUND') ||
-          error?.message?.includes('No se pudo obtener el cuerpo de la respuesta')) {
+          error?.message?.includes('No se pudo obtener el cuerpo de la respuesta') ||
+          error?.message?.includes('404')) {
           return { notFound: true };
         } else {
           // Solo mostrar en consola si NO es 404
@@ -90,7 +98,9 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     },
     enabled: !!researchId && isAuthenticated,
     retry: false, // No reintentar en caso de error
-    refetchOnWindowFocus: false // No refetch al enfocar la ventana
+    refetchOnWindowFocus: false, // No refetch al enfocar la ventana
+    staleTime: 30 * 1000, // 30 segundos
+    gcTime: 5 * 60 * 1000, // 5 minutos
   });
 
   // Efecto para cargar datos existentes

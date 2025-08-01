@@ -1,7 +1,7 @@
 import { welcomeScreenAPI } from '@/lib/api';
 import {
-    WelcomeScreenFormData,
-    WelcomeScreenRecord
+  WelcomeScreenFormData,
+  WelcomeScreenRecord
 } from '../../../shared/interfaces/welcome-screen.interface';
 
 /**
@@ -21,7 +21,7 @@ export class WelcomeScreenService {
       return data;
     } catch (error: any) {
       // Si el error es un 404, es esperado si no existe, devolvemos null
-      if (error?.response?.status === 404) {
+      if (error?.statusCode === 404 || error?.response?.status === 404) {
         // console.log('[WelcomeScreenService] No se encontró welcome screen para researchId:', researchId);
         return null;
       }
@@ -60,10 +60,10 @@ export class WelcomeScreenService {
       console.error('[WelcomeScreenService] Error en save (upsert):', error);
       // Re-lanzar el error para que sea capturado por el hook y mostrado en el modal
       if (error instanceof Error) {
-         throw error;
+        throw error;
       } else {
-         const message = (error as any)?.message || String(error);
-         throw new Error(`Error al guardar welcome screen: ${message}`);
+        const message = (error as any)?.message || String(error);
+        throw new Error(`Error al guardar welcome screen: ${message}`);
       }
     }
   }
@@ -82,10 +82,53 @@ export class WelcomeScreenService {
       console.error('[WelcomeScreenService] Error en delete:', error);
       if (error instanceof Error) {
         throw error;
-     } else {
+      } else {
         const message = (error as any)?.message || String(error);
         throw new Error(`Error al eliminar welcome screen: ${message}`);
-     }
+      }
+    }
+  }
+
+  /**
+   * Crea una nueva pantalla de bienvenida para una investigación específica
+   * @param researchId ID de la investigación
+   * @param data Datos de la pantalla de bienvenida
+   * @returns Pantalla de bienvenida creada
+   */
+  async createForResearch(researchId: string, data: WelcomeScreenFormData): Promise<WelcomeScreenRecord> {
+    try {
+      const response = await welcomeScreenAPI.create(researchId, data);
+      return response.data;
+    } catch (error) {
+      console.error('[WelcomeScreenService] Error en createForResearch:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        const message = (error as any)?.message || String(error);
+        throw new Error(`Error al crear welcome screen: ${message}`);
+      }
+    }
+  }
+
+  /**
+   * Actualiza una pantalla de bienvenida existente para una investigación específica
+   * @param researchId ID de la investigación
+   * @param screenId ID de la pantalla de bienvenida
+   * @param data Datos a actualizar
+   * @returns Pantalla de bienvenida actualizada
+   */
+  async updateForResearch(researchId: string, screenId: string, data: WelcomeScreenFormData): Promise<WelcomeScreenRecord> {
+    try {
+      const response = await welcomeScreenAPI.update(researchId, screenId, data);
+      return response.data;
+    } catch (error) {
+      console.error('[WelcomeScreenService] Error en updateForResearch:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        const message = (error as any)?.message || String(error);
+        throw new Error(`Error al actualizar welcome screen: ${message}`);
+      }
     }
   }
 }

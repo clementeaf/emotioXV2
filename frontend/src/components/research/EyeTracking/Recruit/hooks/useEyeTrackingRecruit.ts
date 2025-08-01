@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
@@ -19,6 +19,7 @@ import {
 } from 'shared/interfaces/eyeTrackingRecruit.interface';
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
+import { useEyeTrackingSharedData } from '@/hooks/useEyeTrackingSharedData';
 import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 
@@ -478,61 +479,66 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     return `${publicTestsBaseUrl}/link/${actualResearchId}`;
   }, [researchId]);
 
-  // Cargar configuración existente
+  // Usar el hook compartido para obtener datos de eye-tracking recruit
+  // Optimización: Usar cache compartido y evitar llamadas duplicadas
   const actualResearchId = researchId === 'current' ? '1234' : researchId;
-  const { isLoading: isLoadingConfig } = useQuery({
-    queryKey: ['eyeTrackingRecruit', actualResearchId],
-    queryFn: async () => {
-      try {
-        // console.log('[useEyeTrackingRecruit] Cargando config para:', actualResearchId);
-        const response = await eyeTrackingFixedAPI.getRecruitConfig(actualResearchId).send();
-        // console.log('[useEyeTrackingRecruit] Config cargada (respuesta API):', response);
-
-        // Si no hay datos en la respuesta, crear una configuración predeterminada
-        if (!response) {
-          // console.log('[useEyeTrackingRecruit] Sin respuesta, usando configuración predeterminada');
-          return createDefaultConfig(actualResearchId);
-        }
-
-        // Verificar si la respuesta contiene los datos necesarios
-        if (!response.id) {
-          // console.log('[useEyeTrackingRecruit] Respuesta sin ID, usando configuración predeterminada');
-          return createDefaultConfig(actualResearchId);
-        }
-
-        // Procesar la respuesta para adaptarla a nuestra estructura
-        // Si estamos usando la API de eye-tracking normal, necesitamos adaptarla
-        const configData = processApiResponse(response);
-
-        // Asegurarnos de usar el researchId correcto
-        configData.researchId = actualResearchId;
-
-        // Actualizar el estado del formulario
-        setFormData(configData);
-
-        // Determinar si hay preguntas demográficas habilitadas
-        const hasDemographics = Object.values(configData.demographicQuestions).some(
-          (q: any) => q.enabled
-        );
-        setDemographicQuestionsEnabledState(hasDemographics);
-
-        // Determinar si hay opciones de configuración de enlace habilitadas
-        const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
-        setLinkConfigEnabledState(hasLinkConfig);
-
-        return configData;
-      } catch (error: any) {
-        // console.log('[useEyeTrackingRecruit] Error al cargar:', error);
-        if (error.statusCode === 404) {
-          // console.log('[useEyeTrackingRecruit] No hay configuración previa para:', actualResearchId);
-          return createDefaultConfig(actualResearchId);
-        }
-        toast.error(`Error al cargar configuración: ${error.message || 'Error desconocido'}`);
-        throw error;
-      }
-    },
-    enabled: !!actualResearchId
+  const { data: eyeTrackingRecruitData, isLoading: isLoadingConfig } = useEyeTrackingSharedData(actualResearchId, {
+    type: 'recruit',
+    enabled: !!actualResearchId // Solo habilitar si hay researchId válido
   });
+
+  // Procesar datos cuando cambie la respuesta del hook centralizado
+  useEffect(() => {
+    if (isLoadingConfig) return;
+
+    try {
+      if (!eyeTrackingRecruitData) {
+        // Si no hay datos, crear configuración predeterminada
+        const defaultConfig = createDefaultConfig(actualResearchId);
+        setFormData(defaultConfig);
+        setDemographicQuestionsEnabledState(false);
+        setLinkConfigEnabledState(false);
+        return;
+      }
+
+      // Verificar si la respuesta contiene los datos necesarios
+      if (!eyeTrackingRecruitData.id) {
+        const defaultConfig = createDefaultConfig(actualResearchId);
+        setFormData(defaultConfig);
+        setDemographicQuestionsEnabledState(false);
+        setLinkConfigEnabledState(false);
+        return;
+      }
+
+      // Procesar la respuesta para adaptarla a nuestra estructura
+      const configData = processApiResponse(eyeTrackingRecruitData);
+
+      // Asegurarnos de usar el researchId correcto
+      configData.researchId = actualResearchId;
+
+      // Actualizar el estado del formulario
+      setFormData(configData);
+
+      // Determinar si hay preguntas demográficas habilitadas
+      const hasDemographics = Object.values(configData.demographicQuestions).some(
+        (q: any) => q.enabled
+      );
+      setDemographicQuestionsEnabledState(hasDemographics);
+
+      // Determinar si hay opciones de configuración de enlace habilitadas
+      const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
+      setLinkConfigEnabledState(hasLinkConfig);
+    } catch (error: any) {
+      if (error.statusCode === 404) {
+        const defaultConfig = createDefaultConfig(actualResearchId);
+        setFormData(defaultConfig);
+        setDemographicQuestionsEnabledState(false);
+        setLinkConfigEnabledState(false);
+        return;
+      }
+      toast.error(`Error al cargar configuración: ${error.message || 'Error desconocido'}`);
+    }
+  }, [eyeTrackingRecruitData, isLoadingConfig, actualResearchId]);
 
   // Actualizar estado de carga cuando termina la consulta y asignar URL automáticamente
   useEffect(() => {

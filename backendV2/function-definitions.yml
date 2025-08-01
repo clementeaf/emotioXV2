@@ -56,10 +56,26 @@ api:
         method: DELETE
         cors: true
 
-    # Ruta específica para GET WelcomeScreen
+    # --- RUTAS PARA WELCOME SCREEN ---
+    # Obtener pantalla de bienvenida
     - http:
         path: /research/{researchId}/welcome-screen
         method: GET
+        cors: true
+    # Crear pantalla de bienvenida
+    - http:
+        path: /research/{researchId}/welcome-screen
+        method: POST
+        cors: true
+    # Actualizar pantalla de bienvenida
+    - http:
+        path: /research/{researchId}/welcome-screen/{screenId}
+        method: PUT
+        cors: true
+    # Eliminar pantalla de bienvenida
+    - http:
+        path: /research/{researchId}/welcome-screen/{screenId}
+        method: DELETE
         cors: true
 
     # Ruta específica para GET SmartVOC

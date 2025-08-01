@@ -29,12 +29,12 @@ export type {
 export {
   DEFAULT_WELCOME_SCREEN_CONFIG,
   DEFAULT_WELCOME_SCREEN_VALIDATION
-} from '@/shared/interfaces/welcome-screen.interface';
+} from '../../../shared/interfaces/welcome-screen.interface';
 
 export type {
   WelcomeScreenConfig, WelcomeScreenFormData, WelcomeScreenRecord, WelcomeScreenUpdate,
   WelcomeScreenValidation
-} from '@/shared/interfaces/welcome-screen.interface';
+} from '../../../shared/interfaces/welcome-screen.interface';
 
 // Interfaces de SmartVOC
 export {
@@ -42,7 +42,7 @@ export {
 } from '@/shared/interfaces/smart-voc.interface';
 
 export type {
-  CESConfig, ConditionalLogic, CSATConfig, CVConfig, NEVConfig,
+  CESConfig, CSATConfig, CVConfig, ConditionalLogic, NEVConfig,
   NPSConfig, QuestionConfig, QuestionConfigBase, SmartVOCFormData,
   SmartVOCFormResponse, SmartVOCQuestion, VOCConfig
 } from '@/shared/interfaces/smart-voc.interface';

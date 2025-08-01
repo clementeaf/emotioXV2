@@ -1,20 +1,16 @@
 // <<< Eliminar la re-exportación >>>
-// export type { WelcomeScreenData } from '@/services/welcomeScreenService';
+// Tipos importados desde shared/interfaces/welcome-screen.interface
 
 // <<< Usar el alias importado abajo >>>
 export const DEFAULT_WELCOME_SCREEN_CONFIG: Partial<WelcomeScreenServiceData> = {
   isEnabled: false,
   title: 'Bienvenido/a a la Investigación',
   message: 'Gracias por tu interés en participar. Por favor, lee la información y haz clic en \'Continuar\' cuando estés listo/a.',
-  startButtonText: 'Continuar',
-  backgroundColor: '#FFFFFF',
-  textColor: '#333333',
-  theme: 'light',
-  // logoUrl y backgroundImageUrl se dejan vacíos por defecto
+  startButtonText: 'Continuar'
 };
 
 // Importar los tipos correctos desde el servicio (con alias)
-import { WelcomeScreenRecord, WelcomeScreenData as WelcomeScreenServiceData } from '@/services/welcomeScreenService';
+import { WelcomeScreenRecord, WelcomeScreenFormData as WelcomeScreenServiceData } from '../../../../../shared/interfaces/welcome-screen.interface';
 
 export interface ErrorModalData {
   title: string;

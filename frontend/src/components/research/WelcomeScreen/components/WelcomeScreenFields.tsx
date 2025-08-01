@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { WelcomeScreenData } from '@/services/welcomeScreenService';
+import { WelcomeScreenFormData as WelcomeScreenData } from '../../../../../../shared/interfaces/welcome-screen.interface';
 
 import { DEFAULT_WELCOME_SCREEN_CONFIG, ValidationErrors } from '../types';
 

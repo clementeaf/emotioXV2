@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useResearchData } from '../../hooks/useResearchData';
+import { useResearchDataContext } from './GroupedResponsesPage';
 
 interface GroupedResponsesTestProps {
   researchId: string;
@@ -12,7 +12,7 @@ interface GroupedResponsesTestProps {
  */
 export const GroupedResponsesTest: React.FC<GroupedResponsesTestProps> = ({ researchId }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { groupedResponses, isLoading: queryLoading, error, refetch } = useResearchData(researchId);
+  const { groupedResponses, isLoading: queryLoading, error, refetch } = useResearchDataContext();
 
   const handleTestEndpoint = async () => {
     setIsLoading(true);

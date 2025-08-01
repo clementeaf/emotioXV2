@@ -6,12 +6,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
+import { useEyeTrackingSharedData } from '@/hooks/useEyeTrackingSharedData';
+import { useResearchData } from '@/hooks/useResearchData';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
-import { researchAPI } from '@/lib/api';
-import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import { Research } from 'shared/interfaces/research.model';
 import { SidebarBase } from './SidebarBase';
 
 const sections: ResearchSection[] = [
@@ -54,6 +53,16 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const searchParams = useSearchParams();
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
+
+  // Usar el hook centralizado para obtener research data
+  const { researchData, isResearchLoading: isLoadingResearch, researchError } = useResearchData(researchId || '');
+
+  // Usar el hook compartido para obtener eye-tracking data solo cuando sea necesario
+  // Optimización: Solo cargar datos cuando realmente se necesiten para verificación
+  const { data: eyeTrackingData, isLoading: isLoadingEyeTracking } = useEyeTrackingSharedData(researchId || '', {
+    enabled: (currentSection === 'eye-tracking' || currentSection === 'eye-tracking-recruit') && !!researchId,
+    type: currentSection === 'eye-tracking' ? 'build' : currentSection === 'eye-tracking-recruit' ? 'recruit' : 'both'
+  });
 
   // Bloque de usuario/avatar
   function UserInfo() {
@@ -108,69 +117,10 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   }
 
   // Estados para el nombre y la carga
-  const [researchName, setResearchName] = useState<string>('Cargando nombre...');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchResearchName = async () => {
-      if (!researchId) {
-        setResearchName('Investigación no encontrada');
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await researchAPI.get(researchId);
-        let researchData: Research | null = null;
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          researchData = response.data[0] as unknown as Research;
-        } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-          researchData = response.data as unknown as Research;
-        }
-        const nameFromApi = researchData?.name;
-
-        if (nameFromApi) {
-          setResearchName(nameFromApi);
-          try {
-            localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
-          } catch (storageError) {
-            // Error handling silencioso
-          }
-        } else {
-          fetchNameFromLocalStorage();
-        }
-      } catch (apiError: unknown) {
-        const errorMessage = apiError instanceof Error ? apiError.message : 'detalle desconocido';
-        setError(`Error al cargar datos (${errorMessage})`);
-        fetchNameFromLocalStorage();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const fetchNameFromLocalStorage = () => {
-      try {
-        const storedData = localStorage.getItem(`research_${researchId}`);
-        if (storedData) {
-          const parsedData = JSON.parse(storedData);
-          if (parsedData?.name) {
-            setResearchName(parsedData.name);
-            setError(null);
-            return;
-          }
-        }
-      } catch (storageError) {
-        setError('Error al acceder a datos locales.');
-      }
-      setResearchName('Nombre no disponible');
-    };
-
-    fetchResearchName();
-  }, [researchId]);
+  // Obtener el nombre del research desde el hook centralizado
+  const researchName = researchData?.name || 'Cargando...';
+  const isLoading = isLoadingResearch;
+  const error = researchError?.message || null;
 
   const handleBackToDashboard = () => { router.push('/dashboard'); };
 
@@ -221,13 +171,46 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     </div>
   );
 
-  // Función para verificar si hay contenido configurado
-  const checkIfResearchHasContent = async (): Promise<boolean> => {
-    if (!researchId) return false;
+  // Estado para el botón de publicación
+  const [isPublishEnabled, setIsPublishEnabled] = useState(false);
+  const [isCheckingContent, setIsCheckingContent] = useState(false);
+
+  // Verificar contenido solo cuando sea necesario
+  useEffect(() => {
+    // Solo verificar si estamos en una sección que requiere eye-tracking
+    const shouldCheckEyeTracking = currentSection === 'eye-tracking' || currentSection === 'eye-tracking-recruit';
+
+    if (!shouldCheckEyeTracking) {
+      // Si no estamos en sección de eye-tracking, habilitar publicación por defecto
+      setIsPublishEnabled(true);
+      setIsCheckingContent(false);
+      return;
+    }
+
+    // Solo verificar si tenemos datos y no estamos cargando
+    if (!isLoadingEyeTracking && eyeTrackingData !== undefined) {
+      setIsCheckingContent(true);
+
+      try {
+        // Verificar si hay contenido configurado
+        const hasContent = checkIfResearchHasContent();
+        setIsPublishEnabled(hasContent);
+      } catch (error) {
+        console.error('Error verificando contenido:', error);
+        setIsPublishEnabled(false);
+      } finally {
+        setIsCheckingContent(false);
+      }
+    }
+  }, [researchId, currentSection, eyeTrackingData, isLoadingEyeTracking]);
+
+  // Función para verificar si hay contenido configurado (síncrona)
+  const checkIfResearchHasContent = (): boolean => {
+    if (!researchId || !eyeTrackingData) return false;
 
     try {
-      // Verificar configuración de eye-tracking usando la API cliente existente
-      const response = await eyeTrackingFixedAPI.getRecruitConfig(researchId).send();
+      // Usar los datos del hook centralizado
+      const response = eyeTrackingData;
 
       if (response) {
         // Verificar si hay preguntas demográficas habilitadas
@@ -248,24 +231,6 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
       return false;
     }
   };
-
-  // Estado para el botón de publicación
-  const [isPublishEnabled, setIsPublishEnabled] = useState(false);
-  const [isCheckingContent, setIsCheckingContent] = useState(true);
-
-  // Verificar contenido al cargar
-  useEffect(() => {
-    const verifyContent = async () => {
-      setIsCheckingContent(true);
-      const hasContent = await checkIfResearchHasContent();
-      setIsPublishEnabled(hasContent);
-      setIsCheckingContent(false);
-    };
-
-    if (researchId) {
-      verifyContent();
-    }
-  }, [researchId]);
 
   // Función para publicar investigación
   const handlePublishResearch = () => {
@@ -323,7 +288,9 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
           </svg>
           {isCheckingContent ? 'Verificando...' : 'Publicar investigación'}
         </button>
-        {!isPublishEnabled && !isCheckingContent && (
+
+        {/* Mostrar mensaje solo cuando sea necesario y esté estable */}
+        {!isPublishEnabled && !isCheckingContent && (currentSection === 'eye-tracking' || currentSection === 'eye-tracking-recruit') && (
           <p className="text-xs text-gray-500 mt-1">
             Complete la configuración de Eye Tracking para habilitar la publicación
           </p>

@@ -7,6 +7,7 @@ import { Suspense, useEffect, useState } from 'react';
 
 import { navigateToPublicTests } from '@/api/endpoints';
 import { Button } from '@/components/ui/Button';
+import { useResearchData } from '@/hooks/useResearchData';
 import { useResearchList } from '@/hooks/useResearchList';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -181,33 +182,17 @@ function SidebarContent({ className }: SidebarProps) {
     setIsLoadingResearch(isLoadingResearchData);
   }, [allResearch, isLoadingResearchData]);
 
-  // Cargar nombre de la investigación actual si estamos en modo investigación
+  // Usar el hook centralizado para obtener el nombre de la investigación actual
+  const { researchData: currentResearchData } = useResearchData(researchId || '');
+
+  // Actualizar el nombre de la investigación actual
   useEffect(() => {
-    const fetchCurrentResearchName = async () => {
-      if (!researchId) {
-        setCurrentResearchName('');
-        return;
-      }
-
-      try {
-        const response = await researchAPI.get(researchId);
-        let researchData: Research | null = null;
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          researchData = response.data[0] as unknown as Research;
-        } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-          researchData = response.data as unknown as Research;
-        }
-
-        if (researchData?.name) {
-          setCurrentResearchName(researchData.name);
-        }
-      } catch (error) {
-        // Error handling silencioso
-      }
-    };
-
-    fetchCurrentResearchName();
-  }, [researchId]);
+    if (currentResearchData?.name) {
+      setCurrentResearchName(currentResearchData.name);
+    } else {
+      setCurrentResearchName('');
+    }
+  }, [currentResearchData]);
 
   // Bloque de usuario/avatar
   function UserInfo() {

@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
 import { useResearchData } from '@/hooks/useResearchData';
-import { smartVOCFormService } from '@/services/smartVOCFormService';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 import { CPVCard } from './CPVCard';
@@ -18,120 +17,93 @@ import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { VOCQuestion } from './VOCQuestion';
 import { SmartVOCResultsProps } from './types';
 
-// Hook real para obtener las preguntas de SmartVOC
+// Hook para obtener las preguntas de SmartVOC desde el hook centralizado
 const useSmartVOCQuestions = (researchId: string) => {
-  const [questions, setQuestions] = useState<SmartVOCQuestion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { smartVOCFormData, isSmartVOCFormLoading, smartVOCFormError } = useResearchData(researchId);
 
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      if (!researchId) {
-        setError('Research ID es requerido');
-        setIsLoading(false);
-        return;
+  // Preguntas por defecto si no hay configuración
+  const defaultQuestions: SmartVOCQuestion[] = [
+    {
+      id: 'smartvoc_nps',
+      type: QuestionType.SMARTVOC_NPS,
+      title: 'Net Promoter Score (NPS)',
+      description: 'On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?',
+      required: true,
+      showConditionally: false,
+      config: {
+        type: 'scale',
+        scaleRange: { start: 0, end: 10 }
       }
-
-      try {
-        console.log(`[useSmartVOCQuestions] 🔍 Obteniendo preguntas SmartVOC para research: ${researchId}`);
-
-        const formData = await smartVOCFormService.getByResearchId(researchId);
-
-        if (formData && formData.questions && formData.questions.length > 0) {
-          console.log(`[useSmartVOCQuestions] ✅ Preguntas obtenidas:`, formData.questions.length);
-          setQuestions(formData.questions);
-        } else {
-          console.log(`[useSmartVOCQuestions] ⚠️ No se encontraron preguntas configuradas, usando preguntas por defecto`);
-          // Usar preguntas por defecto si no hay configuración
-          const defaultQuestions: SmartVOCQuestion[] = [
-            {
-              id: 'smartvoc_nps',
-              type: QuestionType.SMARTVOC_NPS,
-              title: 'Net Promoter Score (NPS)',
-              description: 'On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?',
-              required: true,
-              showConditionally: false,
-              config: {
-                type: 'scale',
-                scaleRange: { start: 0, end: 10 }
-              }
-            },
-            {
-              id: 'smartvoc_voc',
-              type: QuestionType.SMARTVOC_VOC,
-              title: 'Voice of Customer (VOC)',
-              description: 'Please share your thoughts about your experience with our service.',
-              required: true,
-              showConditionally: false,
-              config: {
-                type: 'text'
-              }
-            },
-            {
-              id: 'smartvoc_csat',
-              type: QuestionType.SMARTVOC_CSAT,
-              title: 'Customer Satisfaction (CSAT)',
-              description: 'How would you rate your overall satisfaction level with our service?',
-              required: true,
-              showConditionally: false,
-              config: {
-                type: 'stars',
-                scaleRange: { start: 1, end: 5 }
-              }
-            },
-            {
-              id: 'smartvoc_ces',
-              type: QuestionType.SMARTVOC_CES,
-              title: 'Customer Effort Score (CES)',
-              description: 'How much effort did you personally have to put forth to handle your request?',
-              required: true,
-              showConditionally: false,
-              config: {
-                type: 'scale',
-                scaleRange: { start: 1, end: 7 }
-              }
-            },
-            {
-              id: 'smartvoc_cv',
-              type: QuestionType.SMARTVOC_CV,
-              title: 'Customer Value (CV)',
-              description: 'How would you rate the overall value you receive from our product/service?',
-              required: true,
-              showConditionally: false,
-              config: {
-                type: 'scale',
-                scaleRange: { start: 1, end: 7 }
-              }
-            },
-            {
-              id: 'smartvoc_nev',
-              type: QuestionType.SMARTVOC_NEV,
-              title: 'Net Emotional Value (NEV)',
-              description: 'How do you feel about your experience with our service?',
-              required: true,
-              showConditionally: false,
-              config: {
-                type: 'emojis'
-              }
-            }
-          ];
-          setQuestions(defaultQuestions);
-        }
-      } catch (error: any) {
-        console.error(`[useSmartVOCQuestions] ❌ Error al obtener preguntas:`, error);
-        setError(error.message || 'Error al obtener preguntas SmartVOC');
-      } finally {
-        setIsLoading(false);
+    },
+    {
+      id: 'smartvoc_voc',
+      type: QuestionType.SMARTVOC_VOC,
+      title: 'Voice of Customer (VOC)',
+      description: 'Please share your thoughts about your experience with our service.',
+      required: true,
+      showConditionally: false,
+      config: {
+        type: 'text'
       }
-    };
+    },
+    {
+      id: 'smartvoc_csat',
+      type: QuestionType.SMARTVOC_CSAT,
+      title: 'Customer Satisfaction (CSAT)',
+      description: 'How would you rate your overall satisfaction level with our service?',
+      required: true,
+      showConditionally: false,
+      config: {
+        type: 'stars',
+        scaleRange: { start: 1, end: 5 }
+      }
+    },
+    {
+      id: 'smartvoc_ces',
+      type: QuestionType.SMARTVOC_CES,
+      title: 'Customer Effort Score (CES)',
+      description: 'How much effort did you personally have to put forth to handle your request?',
+      required: true,
+      showConditionally: false,
+      config: {
+        type: 'scale',
+        scaleRange: { start: 1, end: 7 }
+      }
+    },
+    {
+      id: 'smartvoc_cv',
+      type: QuestionType.SMARTVOC_CV,
+      title: 'Customer Value (CV)',
+      description: 'How would you rate the overall value you receive from our product/service?',
+      required: true,
+      showConditionally: false,
+      config: {
+        type: 'scale',
+        scaleRange: { start: 1, end: 7 }
+      }
+    },
+    {
+      id: 'smartvoc_nev',
+      type: QuestionType.SMARTVOC_NEV,
+      title: 'Net Emotional Value (NEV)',
+      description: 'How do you feel about your experience with our service?',
+      required: true,
+      showConditionally: false,
+      config: {
+        type: 'emojis'
+      }
+    }
+  ];
 
-    fetchQuestions();
-  }, [researchId]);
+  // Usar preguntas del formulario si existen, sino usar las por defecto
+  const questions = smartVOCFormData?.questions && smartVOCFormData.questions.length > 0
+    ? smartVOCFormData.questions
+    : defaultQuestions;
 
   return {
     questions,
-    isLoading,
-    error
+    isLoading: isSmartVOCFormLoading,
+    error: smartVOCFormError
   };
 };
 
@@ -350,7 +322,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">Error al cargar preguntas</h3>
-                <p className="text-sm text-red-700 mt-1">{questionsError}</p>
+                <p className="text-sm text-red-700 mt-1">{questionsError?.message || 'Error desconocido'}</p>
               </div>
             </div>
           </div>
@@ -497,9 +469,9 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 npsScore={smartVOCData?.npsScore || 0}
                 promoters={Math.round((smartVOCData?.npsScore || 0) * 0.4)}
                 detractors={Math.round((smartVOCData?.npsScore || 0) * 0.3)}
-                                  neutrals={Math.round((smartVOCData?.npsScore || 0) * 0.3)}
+                neutrals={Math.round((smartVOCData?.npsScore || 0) * 0.3)}
                 totalResponses={smartVOCData?.totalResponses || 0}
-                                  isLoading={isSmartVOCLoading}
+                isLoading={isSmartVOCLoading}
               />
 
               {/* 2.6.- Question: Voice of Customer (VOC) */}

@@ -115,12 +115,12 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
     },
 
     // Welcome Screens
-    welcomeScreen: {
-      create: (data: any) => post(API_ENDPOINTS.welcomeScreen.create, data),
-      getById: (id: string) => get(API_ENDPOINTS.welcomeScreen.getByResearch.replace('{id}', id)),
-      getByResearchId: (researchId: string) => get(API_ENDPOINTS.welcomeScreen.getByResearch.replace('{researchId}', researchId)),
-      update: (id: string, data: any) => put(API_ENDPOINTS.welcomeScreen.update.replace('{id}', id), data),
-      delete: (id: string) => del(API_ENDPOINTS.welcomeScreen.delete.replace('{id}', id)),
+    'welcome-screen': {
+      create: (data: any) => post(API_ENDPOINTS['welcome-screen'].create, data),
+      getById: (id: string) => get(API_ENDPOINTS['welcome-screen'].getByResearch.replace('{id}', id)),
+      getByResearchId: (researchId: string) => get(API_ENDPOINTS['welcome-screen'].getByResearch.replace('{researchId}', researchId)),
+      update: (id: string, data: any) => put(API_ENDPOINTS['welcome-screen'].update.replace('{id}', id), data),
+      delete: (id: string) => del(API_ENDPOINTS['welcome-screen'].delete.replace('{id}', id)),
     },
 
     // Archivos

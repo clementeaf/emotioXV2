@@ -236,28 +236,28 @@ export const welcomeScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear la pantalla de bienvenida');
     }
-    return apiClient.post('welcomeScreen', 'create', data, { researchId });
+    return apiClient.post('welcome-screen', 'create', data, { researchId });
   },
 
   getByResearch: async (researchId: string): Promise<APIResponse<any>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    return apiClient.get('welcomeScreen', 'getByResearch', { researchId });
+    return apiClient.get('welcome-screen', 'getByResearch', { researchId });
   },
 
   update: async (researchId: string, screenId: string, data: any): Promise<APIResponse<any>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar la pantalla de bienvenida');
     }
-    return apiClient.put('welcomeScreen', 'update', data, { researchId, screenId });
+    return apiClient.put('welcome-screen', 'update', data, { researchId, screenId });
   },
 
   delete: async (researchId: string, screenId: string): Promise<APIResponse<boolean>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar la pantalla de bienvenida');
     }
-    return apiClient.delete('welcomeScreen', 'delete', { researchId, screenId });
+    return apiClient.delete('welcome-screen', 'delete', { researchId, screenId });
   },
 };
 

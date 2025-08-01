@@ -27,7 +27,7 @@ const getToken = () => {
  * @returns Datos procesados o error
  */
 const handleWelcomeScreenResponse = async (response: Response) => {
-      // // console.log(`[WelcomeScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
+  // // console.log(`[WelcomeScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
 
   // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
 
@@ -63,7 +63,7 @@ const getAuthHeaders = () => {
     ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
     : 'no hay token';
 
-      // // console.log(`[WelcomeScreenAPI] Usando token: ${tokenSummary}`);
+  // // console.log(`[WelcomeScreenAPI] Usando token: ${tokenSummary}`);
 
   return {
     'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ export const welcomeScreenFixedAPI = {
       throw new Error('Se requiere un ID para obtener la pantalla de bienvenida');
     }
 
-    const url = API_ENDPOINTS.welcomeScreen.getByResearch.replace('{id}', id);
+    const url = API_ENDPOINTS['welcome-screen'].getByResearch.replace('{id}', id);
     // // console.log(`[WelcomeScreenAPI] Obteniendo pantalla con ID ${id}, URL: ${url}`);
 
     return {
@@ -112,7 +112,7 @@ export const welcomeScreenFixedAPI = {
       throw new Error('Se requiere un ID de investigación');
     }
 
-    const url = API_ENDPOINTS.welcomeScreen?.getByResearch?.replace('{researchId}', researchId) || `/welcome-screen/research/${researchId}`;
+    const url = API_ENDPOINTS['welcome-screen']?.getByResearch?.replace('{researchId}', researchId) || `/welcome-screen/research/${researchId}`;
     // // console.log(`[WelcomeScreenAPI] Obteniendo pantalla para investigación ${researchId}, URL: ${url}`);
     // // console.log(`[WelcomeScreenAPI] URL completa: ${API_BASE_URL}${url}`);
 
@@ -248,7 +248,7 @@ export const welcomeScreenFixedAPI = {
     }
 
     // <<< Usar el endpoint CREATE >>>
-    const url = API_ENDPOINTS.welcomeScreen.create.replace('{researchId}', researchId);
+    const url = API_ENDPOINTS['welcome-screen'].create.replace('{researchId}', researchId);
     // console.log(`[WelcomeScreenAPI] Creando (POST) pantalla para investigación ${researchId}, URL: ${url}`);
     // console.log('[WelcomeScreenAPI] Datos a enviar:', data);
 
@@ -286,7 +286,7 @@ export const welcomeScreenFixedAPI = {
     }
 
     // <<< Usar el endpoint UPDATE y reemplazar ambos parámetros >>>
-    const url = API_ENDPOINTS.welcomeScreen.update
+    const url = API_ENDPOINTS['welcome-screen'].update
       .replace('{researchId}', researchId)
       .replace('{screenId}', screenId);
 
@@ -323,9 +323,9 @@ export const welcomeScreenFixedAPI = {
     }
 
     // <<< Usar el endpoint DELETE y reemplazar ambos parámetros >>>
-    const url = API_ENDPOINTS.welcomeScreen.delete
-       .replace('{researchId}', researchId)
-       .replace('{screenId}', screenId);
+    const url = API_ENDPOINTS['welcome-screen'].delete
+      .replace('{researchId}', researchId)
+      .replace('{screenId}', screenId);
     // console.log(`[WelcomeScreenAPI] Eliminando (DELETE) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
 
     return {

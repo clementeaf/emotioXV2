@@ -1,5 +1,7 @@
+import { smartVocFixedAPI } from '@/lib/smart-voc-api';
 import { useQuery } from '@tanstack/react-query';
 import { moduleResponseService } from '../services/moduleResponseService';
+import { useResearchById } from './useResearchList';
 
 interface QuestionResponse {
   participantId: string;
@@ -58,16 +60,51 @@ interface SmartVOCResults {
  * Evita llamadas duplicadas usando React Query con caching
  */
 export const useResearchData = (researchId: string) => {
-  // Query principal para datos agrupados
-  const groupedResponsesQuery = useQuery<GroupedResponsesResponse>({
-    queryKey: ['groupedResponses', researchId],
-    queryFn: () => moduleResponseService.getResponsesGroupedByQuestion(researchId),
+  // Query para datos básicos del research (reutiliza useResearchById)
+  const researchQuery = useResearchById(researchId);
+
+  // Query para datos de SmartVOC form
+  const smartVOCFormQuery = useQuery({
+    queryKey: ['smartVOCForm', researchId],
+    queryFn: async () => {
+      try {
+        return await smartVocFixedAPI.getByResearchId(researchId);
+      } catch (error) {
+        console.warn('[useResearchData] Error obteniendo SmartVOC form, devolviendo null:', error);
+        return null;
+      }
+    },
     enabled: !!researchId,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
+    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
+    retry: false,
+  });
+
+  // Query principal para datos agrupados
+  const groupedResponsesQuery = useQuery<GroupedResponsesResponse>({
+    queryKey: ['groupedResponses', researchId],
+    queryFn: async () => {
+      try {
+        return await moduleResponseService.getResponsesGroupedByQuestion(researchId);
+      } catch (error) {
+        // Si hay un error, devolver respuesta vacía en lugar de fallar
+        console.warn('[useResearchData] Error obteniendo respuestas agrupadas, devolviendo datos vacíos:', error);
+        return {
+          data: [],
+          status: 404
+        };
+      }
+    },
+    enabled: !!researchId,
+    staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
+    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: false, // No reintentar en caso de error
   });
 
   // Derivar SmartVOC data desde groupedResponses
@@ -107,6 +144,16 @@ export const useResearchData = (researchId: string) => {
   });
 
   return {
+    // Datos básicos del research (reutiliza useResearchById)
+    researchData: researchQuery.data,
+    isResearchLoading: researchQuery.isLoading,
+    researchError: researchQuery.error,
+
+    // Datos de SmartVOC form
+    smartVOCFormData: smartVOCFormQuery.data,
+    isSmartVOCFormLoading: smartVOCFormQuery.isLoading,
+    smartVOCFormError: smartVOCFormQuery.error,
+
     // Datos principales
     groupedResponses: groupedResponsesQuery.data?.data || [],
     isLoading: groupedResponsesQuery.isLoading,
@@ -129,6 +176,8 @@ export const useResearchData = (researchId: string) => {
 
     // Refetch functions
     refetch: groupedResponsesQuery.refetch,
+    refetchResearch: researchQuery.refetch,
+    refetchSmartVOCForm: smartVOCFormQuery.refetch,
   };
 };
 

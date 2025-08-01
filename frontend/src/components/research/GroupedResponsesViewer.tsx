@@ -1,5 +1,5 @@
 import React from 'react';
-import { useResearchData } from '../../hooks/useResearchData';
+import { useResearchDataContext } from './GroupedResponsesPage';
 
 interface GroupedResponsesViewerProps {
   researchId: string;
@@ -10,7 +10,7 @@ interface GroupedResponsesViewerProps {
  * Esta estructura es más eficiente para análisis estadísticos
  */
 export const GroupedResponsesViewer: React.FC<GroupedResponsesViewerProps> = ({ researchId }) => {
-  const { groupedResponses: data, isLoading, error } = useResearchData(researchId);
+  const { groupedResponses: data, isLoading, error } = useResearchDataContext();
 
   if (isLoading) {
     return (
