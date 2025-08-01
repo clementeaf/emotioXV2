@@ -29,10 +29,13 @@ export function QuestionInfo({
           {(questionId === '3.7' || questionId === '3.7-detail') && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Navigation Test</span>
           )}
-          {questionType === 'short_text' && questionId !== '3.7' && questionId !== '3.7-detail' && (
+          {questionId === '3.8' && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Navigation Test</span>
+          )}
+          {questionType === 'short_text' && questionId !== '3.7' && questionId !== '3.7-detail' && questionId !== '3.8' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Short Text question</span>
           )}
-          {questionType === 'long_text' && questionId !== '3.7' && questionId !== '3.7-detail' && (
+          {questionType === 'long_text' && questionId !== '3.7' && questionId !== '3.7-detail' && questionId !== '3.8' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Long Text question</span>
           )}
           {questionType === 'multiple_choice' && questionId === '3.3' && (
@@ -41,8 +44,11 @@ export function QuestionInfo({
           {questionType === 'multiple_choice' && questionId === '3.4' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Multiple Choice question</span>
           )}
-          {(questionType === 'rating' || questionType === 'linear_scale') && questionId !== '3.7' && questionId !== '3.7-detail' && (
+          {(questionType === 'rating' || questionType === 'linear_scale') && questionId !== '3.7' && questionId !== '3.7-detail' && questionId !== '3.8' && questionType !== 'cognitive_preference_test' && (
             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Linear Scale question</span>
+          )}
+          {(questionType === 'cognitive_preference_test' || questionType === 'preference_test') && questionId !== '3.8' && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium">Navigation Test</span>
           )}
           {conditionalityDisabled && (
             <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm font-medium">Conditionally disabled</span>

@@ -191,7 +191,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         {
           key: 'question-cognitive_preference_test',
           questionId: 'cognitive_preference_test',
-          questionType: 'rating' as const,
+          questionType: 'preference_test' as const,
           questionText: 'Cual de estas imagenes te parece mas adecuada?',
           required: false,
           conditionalityDisabled: false,
@@ -237,7 +237,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       };
 
       // Mapear tipos de pregunta a tipos de visualización
-      const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' => {
+      const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' | 'preference_test' => {
         switch (questionType) {
           case 'cognitive_short_text':
             return 'short_text';
@@ -248,7 +248,9 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             return 'multiple_choice';
           case 'cognitive_ranking':
           case 'cognitive_linear_scale':
+            return 'rating';
           case 'cognitive_preference_test':
+            return 'preference_test';
           case 'cognitive_image_selection':
           case 'cognitive_navigation_flow':
             return 'rating';

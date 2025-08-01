@@ -16,6 +16,7 @@ export interface PreferenceTestData {
   totalSelections: number;
   totalParticipants: number;
   responseTime?: string;
+  responseTimes?: number[]; // 🎯 NUEVO: Array de tiempos de respuesta
   preferenceAnalysis?: string;
   mostPreferred?: string;
   leastPreferred?: string;
@@ -63,13 +64,23 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
     }
   };
 
-  // Calcular tiempo promedio por step (simulado basado en selecciones)
-  const calculateStepTime = (selected: number, total: number): string => {
-    if (total === 0) return '0s';
+  // Calcular tiempo promedio por step (usar datos reales específicos de cada opción)
+  const calculateStepTime = (option: any, selected: number, total: number): string => {
+    if (selected === 0) return 'N/A';
+
+    // Si tenemos tiempos específicos por opción, usarlos
+    if (data.responseTimes && data.responseTimes.length > 0) {
+      // Por ahora usar el tiempo promedio general dividido por el número de opciones seleccionadas
+      const averageTime = data.responseTimes.reduce((sum, time) => sum + time, 0) / data.responseTimes.length;
+      const optionTime = Math.round(averageTime / Math.max(1, selected));
+      return `${optionTime}s`;
+    }
+
+    // Fallback: calcular tiempo basado en selecciones (simulado)
     const baseTime = 30; // tiempo base en segundos
     const timePerSelection = baseTime / total;
-    const stepTime = Math.round(selected * timePerSelection + Math.random() * 20);
-    return `${stepTime}s`;
+    const stepTime = Math.round(selected * timePerSelection);
+    return stepTime > 0 ? `${stepTime}s` : 'N/A';
   };
 
   // Función para alternar la expansión de un step
@@ -79,37 +90,10 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
 
   return (
     <div className="p-6">
-      {/* Header con tags solamente (sin título duplicado) */}
-      <div className="mb-6">
-        <div className="flex items-center justify-end mb-4">
-          <div className="flex items-center space-x-2">
-            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium">
-              Navigation Test
-            </span>
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium">
-              Conditionality disabled
-            </span>
-            <span className="px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs font-medium">
-              Required
-            </span>
-            <button className="p-1 text-gray-400 hover:text-gray-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {description && (
-          <p className="text-sm text-gray-600 mb-4">{description}</p>
-        )}
-      </div>
-
-      {/* Steps Container */}
       <div className="space-y-4">
         {options.map((option, index) => {
           const stepNumber = index + 1;
-          const stepTime = calculateStepTime(option.selected, totalSelections);
+          const stepTime = calculateStepTime(option, option.selected, totalSelections);
           const isExpanded = expandedStep === option.id;
 
           return (
@@ -155,7 +139,7 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
                 {/* Metrics */}
                 <div className="flex items-center space-x-4 text-sm">
                   <span className="text-gray-600">{stepTime}</span>
-                  <span className="text-blue-600 font-medium">100%</span>
+                  <span className="text-blue-600 font-medium">{option.percentage}%</span>
                   <div className="flex items-center space-x-1">
                     <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

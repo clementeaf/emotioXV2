@@ -98,6 +98,7 @@ export interface ProcessedCognitiveData {
     totalSelections: number;
     totalParticipants: number;
     responseTime?: string;
+    responseTimes?: number[]; // 🎯 NUEVO: Array de tiempos de respuesta
     preferenceAnalysis?: string;
   };
 
@@ -368,7 +369,8 @@ export function useCognitiveTaskResults(researchId: string) {
                 question: questionConfig?.title || `Pregunta ${questionKey}`,
                 options: [],
                 totalSelections: 0,
-                totalParticipants: responses.length
+                totalParticipants: responses.length,
+                responseTimes: [] // 🎯 NUEVO: Array para almacenar tiempos de respuesta
               };
 
               // Inicializar opciones basándose en la configuración de archivos
@@ -389,6 +391,20 @@ export function useCognitiveTaskResults(researchId: string) {
             // 🎯 FIX: Extraer selectedValue correctamente
             const selectedValue = response.response?.selectedValue || response.response?.selected || response.response?.preference || response.response;
             if (selectedValue) {
+              // 🎯 NUEVO: Calcular tiempo de respuesta real
+              if (response.timestamp && response.createdAt) {
+                const startTime = new Date(response.timestamp).getTime();
+                const endTime = new Date(response.createdAt).getTime();
+                const responseTimeMs = endTime - startTime;
+                const responseTimeSeconds = Math.round(responseTimeMs / 1000);
+
+                // Almacenar tiempo de respuesta
+                if (!questionData.preferenceTestData.responseTimes) {
+                  questionData.preferenceTestData.responseTimes = [];
+                }
+                questionData.preferenceTestData.responseTimes.push(responseTimeSeconds);
+              }
+
               // Buscar la opción que corresponde a este selectedValue
               const existingOption = questionData.preferenceTestData.options.find(opt => opt.id === selectedValue);
               if (existingOption) {
@@ -516,6 +532,15 @@ export function useCognitiveTaskResults(researchId: string) {
           opt.percentage = total > 0 ? Math.round((opt.selected / total) * 100) : 0;
         });
         questionData.preferenceTestData.totalSelections = total;
+
+        // 🎯 NUEVO: Calcular tiempo promedio de respuesta
+        if (questionData.preferenceTestData.responseTimes && questionData.preferenceTestData.responseTimes.length > 0) {
+          const averageTime = Math.round(
+            questionData.preferenceTestData.responseTimes.reduce((sum, time) => sum + time, 0) /
+            questionData.preferenceTestData.responseTimes.length
+          );
+          questionData.preferenceTestData.responseTime = `${averageTime}s`;
+        }
       }
 
       // Generar análisis de sentimiento para texto
