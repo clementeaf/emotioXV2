@@ -94,11 +94,13 @@ export interface ProcessedCognitiveData {
       selected: number;
       percentage: number;
       color?: string;
+      responseTime?: string; // 🎯 NUEVO: Tiempo de respuesta por opción
     }>;
     totalSelections: number;
     totalParticipants: number;
     responseTime?: string;
-    responseTimes?: number[]; // 🎯 NUEVO: Array de tiempos de respuesta
+    responseTimes?: number[]; // Array de tiempos de respuesta (legacy)
+    responseTimesByOption?: Record<string, number[]>; // 🎯 NUEVO: Tiempos por opción
     preferenceAnalysis?: string;
   };
 
@@ -398,11 +400,16 @@ export function useCognitiveTaskResults(researchId: string) {
                 const responseTimeMs = endTime - startTime;
                 const responseTimeSeconds = Math.round(responseTimeMs / 1000);
 
-                // Almacenar tiempo de respuesta
-                if (!questionData.preferenceTestData.responseTimes) {
-                  questionData.preferenceTestData.responseTimes = [];
+                // Almacenar tiempo de respuesta por opción
+                if (!questionData.preferenceTestData.responseTimesByOption) {
+                  questionData.preferenceTestData.responseTimesByOption = {};
                 }
-                questionData.preferenceTestData.responseTimes.push(responseTimeSeconds);
+
+                if (!questionData.preferenceTestData.responseTimesByOption[selectedValue]) {
+                  questionData.preferenceTestData.responseTimesByOption[selectedValue] = [];
+                }
+
+                questionData.preferenceTestData.responseTimesByOption[selectedValue].push(responseTimeSeconds);
               }
 
               // Buscar la opción que corresponde a este selectedValue
@@ -533,7 +540,21 @@ export function useCognitiveTaskResults(researchId: string) {
         });
         questionData.preferenceTestData.totalSelections = total;
 
-        // 🎯 NUEVO: Calcular tiempo promedio de respuesta
+        // 🎯 NUEVO: Calcular tiempo promedio de respuesta por opción
+        if (questionData.preferenceTestData.responseTimesByOption) {
+          // Calcular tiempo promedio por opción y agregarlo a las opciones
+          questionData.preferenceTestData.options.forEach(option => {
+            const optionTimes = questionData.preferenceTestData.responseTimesByOption![option.id];
+            if (optionTimes && optionTimes.length > 0) {
+              const averageTime = Math.round(
+                optionTimes.reduce((sum, time) => sum + time, 0) / optionTimes.length
+              );
+              option.responseTime = `${averageTime}s`;
+            }
+          });
+        }
+
+        // Mantener tiempo promedio general para compatibilidad
         if (questionData.preferenceTestData.responseTimes && questionData.preferenceTestData.responseTimes.length > 0) {
           const averageTime = Math.round(
             questionData.preferenceTestData.responseTimes.reduce((sum, time) => sum + time, 0) /

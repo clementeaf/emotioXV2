@@ -64,16 +64,13 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
     }
   };
 
-  // Calcular tiempo promedio por step (usar datos reales específicos de cada opción)
+  // Calcular tiempo promedio por step (usar tiempo específico de cada opción)
   const calculateStepTime = (option: any, selected: number, total: number): string => {
     if (selected === 0) return 'N/A';
 
-    // Si tenemos tiempos específicos por opción, usarlos
-    if (data.responseTimes && data.responseTimes.length > 0) {
-      // Por ahora usar el tiempo promedio general dividido por el número de opciones seleccionadas
-      const averageTime = data.responseTimes.reduce((sum, time) => sum + time, 0) / data.responseTimes.length;
-      const optionTime = Math.round(averageTime / Math.max(1, selected));
-      return `${optionTime}s`;
+    // Usar el tiempo específico de la opción si está disponible
+    if (option.responseTime) {
+      return option.responseTime;
     }
 
     // Fallback: calcular tiempo basado en selecciones (simulado)
