@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigationFlowConfig } from '../../../../hooks/useNavigationFlowConfig';
 import { ConvertedHitZone, HitZone, ImageFile, NavigationFlowResultsProps } from '../types';
 import { TransparentOverlay } from './TransparentOverlay';
@@ -12,6 +12,20 @@ interface HeatmapArea {
   clicks: any[];
   isCorrect: boolean;
   colorLevel: 'yellow' | 'orange' | 'red';
+}
+
+// 🎯 NUEVO: Interfaz para Areas of Interest (AOI)
+interface AOI {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  timeSpent: number; // tiempo en segundos
+  percentage: number; // porcentaje de participantes
+  participants: number; // número de participantes
+  color: string;
 }
 
 // 🎯 NUEVO: Función para crear heatmaps con intensidad progresiva
@@ -138,6 +152,10 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   const [realImages, setRealImages] = useState<ImageFile[]>([]);
   const [placeholderImages, setPlaceholderImages] = useState<ImageFile[]>([]);
   const [showHeatmapMode, setShowHeatmapMode] = useState<boolean>(true);
+  const [aois, setAois] = useState<AOI[]>([]);
+  const [isDrawingAOI, setIsDrawingAOI] = useState<boolean>(false);
+  const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
+  const [drawingEnd, setDrawingEnd] = useState<{ x: number; y: number } | null>(null);
 
   const imageRef = useRef<HTMLImageElement>(null);
   const { config } = useNavigationFlowConfig();
@@ -151,13 +169,129 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     setExpandedImageId(expandedImageId === imageId ? null : imageId);
   };
 
-  // 🎯 PROCESAR DATOS DE NAVEGACIÓN
+  // 🎯 FUNCIONES PARA MANEJAR AOIs
+  const handleMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setDrawingStart({ x, y });
+    setDrawingEnd({ x, y });
+    setIsDrawingAOI(true);
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isDrawingAOI || !imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setDrawingEnd({ x, y });
+  }, [isDrawingAOI]);
+
+  // 🎯 PROCESAR DATOS DE NAVEGACIÓN (mover antes de handleMouseUp)
   const {
     visualClickPoints: backendVisualClickPoints,
     allClicksTracking,
     imageSelections,
     files: backendFiles
   } = data;
+
+  // 🎯 FUNCIÓN PARA DETECTAR CLICKS DENTRO DE UN AOI
+  const detectClicksInAOI = useCallback((aoi: AOI, clicks: any[]): any[] => {
+    if (!clicks || clicks.length === 0 || !imageNaturalSize) return [];
+
+    return clicks.filter(click => {
+      // Convertir coordenadas del click a porcentajes si no lo están
+      const clickX = typeof click.x === 'number' ? (click.x / imageNaturalSize.width) * 100 : click.x;
+      const clickY = typeof click.y === 'number' ? (click.y / imageNaturalSize.height) * 100 : click.y;
+
+      // Verificar si el click está dentro del área del AOI
+      return clickX >= aoi.x &&
+        clickX <= aoi.x + aoi.width &&
+        clickY >= aoi.y &&
+        clickY <= aoi.y + aoi.height;
+    });
+  }, [imageNaturalSize]);
+
+  // 🎯 FUNCIÓN PARA CALCULAR MÉTRICAS DE UN AOI
+  const calculateAOIMetrics = useCallback((aoi: AOI, clicksInAOI: any[]): {
+    timeSpent: number;
+    percentage: number;
+    participants: number;
+  } => {
+    if (clicksInAOI.length === 0) {
+      return { timeSpent: 0, percentage: 0, participants: 0 };
+    }
+
+    // Calcular tiempo total (suma de todos los clicks)
+    const totalTime = clicksInAOI.reduce((sum, click) => sum + (click.duration || 0), 0);
+
+    // Calcular porcentaje de participantes que hicieron click en esta área
+    const uniqueParticipants = new Set(clicksInAOI.map(click => click.participantId || click.userId));
+    const totalParticipants = data.totalParticipants || 1;
+    const percentage = (uniqueParticipants.size / totalParticipants) * 100;
+
+    return {
+      timeSpent: Math.round(totalTime / 1000), // Convertir a segundos
+      percentage: Math.round(percentage * 10) / 10, // Redondear a 1 decimal
+      participants: uniqueParticipants.size
+    };
+  }, [data.totalParticipants]);
+
+  const handleMouseUp = useCallback(() => {
+    if (!isDrawingAOI || !drawingStart || !drawingEnd) return;
+
+    // Crear el AOI con coordenadas
+    const newAOI: AOI = {
+      id: `aoi-${Date.now()}`,
+      name: `Area of Interest (AOI) #${aois.length + 1}`,
+      x: Math.min(drawingStart.x, drawingEnd.x),
+      y: Math.min(drawingStart.y, drawingEnd.y),
+      width: Math.abs(drawingEnd.x - drawingStart.x),
+      height: Math.abs(drawingEnd.y - drawingStart.y),
+      timeSpent: 0,
+      percentage: 0,
+      participants: 0,
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    };
+
+    // 🎯 DETECTAR CLICKS DENTRO DEL AOI
+    const allClicksForCurrentImage = allClicksTracking?.filter(click =>
+      click.imageIndex === selectedImageIndex
+    ) || [];
+
+    const clicksInAOI = detectClicksInAOI(newAOI, allClicksForCurrentImage);
+    const metrics = calculateAOIMetrics(newAOI, clicksInAOI);
+
+    // Actualizar AOI con métricas reales
+    const finalAOI: AOI = {
+      ...newAOI,
+      timeSpent: metrics.timeSpent,
+      percentage: metrics.percentage,
+      participants: metrics.participants
+    };
+
+    console.log('🎯 AOI creado:', {
+      aoi: finalAOI,
+      clicksDetected: clicksInAOI.length,
+      metrics
+    });
+
+    setAois(prev => [...prev, finalAOI]);
+    setIsDrawingAOI(false);
+    setDrawingStart(null);
+    setDrawingEnd(null);
+  }, [isDrawingAOI, drawingStart, drawingEnd, aois.length, detectClicksInAOI, calculateAOIMetrics, allClicksTracking, selectedImageIndex]);
+
+  const removeAOI = useCallback((aoiId: string) => {
+    setAois(prev => prev.filter(aoi => aoi.id !== aoiId));
+  }, []);
+
+
 
   // 🎯 OBTENER IMÁGENES REALES DEL BACKEND
   const backendImages = useMemo(() => {
@@ -340,10 +474,24 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
               {/* Step Header */}
               <div className="flex items-center space-x-4">
                 {/* Thumbnail */}
-                <div className="w-16 h-16 rounded-lg bg-gray-100 border flex-shrink-0 flex items-center justify-center">
-                  <div className="w-8 h-8 bg-gray-300 rounded flex items-center justify-center">
-                    <div className="w-6 h-0.5 bg-gray-500"></div>
-                  </div>
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border flex-shrink-0">
+                  {realImages[index]?.url ? (
+                    <img
+                      src={realImages[index].url}
+                      alt={realImages[index].name || `Imagen ${stepNumber}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                      <span className="text-gray-600 font-semibold text-xs">
+                        {`Imagen ${stepNumber}`.charAt(0)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Step Label */}
@@ -426,33 +574,10 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                     </div>
                   </div>
 
-                  {/* Layout principal con imagen y panel lateral */}
-                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {/* Layout principal con imagen y panel debajo */}
+                  <div className="space-y-6">
                     {/* Panel principal con imagen */}
-                    <div className="lg:col-span-3">
-                      {/* Seleccionar Imagen */}
-                      <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Seleccionar Imagen
-                        </label>
-                        <div className="flex space-x-2">
-                          {images.map((img, imgIndex) => (
-                            <button
-                              key={imgIndex}
-                              onClick={() => {
-                                setSelectedImageIndex(imgIndex);
-                              }}
-                              className={`px-4 py-2 rounded-lg border transition-colors ${currentImageIndex === imgIndex
-                                ? 'bg-blue-500 text-white border-blue-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                                }`}
-                            >
-                              Imagen {imgIndex + 1}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
+                    <div className="w-full">
                       <div className="mb-6">
                         <div
                           className="relative w-full bg-white rounded-lg shadow-lg overflow-hidden"
@@ -467,6 +592,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                             </div>
                           ) : (
                             <>
+                              {console.log('🎯 Rendering image with URL:', selectedImage.url)}
                               <img
                                 ref={imageRef}
                                 src={selectedImage.url}
@@ -474,30 +600,61 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                 className="w-full h-auto object-contain bg-white"
                                 loading="lazy"
                                 style={{ display: 'block' }}
-                                onLoad={handleImageLoad}
+                                onLoad={(e) => {
+                                  console.log('🎯 Image loaded successfully:', selectedImage.url);
+                                  handleImageLoad(e);
+                                }}
                                 onError={(e) => {
+                                  console.error('🎯 Error loading image:', selectedImage.url);
+                                  // En lugar de ocultar la imagen, mostrar un mensaje de error más sutil
                                   const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  // Fallback a placeholder si la imagen falla
-                                  const fallbackDiv = document.createElement('div');
-                                  fallbackDiv.className = 'w-full h-64 bg-gray-100 flex items-center justify-center';
-                                  fallbackDiv.innerHTML = `
-                                    <div class="text-center">
-                                      <div class="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-                                        <div class="w-16 h-16 bg-gray-300 rounded flex items-center justify-center">
-                                          <div class="w-8 h-0.5 bg-gray-500"></div>
-                                        </div>
-                                      </div>
-                                      <p class="text-gray-600 text-lg font-medium">${selectedImage.name || `Imagen ${currentImageIndex + 1}`}</p>
-                                      <p class="text-gray-500 text-sm">Imagen no disponible</p>
-                                    </div>
-                                  `;
-                                  target.parentNode?.appendChild(fallbackDiv);
+                                  target.style.border = '2px dashed #e5e7eb';
+                                  target.style.backgroundColor = '#f9fafb';
                                 }}
                               />
                               {/* Capa transparente azulada con 30% de opacidad */}
                               <TransparentOverlay />
                             </>
+                          )}
+
+                          {/* 🎯 SVG OVERLAY PARA DIBUJO DE RECTÁNGULOS */}
+                          {!loadingImages && imageNaturalSize && imgRenderSize && (
+                            <svg
+                              className="absolute top-0 left-0 w-full h-full pointer-events-auto"
+                              style={{ width: '100%', height: '100%' }}
+                              onMouseDown={handleMouseDown}
+                              onMouseMove={handleMouseMove}
+                              onMouseUp={handleMouseUp}
+                            >
+                              {/* 🎯 RECTÁNGULO DE DIBUJO EN TIEMPO REAL */}
+                              {isDrawingAOI && drawingStart && drawingEnd && (
+                                <rect
+                                  x={`${Math.min(drawingStart.x, drawingEnd.x)}%`}
+                                  y={`${Math.min(drawingStart.y, drawingEnd.y)}%`}
+                                  width={`${Math.abs(drawingEnd.x - drawingStart.x)}%`}
+                                  height={`${Math.abs(drawingEnd.y - drawingStart.y)}%`}
+                                  fill="rgba(0, 123, 255, 0.2)"
+                                  stroke="#007bff"
+                                  strokeWidth="2"
+                                  strokeDasharray="4"
+                                />
+                              )}
+
+                              {/* 🎯 AOIs DIBUJADOS */}
+                              {aois.map((aoi) => (
+                                <rect
+                                  key={aoi.id}
+                                  x={`${aoi.x}%`}
+                                  y={`${aoi.y}%`}
+                                  width={`${aoi.width}%`}
+                                  height={`${aoi.height}%`}
+                                  fill={`${aoi.color}20`}
+                                  stroke={aoi.color}
+                                  strokeWidth="2"
+                                  style={{ pointerEvents: 'none' }}
+                                />
+                              ))}
+                            </svg>
                           )}
 
                           <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded z-20">
@@ -640,41 +797,63 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                       </div>
                     </div>
 
-                    {/* Panel lateral con Areas of Interest */}
-                    <div className="lg:col-span-1">
+                    {/* Panel de Areas of Interest debajo de la imagen */}
+                    <div className="w-full">
                       <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <h4 className="text-sm font-medium text-gray-700 mb-3">Areas of Interest (AOI)</h4>
                         <div className="space-y-3">
-                          {[1, 2, 3, 4].map((aoiIndex) => (
-                            <div key={aoiIndex} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                              {/* Thumbnail */}
-                              <div className="w-12 h-12 rounded overflow-hidden bg-gray-200 flex-shrink-0">
-                                <div className="w-full h-full bg-yellow-200 flex items-center justify-center">
-                                  <span className="text-xs text-gray-600">AOI</span>
+                          {aois.length === 0 ? (
+                            <div className="text-center py-4 text-gray-500">
+                              <p className="text-sm">No hay áreas de interés definidas.</p>
+                              <p className="text-xs mt-1">Haz clic y arrastra sobre la imagen para crear AOIs.</p>
+                            </div>
+                          ) : (
+                            aois.map((aoi) => (
+                              <div key={aoi.id} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
+                                {/* Thumbnail */}
+                                <div className="w-12 h-12 rounded overflow-hidden bg-gray-200 flex-shrink-0">
+                                  {realImages[selectedImageIndex]?.url ? (
+                                    <img
+                                      src={realImages[selectedImageIndex].url}
+                                      alt={realImages[selectedImageIndex].name || `AOI ${aoi.name}`}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-yellow-200 flex items-center justify-center">
+                                      <span className="text-xs text-gray-600">AOI</span>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
 
-                              {/* Métricas */}
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-900">Area of Interest (AOI) #{aoiIndex}</div>
-                                <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                  <span>6s</span>
-                                  <span>14%</span>
-                                  <div className="flex items-center space-x-1">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                    <span>05</span>
+                                {/* Métricas */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900">{aoi.name}</div>
+                                  <div className="flex items-center space-x-2 text-xs text-gray-600">
+                                    <span>{aoi.timeSpent}s</span>
+                                    <span>{aoi.percentage}%</span>
+                                    <div className="flex items-center space-x-1">
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                      </svg>
+                                      <span>{aoi.participants.toString().padStart(2, '0')}</span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              {/* Botón Remove */}
-                              <button className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors">
-                                Remove AOI
-                              </button>
-                            </div>
-                          ))}
+                                {/* Botón Remove */}
+                                <button
+                                  onClick={() => removeAOI(aoi.id)}
+                                  className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                                >
+                                  Remove AOI
+                                </button>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
                     </div>
