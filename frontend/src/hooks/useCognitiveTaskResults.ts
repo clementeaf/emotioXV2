@@ -163,6 +163,13 @@ export interface ProcessedCognitiveData {
       isCorrectHitzone: boolean;
       participantId?: string;
     }>;
+    // 🎯 NUEVO: ARCHIVOS CON S3KEYS
+    files?: Array<{
+      id: string;
+      name: string;
+      s3Key: string;
+      url: string;
+    }>;
   };
 }
 
@@ -433,14 +440,21 @@ export function useCognitiveTaskResults(researchId: string) {
           case 'cognitive_navigation_flow':
             if (!questionData.navigationFlowData) {
               questionData.navigationFlowData = {
-                question: `Pregunta ${questionKey}`,
+                question: questionConfig?.title || `Pregunta ${questionKey}`,
                 totalParticipants: responses.length,
                 totalSelections: 0,
                 researchId: researchId,
                 imageSelections: {},
                 selectedHitzone: '',
                 clickPosition: undefined,
-                selectedImageIndex: undefined
+                selectedImageIndex: undefined,
+                // 🎯 NUEVO: Agregar archivos con s3Keys
+                files: questionConfig?.files?.map((file: any) => ({
+                  id: file.id,
+                  name: file.name,
+                  s3Key: file.s3Key,
+                  url: file.url || file.fileUrl || `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`
+                })) || []
               };
             }
 

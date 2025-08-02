@@ -155,17 +155,35 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   const {
     visualClickPoints: backendVisualClickPoints,
     allClicksTracking,
-    imageSelections
+    imageSelections,
+    files: backendFiles
   } = data;
 
   // 🎯 OBTENER IMÁGENES REALES DEL BACKEND
   const backendImages = useMemo(() => {
-    if (imageSelections && typeof imageSelections === 'object') {
-      return Object.keys(imageSelections).map(key => key);
+    console.log('🎯 imageSelections:', imageSelections);
+    console.log('🎯 backendFiles:', backendFiles);
+
+    if (backendFiles && Array.isArray(backendFiles) && backendFiles.length > 0) {
+      // Usar archivos con s3Keys reales
+      const fileIds = backendFiles.map(file => file.id);
+      console.log('🎯 Using real files with s3Keys:', fileIds);
+      return fileIds;
+    } else if (imageSelections && typeof imageSelections === 'object') {
+      const keys = Object.keys(imageSelections);
+      console.log('🎯 backendImages keys:', keys);
+
+      // Log detallado de cada selección
+      Object.entries(imageSelections).forEach(([key, selection]) => {
+        console.log(`🎯 Selection ${key}:`, selection);
+      });
+
+      return keys;
     }
     // Fallback: usar datos simulados si no hay datos reales
+    console.log('🎯 Using fallback images');
     return ['image1', 'image2', 'image3'];
-  }, [imageSelections]);
+  }, [imageSelections, backendFiles]);
 
   // 🎯 OBTENER HITZONES REALES DEL BACKEND
   const backendHitZones = useMemo(() => {
@@ -229,14 +247,27 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
         setLoadingImages(true);
         try {
           const imagePromises = backendImages.map(async (imageId: string) => {
-            // Usar URLs reales de S3 para las imágenes
-            const s3Url = `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${imageId}`;
+            // Buscar el archivo correspondiente
+            const file = backendFiles?.find(f => f.id === imageId);
 
-            return {
-              id: imageId,
-              name: `Imagen ${imageId}`,
-              url: s3Url
-            };
+            if (file) {
+              // Usar URL del archivo real
+              console.log('🎯 Loading real file:', { imageId, file });
+              return {
+                id: imageId,
+                name: file.name || `Imagen ${imageId}`,
+                url: file.url
+              };
+            } else {
+              // Fallback a URL de S3
+              const s3Url = `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${imageId}`;
+              console.log('🎯 Loading image with fallback:', { imageId, s3Url });
+              return {
+                id: imageId,
+                name: `Imagen ${imageId}`,
+                url: s3Url
+              };
+            }
           });
 
           const loadedImages = await Promise.all(imagePromises);

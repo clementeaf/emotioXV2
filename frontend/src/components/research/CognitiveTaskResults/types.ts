@@ -243,6 +243,13 @@ export interface NavigationFlowData {
   visualClickPoints?: VisualClickPoint[];
   // 🎯 NUEVO: DATOS DE RASTREO COMPLETO DE CLICS
   allClicksTracking?: ClickTrackingData[];
+  // 🎯 NUEVO: ARCHIVOS CON S3KEYS
+  files?: Array<{
+    id: string;
+    name: string;
+    s3Key: string;
+    url: string;
+  }>;
 }
 
 export interface NavigationFlowResultsProps {
