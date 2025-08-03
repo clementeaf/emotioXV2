@@ -151,7 +151,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         {
           key: 'question-cognitive_ranking',
           questionId: 'cognitive_ranking',
-          questionType: 'rating' as const,
+          questionType: 'ranking' as const,
           questionText: 'Cual es tu mayor preferencia',
           required: false,
           conditionalityDisabled: false,
@@ -313,23 +313,28 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       };
 
       // Mapear tipos de pregunta a tipos de visualización
-      const getQuestionType = (questionType: string): 'short_text' | 'long_text' | 'multiple_choice' | 'rating' => {
+      const getQuestionType = (questionType: string): string => {
         switch (questionType) {
           case 'cognitive_short_text':
-            return 'short_text';
+            return 'cognitive_short_text';
           case 'cognitive_long_text':
-            return 'long_text';
+            return 'cognitive_long_text';
           case 'cognitive_single_choice':
+            return 'cognitive_single_choice';
           case 'cognitive_multiple_choice':
-            return 'multiple_choice';
+            return 'cognitive_multiple_choice';
           case 'cognitive_ranking':
+            return 'cognitive_ranking';
           case 'cognitive_linear_scale':
+            return 'cognitive_linear_scale';
           case 'cognitive_preference_test':
+            return 'cognitive_preference_test';
           case 'cognitive_image_selection':
+            return 'cognitive_image_selection';
           case 'cognitive_navigation_flow':
-            return 'rating';
+            return 'cognitive_navigation_flow';
           default:
-            return 'short_text';
+            return questionType;
         }
       };
 
