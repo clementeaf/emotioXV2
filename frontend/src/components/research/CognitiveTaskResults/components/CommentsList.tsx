@@ -88,7 +88,15 @@ export function CommentsList({
               }`}
             onClick={() => onToggleSelection(comment.id || `comment-${index}`)}
           >
-            <div className="flex justify-between items-start">
+            <div className="flex items-start gap-3">
+              <div className="mt-1">
+                <input
+                  type="checkbox"
+                  checked={selectedItems.includes(comment.id || `comment-${index}`)}
+                  onChange={() => onToggleSelection(comment.id || `comment-${index}`)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+              </div>
               <div className="flex-1">
                 <div className="text-sm text-neutral-900 mb-2">
                   {extractTextValue(comment.text)}
@@ -102,18 +110,7 @@ export function CommentsList({
                     }`}>
                     {comment.sentiment}
                   </span>
-                  <span className="text-xs text-neutral-500">
-                    {comment.selected ? 'Selected' : 'Not selected'}
-                  </span>
                 </div>
-              </div>
-              <div className="ml-4">
-                <input
-                  type="checkbox"
-                  checked={selectedItems.includes(comment.id || `comment-${index}`)}
-                  onChange={() => onToggleSelection(comment.id || `comment-${index}`)}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                />
               </div>
             </div>
           </div>
