@@ -41,6 +41,13 @@ export function RankingResults({ data }: RankingResultsProps) {
   // Ordenar las opciones por media (de menor a mayor - mejor ranking primero)
   const sortedOptions = [...data.options].sort((a, b) => a.mean - b.mean);
 
+  // Calcular el ancho de la barra basado en el ranking (1 = 100%, 2 = 66%, 3 = 33%)
+  const getBarWidth = (mean: number) => {
+    const maxRank = data.options.length;
+    const rank = Math.round(mean);
+    return `${((maxRank - rank + 1) / maxRank) * 100}%`;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       {/* Header de la pregunta */}
@@ -73,11 +80,11 @@ export function RankingResults({ data }: RankingResultsProps) {
               {option.text}
             </div>
 
-            {/* Barra horizontal */}
+            {/* Barra horizontal - ahora dinámica basada en el ranking */}
             <div className="w-full bg-gray-200 rounded-full h-6 shadow-inner">
               <div
                 className="bg-blue-400 h-6 rounded-full transition-all duration-300 ease-out"
-                style={{ width: '85%' }} // Valor fijo por ahora, se puede hacer dinámico
+                style={{ width: getBarWidth(option.mean) }}
               ></div>
             </div>
 
