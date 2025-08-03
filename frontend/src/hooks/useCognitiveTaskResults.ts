@@ -43,7 +43,7 @@ export interface ProcessedCognitiveData {
 
   // Datos específicos por tipo
   sentimentData?: {
-    responses: Array<{ id: string; text: string; sentiment: 'positive' | 'negative' | 'neutral' }>;
+    sentimentResults: Array<{ id: string; text: string; sentiment: 'positive' | 'negative' | 'neutral' }>;
     themes?: Array<{ name: string; count: number }>;
     keywords?: Array<{ name: string; count: number }>;
     analysis?: { text: string; actionables?: string[] };
@@ -198,6 +198,7 @@ export function useCognitiveTaskResults(researchId: string) {
 
         // Buscar el título en configData si está disponible
         const questionConfig = configData?.questions?.find((q: any) => q.questionKey === questionKey);
+        // 🎯 FIX: Usar question.id del config para que coincida con el componente
         const questionId = questionConfig?.id || questionKey;
 
         if (!questionMap.has(questionId)) {
@@ -216,12 +217,12 @@ export function useCognitiveTaskResults(researchId: string) {
         questionData.totalResponses++;
 
         // Procesar según el tipo de pregunta
-        switch (response.questionType || questionKey) {
+        switch (questionKey) {
           case 'cognitive_long_text':
           case 'cognitive_short_text':
             if (!questionData.sentimentData) {
               questionData.sentimentData = {
-                responses: [],
+                sentimentResults: [],
                 themes: [],
                 keywords: []
               };
@@ -252,8 +253,8 @@ export function useCognitiveTaskResults(researchId: string) {
               }
             }
 
-            questionData.sentimentData.responses.push({
-              id: `sentiment-${questionData.sentimentData.responses.length + 1}-${participant.participantId}`,
+            questionData.sentimentData.sentimentResults.push({
+              id: `sentiment-${questionData.sentimentData.sentimentResults.length + 1}-${participant.participantId}`,
               text: responseText,
               sentiment: sentiment
             });
@@ -579,12 +580,12 @@ export function useCognitiveTaskResults(researchId: string) {
       }
 
       // Generar análisis de sentimiento para texto
-      if (questionData.sentimentData && questionData.sentimentData.responses.length > 0) {
-        const positiveCount = questionData.sentimentData.responses.filter(r => r.sentiment === 'positive').length;
-        const negativeCount = questionData.sentimentData.responses.filter(r => r.sentiment === 'negative').length;
-        const neutralCount = questionData.sentimentData.responses.filter(r => r.sentiment === 'neutral').length;
+      if (questionData.sentimentData && questionData.sentimentData.sentimentResults.length > 0) {
+        const positiveCount = questionData.sentimentData.sentimentResults.filter((r: any) => r.sentiment === 'positive').length;
+        const negativeCount = questionData.sentimentData.sentimentResults.filter((r: any) => r.sentiment === 'negative').length;
+        const neutralCount = questionData.sentimentData.sentimentResults.filter((r: any) => r.sentiment === 'neutral').length;
 
-        const total = questionData.sentimentData.responses.length;
+        const total = questionData.sentimentData.sentimentResults.length;
         const positivePercentage = Math.round((positiveCount / total) * 100);
         const negativePercentage = Math.round((negativeCount / total) * 100);
         const neutralPercentage = Math.round((neutralCount / total) * 100);
