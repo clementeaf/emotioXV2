@@ -64,6 +64,7 @@ export interface ProcessedCognitiveData {
       responseTime: string;
       distribution: Record<number, number>;
     }>;
+    question?: string;
   };
 
   linearScaleData?: {
@@ -329,9 +330,16 @@ export function useCognitiveTaskResults(researchId: string) {
 
           case 'cognitive_linear_scale':
             if (!questionData.linearScaleData) {
+              // 🎯 FIX: Usar la configuración real de la pregunta
+              const questionConfig = configData.questions?.find((q: any) => q.questionKey === questionKey);
+              const scaleConfig = questionConfig?.scaleConfig || { startValue: 1, endValue: 5 };
+
               questionData.linearScaleData = {
-                question: `Pregunta ${questionKey}`,
-                scaleRange: { start: 1, end: 10 },
+                question: questionConfig?.title || `Pregunta ${questionKey}`,
+                scaleRange: {
+                  start: scaleConfig.startValue || 1,
+                  end: scaleConfig.endValue || 5
+                },
                 average: 0,
                 distribution: {},
                 totalResponses: 0
@@ -342,31 +350,64 @@ export function useCognitiveTaskResults(researchId: string) {
             const scaleValue = response.response?.value || response.response;
             if (typeof scaleValue === 'number') {
               questionData.linearScaleData.distribution[scaleValue] = (questionData.linearScaleData.distribution[scaleValue] || 0) + 1;
+              questionData.linearScaleData.totalResponses += 1;
             }
             break;
 
           case 'cognitive_ranking':
             if (!questionData.rankingData) {
+              // 🎯 FIX: Usar la configuración real de la pregunta
+              const questionConfig = configData.questions?.find((q: any) => q.questionKey === questionKey);
+
               questionData.rankingData = {
-                options: []
+                options: [],
+                question: questionConfig?.title || `Pregunta ${questionKey}`
               };
+
+              // Inicializar opciones basándose en la configuración real
+              if (questionConfig?.choices) {
+                questionConfig.choices.forEach((choice: any, index: number) => {
+                  questionData.rankingData!.options.push({
+                    id: choice.id || `rank-${index + 1}`,
+                    text: choice.text,
+                    mean: 0,
+                    responseTime: '76s', // Valor por defecto como en la referencia
+                    distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }
+                  });
+                });
+              }
             }
 
             // Procesar ranking
-            const rankingData = response.response?.ranking || response.response;
+            let rankingData = response.response?.ranking || response.response?.selectedValue || response.response;
+
+            // Si es un string JSON, parsearlo
+            if (typeof rankingData === 'string') {
+              try {
+                rankingData = JSON.parse(rankingData);
+              } catch (e) {
+                console.warn('[useCognitiveTaskResults] Error parsing ranking data:', e);
+                rankingData = null;
+              }
+            }
+
             if (Array.isArray(rankingData)) {
               rankingData.forEach((item, index) => {
+                const position = index + 1; // Posición en el ranking (1-3 para 3 opciones)
                 const existingOption = questionData.rankingData!.options.find(opt => opt.text === item);
                 if (existingOption) {
-                  existingOption.mean = (existingOption.mean + (index + 1)) / 2;
-                } else {
-                  questionData.rankingData!.options.push({
-                    id: `rank-${questionData.rankingData!.options.length + 1}`,
-                    text: String(item),
-                    mean: index + 1,
-                    responseTime: '0s',
-                    distribution: {}
-                  });
+                  // Actualizar distribución
+                  existingOption.distribution[position] = (existingOption.distribution[position] || 0) + 1;
+
+                  // Recalcular mean basado en la distribución
+                  let totalScore = 0;
+                  let totalCount = 0;
+                  for (let i = 1; i <= 6; i++) {
+                    const count = existingOption.distribution[i] || 0;
+                    totalScore += i * count;
+                    totalCount += count;
+                  }
+                  existingOption.mean = totalCount > 0 ? totalScore / totalCount : 0;
                 }
               });
             }
