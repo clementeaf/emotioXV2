@@ -55,29 +55,7 @@ export function LinearScaleResults({ data }: LinearScaleResultsProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      {/* Header de la pregunta */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">{question}</h3>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-            Linear Scale question
-          </span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-            Conditionality disabled
-          </span>
-          <span className="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-            Required
-          </span>
-          <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Contenido principal con opciones y barras */}
+    <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="space-y-4">
         {optionsData.map((option) => (
           <div key={option.optionNumber} className="flex items-center space-x-4">
@@ -116,10 +94,6 @@ export function LinearScaleResults({ data }: LinearScaleResultsProps) {
           </div>
           <span className="font-semibold text-gray-900">Question</span>
         </div>
-
-        <p className="text-sm text-gray-600 italic pl-7">
-          {description || "This was the best app my eyes had see"}
-        </p>
       </div>
     </div>
   );
