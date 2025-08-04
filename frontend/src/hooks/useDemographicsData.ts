@@ -10,6 +10,18 @@ interface DemographicData {
   participants: Array<{ id: string; label: string; count: number }>;
 }
 
+interface GroupedResponse {
+  participantId: string;
+  value: any;
+  responseTime?: string;
+  timestamp: string;
+  metadata?: any;
+}
+
+interface GroupedResponsesData {
+  [questionKey: string]: GroupedResponse[];
+}
+
 export const useDemographicsData = (researchId: string) => {
   const [data, setData] = useState<DemographicData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,8 +56,8 @@ export const useDemographicsData = (researchId: string) => {
     fetchDemographicsData();
   }, [researchId]);
 
-  const processDemographicsData = (responses: any[]): DemographicData => {
-    if (!responses || responses.length === 0) {
+  const processDemographicsData = (groupedResponses: GroupedResponsesData): DemographicData => {
+    if (!groupedResponses || Object.keys(groupedResponses).length === 0) {
       return {
         countries: [],
         ageRanges: [],
@@ -64,53 +76,47 @@ export const useDemographicsData = (researchId: string) => {
     const userIdCounts: Record<string, number> = {};
     const participantCounts: Record<string, number> = {};
 
-    // Procesar cada participante
-    responses.forEach((participant, index) => {
+    // Procesar datos demográficos de la nueva estructura
+    const demographicsResponses = groupedResponses['demographics'] || [];
+    
+    demographicsResponses.forEach((response) => {
+      const participantId = response.participantId;
+      const demographicValue = response.value;
+
       // Contar participantes únicos
-      const participantKey = `${participant.participantId || 'unknown'}`;
+      const participantKey = `${participantId || 'unknown'}`;
       participantCounts[participantKey] = (participantCounts[participantKey] || 0) + 1;
 
       // Contar userIds únicos
-      if (participant.participantId) {
-        userIdCounts[participant.participantId] = (userIdCounts[participant.participantId] || 0) + 1;
+      if (participantId) {
+        userIdCounts[participantId] = (userIdCounts[participantId] || 0) + 1;
       }
 
-      // Extraer datos demográficos de las respuestas
-      if (participant.responses && Array.isArray(participant.responses)) {
-        participant.responses.forEach((response: any) => {
-          const questionKey = response.questionKey?.toLowerCase() || '';
+      // Procesar datos demográficos
+      if (demographicValue) {
+        // Procesar país
+        if (demographicValue.country) {
+          const country = String(demographicValue.country);
+          countryCounts[country] = (countryCounts[country] || 0) + 1;
+        }
 
-          // Procesar datos demográficos
-          if (questionKey === 'demographics') {
-            const demographicData = response.response;
+        // Procesar edad
+        if (demographicValue.age) {
+          const age = String(demographicValue.age);
+          ageCounts[age] = (ageCounts[age] || 0) + 1;
+        }
 
-            if (demographicData) {
-              // Procesar país
-              if (demographicData.country) {
-                const country = String(demographicData.country);
-                countryCounts[country] = (countryCounts[country] || 0) + 1;
-              }
+        // Procesar género
+        if (demographicValue.gender) {
+          const gender = String(demographicValue.gender);
+          genderCounts[gender] = (genderCounts[gender] || 0) + 1;
+        }
 
-              // Procesar edad
-              if (demographicData.age) {
-                const age = String(demographicData.age);
-                ageCounts[age] = (ageCounts[age] || 0) + 1;
-              }
-
-              // Procesar género
-              if (demographicData.gender) {
-                const gender = String(demographicData.gender);
-                genderCounts[gender] = (genderCounts[gender] || 0) + 1;
-              }
-
-              // Procesar educación (si existe)
-              if (demographicData.education) {
-                const education = String(demographicData.education);
-                educationCounts[education] = (educationCounts[education] || 0) + 1;
-              }
-            }
-          }
-        });
+        // Procesar educación (si existe)
+        if (demographicValue.education) {
+          const education = String(demographicValue.education);
+          educationCounts[education] = (educationCounts[education] || 0) + 1;
+        }
       }
     });
 

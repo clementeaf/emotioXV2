@@ -309,7 +309,7 @@ export class ModuleResponseController {
   }
 
   /**
-   * Obtener todas las respuestas para un research
+   * Obtener todas las respuestas para un research (estructura optimizada)
    */
   async getResponsesByResearch(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
@@ -329,11 +329,14 @@ export class ModuleResponseController {
       // Obtener las respuestas
       const responses = await moduleResponseService.getResponsesByResearch(researchId);
 
+      // Transformar a estructura optimizada agrupada por questionKey
+      const groupedResponses = this.transformToOptimizedStructure(responses);
+
       return {
         statusCode: 200,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          data: responses,
+          data: groupedResponses,
           status: 200
         })
       };
@@ -1044,6 +1047,80 @@ export class ModuleResponseController {
     result.sort((a, b) => a.questionKey.localeCompare(b.questionKey));
 
     return result;
+  }
+
+  /**
+   * Transforma las respuestas a estructura optimizada agrupada por questionKey
+   */
+  private transformToOptimizedStructure(
+    participantResponses: ParticipantResponsesDocument[]
+  ): Record<string, Array<{
+    participantId: string;
+    value: any;
+    responseTime?: string;
+    timestamp: string;
+    metadata?: any;
+  }>> {
+    const groupedResponses: Record<string, Array<{
+      participantId: string;
+      value: any;
+      responseTime?: string;
+      timestamp: string;
+      metadata?: any;
+    }>> = {};
+
+    participantResponses.forEach((participant) => {
+      participant.responses?.forEach((response) => {
+        const questionKey = response.questionKey;
+        
+        if (!groupedResponses[questionKey]) {
+          groupedResponses[questionKey] = [];
+        }
+
+        // Extraer el valor de la respuesta
+        let responseValue: any;
+        if (response.response && typeof response.response === 'object') {
+          // Para respuestas complejas como ranking
+          if (response.response.selectedValue) {
+            // Intentar parsear JSON si es un string
+            if (typeof response.response.selectedValue === 'string') {
+              try {
+                responseValue = JSON.parse(response.response.selectedValue);
+              } catch {
+                responseValue = response.response.selectedValue;
+              }
+            } else {
+              responseValue = response.response.selectedValue;
+            }
+          } else if (response.response.value !== undefined) {
+            responseValue = response.response.value;
+          } else {
+            responseValue = response.response;
+          }
+        } else {
+          responseValue = response.response;
+        }
+
+        // Calcular tiempo de respuesta (si es posible)
+        let responseTime: string | undefined;
+        if (response.createdAt && response.timestamp) {
+          const createdAt = new Date(response.createdAt).getTime();
+          const timestamp = new Date(response.timestamp).getTime();
+          const timeDiff = Math.abs(timestamp - createdAt);
+          responseTime = `${(timeDiff / 1000).toFixed(1)}s`;
+        }
+
+        groupedResponses[questionKey].push({
+          participantId: participant.participantId,
+          value: responseValue,
+          responseTime,
+          timestamp: response.timestamp,
+          metadata: response.metadata
+        });
+      });
+    });
+
+    return groupedResponses;
   }
 }
 
