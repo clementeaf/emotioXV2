@@ -457,6 +457,10 @@ export function useCognitiveTaskResults(researchId: string) {
   const processNavigationFlowData = (responses: GroupedResponse[], questionConfig: any) => {
     if (!responses || responses.length === 0) return null;
 
+    // 🎯 DEBUG: Log de datos de entrada
+    console.log('🎯 processNavigationFlowData - responses:', responses);
+    console.log('🎯 processNavigationFlowData - questionConfig:', questionConfig);
+
     // Agregar todos los clicks de todos los participantes
     const allVisualClickPoints: any[] = [];
     const allClicksTracking: any[] = [];
@@ -466,9 +470,11 @@ export function useCognitiveTaskResults(researchId: string) {
       if (!response.value) return;
       
       const value = response.value;
+      console.log('🎯 processNavigationFlowData - processing response:', { participantId: response.participantId, value });
       
       // Agregar clicks visuales
       if (value.visualClickPoints && Array.isArray(value.visualClickPoints)) {
+        console.log('🎯 processNavigationFlowData - visualClickPoints encontrados:', value.visualClickPoints.length);
         value.visualClickPoints.forEach((point: any) => {
           allVisualClickPoints.push({
             ...point,
@@ -479,6 +485,7 @@ export function useCognitiveTaskResults(researchId: string) {
       
       // Agregar tracking de clicks
       if (value.allClicksTracking && Array.isArray(value.allClicksTracking)) {
+        console.log('🎯 processNavigationFlowData - allClicksTracking encontrados:', value.allClicksTracking.length);
         value.allClicksTracking.forEach((click: any) => {
           allClicksTracking.push({
             ...click,
@@ -493,7 +500,7 @@ export function useCognitiveTaskResults(researchId: string) {
       }
     });
 
-    return {
+    const result = {
       question: questionConfig.title || questionConfig.description,
       totalParticipants: responses.length,
       totalSelections: responses.length,
@@ -503,6 +510,9 @@ export function useCognitiveTaskResults(researchId: string) {
       allClicksTracking: allClicksTracking,
       files: questionConfig.files || []
     };
+
+    console.log('🎯 processNavigationFlowData - resultado final:', result);
+    return result;
   };
 
   const processPreferenceTestData = (responses: GroupedResponse[], questionConfig: any) => {

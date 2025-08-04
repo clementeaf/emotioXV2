@@ -144,6 +144,11 @@ const convertHitZonesToPercentageCoordinates = (
 };
 
 export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ data }) => {
+  // 🎯 DEBUG: Log de datos recibidos
+  console.log('🎯 NavigationFlowResults - Data recibida:', data);
+  console.log('🎯 NavigationFlowResults - visualClickPoints:', data?.visualClickPoints);
+  console.log('🎯 NavigationFlowResults - allClicksTracking:', data?.allClicksTracking);
+
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [expandedImageId, setExpandedImageId] = useState<string | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
@@ -151,7 +156,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   const [loadingImages, setLoadingImages] = useState<boolean>(true);
   const [realImages, setRealImages] = useState<ImageFile[]>([]);
   const [placeholderImages, setPlaceholderImages] = useState<ImageFile[]>([]);
-  const [showHeatmapMode, setShowHeatmapMode] = useState<boolean>(true);
+  const [showHeatmapMode, setShowHeatmapMode] = useState<boolean>(false); // Cambiar a false para mostrar clicks por defecto
   const [aois, setAois] = useState<AOI[]>([]);
   const [isDrawingAOI, setIsDrawingAOI] = useState<boolean>(false);
   const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
@@ -160,6 +165,21 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
   const imageRef = useRef<HTMLImageElement>(null);
   const { config } = useNavigationFlowConfig();
+
+  // 🎯 FUNCIÓN PARA MANEJAR CAMBIO DE MODO DE VISUALIZACIÓN
+  const handleVisualizationModeChange = (mode: string) => {
+    setShowHeatmapMode(mode === 'heat-click-map');
+  };
+
+  // 🎯 CONFIGURAR MODOS DE VISUALIZACIÓN
+  const visualizationModes = [
+    { id: 'heat-click-map', label: 'Heat click map' },
+    { id: 'click-map', label: 'Click map' },
+    { id: 'opacity-map', label: 'Opacity map' },
+    { id: 'scan-path', label: 'Scan Path' },
+    { id: 'image', label: 'Image' },
+    { id: 'prediction', label: 'Prediction' }
+  ];
 
   // Funciones para manejar la vista de selección de imágenes
   const handleImageSelect = (imageIndex: number) => {
@@ -344,7 +364,12 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   }, [imageSelections]);
 
   // 🎯 CONVERTIR HITZONES A COORDENADAS DE PORCENTAJE
-  const availableHitzones = convertHitZonesToPercentageCoordinates(backendHitZones, imageNaturalSize || undefined);
+  const availableHitzones = useMemo(() => {
+    if (!imageNaturalSize) {
+      return []; // No procesar hitzones hasta que la imagen esté cargada
+    }
+    return convertHitZonesToPercentageCoordinates(backendHitZones, imageNaturalSize);
+  }, [backendHitZones, imageNaturalSize]);
 
   // 🎯 PROCESAR CLICKS VISUALES
   const currentImageClickPoints = backendVisualClickPoints?.filter(
@@ -555,22 +580,16 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                   {/* Filtros de visualización */}
                   <div className="mb-4">
                     <div className="flex space-x-2">
-                      {[
-                        { id: 'heat-click-map', label: 'Heat click map', active: true },
-                        { id: 'click-map', label: 'Click map', active: false },
-                        { id: 'opacity-map', label: 'Opacity map', active: false },
-                        { id: 'scan-path', label: 'Scan Path', active: false },
-                        { id: 'image', label: 'Image', active: false },
-                        { id: 'prediction', label: 'Prediction', active: false }
-                      ].map((filter) => (
+                      {visualizationModes.map((mode) => (
                         <button
-                          key={filter.id}
-                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${filter.active
+                          key={mode.id}
+                          onClick={() => handleVisualizationModeChange(mode.id)}
+                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${showHeatmapMode === (mode.id === 'heat-click-map')
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
-                          {filter.label}
+                          {mode.label}
                         </button>
                       ))}
                     </div>
@@ -696,9 +715,25 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
                                   {config.showHeatmap && !showHeatmapMode && backendVisualClickPoints && Array.isArray(backendVisualClickPoints) && (
                                     <>
+                                      {/* 🎯 DEBUG: Log de condición de renderizado */}
+                                      {console.log('🎯 Renderizando clicks - Condiciones:', {
+                                        configShowHeatmap: config.showHeatmap,
+                                        showHeatmapMode,
+                                        hasBackendVisualClickPoints: !!backendVisualClickPoints,
+                                        isArray: Array.isArray(backendVisualClickPoints),
+                                        clickCount: backendVisualClickPoints?.length
+                                      })}
                                       {backendVisualClickPoints?.filter(
                                         point => point.imageIndex === index
                                       ).map((point, pointIndex) => {
+                                        // 🎯 DEBUG: Log de filtrado por imagen
+                                        console.log('🎯 Procesando click:', {
+                                          point,
+                                          imageIndex: index,
+                                          selectedImageIndex,
+                                          matches: point.imageIndex === index
+                                        });
+
                                         if ((point.isCorrect && !config.showCorrectClicks) ||
                                           (!point.isCorrect && !config.showIncorrectClicks)) {
                                           return null;
@@ -711,19 +746,32 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                         if (imageNaturalSize && imgRenderSize && imageNaturalSize.width && imageNaturalSize.height) {
                                           const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
 
-                                          // Convertir coordenadas absolutas a coordenadas relativas al tamaño renderizado
-                                          transformedX = offsetX + (point.x / imageNaturalSize.width) * drawWidth;
-                                          transformedY = offsetY + (point.y / imageNaturalSize.height) * drawHeight;
+                                          // Los clicks vienen en coordenadas absolutas de píxeles, convertirlos a porcentajes y luego a píxeles del tamaño renderizado
+                                          const percentX = (point.x / imageNaturalSize.width) * 100;
+                                          const percentY = (point.y / imageNaturalSize.height) * 100;
+
+                                          transformedX = offsetX + (percentX / 100) * drawWidth;
+                                          transformedY = offsetY + (percentY / 100) * drawHeight;
+
+                                          // 🎯 DEBUG: Log de coordenadas transformadas
+                                          console.log('🎯 Click transformado:', {
+                                            original: { x: point.x, y: point.y },
+                                            percent: { x: percentX, y: percentY },
+                                            transformed: { x: transformedX, y: transformedY },
+                                            imageNaturalSize,
+                                            imgRenderSize,
+                                            drawRect: { drawWidth, drawHeight, offsetX, offsetY }
+                                          });
                                         }
 
                                         return (
                                           <div
                                             key={`${point.timestamp}-${pointIndex}`}
-                                            className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
+                                            className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
                                               }`}
                                             style={{
-                                              left: transformedX - 4,
-                                              top: transformedY - 4,
+                                              left: point.x - 6,
+                                              top: point.y - 6,
                                               zIndex: 10
                                             }}
                                             title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}`}
@@ -743,26 +791,14 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                             return null;
                                           }
 
-                                          // 🎯 TRANSFORMAR COORDENADAS DEL CLICK AL TAMAÑO RENDERIZADO
-                                          let transformedX = click.x;
-                                          let transformedY = click.y;
-
-                                          if (imageNaturalSize && imgRenderSize && imageNaturalSize.width && imageNaturalSize.height) {
-                                            const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
-
-                                            // Convertir coordenadas absolutas a coordenadas relativas al tamaño renderizado
-                                            transformedX = offsetX + (click.x / imageNaturalSize.width) * drawWidth;
-                                            transformedY = offsetY + (click.y / imageNaturalSize.height) * drawHeight;
-                                          }
-
                                           return (
                                             <div
                                               key={`${click.timestamp}-${clickIndex}`}
-                                              className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
+                                              className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
                                                 }`}
                                               style={{
-                                                left: transformedX - 4,
-                                                top: transformedY - 4,
+                                                left: click.x - 6,
+                                                top: click.y - 6,
                                                 zIndex: 10
                                               }}
                                               title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}
@@ -788,9 +824,12 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                         if (imageNaturalSize && imgRenderSize && imageNaturalSize.width && imageNaturalSize.height) {
                                           const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
 
-                                          // Convertir coordenadas absolutas a coordenadas relativas al tamaño renderizado
-                                          transformedX = offsetX + (area.x / imageNaturalSize.width) * drawWidth;
-                                          transformedY = offsetY + (area.y / imageNaturalSize.height) * drawHeight;
+                                          // Los heatmaps vienen en coordenadas absolutas de píxeles, convertirlos a porcentajes y luego a píxeles del tamaño renderizado
+                                          const percentX = (area.x / imageNaturalSize.width) * 100;
+                                          const percentY = (area.y / imageNaturalSize.height) * 100;
+
+                                          transformedX = offsetX + (percentX / 100) * drawWidth;
+                                          transformedY = offsetY + (percentY / 100) * drawHeight;
                                         }
 
                                         const left = transformedX - area.radius;
