@@ -156,6 +156,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   const [isDrawingAOI, setIsDrawingAOI] = useState<boolean>(false);
   const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
   const [drawingEnd, setDrawingEnd] = useState<{ x: number; y: number } | null>(null);
+  const [currentDrawingImageIndex, setCurrentDrawingImageIndex] = useState<number>(0);
 
   const imageRef = useRef<HTMLImageElement>(null);
   const { config } = useNavigationFlowConfig();
@@ -170,7 +171,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   };
 
   // 🎯 FUNCIONES PARA MANEJAR AOIs
-  const handleMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>, imageIndex: number) => {
     if (!imageRef.current) return;
 
     const rect = imageRef.current.getBoundingClientRect();
@@ -180,6 +181,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     setDrawingStart({ x, y });
     setDrawingEnd({ x, y });
     setIsDrawingAOI(true);
+    setCurrentDrawingImageIndex(imageIndex);
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
@@ -261,7 +263,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
     // 🎯 DETECTAR CLICKS DENTRO DEL AOI
     const allClicksForCurrentImage = allClicksTracking?.filter(click =>
-      click.imageIndex === selectedImageIndex
+      click.imageIndex === currentDrawingImageIndex
     ) || [];
 
     const clicksInAOI = detectClicksInAOI(newAOI, allClicksForCurrentImage);
@@ -285,7 +287,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     setIsDrawingAOI(false);
     setDrawingStart(null);
     setDrawingEnd(null);
-  }, [isDrawingAOI, drawingStart, drawingEnd, aois.length, detectClicksInAOI, calculateAOIMetrics, allClicksTracking, selectedImageIndex]);
+  }, [isDrawingAOI, drawingStart, drawingEnd, aois.length, detectClicksInAOI, calculateAOIMetrics, allClicksTracking, currentDrawingImageIndex]);
 
   const removeAOI = useCallback((aoiId: string) => {
     setAois(prev => prev.filter(aoi => aoi.id !== aoiId));
@@ -592,20 +594,20 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                             </div>
                           ) : (
                             <>
-                              {console.log('🎯 Rendering image with URL:', selectedImage.url)}
+                              {console.log('🎯 Rendering image with URL:', realImages[index]?.url || 'No URL')}
                               <img
                                 ref={imageRef}
-                                src={selectedImage.url}
-                                alt={selectedImage.name || `Imagen ${currentImageIndex + 1}`}
+                                src={realImages[index]?.url || '/placeholder.jpg'}
+                                alt={realImages[index]?.name || `Imagen ${index + 1}`}
                                 className="w-full h-auto object-contain bg-white"
                                 loading="lazy"
                                 style={{ display: 'block' }}
                                 onLoad={(e) => {
-                                  console.log('🎯 Image loaded successfully:', selectedImage.url);
+                                  console.log('🎯 Image loaded successfully:', realImages[index]?.url);
                                   handleImageLoad(e);
                                 }}
                                 onError={(e) => {
-                                  console.error('🎯 Error loading image:', selectedImage.url);
+                                  console.error('🎯 Error loading image:', realImages[index]?.url);
                                   // En lugar de ocultar la imagen, mostrar un mensaje de error más sutil
                                   const target = e.target as HTMLImageElement;
                                   target.style.border = '2px dashed #e5e7eb';
@@ -622,7 +624,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                             <svg
                               className="absolute top-0 left-0 w-full h-full pointer-events-auto"
                               style={{ width: '100%', height: '100%' }}
-                              onMouseDown={handleMouseDown}
+                              onMouseDown={(e) => handleMouseDown(e, index)}
                               onMouseMove={handleMouseMove}
                               onMouseUp={handleMouseUp}
                             >
@@ -658,7 +660,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                           )}
 
                           <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded z-20">
-                            {loadingImages ? 'Cargando...' : `Imagen ${currentImageIndex + 1}`}
+                            {loadingImages ? 'Cargando...' : `Imagen ${index + 1}`}
                           </div>
 
                           {imageNaturalSize && imgRenderSize && !loadingImages && (
@@ -692,12 +694,26 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                     );
                                   })}
 
-                                  {config.showHeatmap && !showHeatmapMode && currentImageClickPoints.length > 0 && (
+                                  {config.showHeatmap && !showHeatmapMode && backendVisualClickPoints && Array.isArray(backendVisualClickPoints) && (
                                     <>
-                                      {currentImageClickPoints.map((point, pointIndex) => {
+                                      {backendVisualClickPoints?.filter(
+                                        point => point.imageIndex === index
+                                      ).map((point, pointIndex) => {
                                         if ((point.isCorrect && !config.showCorrectClicks) ||
                                           (!point.isCorrect && !config.showIncorrectClicks)) {
                                           return null;
+                                        }
+
+                                        // 🎯 TRANSFORMAR COORDENADAS DEL PUNTO VISUAL AL TAMAÑO RENDERIZADO
+                                        let transformedX = point.x;
+                                        let transformedY = point.y;
+
+                                        if (imageNaturalSize && imgRenderSize && imageNaturalSize.width && imageNaturalSize.height) {
+                                          const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+
+                                          // Convertir coordenadas absolutas a coordenadas relativas al tamaño renderizado
+                                          transformedX = offsetX + (point.x / imageNaturalSize.width) * drawWidth;
+                                          transformedY = offsetY + (point.y / imageNaturalSize.height) * drawHeight;
                                         }
 
                                         return (
@@ -706,8 +722,8 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                             className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
                                               }`}
                                             style={{
-                                              left: point.x - 4,
-                                              top: point.y - 4,
+                                              left: transformedX - 4,
+                                              top: transformedY - 4,
                                               zIndex: 10
                                             }}
                                             title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}`}
@@ -720,11 +736,23 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                   {config.showHeatmap && !showHeatmapMode && allClicksTracking && Array.isArray(allClicksTracking) && (
                                     <>
                                       {allClicksTracking
-                                        .filter(click => click.imageIndex === currentImageIndex)
+                                        .filter(click => click.imageIndex === index)
                                         .map((click, clickIndex) => {
                                           if ((click.isCorrectHitzone && !config.showCorrectClicks) ||
                                             (!click.isCorrectHitzone && !config.showIncorrectClicks)) {
                                             return null;
+                                          }
+
+                                          // 🎯 TRANSFORMAR COORDENADAS DEL CLICK AL TAMAÑO RENDERIZADO
+                                          let transformedX = click.x;
+                                          let transformedY = click.y;
+
+                                          if (imageNaturalSize && imgRenderSize && imageNaturalSize.width && imageNaturalSize.height) {
+                                            const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+
+                                            // Convertir coordenadas absolutas a coordenadas relativas al tamaño renderizado
+                                            transformedX = offsetX + (click.x / imageNaturalSize.width) * drawWidth;
+                                            transformedY = offsetY + (click.y / imageNaturalSize.height) * drawHeight;
                                           }
 
                                           return (
@@ -733,8 +761,8 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                               className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
                                                 }`}
                                               style={{
-                                                left: click.x - 4,
-                                                top: click.y - 4,
+                                                left: transformedX - 4,
+                                                top: transformedY - 4,
                                                 zIndex: 10
                                               }}
                                               title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}
@@ -745,16 +773,28 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                   )}
 
                                   {/* 🎯 NUEVO: RENDERIZAR HEATMAPS */}
-                                  {showHeatmapMode && heatmapAreas[currentImageIndex] && heatmapAreas[currentImageIndex].length > 0 && (
+                                  {showHeatmapMode && heatmapAreas[index] && heatmapAreas[index].length > 0 && (
                                     <>
-                                      {heatmapAreas[currentImageIndex].map((area, areaIndex) => {
+                                      {heatmapAreas[index].map((area, areaIndex) => {
                                         if ((area.isCorrect && !config.showCorrectClicks) ||
                                           (!area.isCorrect && !config.showIncorrectClicks)) {
                                           return null;
                                         }
 
-                                        const left = offsetX + area.x - area.radius;
-                                        const top = offsetY + area.y - area.radius;
+                                        // 🎯 TRANSFORMAR COORDENADAS DEL HEATMAP AL TAMAÑO RENDERIZADO
+                                        let transformedX = area.x;
+                                        let transformedY = area.y;
+
+                                        if (imageNaturalSize && imgRenderSize && imageNaturalSize.width && imageNaturalSize.height) {
+                                          const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+
+                                          // Convertir coordenadas absolutas a coordenadas relativas al tamaño renderizado
+                                          transformedX = offsetX + (area.x / imageNaturalSize.width) * drawWidth;
+                                          transformedY = offsetY + (area.y / imageNaturalSize.height) * drawHeight;
+                                        }
+
+                                        const left = transformedX - area.radius;
+                                        const top = transformedY - area.radius;
                                         const diameter = area.radius * 2;
 
                                         return (
@@ -812,10 +852,10 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                               <div key={aoi.id} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
                                 {/* Thumbnail */}
                                 <div className="w-12 h-12 rounded overflow-hidden bg-gray-200 flex-shrink-0">
-                                  {realImages[selectedImageIndex]?.url ? (
+                                  {realImages[index]?.url ? (
                                     <img
-                                      src={realImages[selectedImageIndex].url}
-                                      alt={realImages[selectedImageIndex].name || `AOI ${aoi.name}`}
+                                      src={realImages[index].url}
+                                      alt={realImages[index].name || `AOI ${aoi.name}`}
                                       className="w-full h-full object-cover"
                                       onError={(e) => {
                                         const target = e.target as HTMLImageElement;

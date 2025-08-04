@@ -455,21 +455,52 @@ export function useCognitiveTaskResults(researchId: string) {
   };
 
   const processNavigationFlowData = (responses: GroupedResponse[], questionConfig: any) => {
-    // Implementación simplificada - expandir según necesidades
-    const firstResponse = responses[0];
-    if (!firstResponse || !firstResponse.value) return null;
+    if (!responses || responses.length === 0) return null;
+
+    // Agregar todos los clicks de todos los participantes
+    const allVisualClickPoints: any[] = [];
+    const allClicksTracking: any[] = [];
+    const imageSelections: any = {};
+
+    responses.forEach(response => {
+      if (!response.value) return;
+      
+      const value = response.value;
+      
+      // Agregar clicks visuales
+      if (value.visualClickPoints && Array.isArray(value.visualClickPoints)) {
+        value.visualClickPoints.forEach((point: any) => {
+          allVisualClickPoints.push({
+            ...point,
+            participantId: response.participantId
+          });
+        });
+      }
+      
+      // Agregar tracking de clicks
+      if (value.allClicksTracking && Array.isArray(value.allClicksTracking)) {
+        value.allClicksTracking.forEach((click: any) => {
+          allClicksTracking.push({
+            ...click,
+            participantId: response.participantId
+          });
+        });
+      }
+      
+      // Agregar selecciones de imagen
+      if (value.imageSelections && typeof value.imageSelections === 'object') {
+        Object.assign(imageSelections, value.imageSelections);
+      }
+    });
 
     return {
       question: questionConfig.title || questionConfig.description,
       totalParticipants: responses.length,
       totalSelections: responses.length,
       researchId: questionConfig.researchId,
-      imageSelections: {},
-      selectedHitzone: firstResponse.value.selectedHitzone,
-      clickPosition: firstResponse.value.clickPosition,
-      selectedImageIndex: firstResponse.value.selectedImageIndex,
-      visualClickPoints: firstResponse.value.visualClickPoints || [],
-      allClicksTracking: firstResponse.value.allClicksTracking || [],
+      imageSelections,
+      visualClickPoints: allVisualClickPoints,
+      allClicksTracking: allClicksTracking,
       files: questionConfig.files || []
     };
   };
