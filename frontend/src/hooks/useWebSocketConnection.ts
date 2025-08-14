@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
+import { getWebsocketUrl } from '@/api/dynamic-endpoints';
 import {
   ParticipantLoginData,
   ParticipantResponseSavedData,
@@ -20,7 +21,7 @@ export const useWebSocketConnection = () => {
   const connect = useCallback(() => {
     if (!token) { return; }
 
-    const wsUrl = `wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev?token=${token}`;
+    const wsUrl = `${getWebsocketUrl()}?token=${token}`;
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {

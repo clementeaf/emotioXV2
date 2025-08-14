@@ -1,5 +1,6 @@
 'use client';
 
+import { ParticipantGenerator } from '@/components/research/ParticipantGenerator';
 import { ParticipantsTable } from '@/components/research/ParticipantsTable';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -310,6 +311,7 @@ function ResearchInProgressContent() {
       <Tabs defaultValue="participants" className="space-y-4">
         <TabsList>
           <TabsTrigger value="participants">Participantes</TabsTrigger>
+          <TabsTrigger value="generator">Generar Participantes</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="configuration">Configuración</TabsTrigger>
         </TabsList>
@@ -328,6 +330,16 @@ function ResearchInProgressContent() {
             onViewDetails={() => { }}
             researchId={researchId || ''}
             onParticipantDeleted={handleParticipantDeleted}
+          />
+        </TabsContent>
+
+        <TabsContent value="generator" className="space-y-4">
+          <ParticipantGenerator
+            researchId={researchId || ''}
+            onParticipantsGenerated={(newParticipants) => {
+              // Actualizar la lista de participantes si es necesario
+              console.log('Participantes generados:', newParticipants);
+            }}
           />
         </TabsContent>
 

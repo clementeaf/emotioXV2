@@ -38,8 +38,8 @@ print_header() {
 # Variables de configuración
 BUCKET_NAME="emotioxv2-frontend"
 REGION="us-east-1"
-API_URL="https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
-WS_URL="wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
+API_URL="https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev"
+WS_URL="wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev"
 
 print_header "🚀 DEPLOY AUTOMATIZADO A AWS S3/CLOUDFRONT"
 print_message "EmotioXV2 Frontend"

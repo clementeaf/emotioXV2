@@ -15,14 +15,14 @@ export async function testDynamicEndpoints(): Promise<{
     const endpoints = await getDynamicEndpoints();
 
     console.log('✅ Endpoints dinámicos cargados:', {
-      http: endpoints.API_HTTP_ENDPOINT,
-      ws: endpoints.API_WEBSOCKET_ENDPOINT,
-      stage: endpoints.API_ENDPOINTS?.stage
+      http: endpoints.http,
+      ws: endpoints.ws,
+      stage: endpoints.stage
     });
 
     // Verificar que las URLs son válidas
-    const isValidHttp = endpoints.API_HTTP_ENDPOINT?.includes('execute-api.us-east-1.amazonaws.com');
-    const isValidWs = endpoints.API_WEBSOCKET_ENDPOINT?.includes('execute-api.us-east-1.amazonaws.com');
+    const isValidHttp = endpoints.http?.includes('execute-api.us-east-1.amazonaws.com');
+    const isValidWs = endpoints.ws?.includes('execute-api.us-east-1.amazonaws.com');
 
     if (!isValidHttp || !isValidWs) {
       return {
@@ -56,7 +56,7 @@ export async function testDynamicWebSocketConnection(): Promise<{
     console.log('🧪 Probando conexión WebSocket con endpoints dinámicos...');
 
     const endpoints = await getDynamicEndpoints();
-    const wsUrl = endpoints.API_WEBSOCKET_ENDPOINT;
+    const wsUrl = endpoints.ws;
 
     if (!wsUrl) {
       return {

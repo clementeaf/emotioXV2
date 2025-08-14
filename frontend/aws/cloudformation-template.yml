@@ -26,17 +26,22 @@ Resources:
             AllowedOrigins: ['*']
             MaxAge: 3000
 
-  # Política de bucket para acceso público
+  # Política de bucket para acceso público vía CloudFront
   FrontendBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref FrontendBucket
       PolicyDocument:
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
-            Principal: '*'
+            Principal:
+              Service: cloudfront.amazonaws.com
             Action: s3:GetObject
             Resource: !Sub '${FrontendBucket}/*'
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
 
   # Distribución de CloudFront
   CloudFrontDistribution:
@@ -47,7 +52,8 @@ Resources:
           - DomainName: !GetAtt FrontendBucket.RegionalDomainName
             Id: S3Origin
             S3OriginConfig:
-              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+              OriginAccessIdentity: ''
+            OriginAccessControlId: !Ref CloudFrontOAC
         Enabled: true
         DefaultRootObject: index.html
         DefaultCacheBehavior:
@@ -59,12 +65,16 @@ Resources:
         ViewerCertificate:
           CloudFrontDefaultCertificate: true
 
-  # Origin Access Identity para CloudFront
-  CloudFrontOAI:
-    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+  # Origin Access Control para CloudFront
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
     Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub 'OAI for ${Environment} environment'
+      OriginAccessControlConfig:
+        Name: !Sub 'emotioxv2-frontend-${Environment}-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+        Description: !Sub 'OAC for ${Environment} environment'
 
 Outputs:
   BucketName:

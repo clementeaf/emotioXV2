@@ -1,5 +1,6 @@
 'use client';
 
+import { getApiUrl } from '@/api/dynamic-endpoints';
 import { moduleResponsesAPI } from '@/config/api';
 import { useEffect, useState } from 'react';
 
@@ -468,10 +469,10 @@ export function useCognitiveTaskResults(researchId: string) {
 
     responses.forEach(response => {
       if (!response.value) return;
-      
+
       const value = response.value;
       console.log('🎯 processNavigationFlowData - processing response:', { participantId: response.participantId, value });
-      
+
       // Agregar clicks visuales
       if (value.visualClickPoints && Array.isArray(value.visualClickPoints)) {
         console.log('🎯 processNavigationFlowData - visualClickPoints encontrados:', value.visualClickPoints.length);
@@ -482,7 +483,7 @@ export function useCognitiveTaskResults(researchId: string) {
           });
         });
       }
-      
+
       // Agregar tracking de clicks
       if (value.allClicksTracking && Array.isArray(value.allClicksTracking)) {
         console.log('🎯 processNavigationFlowData - allClicksTracking encontrados:', value.allClicksTracking.length);
@@ -493,7 +494,7 @@ export function useCognitiveTaskResults(researchId: string) {
           });
         });
       }
-      
+
       // Agregar selecciones de imagen
       if (value.imageSelections && typeof value.imageSelections === 'object') {
         Object.assign(imageSelections, value.imageSelections);
@@ -524,11 +525,11 @@ export function useCognitiveTaskResults(researchId: string) {
 
     responses.forEach(response => {
       const selectedValue = response.value;
-      
+
       if (selectedValue) {
         const fileId = typeof selectedValue === 'object' ? selectedValue.id || selectedValue.fileId : selectedValue;
         selectionCounts[fileId] = (selectionCounts[fileId] || 0) + 1;
-        
+
         if (!responseTimesByOption[fileId]) {
           responseTimesByOption[fileId] = [];
         }
@@ -543,9 +544,9 @@ export function useCognitiveTaskResults(researchId: string) {
       const fileId = file.id || file.s3Key;
       const selected = selectionCounts[fileId] || 0;
       const percentage = totalSelections > 0 ? Math.round((selected / totalSelections) * 100) : 0;
-      
+
       const optionTimes = responseTimesByOption[fileId] || [];
-      const avgTime = optionTimes.length > 0 
+      const avgTime = optionTimes.length > 0
         ? `${(optionTimes.reduce((a, b) => a + b, 0) / optionTimes.length).toFixed(1)}s`
         : 'N/A';
 
@@ -626,7 +627,7 @@ export function useCognitiveTaskResults(researchId: string) {
 
       // Cargar configuración y respuestas en paralelo
       const [configResponse, response] = await Promise.all([
-        fetch(`https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev/research/${researchId}/cognitive-task`, {
+        fetch(`${getApiUrl(`research/${researchId}/cognitive-task`)}`, {
           headers: {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` })

@@ -53,8 +53,7 @@ function App() {
     hasConsent,
     hasRequested,
     requestLocation,
-    rejectLocation,
-    clearLocation
+    rejectLocation
   } = useLocationTracking({
     researchId,
     trackLocationEnabled

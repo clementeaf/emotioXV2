@@ -14,8 +14,14 @@ StorageBucket:
             - DELETE
             - HEAD
           AllowedOrigins:
-            - 'http://localhost:4700'
-            - 'https://your-production-frontend-domain.com'
+            - 'http://localhost:3000'        # Frontend desarrollo
+            - 'http://localhost:4700'        # Public-tests desarrollo
+            - 'http://localhost:5173'        # Vite alternativo
+            - 'http://localhost:5174'        # Vite alternativo
+            - 'https://d2s9nr0bm47yl1.cloudfront.net'  # Frontend CloudFront
+            - 'https://d2zt8ia21te5mv.cloudfront.net'  # Public-tests CloudFront
+            - 'http://54.90.132.233:3000'    # Frontend EC2
+            - '*'                            # Fallback para desarrollo
           MaxAge: 3000
     PublicAccessBlockConfiguration:
       BlockPublicAcls: false
@@ -48,6 +54,8 @@ UsersTable:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
 
 # Tabla principal DynamoDB
 DynamoDBTable:
@@ -99,6 +107,8 @@ DynamoDBTable:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
 
 # Tabla EyeTracking Recruit Config
 EyeTrackingRecruitConfigTable:
@@ -133,6 +143,8 @@ EyeTrackingRecruitConfigTable:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
 
 # Tabla EyeTracking Recruit Participant
 EyeTrackingRecruitParticipantTable:
@@ -179,6 +191,8 @@ EyeTrackingRecruitParticipantTable:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
 
 # Tabla Recruitment Link
 RecruitmentLinkTable:
@@ -221,6 +235,8 @@ RecruitmentLinkTable:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
 
 # Tabla de participantes
 ParticipantTable:
@@ -247,6 +263,8 @@ ParticipantTable:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
     StreamSpecification:
       StreamViewType: NEW_AND_OLD_IMAGES
 
@@ -285,6 +303,8 @@ ModuleResponsesTable:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
 
 # Permite acceso público de solo lectura a los archivos bajo cognitive-task-files/
 S3PublicReadPolicy:
@@ -325,5 +345,35 @@ LocationTrackingTable:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
+# Tabla para Quota Records
+QuotaRecordsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.QUOTA_RECORDS_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: researchId
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: ResearchIdIndex
+        KeySchema:
+          - AttributeName: researchId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
 
 # --- Fin de las definiciones de Recursos ---

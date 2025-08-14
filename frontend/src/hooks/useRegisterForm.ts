@@ -1,3 +1,4 @@
+import { getApiUrl } from '@/api/dynamic-endpoints';
 import { validateConfirmPassword, validateEmail, validateName, validatePassword } from '@/utils/auth-validation';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -84,7 +85,7 @@ export const useRegisterForm = () => {
     const confirmPasswordValidation = validateConfirmPassword(state.password, state.confirmPassword);
 
     if (!nameValidation.isValid || !emailValidation.isValid ||
-        !passwordValidation.isValid || !confirmPasswordValidation.isValid) {
+      !passwordValidation.isValid || !confirmPasswordValidation.isValid) {
       setStatus('error');
       setError('Por favor corrige los errores en el formulario');
       return;
@@ -93,7 +94,7 @@ export const useRegisterForm = () => {
     setStatus('registering');
 
     try {
-      const response = await fetch('https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/register', {
+      const response = await fetch(getApiUrl('auth/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

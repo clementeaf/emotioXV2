@@ -1,73 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import ParticipantLogin from '../../pages/ParticipantLogin';
 import { useTestStore } from '../../stores/useTestStore';
-
-// Definir la interfaz Participant localmente
-interface Participant {
-  name: string;
-  email: string;
-}
 
 const LoginRedirect: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { setParticipant } = useTestStore();
-  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const researchId = params.get('researchId');
+    const userId = params.get('userId');
 
-    if (researchId) {
-      // 🎯 MOSTRAR EL LOGIN REAL EN LUGAR DE CREDENCIALES AUTOMÁTICAS
-      setShowLogin(true);
-    } else {
-      navigate('/error-no-research-id');
-    }
-  }, [location, navigate]);
-
-  const handleLoginSuccess = (participant: Participant) => {
-    const params = new URLSearchParams(location.search);
-    const researchId = params.get('researchId');
-    const participantId = (participant as any).id || 'real-participant-id';
-
-    if (researchId) {
-      // 🎯 GUARDAR researchId EN LOCALSTORAGE PARA PERSISTENCIA
+    if (researchId && userId) {
+      // 🎯 AMBOS PARÁMETROS ESTÁN PRESENTES - PROCEDER DIRECTAMENTE
+      // Guardar en localStorage para persistencia
       localStorage.setItem('researchId', researchId);
+      localStorage.setItem('userId', userId);
 
+      // Configurar participante con userId
       setParticipant(
-        participantId,
-        participant.name,
-        participant.email,
+        userId,
+        `Participante ${userId.slice(-6)}`, // Nombre basado en últimos 6 caracteres del ID
+        '', // Email vacío por ahora
         researchId
       );
-      // Redirigir a las preguntas después del login exitoso
+
+      // Redirigir al test directamente
       navigate('/test');
+    } else {
+      // Faltan parámetros - redirigir a error
+      navigate('/error-no-research-id');
     }
-  };
+  }, [location, navigate, setParticipant]);
 
-  if (showLogin) {
-    const params = new URLSearchParams(location.search);
-    const researchId = params.get('researchId') || '';
-
-    return (
-      <ParticipantLogin
-        researchId={researchId}
-        onLoginSuccess={handleLoginSuccess}
-        onLogin={() => {}}
-      />
-    );
-  }
-
+  // Loading state mientras redirige
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Redirigiendo...
+          Cargando investigación...
         </h2>
         <p className="text-gray-600">
-          Cargando la investigación...
+          Validando parámetros y configurando el test
         </p>
       </div>
     </div>

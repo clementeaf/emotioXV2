@@ -3,7 +3,7 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configuración para desarrollo y producción
-  // output: 'export', // Comentado para desarrollo
+  output: 'export', // Habilitado para deploy a S3
   // Configuración para imágenes y rutas
   images: {
     unoptimized: true,

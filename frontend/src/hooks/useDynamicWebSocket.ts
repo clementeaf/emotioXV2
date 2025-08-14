@@ -33,8 +33,8 @@ export const useDynamicWebSocket = (researchId: string) => {
         const dynamicEndpoints = await getDynamicEndpoints();
         setEndpoints(dynamicEndpoints);
         console.log('✅ Endpoints de WebSocket cargados:', {
-          http: dynamicEndpoints.API_HTTP_ENDPOINT,
-          ws: dynamicEndpoints.API_WEBSOCKET_ENDPOINT
+          http: dynamicEndpoints.http,
+          ws: dynamicEndpoints.ws
         });
       } catch (error) {
         console.error('❌ Error cargando endpoints:', error);

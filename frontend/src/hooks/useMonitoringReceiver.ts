@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MonitoringEvent, ParticipantStatus, ResearchMonitoringData } from '../../../shared/interfaces/websocket-events.interface';
-import { getDynamicEndpoints } from '../api/dynamic-endpoints';
+import { getDynamicEndpoints, getWebsocketUrl } from '../api/dynamic-endpoints';
 import { useAuth } from '../providers/AuthProvider';
 import { debugEnvironmentVariables } from '../utils/debug-env';
 
@@ -47,8 +47,8 @@ export const useMonitoringReceiver = (researchId: string) => {
         const dynamicEndpoints = await getDynamicEndpoints();
         setEndpoints(dynamicEndpoints);
         console.log('✅ Endpoints de monitoreo cargados:', {
-          http: dynamicEndpoints.API_HTTP_ENDPOINT,
-          ws: dynamicEndpoints.API_WEBSOCKET_ENDPOINT
+          http: dynamicEndpoints.http,
+          ws: dynamicEndpoints.ws
         });
       } catch (error) {
         console.error('❌ Error cargando endpoints:', error);
@@ -74,7 +74,7 @@ export const useMonitoringReceiver = (researchId: string) => {
       debugEnvironmentVariables();
 
       // 🎯 USAR ENDPOINT CORRECTO DE AWS
-      const wsUrl = 'wss://w4eatadpf9.execute-api.us-east-1.amazonaws.com/dev';
+      const wsUrl = getWebsocketUrl();
 
       console.log('🔌 Intentando conectar a WebSocket de monitoreo:', wsUrl);
 

@@ -6,8 +6,8 @@
 set -e
 
 # 🎯 CONFIGURACIÓN
-BUCKET_NAME="emotioxv2-public-tests"
-DISTRIBUTION_ID="E1234567890ABC" # Reemplazar con ID real
+BUCKET_NAME="emotioxv2-public-tests-dev-041238861016"
+DISTRIBUTION_ID="E1234567890ABC" # Se actualizará después de crear CloudFront
 REGION="us-east-1"
 
 echo "🚀 Iniciando deploy de public-tests a AWS..."

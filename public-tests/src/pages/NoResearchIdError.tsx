@@ -8,10 +8,16 @@ const NoResearchIdError: React.FC = () => {
           ⚠️ Acceso Inválido
         </h2>
         <p className="text-gray-600 mb-4">
-          Para acceder a una investigación, necesitas un enlace válido con un ID de investigación.
+          Para acceder a una investigación, necesitas un enlace válido con ambos parámetros requeridos.
         </p>
-        <p className="text-sm text-gray-500">
-          Ejemplo: <code className="bg-gray-100 px-2 py-1 rounded">?researchId=tu-id-aqui</code>
+        <div className="text-sm text-gray-500 mb-4">
+          <p className="font-medium mb-2">Formato requerido:</p>
+          <code className="bg-gray-100 px-2 py-1 rounded block">
+            ?researchId=ABC123&userId=XYZ789
+          </code>
+        </div>
+        <p className="text-xs text-gray-400">
+          Contacta al administrador de la investigación para obtener tu enlace único.
         </p>
       </div>
     </div>

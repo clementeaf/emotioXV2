@@ -770,8 +770,8 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                             className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
                                               }`}
                                             style={{
-                                              left: point.x - 6,
-                                              top: point.y - 6,
+                                              left: transformedX - 6,
+                                              top: transformedY - 6,
                                               zIndex: 10
                                             }}
                                             title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}`}
@@ -791,14 +791,28 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                             return null;
                                           }
 
+                                          // 🎯 TRANSFORMAR COORDENADAS TAMBIÉN PARA allClicksTracking
+                                          let transformedClickX = click.x;
+                                          let transformedClickY = click.y;
+
+                                          if (imageNaturalSize && imgRenderSize && imageNaturalSize.width && imageNaturalSize.height) {
+                                            const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+                                            
+                                            const percentX = (click.x / imageNaturalSize.width) * 100;
+                                            const percentY = (click.y / imageNaturalSize.height) * 100;
+                                            
+                                            transformedClickX = offsetX + (percentX / 100) * drawWidth;
+                                            transformedClickY = offsetY + (percentY / 100) * drawHeight;
+                                          }
+
                                           return (
                                             <div
                                               key={`${click.timestamp}-${clickIndex}`}
                                               className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
                                                 }`}
                                               style={{
-                                                left: click.x - 6,
-                                                top: click.y - 6,
+                                                left: transformedClickX - 6,
+                                                top: transformedClickY - 6,
                                                 zIndex: 10
                                               }}
                                               title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}

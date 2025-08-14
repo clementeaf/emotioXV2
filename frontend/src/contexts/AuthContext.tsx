@@ -1,8 +1,9 @@
 'use client';
 
+import { getApiUrl } from '@/api/dynamic-endpoints';
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'next/navigation';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface User {
   email: string;
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Verificar si el token es válido
         const decoded = jwtDecode<User>(storedToken);
         const expiryTime = (decoded as any).exp * 1000;
-        
+
         if (expiryTime > Date.now()) {
           // console.log('Token válido encontrado, inicializando sesión');
           setToken(storedToken);
@@ -55,7 +56,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Verificar expiración del token
   useEffect(() => {
-    if (!token) {return;}
+    if (!token) { return; }
 
     try {
       const decoded = jwtDecode<any>(token);
@@ -84,7 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(newToken);
       setUser(decoded);
       // console.log('Login exitoso, token almacenado');
-      
+
       // Forzar la redirección al dashboard usando replace y asegurando que la navegación sea inmediata
       // console.log('Redirigiendo al dashboard...');
       router.replace('/dashboard');
@@ -99,8 +100,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // console.log('Iniciando proceso de logout...');
       // Intentar hacer logout en el backend
-      const logoutUrl = 'https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/logout';
-      
+      const logoutUrl = getApiUrl('auth/logout');
+
       if (token) {
         await fetch(logoutUrl, {
           method: 'POST',
@@ -128,7 +129,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(decoded);
-      
+
       // console.log('Token actualizado:', new Date().toLocaleString());
       // console.log('Nuevo token expira:', new Date((decoded as any).exp * 1000).toLocaleString());
     } catch (error) {
@@ -154,4 +155,4 @@ export function useAuth() {
     throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
-} 
+}

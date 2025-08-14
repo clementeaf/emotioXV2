@@ -1,3 +1,4 @@
+import { getWebsocketUrl } from '@/api/dynamic-endpoints';
 import { useCallback, useEffect, useRef } from 'react';
 import {
   ParticipantLoginData,
@@ -23,7 +24,7 @@ export const useMonitoringWebSocket = (researchId?: string) => {
 
     try {
       // 🎯 USAR ENDPOINT CORRECTO DE AWS
-      const wsUrl = 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev';
+      const wsUrl = getWebsocketUrl();
 
       console.log('[MonitoringWebSocket] 🔌 Intentando conectar a:', wsUrl);
 

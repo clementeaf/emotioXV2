@@ -1,12 +1,19 @@
 /**
  * Configuración API Centralizada para EmotioXV2
  * ÚNICA FUENTE DE VERDAD para toda la configuración de API
- * SOLO AWS Lambda - NUNCA localhost o desarrollo local
+ * Prioriza endpoints dinámicos sincronizados desde AWS Lambda
  */
 
-// URLs base - Solo variables de entorno
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-export const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || '';
+import { DYNAMIC_API_ENDPOINTS, isEndpointsSynced } from '../api/dynamic-endpoints';
+
+// URLs base - Priorizar endpoints dinámicos, fallback a variables de entorno
+export const API_BASE_URL = isEndpointsSynced()
+  ? DYNAMIC_API_ENDPOINTS.http
+  : (process.env.NEXT_PUBLIC_API_URL || DYNAMIC_API_ENDPOINTS.http);
+
+export const WS_BASE_URL = isEndpointsSynced()
+  ? DYNAMIC_API_ENDPOINTS.ws
+  : (process.env.NEXT_PUBLIC_WS_URL || DYNAMIC_API_ENDPOINTS.ws);
 
 // Validación de seguridad - BLOQUEAR localhost completamente
 if (typeof window !== 'undefined' && (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1'))) {
@@ -131,6 +138,7 @@ export const API_ENDPOINTS = {
     login: '/participants/login',
     create: '/participants',
     delete: '/participants/{id}',
+    generate: '/participants/generate',
     deleteParticipant: '/research/{researchId}/participants/{participantId}',
   },
 

@@ -1,24 +1,31 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
 // Generado: 2025-07-20T16:20:17.392Z
+// ACTUALIZADO PARA USAR ENDPOINTS DINÁMICOS
+
+import { DYNAMIC_API_ENDPOINTS, isEndpointsSynced } from './dynamic-endpoints';
 
 // 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
 const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
 
-// Endpoints de API exportados desde backend
+// Endpoints de API exportados desde backend - Priorizar endpoints dinámicos
 export const API_ENDPOINTS = {
-  // Endpoint HTTP API
-  http: isDevelopment
-    ? "http://localhost:3000"
-    : "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint HTTP API - Usar dinámicos si están sincronizados
+  http: isEndpointsSynced()
+    ? DYNAMIC_API_ENDPOINTS.http
+    : (isDevelopment
+      ? "http://localhost:3000"
+      : "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"),
 
-  // Endpoint WebSocket
-  ws: isDevelopment
-    ? "ws://localhost:3001"
-    : "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint WebSocket - Usar dinámicos si están sincronizados
+  ws: isEndpointsSynced()
+    ? DYNAMIC_API_ENDPOINTS.ws
+    : (isDevelopment
+      ? "ws://localhost:3001"
+      : "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"),
 
   // Etapa de despliegue (dev, prod, etc.)
-  stage: "dev"
+  stage: isEndpointsSynced() ? DYNAMIC_API_ENDPOINTS.stage : "dev"
 };
 
 // URLs de desarrollo local

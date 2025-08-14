@@ -1,0 +1,23 @@
+{
+  "allowedOrigins": [
+    "http://localhost:3000",
+    "http://localhost:4700",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://d2s9nr0bm47yl1.cloudfront.net",
+    "https://d2zt8ia21te5mv.cloudfront.net",
+    "http://54.90.132.233:3000"
+  ],
+  "dynamicOrigins": {
+    "apiEndpoint": "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
+    "wsEndpoint": "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
+    "stage": "dev"
+  },
+  "autoDetect": {
+    "localhost": true,
+    "cloudfront": true,
+    "amplify": true,
+    "executeApi": true
+  },
+  "lastUpdated": "2025-08-14T19:28:55.000Z"
+}

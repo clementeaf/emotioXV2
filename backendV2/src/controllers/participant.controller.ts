@@ -332,6 +332,178 @@ export class ParticipantController {
   }
 
   /**
+   * Genera participantes dummy para una investigación
+   */
+  async generateDummyParticipants(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      if (!event.body) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Se requieren datos para generar participantes',
+            status: 400
+          })
+        };
+      }
+
+      const data = JSON.parse(event.body);
+      const { researchId, count = 5 } = data;
+
+      if (!researchId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'researchId es requerido',
+            status: 400
+          })
+        };
+      }
+
+      // Validar que la investigación existe
+      const researchData = await this.researchServiceInstance.getResearchById(researchId, 'public-check');
+      if (!researchData) {
+        return {
+          statusCode: 404,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'La investigación especificada no existe',
+            status: 404
+          })
+        };
+      }
+
+      // Generar nombres y emails dummy
+      const dummyNames = [
+        'Ana García', 'Carlos López', 'María Rodríguez', 'Juan Martínez', 'Laura Sánchez',
+        'Pedro Gómez', 'Carmen Fernández', 'Miguel Ruiz', 'Isabel Díaz', 'Francisco Moreno',
+        'Pilar Muñoz', 'Antonio Álvarez', 'Rosa Romero', 'José Gutiérrez', 'Elena Navarro'
+      ];
+
+      const generatedParticipants = [];
+      const maxParticipants = Math.min(count, 15); // Límite de 15 participantes
+
+      for (let i = 0; i < maxParticipants; i++) {
+        const name = dummyNames[i % dummyNames.length];
+        const email = `participante${i + 1}@dummy.com`;
+
+        // Verificar si ya existe un participante con este email
+        const existingParticipant = await participantService.findByEmail(email);
+        
+        let participant;
+        if (existingParticipant) {
+          participant = existingParticipant;
+        } else {
+          // Crear nuevo participante
+          participant = await participantService.create({
+            name,
+            email
+          });
+        }
+
+        generatedParticipants.push({
+          id: participant.id,
+          name: participant.name,
+          email: participant.email,
+          publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'http://localhost:4700'}?researchId=${researchId}&userId=${participant.id}`
+        });
+      }
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: {
+            researchId,
+            participants: generatedParticipants,
+            totalGenerated: generatedParticipants.length
+          },
+          status: 200
+        })
+      };
+    } catch (error: any) {
+      console.error('Error generando participantes dummy:', error);
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: error.message || 'Error al generar participantes dummy',
+          status: 500
+        })
+      };
+    }
+  }
+
+  /**
+   * Obtiene participantes de una investigación específica
+   */
+  async getParticipantsByResearch(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const researchId = event.pathParameters?.researchId;
+
+      if (!researchId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'researchId es requerido',
+            status: 400
+          })
+        };
+      }
+
+      // Validar que la investigación existe
+      const researchData = await this.researchServiceInstance.getResearchById(researchId, 'public-check');
+      if (!researchData) {
+        return {
+          statusCode: 404,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'La investigación especificada no existe',
+            status: 404
+          })
+        };
+      }
+
+      // Por ahora retornamos todos los participantes, 
+      // en el futuro se puede filtrar por investigación si se agrega esa relación
+      const participants = await participantService.findAll();
+      
+      const participantsWithUrls = participants.map(participant => ({
+        id: participant.id,
+        name: participant.name,
+        email: participant.email,
+        createdAt: participant.createdAt,
+        publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'http://localhost:4700'}?researchId=${researchId}&userId=${participant.id}`
+      }));
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: {
+            researchId,
+            participants: participantsWithUrls,
+            total: participantsWithUrls.length
+          },
+          status: 200
+        })
+      };
+    } catch (error: any) {
+      console.error('Error obteniendo participantes por investigación:', error);
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: error.message || 'Error al obtener participantes',
+          status: 500
+        })
+      };
+    }
+  }
+
+  /**
    * Elimina un participante específico de una investigación
    */
   async deleteParticipant(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
@@ -421,6 +593,12 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       return controller.delete(event);
     } else if (path === '/participants/login' && method === 'POST') {
       return controller.login(event);
+    } else if (path === '/participants/generate' && method === 'POST') {
+      // 🎯 NUEVA RUTA: Generar participantes dummy
+      return controller.generateDummyParticipants(event);
+    } else if (method === 'GET' && path.match(/^\/research\/[\w-]+\/participants$/)) {
+      // 🎯 NUEVA RUTA: Obtener participantes de una investigación
+      return controller.getParticipantsByResearch(event);
     } else if (method === 'DELETE' && path.match(/^\/research\/[\w-]+\/participants\/[\w-]+$/)) {
       // 🎯 NUEVA RUTA: Eliminar participante específico de una investigación
       return controller.deleteParticipant(event);

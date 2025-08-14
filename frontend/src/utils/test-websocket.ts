@@ -9,7 +9,7 @@ export function testWebSocketConnection(): Promise<boolean> {
     try {
       // Obtener URL dinámicamente
       const endpoints = await getDynamicEndpoints();
-      const wsUrl = endpoints.API_WEBSOCKET_ENDPOINT;
+      const wsUrl = endpoints.ws;
 
       if (!wsUrl) {
         console.log('❌ No se pudo obtener URL de WebSocket desde endpoints dinámicos');
@@ -57,7 +57,7 @@ export function testMonitoringWebSocket(researchId: string): Promise<boolean> {
     try {
       // Obtener URL dinámicamente
       const endpoints = await getDynamicEndpoints();
-      const wsUrl = endpoints.API_WEBSOCKET_ENDPOINT;
+      const wsUrl = endpoints.ws;
 
       if (!wsUrl) {
         console.log('❌ No se pudo obtener URL de WebSocket desde endpoints dinámicos');

@@ -9,9 +9,7 @@
  */
 
 // 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
-const isDevelopment = typeof window !== 'undefined'
-  ? window.location.hostname === 'localhost'
-  : process.env.NODE_ENV === 'development';
+const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
@@ -69,22 +67,6 @@ export function navigateToPublicTests(researchID: string): void {
 // Función para verificar si los endpoints están sincronizados
 export function isEndpointsSynced(): boolean {
   return !isDevelopment && API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
-}
-
-// Función para obtener endpoints dinámicos (compatibilidad)
-export async function getDynamicEndpoints() {
-  return DYNAMIC_API_ENDPOINTS;
-}
-
-// Función para obtener información de sincronización
-export function getSyncInfo() {
-  return {
-    isSynced: isEndpointsSynced(),
-    syncedAt: DYNAMIC_API_ENDPOINTS.syncedAt,
-    stage: DYNAMIC_API_ENDPOINTS.stage,
-    endpoint: API_HTTP_ENDPOINT,
-    isDevelopment
-  };
 }
 
 // Versión default para import default
