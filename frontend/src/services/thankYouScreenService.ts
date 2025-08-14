@@ -1,53 +1,20 @@
-import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
-
-/**
- * Interfaz para los datos de la pantalla de agradecimiento
- */
-export interface ThankYouScreenData {
-  title: string;
-  subtitle?: string;
-  message?: string;
-  buttonText?: string;
-  redirectUrl?: string;
-  logoUrl?: string;
-  backgroundImageUrl?: string;
-  backgroundColor?: string;
-  textColor?: string;
-  showSocialShare?: boolean;
-  researchId: string;
-}
-
-/**
- * Interfaz para la respuesta del servidor con la pantalla de agradecimiento
- */
-export interface ThankYouScreenRecord extends ThankYouScreenData {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { thankYouScreenHttpService } from '@/api/thankYouScreenHttpService';
+import {
+  ThankYouScreenFormData,
+  ThankYouScreenModel
+} from '../../../shared/interfaces/thank-you-screen.interface';
 
 /**
  * Servicio para manejar operaciones relacionadas con pantallas de agradecimiento
  */
 export const thankYouScreenService = {
   /**
-   * Obtiene una pantalla de agradecimiento por su ID
-   * @param id ID de la pantalla
-   * @returns Pantalla de agradecimiento
-   */
-  async getById(id: string): Promise<ThankYouScreenRecord> {
-    const response = await thankYouScreenFixedAPI.getById(id).send();
-    return response;
-  },
-
-  /**
    * Obtiene la pantalla de agradecimiento asociada a una investigación
    * @param researchId ID de la investigación
    * @returns Pantalla de agradecimiento
    */
-  async getByResearchId(researchId: string): Promise<ThankYouScreenRecord> {
-    const response = await thankYouScreenFixedAPI.getByResearchId(researchId).send();
-    return response;
+  async getByResearchId(researchId: string): Promise<ThankYouScreenModel> {
+    return await thankYouScreenHttpService.getByResearchId(researchId);
   },
 
   /**
@@ -55,9 +22,8 @@ export const thankYouScreenService = {
    * @param data Datos de la pantalla
    * @returns Pantalla creada
    */
-  async create(data: ThankYouScreenData): Promise<ThankYouScreenRecord> {
-    const response = await thankYouScreenFixedAPI.create(data).send();
-    return response;
+  async create(data: ThankYouScreenFormData): Promise<ThankYouScreenModel> {
+    return await thankYouScreenHttpService.create(data.researchId!, data);
   },
 
   /**
@@ -66,9 +32,10 @@ export const thankYouScreenService = {
    * @param data Datos a actualizar
    * @returns Pantalla actualizada
    */
-  async update(id: string, data: Partial<ThankYouScreenData>): Promise<ThankYouScreenRecord> {
-    const response = await thankYouScreenFixedAPI.update(id, data).send();
-    return response;
+  async update(id: string, data: Partial<ThankYouScreenFormData>): Promise<ThankYouScreenModel> {
+    // Usamos el researchId que viene en data o lo obtenemos por ID
+    const researchId = data.researchId || id; // Simplificación temporal
+    return await thankYouScreenHttpService.update(researchId, data);
   },
 
   /**
@@ -77,8 +44,7 @@ export const thankYouScreenService = {
    * @param researchId ID de la investigación
    */
   async delete(id: string, researchId: string): Promise<void> {
-    const response = await thankYouScreenFixedAPI.delete(id, researchId).send();
-    return response;
+    return await thankYouScreenHttpService.delete(researchId);
   },
 
   /**
@@ -87,20 +53,13 @@ export const thankYouScreenService = {
    * @param data Datos de la pantalla
    * @returns Pantalla creada o actualizada
    */
-  async createOrUpdateForResearch(researchId: string, data: Omit<ThankYouScreenData, 'researchId'>): Promise<ThankYouScreenRecord> {
+  async createOrUpdateForResearch(researchId: string, data: Omit<ThankYouScreenFormData, 'researchId'>): Promise<ThankYouScreenModel> {
     try {
-      // Primero intentamos obtener la pantalla existente
-      try {
-        const existingScreen = await this.getByResearchId(researchId);
-        // Si existe, la actualizamos
-        return await this.update(existingScreen.id, data);
-      } catch {
-        // Si no existe, creamos una nueva
-        return await this.create({
-          ...data,
-          researchId
-        });
-      }
+      // El backend maneja upsert automáticamente
+      return await thankYouScreenHttpService.create(researchId, {
+        ...data,
+        researchId
+      } as ThankYouScreenFormData);
     } catch (error) {
       console.error(`Error al crear/actualizar pantalla de agradecimiento para investigación ${researchId}:`, error);
       throw error;

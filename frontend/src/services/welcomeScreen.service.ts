@@ -1,4 +1,4 @@
-import { welcomeScreenAPI } from '@/lib/api';
+import { welcomeScreenHttpService } from '@/api/welcomeScreenHttpService';
 import {
   WelcomeScreenFormData,
   WelcomeScreenRecord
@@ -15,15 +15,13 @@ export class WelcomeScreenService {
     try {
       // console.log('[WelcomeScreenService] Obteniendo welcome screen para researchId:', researchId);
       // Asegúrate que la API maneje correctamente si no se encuentra (e.g., 404 -> null)
-      const response = await welcomeScreenAPI.getByResearch(researchId);
+      const data = await welcomeScreenHttpService.getByResearchId(researchId);
 
-      // Si response es null (404 manejado por handleResponse), devolver null
-      if (response === null) {
+      // Si data es null (404 manejado por handleResponse), devolver null
+      if (data === null) {
         console.log(`ℹ️ [WelcomeScreen] Configuración no encontrada para investigación ${researchId} (normal para investigaciones nuevas)`);
         return null;
       }
-
-      const data = response.data;
       // console.log('[WelcomeScreenService] Welcome screen obtenido:', data);
       return data;
     } catch (error: any) {
@@ -57,9 +55,7 @@ export class WelcomeScreenService {
 
       // console.log(`[WelcomeScreenService] Enviando POST (upsert) para researchId: ${researchId}`);
       // Llamar siempre a create (POST). El backend debe manejar la lógica de actualizar si ya existe.
-      const response = await welcomeScreenAPI.create(researchId, payloadData as WelcomeScreenFormData);
-
-      const result = response.data;
+      const result = await welcomeScreenHttpService.create(researchId, payloadData as WelcomeScreenFormData);
       // console.log('[WelcomeScreenService] Welcome screen guardado (upsert):', result);
       return result;
 
@@ -82,9 +78,9 @@ export class WelcomeScreenService {
    */
   async delete(researchId: string, screenId: string): Promise<void> {
     try {
-      // console.log('[WelcomeScreenService] Eliminando welcome screen para researchId:', researchId, 'screenId:', screenId);
-      await welcomeScreenAPI.delete(researchId, screenId);
-      // console.log('[WelcomeScreenService] Welcome screen eliminado correctamente para researchId:', researchId, 'screenId:', screenId);
+      // console.log('[WelcomeScreenService] Eliminando welcome screen para researchId:', researchId);
+      await welcomeScreenHttpService.delete(researchId);
+      // console.log('[WelcomeScreenService] Welcome screen eliminado correctamente para researchId:', researchId);
     } catch (error) {
       console.error('[WelcomeScreenService] Error en delete:', error);
       if (error instanceof Error) {
@@ -104,8 +100,7 @@ export class WelcomeScreenService {
    */
   async createForResearch(researchId: string, data: WelcomeScreenFormData): Promise<WelcomeScreenRecord> {
     try {
-      const response = await welcomeScreenAPI.create(researchId, data);
-      return response.data;
+      return await welcomeScreenHttpService.create(researchId, data);
     } catch (error) {
       console.error('[WelcomeScreenService] Error en createForResearch:', error);
       if (error instanceof Error) {
@@ -126,8 +121,7 @@ export class WelcomeScreenService {
    */
   async updateForResearch(researchId: string, screenId: string, data: WelcomeScreenFormData): Promise<WelcomeScreenRecord> {
     try {
-      const response = await welcomeScreenAPI.update(researchId, screenId, data);
-      return response.data;
+      return await welcomeScreenHttpService.update(researchId, data);
     } catch (error) {
       console.error('[WelcomeScreenService] Error en updateForResearch:', error);
       if (error instanceof Error) {

@@ -2,7 +2,7 @@
 
 ## Estructura de la API
 
-Este directorio contiene la configuración centralizada del cliente HTTP para la aplicación frontend. 
+Este directorio contiene la configuración centralizada del cliente HTTP para la aplicación frontend.
 La implementación utiliza [Alova](https://github.com/alovajs/alova), un cliente HTTP para React.
 
 ## Archivos principales
@@ -12,17 +12,22 @@ La implementación utiliza [Alova](https://github.com/alovajs/alova), un cliente
 
 ## APIs disponibles
 
+### APIs Principales
 - `authAPI`: Autenticación (login, logout, refreshToken)
 - `userAPI`: Gestión de usuarios
 - `researchAPI`: Gestión de investigaciones
-- `welcomeScreenAPI`: Pantallas de bienvenida 
-- `thankYouScreenAPI`: Pantallas de agradecimiento
 - `eyeTrackingAPI`: Funcionalidades de seguimiento ocular
 - `smartVocAPI`: Funcionalidades de SmartVOC
 
+### ✅ APIs Optimizadas (Nuevos Servicios HTTP)
+- **Welcome Screen**: Usar `@/api/welcomeScreenHttpService`
+- **Thank You Screen**: Usar `@/api/thankYouScreenHttpService`
+
+> **Nota**: Las APIs de `welcomeScreenAPI` y `thankYouScreenAPI` han sido reemplazadas por servicios HTTP optimizados que proporcionan mejor rendimiento y manejo de errores.
+
 ## Compatibilidad
 
-Nota: La importación debe hacerse desde `lib/api.ts`. El archivo `config/alova.config.ts` 
+Nota: La importación debe hacerse desde `lib/api.ts`. El archivo `config/alova.config.ts`
 se mantiene solo por compatibilidad pero está marcado como obsoleto y será eliminado en el futuro.
 
 ## Ejemplo de uso
@@ -46,4 +51,4 @@ const customCall = async () => {
   const response = await alovaInstance.Get('/custom-endpoint');
   return response.data;
 };
-``` 
+```

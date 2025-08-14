@@ -1,230 +1,80 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SmartVOCFormData } from '../../../shared/interfaces/smart-voc.interface';
-import { SmartVOCError, SmartVOCFormService } from '../services/smartVocForm.service';
-import { createController, RouteMap } from '../utils/controller.decorator';
-import { createResponse, errorResponse } from '../utils/controller.utils';
-import { ApiError } from '../utils/errors';
-import { structuredLog } from '../utils/logging.util';
+import { SmartVOCFormService } from '../services/smartVocForm.service';
 import {
-  ERROR_MESSAGES,
-  extractResearchId,
-  parseAndValidateBody,
-  validateUserId
-} from '../utils/validation';
+  createResponse,
+  errorResponse
+} from '../utils/controller.utils';
+import { structuredLog } from '../utils/logging.util';
 
-// Función auxiliar para crear respuestas exitosas
-const successResponse = (body: any, statusCode = 200): APIGatewayProxyResult => createResponse(statusCode, body);
+const smartVocService = new SmartVOCFormService();
 
-/**
- * Controlador para manejar operaciones relacionadas con formularios SmartVOC
- */
-export class SmartVOCFormController {
-  private service: SmartVOCFormService;
+const smartVocFormHandler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
+  const { httpMethod, pathParameters, body } = event;
+  const researchId = pathParameters?.researchId;
+  const userId = event.requestContext.authorizer?.claims.sub;
 
-  constructor() {
-    this.service = new SmartVOCFormService();
+  if (!researchId) {
+    return errorResponse('Se requiere researchId en la ruta', 400);
   }
 
-  /**
-   * Maneja errores (ahora usa structuredLog)
-   */
-  private handleError(error: any, context: string): APIGatewayProxyResult {
-    // Usar la utilidad compartida para loguear el error
-    structuredLog('error', `SmartVOCFormController.${context}`, 'Error al procesar la solicitud', {
-        error: error instanceof Error ? { message: error.message, name: error.name } : error
+  try {
+    switch (httpMethod) {
+      case 'GET':
+        structuredLog('info', 'SmartVocFormHandler.GET', 'Iniciando obtención', { researchId });
+        const form = await smartVocService.getByResearchId(researchId);
+        structuredLog('info', 'SmartVocFormHandler.GET', 'Obtención exitosa', { researchId });
+        return createResponse(200, form);
+
+      case 'POST':
+        if (!body) {
+          return errorResponse('Se requiere cuerpo en la solicitud', 400);
+        }
+        if (!userId) {
+          return errorResponse('No se pudo identificar al usuario', 403);
+        }
+
+        const data: SmartVOCFormData = JSON.parse(body);
+        structuredLog('info', 'SmartVocFormHandler.POST', 'Iniciando guardado (upsert)', { researchId, userId });
+
+        const existingForm = await smartVocService.getByResearchId(researchId);
+        let result;
+        if (existingForm) {
+          result = await smartVocService.update(existingForm.id, data, userId);
+          structuredLog('info', 'SmartVocFormHandler.POST', 'Actualización exitosa', { researchId, formId: result.id });
+        } else {
+          result = await smartVocService.create(data, researchId, userId);
+          structuredLog('info', 'SmartVocFormHandler.POST', 'Creación exitosa', { researchId, formId: result.id });
+        }
+        return createResponse(200, result);
+
+      case 'DELETE':
+        if (!userId) {
+          return errorResponse('No se pudo identificar al usuario', 403);
+        }
+        structuredLog('info', 'SmartVocFormHandler.DELETE', 'Iniciando eliminación por researchId', { researchId });
+        await smartVocService.deleteByResearchId(researchId, userId);
+        structuredLog('info', 'SmartVocFormHandler.DELETE', 'Eliminación por researchId exitosa', { researchId });
+        return createResponse(204, null);
+
+      default:
+        return errorResponse(`Método ${httpMethod} no soportado`, 405, {
+          allowedMethods: ['GET', 'POST', 'DELETE']
+        });
+    }
+  } catch (error: any) {
+    structuredLog('error', `SmartVocFormHandler.${httpMethod}`, 'Error en el handler', {
+      researchId,
+      error: error.message,
+      stack: error.stack
     });
-    if (error instanceof ApiError) {
-      return errorResponse(error.message, error.statusCode);
+    if (error.name === 'NotFoundError' || error.message.includes('NOT_FOUND')) {
+      return createResponse(404, { message: 'Configuración de SmartVOC no encontrada.' });
     }
-    return errorResponse(`Error interno del servidor al ${context}: ${error.message || 'error desconocido'}`, 500);
-  }
-
-  /**
-   * Obtiene un formulario SmartVOC por ID de investigación (sin caché de controlador)
-   * Ruta: GET /research/{researchId}/smart-voc
-   */
-  public async getSmartVOCForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const context = 'getSmartVOCFormByResearchId';
-    try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      const validationError = validateUserId(userId);
-      if (validationError) return validationError;
-      const idResult = extractResearchId(event);
-      if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Obteniendo datos para investigación', { researchId: researchId });
-      const form = await this.service.getByResearchId(researchId);
-
-      if (!form) {
-         structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario no encontrado, devolviendo respuesta controlada', { researchId: researchId });
-         return successResponse({ notFound: true });
-      }
-
-      console.log('@@@@ DATOS A ENVIAR AL FRONTEND @@@@', JSON.stringify(form, null, 2));
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Datos obtenidos', { researchId: researchId });
-      return successResponse(form);
-
-    } catch (error) {
-      return this.handleError(error, context);
-    }
-  }
-
-  /**
-   * Crea un nuevo formulario SmartVOC (sin invalidación de caché del controlador)
-   * Ruta: POST /research/{researchId}/smart-voc
-   */
-  public async createSmartVOCForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const context = 'createSmartVOCForm';
-    try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      const validationError = validateUserId(userId);
-      if (validationError) return validationError;
-      const idResult = extractResearchId(event);
-      if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
-      const bodyResult = parseAndValidateBody<SmartVOCFormData>(event);
-      if ('statusCode' in bodyResult) return bodyResult;
-      const { data } = bodyResult;
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando crear formulario', { researchId: researchId });
-      const result = await this.service.create(data, researchId, userId);
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario creado exitosamente', { formId: result.id, researchId: researchId });
-      return successResponse(result, 201);
-
-    } catch (error) {
-      if (error instanceof ApiError && error.message.includes(SmartVOCError.ALREADY_EXISTS)) {
-           structuredLog('warn', `SmartVOCFormController.${context}`, 'Intento de crear formulario duplicado', { researchId: (error as any)?.researchId || 'unknown' });
-           return errorResponse(error.message, 409);
-       }
-      return this.handleError(error, context);
-    }
-  }
-
-  /**
-   * Actualiza un formulario SmartVOC existente por su ID (sin invalidación de caché del controlador)
-   * Ruta: PUT /research/{researchId}/smart-voc/{formId}
-   */
-  public async updateSmartVOCForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const context = 'updateSmartVOCForm';
-    let formId: string | undefined;
-    let researchId: string | undefined;
-    try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      const validationError = validateUserId(userId);
-      if (validationError) return validationError;
-      researchId = event.pathParameters?.researchId;
-      formId = event.pathParameters?.formId;
-      if (!researchId || !formId) {
-        return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('researchId y formId en la ruta'), 400);
-      }
-      const bodyResult = parseAndValidateBody<Partial<SmartVOCFormData>>(event);
-      if ('statusCode' in bodyResult) return bodyResult;
-      const { data } = bodyResult;
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando actualizar formulario', { formId: formId, researchId: researchId });
-      const result = await this.service.update(formId, data, userId);
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario actualizado exitosamente', { formId: formId, researchId: researchId });
-      return successResponse(result, 200);
-
-    } catch (error) {
-      const logData = { formId: formId || 'unknown', researchId: researchId || 'unknown' };
-      if (error instanceof ApiError && error.message.includes(SmartVOCError.NOT_FOUND)) {
-           structuredLog('warn', `SmartVOCFormController.${context}`, 'Intento de actualizar formulario no encontrado', logData);
-           return errorResponse(error.message, 404);
-       }
-      return this.handleError(error, context);
-    }
-  }
-
-  /**
-   * Elimina un formulario SmartVOC por su ID (sin invalidación de caché del controlador)
-   * Ruta: DELETE /research/{researchId}/smart-voc/{formId}
-   */
-  public async deleteSmartVOCForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const context = 'deleteSmartVOCForm';
-    try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      const validationError = validateUserId(userId);
-      if (validationError) return validationError;
-      const researchId = event.pathParameters?.researchId;
-      const formId = event.pathParameters?.formId;
-      if (!researchId || !formId) {
-        return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('researchId y formId en la ruta'), 400);
-      }
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando eliminar formulario', { formId: formId, researchId: researchId });
-      await this.service.delete(formId, userId);
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario eliminado exitosamente', { formId: formId, researchId: researchId });
-      return createResponse(204, null);
-
-    } catch (error) {
-       return this.handleError(error, context);
-    }
-  }
-
-  /**
-   * Elimina un formulario SmartVOC por ID de investigación
-   * Ruta: DELETE /research/{researchId}/smart-voc
-   */
-  public async deleteSmartVOCFormByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const context = 'deleteSmartVOCFormByResearchId';
-    try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      const validationError = validateUserId(userId);
-      if (validationError) return validationError;
-      const idResult = extractResearchId(event);
-      if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
-
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando eliminar formulario por researchId', { researchId: researchId });
-      const deleted = await this.service.deleteByResearchId(researchId, userId);
-
-      if (deleted) {
-        structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario eliminado exitosamente', { researchId: researchId });
-        return createResponse(200, { message: 'Formulario SmartVOC eliminado exitosamente', researchId });
-      } else {
-        structuredLog('info', `SmartVOCFormController.${context}`, 'No se encontró formulario para eliminar', { researchId: researchId });
-        return createResponse(404, { error: 'No se encontró formulario SmartVOC para esta investigación', researchId });
-      }
-
-    } catch (error) {
-       return this.handleError(error, context);
-    }
-  }
-
-  /**
-   * Mapa de rutas para el controlador SmartVOC
-   */
-  public routes(): Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> {
-    return {
-      'GET /research/{researchId}/smart-voc': this.getSmartVOCForm.bind(this),
-      'POST /research/{researchId}/smart-voc': this.createSmartVOCForm.bind(this),
-      'DELETE /research/{researchId}/smart-voc': this.deleteSmartVOCFormByResearchId.bind(this),
-      'PUT /research/{researchId}/smart-voc/{formId}': this.updateSmartVOCForm.bind(this),
-      'DELETE /research/{researchId}/smart-voc/{formId}': this.deleteSmartVOCForm.bind(this)
-    };
-  }
-}
-
-const controller = new SmartVOCFormController();
-
-const smartVocRouteMap: RouteMap = {
-  '/research/{researchId}/smart-voc': {
-    'GET': controller.getSmartVOCForm.bind(controller),
-    'POST': controller.createSmartVOCForm.bind(controller),
-    'DELETE': controller.deleteSmartVOCFormByResearchId.bind(controller)
-  },
-  '/research/{researchId}/smart-voc/{formId}': {
-    'PUT': controller.updateSmartVOCForm.bind(controller),
-    'DELETE': controller.deleteSmartVOCForm.bind(controller)
+    return errorResponse(error.message, error.statusCode || 500);
   }
 };
 
-export const mainHandler = createController(smartVocRouteMap, {
-  basePath: '',
-});
+export const handler = smartVocFormHandler;

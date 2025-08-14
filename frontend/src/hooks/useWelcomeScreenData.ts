@@ -40,5 +40,11 @@ export const useWelcomeScreenData = (researchId: string) => {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
+    retry: (failureCount, error) => {
+      if (error?.statusCode === 404) {
+        return false; // No reintentar si es 404
+      }
+      return failureCount < 3; // Reintentar hasta 3 veces para otros errores
+    },
   });
 };

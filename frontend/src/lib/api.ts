@@ -230,47 +230,7 @@ export const smartVocAPI = {
   },
 };
 
-// API de pantallas de bienvenida
-export const welcomeScreenAPI = {
-  create: async (researchId: string, data: any): Promise<APIResponse<any>> => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para crear la pantalla de bienvenida');
-    }
-    return apiClient.post('welcome-screen', 'create', data, { researchId });
-  },
-
-  getByResearch: async (researchId: string): Promise<APIResponse<any>> => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación');
-    }
-    const result = await apiClient.get('welcome-screen', 'getByResearch', { researchId });
-
-    // Si result es null (404 manejado por handleResponse), devolver una respuesta mock
-    if (result === null) {
-      return {
-        data: null,
-        success: false,
-        message: 'Welcome screen not found for this research'
-      };
-    }
-
-    return result;
-  },
-
-  update: async (researchId: string, screenId: string, data: any): Promise<APIResponse<any>> => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para actualizar la pantalla de bienvenida');
-    }
-    return apiClient.put('welcome-screen', 'update', data, { researchId, screenId });
-  },
-
-  delete: async (researchId: string, screenId: string): Promise<APIResponse<boolean>> => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para eliminar la pantalla de bienvenida');
-    }
-    return apiClient.delete('welcome-screen', 'delete', { researchId, screenId });
-  },
-};
+// ✅ Las APIs de welcome-screen y thank-you-screen han sido optimizadas y movidas a servicios HTTP específicos
 
 // API de tareas cognitivas
 export const cognitiveTaskAPI = {

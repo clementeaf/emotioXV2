@@ -1,4 +1,3 @@
-import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
 import { useAuth } from '@/providers/AuthProvider';
 import thankYouScreenService from '@/services/thankYouScreenService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -73,22 +72,15 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         throw new Error('No autenticado');
       }
       try {
-        const response = await thankYouScreenFixedAPI.getByResearchId(researchId).send();
-
-        // Si la respuesta indica notFound, manejarlo como caso normal
-        if (response && response.notFound) {
-          return { notFound: true };
-        }
-
-        return response;
+        return await thankYouScreenService.getByResearchId(researchId);
       } catch (error: any) {
-        // Si es 404 o cualquier error relacionado con "not found", devolver objeto especial notFound
+        // Si es 404, es normal que no exista configuración, devolvemos null
         if (error?.statusCode === 404 ||
           error?.message?.includes('not found') ||
           error?.message?.includes('THANK_YOU_SCREEN_NOT_FOUND') ||
           error?.message?.includes('No se pudo obtener el cuerpo de la respuesta') ||
           error?.message?.includes('404')) {
-          return { notFound: true };
+          return null; // No hay configuración, está bien
         } else {
           // Solo mostrar en consola si NO es 404
           console.error('[useThankYouScreenForm] Error al cargar configuración:', error);
@@ -97,7 +89,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       }
     },
     enabled: !!researchId && isAuthenticated,
-    retry: false, // No reintentar en caso de error
+    retry: (failureCount, error) => {
+      if (error?.statusCode === 404) {
+        return false; // No reintentar si es 404
+      }
+      return failureCount < 3; // Reintentar hasta 3 veces para otros errores
+    },
     refetchOnWindowFocus: false, // No refetch al enfocar la ventana
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 5 * 60 * 1000, // 5 minutos
@@ -105,9 +102,8 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
 
   // Efecto para cargar datos existentes
   useEffect(() => {
-    // Verificar que existingScreen exista, que no sea la respuesta del 404 (que tiene notFound: true)
-    // y que contenga datos (ej. verificando el id o title)
-    if (existingScreen && !existingScreen.notFound && existingScreen.id) {
+    // Verificar que existingScreen exista y contenga datos válidos
+    if (existingScreen && existingScreen.id) {
       setFormData({
         // Usar directamente las propiedades de existingScreen
         isEnabled: existingScreen.isEnabled,
@@ -120,11 +116,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         questionKey: QuestionType.THANK_YOU_SCREEN
       });
       setThankYouScreenId(existingScreen.id);
-    } else if (existingScreen?.notFound) {
-      // Si es notFound, asegurarse de que el estado esté limpio (ya debería estarlo por defecto)
-      // Podrías querer resetear aquí si hubiera cambios previos
-      // setFormData(DEFAULT_FORM_DATA); // Si tuvieras DEFAULT_FORM_DATA definido
-      setThankYouScreenId(null);
     }
   }, [existingScreen, researchId]);
 
@@ -135,16 +126,8 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         throw new Error('No autenticado');
       }
 
-      // Si existe un ID, actualizamos, si no, creamos
-      if (thankYouScreenId) {
-        // Asegurarse que researchId esté en los datos para la actualización
-        return await thankYouScreenFixedAPI.update(thankYouScreenId, {
-          ...data,
-          researchId // Asegurar que el researchId está incluido
-        }).send();
-      } else {
-        return await thankYouScreenFixedAPI.create(data).send();
-      }
+      // Usar el método optimizado que maneja upsert automáticamente
+      return await thankYouScreenService.createOrUpdateForResearch(researchId, data);
     },
     onSuccess: (response) => {
       if (response?.id) {

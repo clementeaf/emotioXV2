@@ -64,25 +64,17 @@ api:
         method: DELETE
         cors: true
 
-    # --- RUTAS PARA WELCOME SCREEN ---
-    # Obtener pantalla de bienvenida
+    # --- RUTAS PARA WELCOME SCREEN (UNIFICADAS) ---
     - http:
         path: /research/{researchId}/welcome-screen
         method: GET
         cors: true
-    # Crear pantalla de bienvenida
     - http:
         path: /research/{researchId}/welcome-screen
-        method: POST
+        method: POST # Maneja tanto creación como actualización (upsert)
         cors: true
-    # Actualizar pantalla de bienvenida
     - http:
-        path: /research/{researchId}/welcome-screen/{screenId}
-        method: PUT
-        cors: true
-    # Eliminar pantalla de bienvenida
-    - http:
-        path: /research/{researchId}/welcome-screen/{screenId}
+        path: /research/{researchId}/welcome-screen
         method: DELETE
         cors: true
 
