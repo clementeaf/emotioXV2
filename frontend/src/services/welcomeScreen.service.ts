@@ -16,6 +16,13 @@ export class WelcomeScreenService {
       // console.log('[WelcomeScreenService] Obteniendo welcome screen para researchId:', researchId);
       // Asegúrate que la API maneje correctamente si no se encuentra (e.g., 404 -> null)
       const response = await welcomeScreenAPI.getByResearch(researchId);
+
+      // Si response es null (404 manejado por handleResponse), devolver null
+      if (response === null) {
+        console.log(`ℹ️ [WelcomeScreen] Configuración no encontrada para investigación ${researchId} (normal para investigaciones nuevas)`);
+        return null;
+      }
+
       const data = response.data;
       // console.log('[WelcomeScreenService] Welcome screen obtenido:', data);
       return data;

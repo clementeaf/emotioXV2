@@ -5,6 +5,13 @@ export const cognitiveTaskAPI = {
   async getByResearchId(researchId: string): Promise<CognitiveTaskFormData | null> {
     try {
       const data = await apiClient.get('cognitiveTask', 'getByResearch', { researchId }) as CognitiveTaskFormData;
+
+      // Si data es null (404 manejado por handleResponse), devolver null
+      if (data === null) {
+        console.log(`ℹ️ [CognitiveTask] Configuración no encontrada para investigación ${researchId} (normal para investigaciones nuevas)`);
+        return null;
+      }
+
       return data ? cognitiveTaskAPI.processDataFromBackend(data) : null;
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 404) {
@@ -42,13 +49,13 @@ export const cognitiveTaskAPI = {
         if (question.files && question.files.length > 0) {
           question.files.forEach((file, fIndex) => {
             if (file.hitZones && file.hitZones.length > 0) {
-                  // console.log(`[COGNITIVE_TASK_API] Hitzones en pregunta ${question.id} (${question.type}), archivo ${fIndex + 1}:`, {
-                  //   questionId: question.id,
-                  //   questionType: question.type,
-                  //   fileId: file.id,
-                  //   fileName: file.name,
-                  //   hitZonesCount: file.hitZones.length,
-                  // });
+              // console.log(`[COGNITIVE_TASK_API] Hitzones en pregunta ${question.id} (${question.type}), archivo ${fIndex + 1}:`, {
+              //   questionId: question.id,
+              //   questionType: question.type,
+              //   fileId: file.id,
+              //   fileName: file.name,
+              //   hitZonesCount: file.hitZones.length,
+              // });
             }
           });
         }

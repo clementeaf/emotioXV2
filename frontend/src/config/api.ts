@@ -343,7 +343,27 @@ export class ApiClient {
         errorData = { message: 'Error desconocido' };
       }
 
-      // Para errores 404, usar el mensaje específico del backend si está disponible
+      // Lista de endpoints que pueden devolver 404 de forma normal (no son errores)
+      const expectedNotFoundEndpoints = [
+        '/cognitive-task',
+        '/welcome-screen',
+        '/smart-voc',
+        '/thank-you-screen'
+      ];
+
+      // Si es un 404 en un endpoint esperado, devolver null en lugar de lanzar error
+      if (response.status === 404) {
+        const isExpectedNotFound = expectedNotFoundEndpoints.some(endpoint =>
+          response.url.includes(endpoint)
+        );
+
+        if (isExpectedNotFound) {
+          console.log(`ℹ️ [API] ${response.url} - Configuración no encontrada (normal para investigaciones nuevas)`);
+          return null as T;
+        }
+      }
+
+      // Para otros errores, usar el mensaje específico del backend si está disponible
       const errorMessage = errorData.message || `Error ${response.status}: ${response.statusText}`;
 
       throw new ApiError(

@@ -68,7 +68,9 @@ export function navigateToPublicTests(researchID: string): void {
 
 // Función para verificar si los endpoints están sincronizados
 export function isEndpointsSynced(): boolean {
-  return !isDevelopment && API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
+  // En desarrollo, usar endpoints dinámicos si están disponibles y son de AWS
+  // En producción, siempre usar endpoints dinámicos
+  return API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
 }
 
 // Función para obtener endpoints dinámicos (compatibilidad)

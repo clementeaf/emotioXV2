@@ -636,6 +636,14 @@ export function useCognitiveTaskResults(researchId: string) {
         moduleResponsesAPI.getResponsesByResearch(researchId)
       ]);
 
+      // Manejar 404 como caso normal (configuración no existe aún)
+      if (configResponse.status === 404) {
+        console.log(`ℹ️ [CognitiveTask] Configuración no encontrada para investigación ${researchId} (normal para investigaciones nuevas)`);
+        setResearchConfig(null);
+        setLoadingState('success');
+        return;
+      }
+
       if (!configResponse.ok) {
         throw new Error(`Error ${configResponse.status}: ${configResponse.statusText}`);
       }

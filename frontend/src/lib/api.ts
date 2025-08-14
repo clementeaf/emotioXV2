@@ -243,7 +243,18 @@ export const welcomeScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    return apiClient.get('welcome-screen', 'getByResearch', { researchId });
+    const result = await apiClient.get('welcome-screen', 'getByResearch', { researchId });
+
+    // Si result es null (404 manejado por handleResponse), devolver una respuesta mock
+    if (result === null) {
+      return {
+        data: null,
+        success: false,
+        message: 'Welcome screen not found for this research'
+      };
+    }
+
+    return result;
   },
 
   update: async (researchId: string, screenId: string, data: any): Promise<APIResponse<any>> => {
