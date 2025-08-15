@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-08-15T14:20:38.000Z
+// Generado: 2025-08-15T19:46:41.000Z
 // Stage: dev
 
 /**
@@ -8,10 +8,9 @@
  * Sincronizado automáticamente después del deploy del backend
  */
 
-// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
-const isDevelopment = typeof window !== 'undefined'
-  ? window.location.hostname === 'localhost'
-  : process.env.NODE_ENV === 'development';
+// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL  
+// FORZAR USO DE AWS SIEMPRE (cambiar a true para usar backend local)
+const isDevelopment = false;
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
@@ -29,7 +28,7 @@ export const DYNAMIC_API_ENDPOINTS = {
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-08-15T14:20:38.000Z",
+  syncedAt: "2025-08-15T19:46:41.000Z",
   syncedFromStage: "dev"
 };
 
@@ -37,7 +36,7 @@ export const DYNAMIC_API_ENDPOINTS = {
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:4700",
-  "generatedAt": "2025-08-15T14:20:38.000Z"
+  "generatedAt": "2025-08-15T19:46:41.000Z"
 };
 
 // Constantes para uso más fácil

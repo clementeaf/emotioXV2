@@ -119,6 +119,10 @@ api:
         path: /research/{researchId}/cognitive-task
         method: DELETE
         cors: true
+    - http:
+        path: /research/{researchId}/cognitive-task/upload-url
+        method: POST
+        cors: true
 
     # --- RUTAS PARA EYE-TRACKING CONFIG ---
     - http:

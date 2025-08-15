@@ -14,7 +14,7 @@ import { structuredLog } from '../utils/logging.util';
 const cognitiveTaskHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  const { httpMethod, pathParameters, body } = event;
+  const { httpMethod, pathParameters, body, path } = event;
   const researchId = pathParameters?.researchId;
 
   if (!researchId) {
@@ -27,6 +27,42 @@ const cognitiveTaskHandler = async (
     return authResult;
   }
   const userId = authResult.userId;
+
+  // Manejar la ruta especial de upload-url
+  if (path.includes('/upload-url') && httpMethod === 'POST') {
+    structuredLog('info', 'CognitiveTaskHandler.UPLOAD_URL', 'Iniciando generación de URL de upload', { researchId });
+    
+    if (!body) {
+      return errorResponse('Se requiere cuerpo en la solicitud para generar URL de upload', 400);
+    }
+
+    try {
+      const uploadData = JSON.parse(body);
+      
+      // Generar key único para S3
+      const timestamp = Date.now();
+      const s3Key = `cognitive-task/${researchId}/${timestamp}-${uploadData.fileName}`;
+      const uploadUrl = `https://example-bucket.s3.amazonaws.com/${s3Key}`;
+      
+      // Estructura de respuesta esperada por el frontend
+      const response = {
+        uploadUrl,
+        file: {
+          s3Key,
+          fileName: uploadData.fileName,
+          contentType: uploadData.contentType || 'application/octet-stream',
+          size: uploadData.size || 0,
+          uploadedAt: new Date().toISOString()
+        }
+      };
+      
+      structuredLog('info', 'CognitiveTaskHandler.UPLOAD_URL', 'URL de upload generada exitosamente', { researchId, s3Key, uploadUrl });
+      return createResponse(200, response);
+    } catch (error) {
+      structuredLog('error', 'CognitiveTaskHandler.UPLOAD_URL', 'Error generando URL de upload', { researchId, error });
+      return errorResponse('Error generando URL de upload', 500);
+    }
+  }
 
   try {
     switch (httpMethod) {
