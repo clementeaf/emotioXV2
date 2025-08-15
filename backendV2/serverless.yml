@@ -13,7 +13,7 @@ plugins:
 custom:
   tableName: ${self:service}-researches-${self:provider.stage} # Tabla para Investigaciones
   usersTableName: ${self:service}-users-${self:provider.stage} # Tabla para Usuarios
-  s3BucketName: ${self:service}-${self:provider.stage}-storage-041238861016 # Bucket S3
+  s3BucketName: emotioxv2-uploads-dev # Bucket S3
   eyeTrackingRecruitConfigTable: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
   eyeTrackingRecruitParticipantTable: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
   recruitmentLinkTable: ${self:service}-recruitment-link-${self:provider.stage}

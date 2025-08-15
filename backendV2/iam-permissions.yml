@@ -46,10 +46,10 @@ role:
         - s3:GetBucketPolicy
         - s3:GetObjectVersion
       Resource:
-        # ARN del bucket referenciando el recurso lógico
-        - Fn::GetAtt: [StorageBucket, Arn]
+        # ARN del bucket explícito
+        - arn:aws:s3:::emotioxv2-uploads-dev
         # ARN para los objetos dentro del bucket
-        - Fn::Join: ['', [Fn::GetAtt: [StorageBucket, Arn], '/*']]
+        - arn:aws:s3:::emotioxv2-uploads-dev/*
 
     # Permisos básicos para Logging en CloudWatch
     - Effect: "Allow"
