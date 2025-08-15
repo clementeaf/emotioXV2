@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { MonitoringEvent } from '../../../shared/interfaces/websocket-events.interface';
 import { structuredLog } from '../utils/logging.util';
+import { webSocketService } from '../services/websocket.service';
 
 /**
  * Controlador para manejar eventos de monitoreo en tiempo real
@@ -179,13 +180,14 @@ export class MonitoringController {
         return;
       }
 
-      // 🎯 BUSCAR CONEXIONES WEBSOCKET ACTIVAS
-      // TODO: Implementar búsqueda de conexiones activas
-      // Por ahora, solo log del evento
-      structuredLog('info', `${this.controllerName}.broadcastToDashboard`, 'Broadcasting evento', {
+      // 🎯 BROADCAST A TODAS LAS CONEXIONES DE LA INVESTIGACIÓN
+      const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, event);
+      
+      structuredLog('info', `${this.controllerName}.broadcastToDashboard`, 'Evento broadcast completado', {
         eventType: event.type,
         researchId,
-        participantId: event.data?.participantId
+        participantId: event.data?.participantId,
+        successfulBroadcasts
       });
 
     } catch (error) {

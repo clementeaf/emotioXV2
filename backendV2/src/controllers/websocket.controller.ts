@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getCorsHeaders } from '../middlewares/cors';
 import { APIGatewayEventWebsocketRequestContext } from '../types/websocket';
+import { webSocketService } from '../services/websocket.service';
 
 interface WebSocketEvent {
   requestContext: APIGatewayEventWebsocketRequestContext;
@@ -53,6 +54,14 @@ export class WebSocketController {
       connectionId,
       timestamp: new Date().toISOString()
     });
+
+    // Limpiar registro de conexión
+    try {
+      await webSocketService.unregisterConnection(connectionId);
+      console.log('[WebSocketController] ✅ Conexión eliminada del registro:', connectionId);
+    } catch (error) {
+      console.error('[WebSocketController] ❌ Error eliminando conexión:', error);
+    }
 
     return {
       statusCode: 200,
@@ -117,12 +126,26 @@ export class WebSocketController {
    */
   private async handleMonitoringConnect(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
+    const researchId = data.data?.researchId;
 
     console.log('[WebSocketController] 🎯 MONITORING_CONNECT:', {
       connectionId,
-      researchId: data.data?.researchId,
+      researchId,
       timestamp: data.data?.timestamp
     });
+
+    // Registrar conexión para monitoreo
+    if (researchId) {
+      try {
+        await webSocketService.registerConnection(connectionId, researchId);
+        console.log('[WebSocketController] ✅ Conexión registrada para monitoreo:', {
+          connectionId,
+          researchId
+        });
+      } catch (error) {
+        console.error('[WebSocketController] ❌ Error registrando conexión:', error);
+      }
+    }
 
     return {
       statusCode: 200,
@@ -130,7 +153,7 @@ export class WebSocketController {
       body: JSON.stringify({
         message: 'Monitoring connection established',
         connectionId,
-        researchId: data.data?.researchId,
+        researchId,
         timestamp: new Date().toISOString()
       })
     };
@@ -240,10 +263,11 @@ export class WebSocketController {
    */
   private async handleParticipantResponseSaved(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
+    const researchId = data.data?.researchId;
 
     console.log('[WebSocketController] 💾 PARTICIPANT_RESPONSE_SAVED:', {
       connectionId,
-      researchId: data.data?.researchId,
+      researchId: researchId,
       participantId: data.data?.participantId,
       questionKey: data.data?.questionKey,
       stepNumber: data.data?.stepNumber,
@@ -251,8 +275,34 @@ export class WebSocketController {
       progress: data.data?.progress
     });
 
-    // 🎯 AQUÍ PODRÍAS AGREGAR LÓGICA PARA NOTIFICAR AL DASHBOARD
-    // Por ejemplo, enviar el evento a otros clientes conectados al mismo researchId
+    // 🎯 BROADCAST AL DASHBOARD - PROGRESO EN TIEMPO REAL
+    if (researchId) {
+      try {
+        const monitoringEvent = {
+          type: 'PARTICIPANT_STEP' as const,
+          data: {
+            researchId,
+            participantId: data.data?.participantId,
+            stepName: data.data?.questionKey,
+            stepNumber: data.data?.stepNumber,
+            totalSteps: data.data?.totalSteps,
+            progress: data.data?.progress,
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, monitoringEvent);
+        
+        console.log('[WebSocketController] ✅ Progreso broadcast al dashboard:', {
+          researchId,
+          participantId: data.data?.participantId,
+          progress: data.data?.progress,
+          successfulBroadcasts
+        });
+      } catch (error) {
+        console.error('[WebSocketController] ❌ Error en broadcast de progreso:', error);
+      }
+    }
 
     return {
       statusCode: 200,

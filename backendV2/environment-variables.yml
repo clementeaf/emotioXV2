@@ -16,6 +16,12 @@ WEBSOCKET_ENDPOINT:
     - - "wss://"
       - Ref: "WebsocketsApi"
       - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
+WEBSOCKET_API_ENDPOINT:
+  Fn::Join:
+    - ""
+    - - "https://"
+      - Ref: "WebsocketsApi"
+      - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
 USER_TABLE: ${self:custom.usersTableName}
 DYNAMODB_TABLE: emotioxv2-backend-table-dev
 PARTICIPANT_TABLE: ${self:service}-participants-${self:provider.stage}
