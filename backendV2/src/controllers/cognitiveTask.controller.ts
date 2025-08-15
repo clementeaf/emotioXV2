@@ -3,7 +3,8 @@ import { CognitiveTaskFormData } from '../../../shared/interfaces/cognitive-task
 import { cognitiveTaskService } from '../services/cognitiveTask.service';
 import {
   createResponse,
-  errorResponse
+  errorResponse,
+  validateTokenAndSetupAuth
 } from '../utils/controller.utils';
 import { structuredLog } from '../utils/logging.util';
 
@@ -15,11 +16,17 @@ const cognitiveTaskHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   const { httpMethod, pathParameters, body } = event;
   const researchId = pathParameters?.researchId;
-  const userId = event.requestContext.authorizer?.claims?.sub;
 
   if (!researchId) {
     return errorResponse('Se requiere researchId en la ruta', 400);
   }
+
+  // Validar token y obtener userId
+  const authResult = await validateTokenAndSetupAuth(event, event.path);
+  if ('statusCode' in authResult) {
+    return authResult;
+  }
+  const userId = authResult.userId;
 
   try {
     switch (httpMethod) {
@@ -32,9 +39,6 @@ const cognitiveTaskHandler = async (
       case 'POST':
         if (!body) {
           return errorResponse('Se requiere cuerpo en la solicitud para guardar', 400);
-        }
-        if (!userId) {
-          return errorResponse('No se pudo identificar al usuario', 403);
         }
 
         const data: CognitiveTaskFormData = JSON.parse(body);
@@ -51,9 +55,6 @@ const cognitiveTaskHandler = async (
         if (!body) {
           return errorResponse('Se requiere cuerpo en la solicitud para actualizar', 400);
         }
-        if (!userId) {
-          return errorResponse('No se pudo identificar al usuario', 403);
-        }
 
         const updateData: Partial<CognitiveTaskFormData> = JSON.parse(body);
         structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por ID', { researchId, taskId, userId });
@@ -64,9 +65,6 @@ const cognitiveTaskHandler = async (
 
       case 'DELETE':
         const taskIdToDelete = pathParameters?.taskId;
-        if (!userId) {
-          return errorResponse('No se pudo identificar al usuario', 403);
-        }
 
         if (taskIdToDelete) {
           // Eliminar por taskId específico

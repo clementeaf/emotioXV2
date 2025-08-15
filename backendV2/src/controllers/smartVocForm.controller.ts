@@ -3,7 +3,8 @@ import { SmartVOCFormData } from '../../../shared/interfaces/smart-voc.interface
 import { SmartVOCFormService } from '../services/smartVocForm.service';
 import {
   createResponse,
-  errorResponse
+  errorResponse,
+  validateTokenAndSetupAuth
 } from '../utils/controller.utils';
 import { structuredLog } from '../utils/logging.util';
 
@@ -14,11 +15,17 @@ const smartVocFormHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   const { httpMethod, pathParameters, body } = event;
   const researchId = pathParameters?.researchId;
-  const userId = event.requestContext.authorizer?.claims?.sub;
 
   if (!researchId) {
     return errorResponse('Se requiere researchId en la ruta', 400);
   }
+
+  // Validar token y obtener userId
+  const authResult = await validateTokenAndSetupAuth(event, event.path);
+  if ('statusCode' in authResult) {
+    return authResult;
+  }
+  const userId = authResult.userId;
 
   try {
     switch (httpMethod) {
@@ -31,9 +38,6 @@ const smartVocFormHandler = async (
       case 'POST':
         if (!body) {
           return errorResponse('Se requiere cuerpo en la solicitud', 400);
-        }
-        if (!userId) {
-          return errorResponse('No se pudo identificar al usuario', 403);
         }
 
         const data: SmartVOCFormData = JSON.parse(body);
@@ -51,9 +55,6 @@ const smartVocFormHandler = async (
         return createResponse(200, result);
 
       case 'DELETE':
-        if (!userId) {
-          return errorResponse('No se pudo identificar al usuario', 403);
-        }
         structuredLog('info', 'SmartVocFormHandler.DELETE', 'Iniciando eliminación por researchId', { researchId });
         await smartVocService.deleteByResearchId(researchId, userId);
         structuredLog('info', 'SmartVocFormHandler.DELETE', 'Eliminación por researchId exitosa', { researchId });

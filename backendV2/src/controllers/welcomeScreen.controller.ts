@@ -3,7 +3,8 @@ import { WelcomeScreenFormData } from '../../../shared/interfaces/welcome-screen
 import { welcomeScreenService } from '../services/welcomeScreen.service';
 import {
   createResponse,
-  errorResponse
+  errorResponse,
+  validateTokenAndSetupAuth
 } from '../utils/controller.utils';
 import { structuredLog } from '../utils/logging.util';
 
@@ -15,11 +16,17 @@ const welcomeScreenHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   const { httpMethod, pathParameters, body } = event;
   const researchId = pathParameters?.researchId;
-  const userId = event.requestContext.authorizer?.claims?.sub; // Asumiendo autenticación Cognito
 
   if (!researchId) {
     return errorResponse('Se requiere researchId en la ruta', 400);
   }
+
+  // Validar token y obtener userId
+  const authResult = await validateTokenAndSetupAuth(event, event.path);
+  if ('statusCode' in authResult) {
+    return authResult;
+  }
+  const userId = authResult.userId;
 
   try {
     switch (httpMethod) {
@@ -33,9 +40,6 @@ const welcomeScreenHandler = async (
         if (!body) {
           return errorResponse('Se requiere cuerpo en la solicitud para crear/actualizar', 400);
         }
-        if (!userId) {
-          return errorResponse('No se pudo identificar al usuario', 403);
-        }
 
         const data: WelcomeScreenFormData = JSON.parse(body);
         structuredLog('info', 'WelcomeScreenHandler.POST', 'Iniciando creación/actualización', { researchId, userId });
@@ -44,9 +48,6 @@ const welcomeScreenHandler = async (
         return createResponse(200, result);
 
       case 'DELETE':
-        if (!userId) {
-          return errorResponse('No se pudo identificar al usuario', 403);
-        }
         structuredLog('info', 'WelcomeScreenHandler.DELETE', 'Iniciando eliminación', { researchId });
         // Primero, encontrar el screenId asociado al researchId
         const screenToDelete = await welcomeScreenService.getByResearchId(researchId);
