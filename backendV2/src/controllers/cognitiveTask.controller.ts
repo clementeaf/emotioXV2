@@ -1,12 +1,16 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { CognitiveTaskFormData } from '../../../shared/interfaces/cognitive-task.interface';
 import { cognitiveTaskService } from '../services/cognitiveTask.service';
+import { FileType, S3Service } from '../services/s3.service';
 import {
   createResponse,
   errorResponse,
   validateTokenAndSetupAuth
 } from '../utils/controller.utils';
 import { structuredLog } from '../utils/logging.util';
+
+// Crear instancia del servicio S3
+const s3Service = new S3Service();
 
 /**
  * Maneja las solicitudes entrantes para Cognitive Task
@@ -39,24 +43,48 @@ const cognitiveTaskHandler = async (
     try {
       const uploadData = JSON.parse(body);
       
-      // Generar key único para S3
-      const timestamp = Date.now();
-      const s3Key = `cognitive-task/${researchId}/${timestamp}-${uploadData.fileName}`;
-      const uploadUrl = `https://example-bucket.s3.amazonaws.com/${s3Key}`;
+      // Determinar el tipo de archivo basado en la extensión o MIME type
+      let fileType = FileType.DOCUMENT; // Default
+      const mimeType = uploadData.contentType || uploadData.mimeType || 'application/octet-stream';
+      
+      if (mimeType.startsWith('image/')) {
+        fileType = FileType.IMAGE;
+      } else if (mimeType.startsWith('video/')) {
+        fileType = FileType.VIDEO;
+      } else if (mimeType.startsWith('audio/')) {
+        fileType = FileType.AUDIO;
+      }
+      
+      // Generar URL presignada real usando S3 Service
+      const presignedResponse = await s3Service.generateUploadUrl({
+        researchId,
+        folder: 'cognitive-task',
+        fileName: uploadData.fileName,
+        fileType,
+        mimeType,
+        fileSize: uploadData.size || 0,
+        expiresIn: 15 * 60 // 15 minutos
+      });
       
       // Estructura de respuesta esperada por el frontend
       const response = {
-        uploadUrl,
+        uploadUrl: presignedResponse.uploadUrl,
         file: {
-          s3Key,
+          s3Key: presignedResponse.key,
           fileName: uploadData.fileName,
-          contentType: uploadData.contentType || 'application/octet-stream',
+          contentType: mimeType,
           size: uploadData.size || 0,
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
+          fileUrl: presignedResponse.fileUrl,
+          expiresAt: presignedResponse.expiresAt
         }
       };
       
-      structuredLog('info', 'CognitiveTaskHandler.UPLOAD_URL', 'URL de upload generada exitosamente', { researchId, s3Key, uploadUrl });
+      structuredLog('info', 'CognitiveTaskHandler.UPLOAD_URL', 'URL de upload generada exitosamente', { 
+        researchId, 
+        s3Key: presignedResponse.key, 
+        uploadUrl: presignedResponse.uploadUrl 
+      });
       return createResponse(200, response);
     } catch (error) {
       structuredLog('error', 'CognitiveTaskHandler.UPLOAD_URL', 'Error generando URL de upload', { researchId, error });
