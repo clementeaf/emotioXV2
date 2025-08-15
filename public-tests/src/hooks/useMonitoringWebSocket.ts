@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { MonitoringEvent } from '../../../shared/interfaces/websocket-events.interface';
-import { API_WEBSOCKET_ENDPOINT } from '../config/endpoints';
+import { getWebsocketUrl } from '../config/dynamic-endpoints';
 import { useTestStore } from '../stores/useTestStore';
 
 /**
@@ -20,12 +20,12 @@ export const useMonitoringWebSocket = () => {
     }
 
     try {
-      // 🎯 USAR ENDPOINT DESDE CONFIGURACIÓN
-      const wsUrl = import.meta.env.VITE_WS_URL || API_WEBSOCKET_ENDPOINT;
+      // 🎯 USAR ENDPOINT DINÁMICO SINCRONIZADO
+      const wsUrl = import.meta.env.VITE_WS_URL || getWebsocketUrl();
 
       console.log('[MonitoringWebSocket] 🔍 Debug endpoints:', {
         VITE_WS_URL: import.meta.env.VITE_WS_URL,
-        API_WEBSOCKET_ENDPOINT,
+        dynamicWebSocketUrl: getWebsocketUrl(),
         finalUrl: wsUrl,
         isDev: import.meta.env.DEV,
         hostname: window.location.hostname

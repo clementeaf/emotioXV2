@@ -1,4 +1,4 @@
-import { API_WEBSOCKET_ENDPOINT } from '../config/endpoints';
+import { getWebsocketUrl } from '../config/dynamic-endpoints';
 
 /**
  * 🧪 SCRIPT DE DIAGNÓSTICO PARA WEBSOCKET
@@ -17,8 +17,8 @@ export async function testWebSocketConnection(): Promise<{
 }> {
   return new Promise((resolve) => {
     try {
-      // 🎯 OBTENER URL DEL WEBSOCKET DESDE CONFIGURACIÓN
-      const wsUrl = import.meta.env.VITE_WS_URL || API_WEBSOCKET_ENDPOINT;
+      // 🎯 OBTENER URL DEL WEBSOCKET DESDE CONFIGURACIÓN DINÁMICA
+      const wsUrl = import.meta.env.VITE_WS_URL || getWebsocketUrl();
 
       console.log('🧪 Probando conexión WebSocket:', wsUrl);
 

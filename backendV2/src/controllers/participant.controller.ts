@@ -406,7 +406,7 @@ export class ParticipantController {
           id: participant.id,
           name: participant.name,
           email: participant.email,
-          publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'http://localhost:4700'}?researchId=${researchId}&userId=${participant.id}`
+          publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'http://localhost:4700'}/${researchId}/${participant.id}`
         });
       }
 
@@ -475,7 +475,7 @@ export class ParticipantController {
         name: participant.name,
         email: participant.email,
         createdAt: participant.createdAt,
-        publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'http://localhost:4700'}?researchId=${researchId}&userId=${participant.id}`
+        publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'http://localhost:4700'}/${researchId}/${participant.id}`
       }));
 
       return {

@@ -40,3 +40,6 @@ ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, '*'} # Permitir cualquier origen por defec
 
 # Location Tracking
 LOCATION_TRACKING_TABLE: location-tracking-table
+
+# Public Tests URL (Local dev vs Production)
+PUBLIC_TESTS_URL: ${env:PUBLIC_TESTS_URL, 'http://localhost:4700'}

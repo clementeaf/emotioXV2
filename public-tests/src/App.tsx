@@ -148,6 +148,8 @@ function App() {
             <Route path="/" element={<LoginRedirect />} />
             <Route path="/error-no-research-id" element={<NoResearchIdError />} />
             <Route path="/test" element={<TestLayoutMain />} />
+            {/* 🎯 NUEVA RUTA: Acceso directo con path params */}
+            <Route path="/:researchId/:participantId" element={<LoginRedirect />} />
           </Routes>
         </div>
       </Router>
