@@ -92,6 +92,34 @@ api:
         method: DELETE
         cors: true
 
+    # --- RUTAS PARA THANK YOU SCREEN (UNIFICADAS) ---
+    - http:
+        path: /research/{researchId}/thank-you-screen
+        method: GET
+        cors: true
+    - http:
+        path: /research/{researchId}/thank-you-screen
+        method: POST # Maneja tanto creación como actualización (upsert)
+        cors: true
+    - http:
+        path: /research/{researchId}/thank-you-screen
+        method: DELETE
+        cors: true
+
+    # --- RUTAS PARA COGNITIVE TASK (UNIFICADAS) ---
+    - http:
+        path: /research/{researchId}/cognitive-task
+        method: GET
+        cors: true
+    - http:
+        path: /research/{researchId}/cognitive-task
+        method: POST # Maneja tanto creación como actualización (upsert)
+        cors: true
+    - http:
+        path: /research/{researchId}/cognitive-task
+        method: DELETE
+        cors: true
+
     # --- RUTAS PARA EYE-TRACKING CONFIG ---
     - http:
         path: /research/{researchId}/eye-tracking

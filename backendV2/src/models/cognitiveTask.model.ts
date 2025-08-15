@@ -193,7 +193,7 @@ export class CognitiveTaskModel {
     const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'researchId-index',
-      KeyConditionExpression: 'id = :rid',
+      KeyConditionExpression: 'researchId = :rid',
       FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
         ':rid': researchId,

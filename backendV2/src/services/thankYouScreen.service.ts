@@ -159,9 +159,9 @@ export class ThankYouScreenService {
   /**
    * Obtener la pantalla de agradecimiento de una investigación
    * @param researchId ID de la investigación
-   * @returns La pantalla de agradecimiento encontrada
+   * @returns La pantalla de agradecimiento encontrada o null si no existe
    */
-  async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel> {
+  async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel | null> {
     const context = 'getByResearchId'; // Contexto para logging
     try {
       // Validar que existe researchId
@@ -174,14 +174,10 @@ export class ThankYouScreenService {
 
       const thankYouScreen = await thankYouScreenModel.getByResearchId(researchId);
 
-      // Throw ApiError if not found (reverting previous change)
+      // Return null if not found (consistent with cognitive task service)
       if (!thankYouScreen) {
-        structuredLog('warn', `${this.serviceName}.${context}`, 'No se encontró ThankYouScreen', { researchId });
-        // Lanzar ApiError directamente
-        throw new ApiError(
-          `${ThankYouScreenError.NOT_FOUND}: No se encontró una pantalla de agradecimiento para esta investigación`,
-          404
-        );
+        structuredLog('info', `${this.serviceName}.${context}`, 'No se encontró ThankYouScreen', { researchId });
+        return null;
       }
 
       return thankYouScreen;
@@ -243,7 +239,7 @@ export class ThankYouScreenService {
       }
       this.validateData(data); // Validar datos entrantes
 
-      const existing = await thankYouScreenModel.getByResearchId(researchId);
+      const existing = await this.getByResearchId(researchId); // Use service method to get consistent null behavior
 
       if (existing) {
         structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando pantalla existente', { researchId, screenId: existing.id });

@@ -34,7 +34,7 @@ const thankYouScreenHandler = async (
         structuredLog('info', 'ThankYouScreenHandler.GET', 'Iniciando obtención', { researchId });
         const screen = await thankYouScreenService.getByResearchId(researchId);
         structuredLog('info', 'ThankYouScreenHandler.GET', 'Obtención exitosa', { researchId });
-        return createResponse(200, screen);
+        return createResponse(200, screen); // screen can be null if not found
 
       case 'POST':
         if (!body) {
@@ -50,8 +50,12 @@ const thankYouScreenHandler = async (
       case 'DELETE':
         structuredLog('info', 'ThankYouScreenHandler.DELETE', 'Iniciando eliminación', { researchId });
         const screenToDelete = await thankYouScreenService.getByResearchId(researchId);
-        await thankYouScreenService.delete(screenToDelete.id, userId);
-        structuredLog('info', 'ThankYouScreenHandler.DELETE', 'Eliminación exitosa', { researchId });
+        if (screenToDelete) {
+          await thankYouScreenService.delete(screenToDelete.id, userId);
+          structuredLog('info', 'ThankYouScreenHandler.DELETE', 'Eliminación exitosa', { researchId });
+        } else {
+          structuredLog('info', 'ThankYouScreenHandler.DELETE', 'No se encontró pantalla para eliminar', { researchId });
+        }
         return createResponse(204, null);
 
       default:
