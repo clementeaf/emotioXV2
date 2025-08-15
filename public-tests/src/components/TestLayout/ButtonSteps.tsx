@@ -3,7 +3,7 @@ import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseM
 import { useDemographicValidation } from '../../hooks/useDemographicValidation';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
-import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
+import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
 import { useResponseTiming } from '../../hooks/useResponseTiming';
 import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
 import { CreateModuleResponseDto, UpdateModuleResponseDto } from '../../lib/types';
@@ -36,8 +36,8 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
   const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
 
-  // 🎯 WEBSOCKET PARA MONITOREO EN TIEMPO REAL
-  const { sendParticipantStep, sendParticipantResponseSaved } = useMonitoringWebSocket();
+  // 🎯 WEBSOCKET OPTIMIZADO PARA MONITOREO EN TIEMPO REAL
+  const { sendParticipantStep, sendParticipantResponseSaved } = useOptimizedMonitoringWebSocket();
 
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',

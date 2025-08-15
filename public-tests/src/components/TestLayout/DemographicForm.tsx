@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getApiUrl } from '../../config/endpoints';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
-import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
+import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useParticipantStore } from '../../stores/useParticipantStore';
 import { useStepStore } from '../../stores/useStepStore';
@@ -20,7 +20,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   const { researchId } = useTestStore();
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const { redirectToDisqualification } = useDisqualificationRedirect();
-  const { sendParticipantDisqualified, sendParticipantQuotaExceeded } = useMonitoringWebSocket();
+  const { sendParticipantDisqualified, sendParticipantQuotaExceeded } = useOptimizedMonitoringWebSocket();
 
   // 🎯 USAR STORE PERSISTENTE EN LUGAR DE useState
   const { formData, setFormData, getFormData } = useFormDataStore();

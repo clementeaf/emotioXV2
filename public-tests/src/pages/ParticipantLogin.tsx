@@ -7,7 +7,7 @@ import FormField from '../components/common/FormField';
 import { MobileBlockedScreen } from '../components/common/MobileBlockedScreen';
 import { useEyeTrackingConfigQuery } from '../hooks/useEyeTrackingConfigQuery';
 import { useMobileDeviceCheck } from '../hooks/useMobileDeviceCheck';
-import { useMonitoringWebSocket } from '../hooks/useMonitoringWebSocket';
+import { useOptimizedMonitoringWebSocket } from '../hooks/useOptimizedMonitoringWebSocket';
 import { apiRequest } from '../lib/alova';
 
 interface Participant {
@@ -44,7 +44,7 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
   } = useMobileDeviceCheck(researchId, eyeTrackingConfig || null);
 
   // 🎯 HOOK WEBSOCKET PARA NOTIFICACIONES
-  const { sendParticipantLogin } = useMonitoringWebSocket();
+  const { sendParticipantLogin } = useOptimizedMonitoringWebSocket();
 
   const loginMutation = useMutation({
     mutationFn: async (data: { name: string; email: string; researchId: string }) => {

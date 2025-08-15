@@ -3,7 +3,7 @@ import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/use
 import { useDebugSteps } from '../../hooks/useDebugSteps';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useMobileStepVerification } from '../../hooks/useMobileStepVerification';
-import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
+import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
 import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
@@ -23,8 +23,8 @@ const TestLayoutRenderer: React.FC = () => {
   const { setFormData, getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
 
-  // 🎯 HOOK WEBSOCKET PARA NOTIFICACIONES
-  const { sendParticipantLogin, isConnected } = useMonitoringWebSocket();
+  // 🎯 HOOK WEBSOCKET OPTIMIZADO PARA NOTIFICACIONES
+  const { sendParticipantLogin, isConnected, participantState } = useOptimizedMonitoringWebSocket();
 
   // 🎯 DEBUG HOOK PARA DIAGNOSTICAR PROBLEMAS
   useDebugSteps();
@@ -57,26 +57,14 @@ const TestLayoutRenderer: React.FC = () => {
   const { data: moduleResponses } = useModuleResponsesQuery(researchId || '', participantId || '');
 
   // 🎯 ENVIAR EVENTO DE LOGIN CUANDO EL PARTICIPANTE INICIA LA SESIÓN
+  // 🎯 NOTIFICAR AL DASHBOARD POR WEBSOCKET (OPTIMIZADO - SIN DUPLICADOS)
   useEffect(() => {
-    if (researchId && participantId && isConnected) {
-      console.log('[TestLayoutRenderer] 🎯 Participante iniciando sesión:', {
-        researchId,
-        participantId,
-        isConnected
-      });
-
-      // 🎯 ENVIAR EVENTO DE LOGIN PARA NOTIFICAR AL FRONTEND
-      sendParticipantLogin(participantId, 'participant@test.com'); // Email por defecto para participantes existentes
-
-      console.log('[TestLayoutRenderer] ✅ Evento PARTICIPANT_LOGIN enviado para participante existente');
-    } else {
-      console.log('[TestLayoutRenderer] ⏳ Esperando conexión WebSocket:', {
-        researchId: !!researchId,
-        participantId: !!participantId,
-        isConnected
-      });
+    // Solo enviar si no se ha enviado ya y tenemos todos los datos
+    if (researchId && participantId && isConnected && !participantState.hasLoggedIn) {
+      console.log('[TestLayoutRenderer] 🎯 Enviando login inicial del participante');
+      sendParticipantLogin(participantId, `participant-${participantId.slice(-6)}@test.com`);
     }
-  }, [researchId, participantId, isConnected, sendParticipantLogin]);
+  }, [researchId, participantId, isConnected, participantState.hasLoggedIn, sendParticipantLogin]);
 
   // 🎯 EFFECTS DESPUÉS DE TODOS LOS HOOKS
   useEffect(() => {

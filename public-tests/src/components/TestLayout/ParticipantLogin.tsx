@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
+import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
 import { useTestStore } from '../../stores/useTestStore';
 
 interface ParticipantLoginProps {
@@ -8,7 +8,7 @@ interface ParticipantLoginProps {
 
 export const ParticipantLogin: React.FC<ParticipantLoginProps> = ({ onLogin }) => {
   const { researchId } = useTestStore();
-  const { sendParticipantLogin } = useMonitoringWebSocket();
+  const { sendParticipantLogin } = useOptimizedMonitoringWebSocket();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
