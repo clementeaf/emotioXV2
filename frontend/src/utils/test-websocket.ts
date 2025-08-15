@@ -2,13 +2,13 @@
  * Script de prueba para verificar la conexión WebSocket
  */
 
-import { getDynamicEndpoints } from '../api/dynamic-endpoints';
+import { DYNAMIC_API_ENDPOINTS } from '../api/dynamic-endpoints';
 
 export function testWebSocketConnection(): Promise<boolean> {
-  return new Promise(async (resolve) => {
+  return new Promise((resolve) => {
     try {
       // Obtener URL dinámicamente
-      const endpoints = await getDynamicEndpoints();
+      const endpoints = DYNAMIC_API_ENDPOINTS;
       const wsUrl = endpoints.ws;
 
       if (!wsUrl) {
@@ -53,10 +53,10 @@ export function testWebSocketConnection(): Promise<boolean> {
 }
 
 export function testMonitoringWebSocket(researchId: string): Promise<boolean> {
-  return new Promise(async (resolve) => {
+  return new Promise((resolve) => {
     try {
       // Obtener URL dinámicamente
-      const endpoints = await getDynamicEndpoints();
+      const endpoints = DYNAMIC_API_ENDPOINTS;
       const wsUrl = endpoints.ws;
 
       if (!wsUrl) {

@@ -78,41 +78,33 @@ api:
         method: DELETE
         cors: true
 
-    # Ruta específica para GET SmartVOC
+    # --- RUTAS PARA SMART-VOC (UNIFICADAS) ---
     - http:
         path: /research/{researchId}/smart-voc
         method: GET
         cors: true
-
-    # Añadir ruta explícita para PUT SmartVOC
     - http:
         path: /research/{researchId}/smart-voc
-        method: PUT
+        method: POST # Maneja tanto creación como actualización (upsert)
         cors: true
-
-    # Ruta específica para DELETE SmartVOC
     - http:
         path: /research/{researchId}/smart-voc
         method: DELETE
         cors: true
 
     # --- RUTAS PARA EYE-TRACKING CONFIG ---
-    # Obtener configuración de eye-tracking
     - http:
         path: /research/{researchId}/eye-tracking
         method: GET
         cors: true
-    # Crear configuración de eye-tracking
     - http:
         path: /research/{researchId}/eye-tracking
         method: POST
         cors: true
-    # Actualizar configuración de eye-tracking
     - http:
         path: /research/{researchId}/eye-tracking
         method: PUT
         cors: true
-    # Eliminar configuración de eye-tracking
     - http:
         path: /research/{researchId}/eye-tracking
         method: DELETE
@@ -253,6 +245,7 @@ api:
         cors: true
 
   environment:
+    DYNAMODB_TABLE: ${self:custom.tableName}
     CONNECTION_TYPE: http
 
 # Función para WebSockets

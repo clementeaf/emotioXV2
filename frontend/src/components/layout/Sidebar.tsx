@@ -149,17 +149,9 @@ function SidebarContent({ className }: SidebarProps) {
     }
   };
 
-  // Usar el hook centralizado para obtener research data
   const { data: allResearch = [], isLoading: isLoadingResearchData } = useResearchList();
 
-  // Procesar research reciente desde los datos centralizados
   useEffect(() => {
-    console.log('[Sidebar] 🔍 Debug Research Data:', {
-      allResearchLength: allResearch.length,
-      isLoadingResearchData,
-      allResearch: allResearch
-    });
-
     if (allResearch.length > 0) {
       const sortedResearch = allResearch
         .sort((a: Research, b: Research) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -171,11 +163,9 @@ function SidebarContent({ className }: SidebarProps) {
           createdAt: item.createdAt
         }));
 
-      console.log('[Sidebar] ✅ Processed Recent Research:', sortedResearch);
       setRecentResearch(sortedResearch);
       setShowNoResearchMessage(false);
     } else {
-      console.log('[Sidebar] ❌ No research data available');
       setShowNoResearchMessage(true);
     }
     // Actualizar el estado de carga

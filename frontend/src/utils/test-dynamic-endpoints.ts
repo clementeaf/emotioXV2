@@ -2,17 +2,17 @@
  * Script para probar el sistema de endpoints dinámicos
  */
 
-import { getDynamicEndpoints } from '../api/dynamic-endpoints';
+import { DYNAMIC_API_ENDPOINTS } from '../api/dynamic-endpoints';
 
-export async function testDynamicEndpoints(): Promise<{
+export function testDynamicEndpoints(): {
   success: boolean;
   endpoints: any;
   error?: string;
-}> {
+} {
   try {
     console.log('🧪 Probando sistema de endpoints dinámicos...');
 
-    const endpoints = await getDynamicEndpoints();
+    const endpoints = DYNAMIC_API_ENDPOINTS;
 
     console.log('✅ Endpoints dinámicos cargados:', {
       http: endpoints.http,
@@ -47,7 +47,7 @@ export async function testDynamicEndpoints(): Promise<{
   }
 }
 
-export async function testDynamicWebSocketConnection(): Promise<{
+export function testDynamicWebSocketConnection(): Promise<{
   success: boolean;
   wsUrl?: string;
   error?: string;
@@ -55,14 +55,14 @@ export async function testDynamicWebSocketConnection(): Promise<{
   try {
     console.log('🧪 Probando conexión WebSocket con endpoints dinámicos...');
 
-    const endpoints = await getDynamicEndpoints();
+    const endpoints = DYNAMIC_API_ENDPOINTS;
     const wsUrl = endpoints.ws;
 
     if (!wsUrl) {
-      return {
+      return Promise.resolve({
         success: false,
         error: 'No se pudo obtener URL de WebSocket'
-      };
+      });
     }
 
     console.log('🔌 Probando conexión a:', wsUrl);
@@ -113,9 +113,9 @@ export async function testDynamicWebSocketConnection(): Promise<{
 
   } catch (error) {
     console.error('❌ Error probando WebSocket dinámico:', error);
-    return {
+    return Promise.resolve({
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido'
-    };
+    });
   }
 }

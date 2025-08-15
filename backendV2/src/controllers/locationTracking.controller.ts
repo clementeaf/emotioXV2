@@ -1,116 +1,96 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { handleHttpRequest } from '../httpHandler';
 import { LocationTrackingService } from '../services/locationTracking.service';
+import { createResponse, errorResponse } from '../utils/controller.utils';
+import { structuredLog } from '../utils/logging.util';
 import { validateLocationData } from '../utils/validation';
 
-export class LocationTrackingController {
-  private locationTrackingService: LocationTrackingService;
+const locationTrackingService = new LocationTrackingService();
 
-  constructor() {
-    this.locationTrackingService = new LocationTrackingService();
-  }
+/**
+ * Handler para gestión de ubicación del participante
+ */
+const locationTrackingHandler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
+  const { httpMethod, pathParameters, body } = event;
+  const participantId = pathParameters?.participantId;
+  const researchId = pathParameters?.researchId;
 
-  /**
-   * Guardar datos de ubicación del participante
-   */
-  async saveLocation(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    return handleHttpRequest(async () => {
-      const body = JSON.parse(event.body || '{}');
+  try {
+    switch (httpMethod) {
+      case 'POST':
+        // Guardar ubicación
+        if (!body) {
+          return errorResponse('Se requiere cuerpo en la solicitud', 400);
+        }
+        if (!participantId || !researchId) {
+          return errorResponse('Se requiere participantId y researchId', 400);
+        }
 
-      // Validar datos de entrada
-      const validationResult = validateLocationData(body);
-      if (!validationResult.isValid) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            error: 'Datos de ubicación inválidos',
-            details: validationResult.errors
-          })
-        };
-      }
+        const locationData = JSON.parse(body);
+        
+        // Validar datos de entrada
+        const validationResult = validateLocationData(locationData);
+        if (!validationResult.isValid) {
+          return errorResponse('Datos de ubicación inválidos', 400);
+        }
 
-      const { researchId, location, timestamp } = body;
-
-      // Guardar ubicación en el backend
-      const savedLocation = await this.locationTrackingService.saveLocation({
-        researchId,
-        latitude: location.latitude,
-        longitude: location.longitude,
-        accuracy: location.accuracy,
-        source: location.source,
-        timestamp: timestamp || new Date().toISOString()
-      });
-
-      console.log('[LocationTrackingController] Ubicación guardada:', {
-        researchId,
-        locationId: savedLocation.id,
-        source: location.source
-      });
-
-      return {
-        statusCode: 201,
-        body: JSON.stringify({
-          message: 'Ubicación guardada exitosamente',
-          locationId: savedLocation.id
-        })
-      };
-    });
-  }
-
-  /**
-   * Obtener ubicaciones por researchId
-   */
-  async getLocationsByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    return handleHttpRequest(async () => {
-      const researchId = event.pathParameters?.researchId;
-
-      if (!researchId) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            error: 'researchId es requerido'
-          })
-        };
-      }
-
-      const locations = await this.locationTrackingService.getLocationsByResearchId(researchId);
-
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
+        structuredLog('info', 'LocationTrackingHandler.POST', 'Guardando ubicación', { participantId, researchId });
+        
+        await locationTrackingService.saveLocation({
+          ...locationData,
+          participantId,
           researchId,
-          locations,
-          count: locations.length
-        })
-      };
+          timestamp: new Date().toISOString()
+        });
+
+        structuredLog('info', 'LocationTrackingHandler.POST', 'Ubicación guardada exitosamente', { participantId, researchId });
+        return createResponse(200, { success: true, message: 'Ubicación guardada exitosamente' });
+
+      case 'GET':
+        // Obtener ubicaciones
+        if (!participantId || !researchId) {
+          return errorResponse('Se requiere participantId y researchId', 400);
+        }
+
+        structuredLog('info', 'LocationTrackingHandler.GET', 'Obteniendo ubicaciones', { participantId, researchId });
+        
+        const locations = await locationTrackingService.getLocationsByResearchId(researchId);
+        
+        structuredLog('info', 'LocationTrackingHandler.GET', 'Ubicaciones obtenidas', { 
+          participantId, 
+          researchId, 
+          count: locations.length 
+        });
+        
+        return createResponse(200, locations);
+
+      case 'DELETE':
+        // Eliminar ubicaciones
+        if (!participantId || !researchId) {
+          return errorResponse('Se requiere participantId y researchId', 400);
+        }
+
+        structuredLog('info', 'LocationTrackingHandler.DELETE', 'Eliminando ubicaciones', { participantId, researchId });
+        
+        await locationTrackingService.deleteLocationsByResearchId(researchId);
+        
+        structuredLog('info', 'LocationTrackingHandler.DELETE', 'Ubicaciones eliminadas', { participantId, researchId });
+        
+        return createResponse(204, null);
+
+      default:
+        return errorResponse(`Método ${httpMethod} no soportado`, 405);
+    }
+  } catch (error: any) {
+    structuredLog('error', `LocationTrackingHandler.${httpMethod}`, 'Error en el handler', {
+      participantId,
+      researchId,
+      error: error.message,
+      stack: error.stack
     });
+    return errorResponse(error.message, error.statusCode || 500);
   }
+};
 
-  /**
-   * Obtener estadísticas de ubicación por researchId
-   */
-  async getLocationStats(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    return handleHttpRequest(async () => {
-      const researchId = event.pathParameters?.researchId;
-
-      if (!researchId) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            error: 'researchId es requerido'
-          })
-        };
-      }
-
-      const stats = await this.locationTrackingService.getLocationStats(researchId);
-
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          researchId,
-          stats
-        })
-      };
-    });
-  }
-}
+export const handler = locationTrackingHandler;

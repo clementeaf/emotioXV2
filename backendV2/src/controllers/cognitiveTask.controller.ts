@@ -15,7 +15,7 @@ const cognitiveTaskHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   const { httpMethod, pathParameters, body } = event;
   const researchId = pathParameters?.researchId;
-  const userId = event.requestContext.authorizer?.claims.sub;
+  const userId = event.requestContext.authorizer?.claims?.sub;
 
   if (!researchId) {
     return errorResponse('Se requiere researchId en la ruta', 400);
@@ -57,7 +57,8 @@ const cognitiveTaskHandler = async (
 
         const updateData: Partial<CognitiveTaskFormData> = JSON.parse(body);
         structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por ID', { researchId, taskId, userId });
-        const updatedResult = await cognitiveTaskService.update(taskId, updateData, userId);
+        // Corregido: El servicio `update` no espera userId
+        const updatedResult = await cognitiveTaskService.update(taskId, updateData);
         structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización por ID exitosa', { researchId, taskId });
         return createResponse(200, updatedResult);
 
@@ -70,7 +71,8 @@ const cognitiveTaskHandler = async (
         if (taskIdToDelete) {
           // Eliminar por taskId específico
           structuredLog('info', 'CognitiveTaskHandler.DELETE', 'Iniciando eliminación por ID', { researchId, taskId: taskIdToDelete });
-          await cognitiveTaskService.delete(taskIdToDelete, userId);
+          // Corregido: El servicio `delete` no espera userId
+          await cognitiveTaskService.delete(taskIdToDelete);
           structuredLog('info', 'CognitiveTaskHandler.DELETE', 'Eliminación por ID exitosa', { researchId, taskId: taskIdToDelete });
         } else {
           // Eliminar configuración completa de la investigación
@@ -81,9 +83,7 @@ const cognitiveTaskHandler = async (
         return createResponse(204, null);
 
       default:
-        return errorResponse(`Método ${httpMethod} no soportado`, 405, {
-          allowedMethods: ['GET', 'POST', 'PUT', 'DELETE']
-        });
+        return errorResponse(`Método ${httpMethod} no soportado`, 405);
     }
   } catch (error: any) {
     structuredLog('error', `CognitiveTaskHandler.${httpMethod}`, 'Error en el handler', {
@@ -97,5 +97,4 @@ const cognitiveTaskHandler = async (
     return errorResponse(error.message, error.statusCode || 500);
   }
 };
-
 export const handler = cognitiveTaskHandler;

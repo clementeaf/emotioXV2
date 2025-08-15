@@ -288,12 +288,23 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     // Manejar diferentes métodos HTTP
     switch (event.httpMethod) {
       case 'GET':
-        console.log('Manejando GET /research');
-        return await controllerInstance.getAllResearches(event, userId);
+        // Verificar si hay un ID en el path para determinar qué método usar
+        const researchId = event.pathParameters?.researchId;
+        if (researchId) {
+          console.log('Manejando GET /research/{researchId}');
+          return await controllerInstance.getResearchById(event, userId);
+        } else {
+          console.log('Manejando GET /research');
+          return await controllerInstance.getAllResearches(event, userId);
+        }
 
       case 'POST':
         console.log('Manejando POST /research');
         return await controllerInstance.createResearch(event, userId);
+
+      case 'PUT':
+        console.log('Manejando PUT /research/{researchId}');
+        return await controllerInstance.updateResearch(event, userId);
 
       case 'DELETE':
         console.log('Manejando DELETE /research/{researchId}');
@@ -302,7 +313,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       default:
         return createResponse(405, {
           error: 'Método no permitido',
-          allowedMethods: ['GET', 'POST', 'DELETE']
+          allowedMethods: ['GET', 'POST', 'PUT', 'DELETE']
         });
     }
 

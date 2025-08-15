@@ -14,7 +14,7 @@ const smartVocFormHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   const { httpMethod, pathParameters, body } = event;
   const researchId = pathParameters?.researchId;
-  const userId = event.requestContext.authorizer?.claims.sub;
+  const userId = event.requestContext.authorizer?.claims?.sub;
 
   if (!researchId) {
     return errorResponse('Se requiere researchId en la ruta', 400);
@@ -60,9 +60,7 @@ const smartVocFormHandler = async (
         return createResponse(204, null);
 
       default:
-        return errorResponse(`Método ${httpMethod} no soportado`, 405, {
-          allowedMethods: ['GET', 'POST', 'DELETE']
-        });
+        return errorResponse(`Método ${httpMethod} no soportado`, 405);
     }
   } catch (error: any) {
     structuredLog('error', `SmartVocFormHandler.${httpMethod}`, 'Error en el handler', {

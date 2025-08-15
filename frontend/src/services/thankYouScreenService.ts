@@ -1,4 +1,4 @@
-import { thankYouScreenHttpService } from '@/api/thankYouScreenHttpService';
+import { thankYouScreenAPI } from '@/lib/api';
 import {
   ThankYouScreenFormData,
   ThankYouScreenModel
@@ -13,8 +13,9 @@ export const thankYouScreenService = {
    * @param researchId ID de la investigación
    * @returns Pantalla de agradecimiento
    */
-  async getByResearchId(researchId: string): Promise<ThankYouScreenModel> {
-    return await thankYouScreenHttpService.getByResearchId(researchId);
+  async getByResearchId(researchId: string): Promise<ThankYouScreenModel | null> {
+    const response = await thankYouScreenAPI.getByResearch(researchId);
+    return response as ThankYouScreenModel | null;
   },
 
   /**
@@ -23,7 +24,8 @@ export const thankYouScreenService = {
    * @returns Pantalla creada
    */
   async create(data: ThankYouScreenFormData): Promise<ThankYouScreenModel> {
-    return await thankYouScreenHttpService.create(data.researchId!, data);
+    const response = await thankYouScreenAPI.save(data.researchId!, data);
+    return response as ThankYouScreenModel;
   },
 
   /**
@@ -33,9 +35,9 @@ export const thankYouScreenService = {
    * @returns Pantalla actualizada
    */
   async update(id: string, data: Partial<ThankYouScreenFormData>): Promise<ThankYouScreenModel> {
-    // Usamos el researchId que viene en data o lo obtenemos por ID
-    const researchId = data.researchId || id; // Simplificación temporal
-    return await thankYouScreenHttpService.update(researchId, data);
+    const researchId = data.researchId || id;
+    const response = await thankYouScreenAPI.save(researchId, data);
+    return response as ThankYouScreenModel;
   },
 
   /**
@@ -44,7 +46,7 @@ export const thankYouScreenService = {
    * @param researchId ID de la investigación
    */
   async delete(id: string, researchId: string): Promise<void> {
-    return await thankYouScreenHttpService.delete(researchId);
+    await thankYouScreenAPI.delete(researchId);
   },
 
   /**
@@ -53,15 +55,21 @@ export const thankYouScreenService = {
    * @param data Datos de la pantalla
    * @returns Pantalla creada o actualizada
    */
-  async createOrUpdateForResearch(researchId: string, data: Omit<ThankYouScreenFormData, 'researchId'>): Promise<ThankYouScreenModel> {
+  async createOrUpdateForResearch(
+    researchId: string,
+    data: Omit<ThankYouScreenFormData, 'researchId'>
+  ): Promise<ThankYouScreenModel> {
     try {
-      // El backend maneja upsert automáticamente
-      return await thankYouScreenHttpService.create(researchId, {
+      const response = await thankYouScreenAPI.save(researchId, {
         ...data,
         researchId
       } as ThankYouScreenFormData);
+      return response as ThankYouScreenModel;
     } catch (error) {
-      console.error(`Error al crear/actualizar pantalla de agradecimiento para investigación ${researchId}:`, error);
+      console.error(
+        `Error al crear/actualizar pantalla de agradecimiento para investigación ${researchId}:`,
+        error
+      );
       throw error;
     }
   }

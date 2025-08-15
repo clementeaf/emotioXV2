@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getDynamicEndpoints } from '../api/dynamic-endpoints';
+import { DYNAMIC_API_ENDPOINTS } from '../api/dynamic-endpoints';
 import { useAuth } from '../providers/AuthProvider';
 
 /**
@@ -27,10 +27,10 @@ export const useDynamicWebSocket = (researchId: string) => {
 
   // 🎯 CARGAR ENDPOINTS DINÁMICOS
   useEffect(() => {
-    const loadEndpoints = async () => {
+    const loadEndpoints = () => {
       try {
         console.log('�� Cargando endpoints para WebSocket...');
-        const dynamicEndpoints = await getDynamicEndpoints();
+        const dynamicEndpoints = DYNAMIC_API_ENDPOINTS;
         setEndpoints(dynamicEndpoints);
         console.log('✅ Endpoints de WebSocket cargados:', {
           http: dynamicEndpoints.http,
@@ -57,7 +57,7 @@ export const useDynamicWebSocket = (researchId: string) => {
 
     try {
       // 🎯 USAR URL DINÁMICA DEL WEBSOCKET
-      const wsUrl = endpoints.API_WEBSOCKET_ENDPOINT;
+      const wsUrl = endpoints.ws;
 
       if (!wsUrl) {
         console.error('❌ No se pudo obtener URL de WebSocket desde endpoints dinámicos');

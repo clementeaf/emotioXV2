@@ -10,8 +10,12 @@ const controllerImports = {
   'welcome-screen': () => import('./controllers/welcomeScreen.controller'),
   'thank-you-screen': () => import('./controllers/thankYouScreen.controller'),
   'eye-tracking': () => import('./controllers/eyeTracking.controller'),
+  'eye-tracking-recruit': () => import('./controllers/eyeTracking.controller'),
   'smart-voc': () => import('./controllers/smartVocForm.controller'),
   'cognitive-task': () => import('./controllers/cognitiveTask.controller'),
+  'module-responses': () => import('./controllers/moduleResponse.controller'),
+  'researchInProgress': () => import('./controllers/researchInProgress.controller'),
+  'researchForms': () => import('./controllers/getResearchAvailableForms'),
   's3': () => import('./controllers/s3.controller'),
   'participants': () => import('./controllers/participant.controller'),
   'monitoring': () => import('./controllers/monitoring.controller'),
@@ -58,7 +62,9 @@ export async function getHandler(type: string): Promise<Function | null> {
       }
     } catch (error) {
       logger.error({ err: error, controllerType: type }, `Error al cargar dinámicamente el controlador ${type}`);
-      return null;
+      // Propagar más detalles del error
+      console.error(`Error detallado al cargar ${type}:`, error);
+      throw error; // Propagar el error para mejor debugging
     }
   } else {
     logger.error(`Tipo de controlador desconocido: ${type}`);

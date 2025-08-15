@@ -90,7 +90,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     },
     enabled: !!researchId && isAuthenticated,
     retry: (failureCount, error) => {
-      if (error?.statusCode === 404) {
+      if ((error as any)?.statusCode === 404) {
         return false; // No reintentar si es 404
       }
       return failureCount < 3; // Reintentar hasta 3 veces para otros errores

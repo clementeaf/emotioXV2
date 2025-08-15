@@ -116,11 +116,9 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
 
     // Welcome Screens
     'welcome-screen': {
-      create: (data: any) => post(API_ENDPOINTS['welcome-screen'].create, data),
-      getById: (id: string) => get(API_ENDPOINTS['welcome-screen'].getByResearch.replace('{id}', id)),
       getByResearchId: (researchId: string) => get(API_ENDPOINTS['welcome-screen'].getByResearch.replace('{researchId}', researchId)),
-      update: (id: string, data: any) => put(API_ENDPOINTS['welcome-screen'].update.replace('{id}', id), data),
-      delete: (id: string) => del(API_ENDPOINTS['welcome-screen'].delete.replace('{id}', id)),
+      save: (researchId: string, data: any) => post(API_ENDPOINTS['welcome-screen'].save.replace('{researchId}', researchId), data),
+      delete: (researchId: string) => del(API_ENDPOINTS['welcome-screen'].delete.replace('{researchId}', researchId)),
     },
 
     // Archivos

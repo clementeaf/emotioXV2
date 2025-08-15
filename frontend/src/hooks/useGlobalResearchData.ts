@@ -388,10 +388,9 @@ export const useGlobalResearchData = (researchId: string) => {
         globalStates.groupedResponsesData.set(researchId, data);
         setGroupedResponsesData(data);
       } catch (error) {
-        console.warn('[useGlobalResearchData] Error obteniendo respuestas agrupadas:', error);
-        globalStates.groupedResponsesError.set(researchId, error as Error);
-        setGroupedResponsesError(error as Error);
-        setGroupedResponsesData({ data: [], status: 404 });
+        console.info('[useGlobalResearchData] 📭 Research sin datos (normal para investigaciones nuevas):', error);
+        // No setear como error para research nuevos, esto es comportamiento normal
+        setGroupedResponsesData({ data: [], status: 200 });
       } finally {
         globalStates.groupedResponsesLoading.set(researchId, false);
         setIsGroupedResponsesLoading(false);

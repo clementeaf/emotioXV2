@@ -9,6 +9,7 @@ import logger from './logger';
 import { corsMiddleware, getCorsHeaders } from './middlewares/cors';
 import { ROUTE_DEFINITIONS } from './routeDefinitions';
 import { APIGatewayEventWebsocketRequestContext } from './types/websocket';
+import { initializationService } from './services/initialization.service';
 
 type ConnectionType = 'http' | 'websocket';
 
@@ -134,15 +135,15 @@ async function getHandler(type: string): Promise<Function | null> {
   if (importer) {
     try {
       const module = await importer();
-      // Convention: Expect a 'mainHandler' export
-      const handler = module.mainHandler;
+      // Convention: Expect a 'handler' export (not mainHandler)
+      const handler = module.handler || module.mainHandler;
 
       if (typeof handler === 'function') {
-        logger.info(`Controller ready for ${type} using 'mainHandler' export.`);
+        logger.info(`Controller ready for ${type} using 'handler' export.`);
         handlers[type] = handler;
         return handler;
       } else {
-        logger.error(`Module for controller type '${type}' loaded, but 'mainHandler' export is missing or not a function.`);
+        logger.error(`Module for controller type '${type}' loaded, but 'handler' export is missing or not a function.`);
         return null;
       }
     } catch (error) {
@@ -170,6 +171,13 @@ export const handler = async (
   requestLogger.info({ event }, `Solicitud iniciada [${connectionType}]`);
 
   context.callbackWaitsForEmptyEventLoop = false;
+
+  // 🚀 Inicialización automática de recursos (solo primera vez)
+  try {
+    await initializationService.initialize();
+  } catch (error) {
+    requestLogger.warn({ err: error }, 'Warning: Auto-initialization failed, continuing anyway');
+  }
 
   try {
     let response;

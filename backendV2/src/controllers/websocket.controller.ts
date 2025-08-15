@@ -2,8 +2,19 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getCorsHeaders } from '../middlewares/cors';
 import { APIGatewayEventWebsocketRequestContext } from '../types/websocket';
 
-interface WebSocketEvent extends APIGatewayProxyEvent {
+interface WebSocketEvent {
   requestContext: APIGatewayEventWebsocketRequestContext;
+  headers?: { [name: string]: string };
+  multiValueHeaders?: { [name: string]: string[] };
+  body: string | null;
+  isBase64Encoded?: boolean;
+  pathParameters?: { [name: string]: string } | null;
+  queryStringParameters?: { [name: string]: string } | null;
+  multiValueQueryStringParameters?: { [name: string]: string[] } | null;
+  stageVariables?: { [name: string]: string } | null;
+  resource?: string;
+  path?: string;
+  httpMethod?: string;
 }
 
 export class WebSocketController {
@@ -23,7 +34,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         message: 'Connected successfully',
         connectionId,
@@ -45,7 +56,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         message: 'Disconnected successfully',
         connectionId,
@@ -91,7 +102,7 @@ export class WebSocketController {
         console.log('[WebSocketController] ⚠️ Tipo de mensaje no reconocido:', body.type);
         return {
           statusCode: 200,
-          headers: getCorsHeaders(event),
+          headers: getCorsHeaders(event as any),
           body: JSON.stringify({
             message: 'Message received',
             connectionId,
@@ -115,7 +126,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         message: 'Monitoring connection established',
         connectionId,
@@ -140,7 +151,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         message: 'Participant login recorded',
         connectionId,
@@ -165,7 +176,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         message: 'Participant step recorded',
         connectionId,
@@ -190,7 +201,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         message: 'Participant disqualification recorded',
         connectionId,
@@ -215,7 +226,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         message: 'Participant quota exceeded recorded',
         connectionId,
@@ -245,7 +256,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         message: 'Participant response saved recorded',
         connectionId,
@@ -285,7 +296,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         console.log('[WebSocketHandler] ⚠️ Ruta no manejada:', routeKey);
         return {
           statusCode: 200,
-          headers: getCorsHeaders(event),
+          headers: getCorsHeaders(event as any),
           body: JSON.stringify({
             message: 'Route not handled',
             routeKey,
@@ -297,7 +308,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
     console.error('[WebSocketHandler] ❌ Error procesando WebSocket:', error);
     return {
       statusCode: 500,
-      headers: getCorsHeaders(event),
+      headers: getCorsHeaders(event as any),
       body: JSON.stringify({
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error',

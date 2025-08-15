@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MonitoringEvent, ParticipantStatus, ResearchMonitoringData } from '../../../shared/interfaces/websocket-events.interface';
-import { getDynamicEndpoints, getWebsocketUrl } from '../api/dynamic-endpoints';
+import { DYNAMIC_API_ENDPOINTS, getWebsocketUrl } from '../api/dynamic-endpoints';
 import { useAuth } from '../providers/AuthProvider';
 import { debugEnvironmentVariables } from '../utils/debug-env';
 
@@ -41,10 +41,10 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 CARGAR ENDPOINTS DINÁMICOS
   useEffect(() => {
-    const loadEndpoints = async () => {
+    const loadEndpoints = () => {
       try {
         console.log('🔍 Cargando endpoints para monitoreo...');
-        const dynamicEndpoints = await getDynamicEndpoints();
+        const dynamicEndpoints = DYNAMIC_API_ENDPOINTS;
         setEndpoints(dynamicEndpoints);
         console.log('✅ Endpoints de monitoreo cargados:', {
           http: dynamicEndpoints.http,

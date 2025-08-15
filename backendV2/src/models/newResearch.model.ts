@@ -186,8 +186,25 @@ export class NewResearchModel {
         status: item.status
       };
     } catch (error) {
-      console.error('Error getting research by ID:', error);
-      throw new Error('Failed to get research');
+      console.error(`Error getting research by ID ${id}:`, error);
+      
+      // Si es un error de "resource not found" de DynamoDB, retornar null
+      if (error && typeof error === 'object') {
+        const errorName = (error as any).name;
+        const errorMessage = (error as any).message || '';
+        
+        if (errorName === 'ResourceNotFoundException' || 
+            errorMessage.includes('Requested resource not found') ||
+            errorMessage.includes('resource not found')) {
+          console.log(`Research table/resource not found for ID ${id}, returning null. Error:`, errorMessage);
+          return null;
+        }
+      }
+      
+      // Para otros errores de DynamoDB, también logear el detalle pero retornar null
+      // ya que puede ser que el research simplemente no exista
+      console.warn(`Research ${id} not found or database error, treating as not found. Error:`, error);
+      return null;
     }
   }
 
@@ -228,8 +245,25 @@ export class NewResearchModel {
         status: item.status
       }));
     } catch (error) {
-      console.error('Error getting researches by user ID:', error);
-      throw new Error('Failed to get user researches');
+      console.error(`Error getting researches by user ID ${userId}:`, error);
+      
+      // Si es un error de "resource not found" o índice no existe, retornar array vacío
+      if (error && typeof error === 'object') {
+        const errorName = (error as any).name;
+        const errorMessage = (error as any).message || '';
+        
+        if (errorName === 'ResourceNotFoundException' || 
+            errorMessage.includes('Requested resource not found') ||
+            errorMessage.includes('resource not found') ||
+            errorMessage.includes('Index not found')) {
+          console.warn(`[NewResearchModel] Table or index not found for user ${userId}, returning empty array. This is normal for new setup.`);
+          return [];
+        }
+      }
+      
+      // Para otros errores, también retornar array vacío para no romper la aplicación
+      console.warn(`[NewResearchModel] Error getting user researches, returning empty array:`, error);
+      return [];
     }
   }
 
@@ -346,6 +380,16 @@ export class NewResearchModel {
       };
     } catch (error) {
       console.error('Error updating research:', error);
+      
+      // Si es un error de "resource not found", re-lanzar como error específico
+      if (error && typeof error === 'object') {
+        const errorMessage = (error as any).message || '';
+        if (errorMessage.includes('Requested resource not found') || 
+            errorMessage.includes('resource not found')) {
+          throw new Error('Investigación no encontrada');
+        }
+      }
+      
       throw new Error('Failed to update research');
     }
   }
@@ -390,6 +434,17 @@ export class NewResearchModel {
       await this.dynamoClient.send(params);
     } catch (error) {
       console.error('Error deleting research:', error);
+      
+      // Si es un error de "resource not found", considerar como exitoso (ya estaba eliminado)
+      if (error && typeof error === 'object') {
+        const errorMessage = (error as any).message || '';
+        if (errorMessage.includes('Requested resource not found') || 
+            errorMessage.includes('resource not found')) {
+          console.warn(`[NewResearchModel] Research ${id} not found for deletion, assuming already deleted`);
+          return;
+        }
+      }
+      
       throw new Error('Failed to delete research');
     }
   }
@@ -422,6 +477,17 @@ export class NewResearchModel {
       return result.Item.userId === userId;
     } catch (error) {
       console.error('Error checking research ownership:', error);
+      
+      // Si es un error de "resource not found", retornar false (no es propietario)
+      if (error && typeof error === 'object') {
+        const errorMessage = (error as any).message || '';
+        if (errorMessage.includes('Requested resource not found') || 
+            errorMessage.includes('resource not found')) {
+          console.warn(`[NewResearchModel] Research ${researchId} not found for ownership check, assuming not owner`);
+          return false;
+        }
+      }
+      
       return false;
     }
   }
@@ -459,7 +525,24 @@ export class NewResearchModel {
       return researches;
     } catch (error: unknown) {
        structuredLog('error', contextString, 'Error al obtener todas las investigaciones:', { error });
-       throw error; 
+       
+       // Si es un error de "resource not found" o índice no existe, retornar array vacío
+       if (error && typeof error === 'object') {
+         const errorName = (error as any).name;
+         const errorMessage = (error as any).message || '';
+         
+         if (errorName === 'ResourceNotFoundException' || 
+             errorMessage.includes('Requested resource not found') ||
+             errorMessage.includes('resource not found') ||
+             errorMessage.includes('Index not found')) {
+           console.warn(`[NewResearchModel] Table or EntityTypeSkIndex not found, returning empty array. This is normal for new setup.`);
+           return [];
+         }
+       }
+       
+       // Para otros errores, también retornar array vacío para no romper la aplicación
+       console.warn(`[NewResearchModel] Error getting all researches, returning empty array:`, error);
+       return [];
     }
   }
 

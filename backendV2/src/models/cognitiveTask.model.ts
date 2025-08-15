@@ -1,17 +1,17 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
-    DeleteCommand,
-    DynamoDBDocumentClient,
-    PutCommand,
-    QueryCommand,
-    ScanCommand,
-    UpdateCommand
+  DeleteCommand,
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+  ScanCommand,
+  UpdateCommand
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
-    CognitiveTaskFormData,
-    Question,
-    CognitiveTaskModel as SharedCognitiveTaskModel
+  CognitiveTaskFormData,
+  Question,
+  CognitiveTaskModel as SharedCognitiveTaskModel
 } from '../../../shared/interfaces/cognitive-task.interface';
 import { NotFoundError } from '../errors';
 import { structuredLog } from '../utils/logging.util';
@@ -82,8 +82,8 @@ export class CognitiveTaskModel {
 
     // Log de diagnóstico al mapear
     const resultQuestionsWithFiles = parsedQuestions.filter(q =>
-        ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
-      );
+      ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+    );
 
     return {
       id: item.id,
@@ -177,23 +177,23 @@ export class CognitiveTaskModel {
       console.error(`Error al obtener CognitiveTask por id (UUID) ${id}:`, error.message);
       // Podríamos lanzar un error más específico si el índice no existe
       if (error.name === 'ResourceNotFoundException') {
-         console.error(`FATAL: GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado en la tabla '${this.tableName}'.`);
-         throw new Error(`DATABASE_ERROR: Índice GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado.`);
+        console.error(`FATAL: GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado en la tabla '${this.tableName}'.`);
+        throw new Error(`DATABASE_ERROR: Índice GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado.`);
       }
       throw new Error(`DATABASE_ERROR: Error al obtener el formulario por id (UUID) ${id}`);
     }
   }
 
-    /**
-   * Obtiene el formulario CognitiveTask asociado a una investigación.
-   * Usa QueryCommand sobre el GSI 'researchId-index' (PK: researchId).
-   */
+  /**
+ * Obtiene el formulario CognitiveTask asociado a una investigación.
+ * Usa QueryCommand sobre el GSI 'researchId-index' (PK: researchId).
+ */
   async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
     const context = 'getByResearchId';
     const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'researchId-index',
-      KeyConditionExpression: 'researchId = :rid',
+      KeyConditionExpression: 'id = :rid',
       FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
         ':rid': researchId,
@@ -291,7 +291,7 @@ export class CognitiveTaskModel {
                 });
 
                 // Guardar un snapshot de validFiles para diagnóstico
-                console.log(`[MODEL:update] Archivos válidos en pregunta ${q.id}:`, JSON.stringify(validFiles.map(f => ({id: f.id, name: f.name})), null, 2));
+                console.log(`[MODEL:update] Archivos válidos en pregunta ${q.id}:`, JSON.stringify(validFiles.map(f => ({ id: f.id, name: f.name })), null, 2));
 
                 // Asegurar que todos los archivos válidos tengan URL (derivar de S3 si falta)
                 q.files = validFiles.map(f => {
@@ -326,7 +326,7 @@ export class CognitiveTaskModel {
             (expressionAttributeValues[':questions'].length > 300 ? '...' : '')
           );
 
-                    // AGREGADO: Log específico para verificar hitZones en el JSON
+          // AGREGADO: Log específico para verificar hitZones en el JSON
           const jsonData = JSON.parse(expressionAttributeValues[':questions']) as Question[];
           const questionsWithHitZones = jsonData.filter((q: Question) =>
             q.files && q.files.some((f: any) => f.hitZones && f.hitZones.length > 0)

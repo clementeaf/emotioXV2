@@ -1,0 +1,77 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DynamoDBFullAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:DescribeTable",
+        "dynamodb:UpdateTable",
+        "dynamodb:ListTables",
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:CreateGlobalSecondaryIndex",
+        "dynamodb:UpdateGlobalSecondaryIndex",
+        "dynamodb:DeleteGlobalSecondaryIndex",
+        "dynamodb:DescribeGlobalSecondaryIndexes"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:*:*:table/emotioXV2-table-*",
+        "arn:aws:dynamodb:*:*:table/emotioXV2-table-*/index/*"
+      ]
+    },
+    {
+      "Sid": "S3FullAccessForUploads",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:GetObjectAcl",
+        "s3:PutObjectAcl",
+        "s3:ListBucket",
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:GetBucketLocation",
+        "s3:GetBucketPolicy",
+        "s3:PutBucketPolicy",
+        "s3:GetBucketCors",
+        "s3:PutBucketCors"
+      ],
+      "Resource": [
+        "arn:aws:s3:::emotioxv2-uploads-*",
+        "arn:aws:s3:::emotioxv2-uploads-*/*"
+      ]
+    },
+    {
+      "Sid": "LambdaLogsAccess",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Sid": "CloudWatchMetrics",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricData",
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:ListMetrics"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

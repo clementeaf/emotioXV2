@@ -53,20 +53,18 @@ export const API_ENDPOINTS = {
     updateStage: '/research/{id}/stage',
   },
 
-  // Pantallas de bienvenida
+  // Pantallas de bienvenida (Rutas corregidas y unificadas)
   'welcome-screen': {
     getByResearch: '/research/{researchId}/welcome-screen',
-    create: '/research/{researchId}/welcome-screen',
-    update: '/research/{researchId}/welcome-screen/{screenId}',
-    delete: '/research/{researchId}/welcome-screen/{screenId}',
+    save: '/research/{researchId}/welcome-screen', // POST para crear/actualizar
+    delete: '/research/{researchId}/welcome-screen',
   },
 
-  // Pantallas de agradecimiento
+  // Pantallas de agradecimiento (Rutas corregidas y unificadas)
   thankYouScreen: {
     getByResearch: '/research/{researchId}/thank-you-screen',
-    create: '/research/{researchId}/thank-you-screen',
-    update: '/research/{researchId}/thank-you-screen/{screenId}',
-    delete: '/research/{researchId}/thank-you-screen/{screenId}',
+    save: '/research/{researchId}/thank-you-screen', // POST para crear/actualizar
+    delete: '/research/{researchId}/thank-you-screen',
   },
 
   // SmartVOC

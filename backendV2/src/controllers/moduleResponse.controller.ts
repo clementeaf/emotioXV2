@@ -953,7 +953,22 @@ export class ModuleResponseController {
       }
 
       // Obtener todas las respuestas del research
-      const allResponses = await moduleResponseService.getResponsesByResearch(researchId);
+      let allResponses: any[] = [];
+      
+      try {
+        allResponses = await moduleResponseService.getResponsesByResearch(researchId);
+        console.log(`[ModuleResponseController] ✅ Obtenidas ${allResponses.length} respuestas para research: ${researchId}`);
+      } catch (error: any) {
+        // Si es una investigación nueva sin datos, devolver estructura vacía en lugar de error
+        console.log(`[ModuleResponseController] 📭 Research nuevo sin datos (${researchId}), devolviendo estructura vacía:`, error.message);
+        
+        if (error.message?.includes('not found') || error.message?.includes('Requested resource not found')) {
+          allResponses = [];
+        } else {
+          // Si es un error real (no relacionado con datos faltantes), propagarlo
+          throw error;
+        }
+      }
 
       // Transformar la estructura: de participantes con respuestas a preguntas con respuestas
       const groupedByQuestion = this.transformToQuestionBasedStructure(allResponses);

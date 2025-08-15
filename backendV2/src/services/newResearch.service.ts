@@ -67,10 +67,16 @@ export class NewResearchService {
    */
   async getResearchById(id: string, context: 'user' | 'public-check', _userId?: string): Promise<NewResearch> {
     try {
+      console.log(`[NewResearchService] Buscando research por ID: ${id}`);
       const research = await newResearchModel.getById(id);
+      
       if (!research) {
+        console.log(`[NewResearchService] Research ${id} no encontrado, devolviendo 404`);
         throw new ResearchError('Investigación no encontrada', 404);
       }
+      
+      console.log(`[NewResearchService] Research ${id} encontrado exitosamente`);
+      
       // Solo validar estado para acceso público
       if (context === 'public-check') {
         if (research.status !== 'active') {

@@ -15,7 +15,7 @@ const welcomeScreenHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   const { httpMethod, pathParameters, body } = event;
   const researchId = pathParameters?.researchId;
-  const userId = event.requestContext.authorizer?.claims.sub; // Asumiendo autenticación Cognito
+  const userId = event.requestContext.authorizer?.claims?.sub; // Asumiendo autenticación Cognito
 
   if (!researchId) {
     return errorResponse('Se requiere researchId en la ruta', 400);
@@ -55,9 +55,7 @@ const welcomeScreenHandler = async (
         return createResponse(204, null); // 204 No Content
 
       default:
-        return errorResponse(`Método ${httpMethod} no soportado`, 405, {
-          allowedMethods: ['GET', 'POST', 'DELETE']
-        });
+        return errorResponse(`Método ${httpMethod} no soportado`, 405);
     }
   } catch (error: any) {
     structuredLog('error', `WelcomeScreenHandler.${httpMethod}`, 'Error en el handler', {

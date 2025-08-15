@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-08-14T19:28:55.000Z
+// Generado: 2025-08-15T12:24:01.000Z
 // Stage: dev
 
 /**
@@ -29,7 +29,7 @@ export const DYNAMIC_API_ENDPOINTS = {
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-08-14T19:28:55.000Z",
+  syncedAt: "2025-08-15T12:24:01.000Z",
   syncedFromStage: "dev"
 };
 
@@ -37,7 +37,7 @@ export const DYNAMIC_API_ENDPOINTS = {
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:4700",
-  "generatedAt": "2025-08-14T19:28:55.000Z"
+  "generatedAt": "2025-08-15T12:24:01.000Z"
 };
 
 // Constantes para uso más fácil
@@ -68,25 +68,7 @@ export function navigateToPublicTests(researchID: string): void {
 
 // Función para verificar si los endpoints están sincronizados
 export function isEndpointsSynced(): boolean {
-  // En desarrollo, usar endpoints dinámicos si están disponibles y son de AWS
-  // En producción, siempre usar endpoints dinámicos
-  return API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
-}
-
-// Función para obtener endpoints dinámicos (compatibilidad)
-export async function getDynamicEndpoints() {
-  return DYNAMIC_API_ENDPOINTS;
-}
-
-// Función para obtener información de sincronización
-export function getSyncInfo() {
-  return {
-    isSynced: isEndpointsSynced(),
-    syncedAt: DYNAMIC_API_ENDPOINTS.syncedAt,
-    stage: DYNAMIC_API_ENDPOINTS.stage,
-    endpoint: API_HTTP_ENDPOINT,
-    isDevelopment
-  };
+  return !isDevelopment && API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
 }
 
 // Versión default para import default

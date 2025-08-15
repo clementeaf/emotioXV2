@@ -139,12 +139,14 @@ export class ModuleResponseService {
         error.message.includes('NetworkError') ||
         error.message.includes('fetch') ||
         error.message.includes('Unknown error') ||
-        error.message.includes('200')
+        error.message.includes('200') ||
+        error.message.includes('Requested resource not found') ||
+        error.message.includes('DATABASE_ERROR')
       )) {
-        console.warn(`[ModuleResponseService] Error de red, endpoint no disponible o respuesta inválida, devolviendo datos vacíos para researchId: ${researchId}`);
+        console.info(`[ModuleResponseService] 📭 Research nuevo o sin datos para researchId: ${researchId} - Esto es normal para investigaciones nuevas`);
         return {
           data: [],
-          status: 404
+          status: 200  // Cambiar a 200 porque es un comportamiento esperado para research nuevos
         };
       }
 

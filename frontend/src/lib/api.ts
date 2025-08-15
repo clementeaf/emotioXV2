@@ -106,35 +106,24 @@ export const researchAPI = {
   },
 };
 
-// API de pantallas de agradecimiento
+// API de pantallas de bienvenida (Corregido)
+export const welcomeScreenAPI = {
+  getByResearch: (researchId: string) =>
+    apiClient.get('welcome-screen', 'getByResearch', { researchId }),
+  save: (researchId: string, data: any) =>
+    apiClient.post('welcome-screen', 'save', data, { researchId }),
+  delete: (researchId: string) =>
+    apiClient.delete('welcome-screen', 'delete', { researchId }),
+};
+
+// API de pantallas de agradecimiento (Corregido)
 export const thankYouScreenAPI = {
-  create: async (researchId: string, data: any): Promise<APIResponse<any>> => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para crear la pantalla de agradecimiento');
-    }
-    return apiClient.post('thankYouScreen', 'create', data, { researchId });
-  },
-
-  getByResearch: async (researchId: string): Promise<APIResponse<any>> => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación');
-    }
-    return apiClient.get('thankYouScreen', 'getByResearch', { researchId });
-  },
-
-  update: async (researchId: string, screenId: string, data: any): Promise<APIResponse<any>> => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para actualizar la pantalla de agradecimiento');
-    }
-    return apiClient.put('thankYouScreen', 'update', data, { researchId, screenId });
-  },
-
-  delete: async (researchId: string, screenId: string): Promise<APIResponse<boolean>> => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para eliminar la pantalla de agradecimiento');
-    }
-    return apiClient.delete('thankYouScreen', 'delete', { researchId, screenId });
-  },
+  getByResearch: (researchId: string) =>
+    apiClient.get('thankYouScreen', 'getByResearch', { researchId }),
+  save: (researchId: string, data: any) =>
+    apiClient.post('thankYouScreen', 'save', data, { researchId }),
+  delete: (researchId: string) =>
+    apiClient.delete('thankYouScreen', 'delete', { researchId }),
 };
 
 // API de eye tracking
@@ -229,8 +218,6 @@ export const smartVocAPI = {
     return apiClient.delete('smartVoc', 'delete', { researchId });
   },
 };
-
-// ✅ Las APIs de welcome-screen y thank-you-screen han sido optimizadas y movidas a servicios HTTP específicos
 
 // API de tareas cognitivas
 export const cognitiveTaskAPI = {

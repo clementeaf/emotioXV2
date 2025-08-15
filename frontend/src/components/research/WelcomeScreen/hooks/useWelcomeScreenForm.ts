@@ -131,11 +131,11 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       let resultRecord: WelcomeScreenRecord;
 
       if (existingScreen?.id && actualResearchId) {
-        resultRecord = await welcomeScreenService.updateForResearch(
-          actualResearchId,
-          existingScreen.id,
-          dataToSubmit
-        );
+        resultRecord = await welcomeScreenService.save({
+          ...dataToSubmit,
+          researchId: actualResearchId,
+          id: existingScreen.id
+        });
       } else if (actualResearchId) {
         if (!actualResearchId) throw new Error('No hay researchId válido para guardar.');
         // Combinar los datos para crear

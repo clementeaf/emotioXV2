@@ -17,9 +17,8 @@ import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { VOCQuestion } from './VOCQuestion';
 import { SmartVOCResultsProps } from './types';
 
-// Hook para obtener las preguntas de SmartVOC desde el hook global
-const useSmartVOCQuestions = (researchId: string) => {
-  const { smartVOCFormData, isSmartVOCFormLoading, smartVOCFormError } = useGlobalResearchData(researchId);
+// Hook para obtener las preguntas de SmartVOC desde los datos pasados como parámetro
+const useSmartVOCQuestions = (smartVOCFormData: any, isSmartVOCFormLoading: boolean, smartVOCFormError: any) => {
 
   // Preguntas por defecto si no hay configuración
   const defaultQuestions: SmartVOCQuestion[] = [
@@ -116,14 +115,17 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     smartVOCData,
     cpvData,
     trustFlowData,
+    smartVOCFormData,
     isLoading,
     isSmartVOCLoading,
     isCPVLoading,
     isTrustFlowLoading,
+    isSmartVOCFormLoading,
     error,
     smartVOCError,
     cpvError,
     trustFlowError,
+    smartVOCFormError,
     refetch
   } = useGlobalResearchData(researchId);
 
@@ -132,7 +134,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     questions: smartVOCQuestions,
     isLoading: questionsLoading,
     error: questionsError
-  } = useSmartVOCQuestions(researchId);
+  } = useSmartVOCQuestions(smartVOCFormData, isSmartVOCFormLoading, smartVOCFormError);
 
   // Usar datos reales en lugar de datos de prueba
   const shouldUseTestData = false; // Usar datos reales
