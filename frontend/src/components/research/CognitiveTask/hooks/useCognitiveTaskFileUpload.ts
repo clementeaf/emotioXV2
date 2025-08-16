@@ -273,6 +273,8 @@ export const useCognitiveTaskFileUpload = ({
             fileName: normalizedFileName,
             fileSize: file.size,
             fileType: file.type,
+            mimeType: file.type,
+            contentType: file.type,
             questionId: questionId
           })
         });

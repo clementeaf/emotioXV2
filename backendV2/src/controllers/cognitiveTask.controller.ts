@@ -96,8 +96,14 @@ const cognitiveTaskHandler = async (
       });
       return createResponse(200, response);
     } catch (error) {
-      structuredLog('error', 'CognitiveTaskHandler.UPLOAD_URL', 'Error generando URL de upload', { researchId, error });
-      return errorResponse('Error generando URL de upload', 500);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      structuredLog('error', 'CognitiveTaskHandler.UPLOAD_URL', 'Error generando URL de upload', { 
+        researchId, 
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        uploadData: body ? JSON.parse(body) : null
+      });
+      return errorResponse(`Error generando URL de upload: ${errorMessage}`, 500);
     }
   }
 

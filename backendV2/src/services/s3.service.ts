@@ -16,7 +16,7 @@ export enum FileType {
  * Extensiones permitidas por tipo de archivo
  */
 const ALLOWED_EXTENSIONS: Record<FileType, string[]> = {
-  [FileType.IMAGE]: ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'],
+  [FileType.IMAGE]: ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.bmp', '.tiff', '.tif'],
   [FileType.VIDEO]: ['.mp4', '.webm', '.avi', '.mov'],
   [FileType.DOCUMENT]: ['.pdf', '.doc', '.docx', '.txt', '.csv', '.xls', '.xlsx'],
   [FileType.AUDIO]: ['.mp3', '.wav', '.ogg', '.m4a']
@@ -26,7 +26,7 @@ const ALLOWED_EXTENSIONS: Record<FileType, string[]> = {
  * Tipos MIME permitidos por tipo de archivo
  */
 const ALLOWED_MIME_TYPES: Record<FileType, string[]> = {
-  [FileType.IMAGE]: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'],
+  [FileType.IMAGE]: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'],
   [FileType.VIDEO]: ['video/mp4', 'video/webm', 'video/avi', 'video/quicktime'],
   [FileType.DOCUMENT]: [
     'application/pdf',
@@ -134,7 +134,12 @@ export class S3Service {
     // Obtener nombre del bucket desde variables de entorno
     this.bucketName = process.env.S3_BUCKET_NAME || `${process.env.SERVICE_NAME || 'emotioxv2-backend'}-uploads-${process.env.STAGE || 'dev'}`;
 
-    console.log('S3Service inicializado con bucket:', this.bucketName);
+    console.log('S3Service inicializado:', {
+      bucketName: this.bucketName,
+      region: options.region,
+      stage: process.env.STAGE,
+      serviceName: process.env.SERVICE_NAME
+    });
   }
 
   /**
@@ -160,9 +165,18 @@ export class S3Service {
       throw new Error(`Extensión no permitida para ${params.fileType}: ${extension}`);
     }
 
-    // Verificar MIME type
-    if (!ALLOWED_MIME_TYPES[params.fileType].includes(params.mimeType)) {
-      throw new Error(`Tipo MIME no permitido para ${params.fileType}: ${params.mimeType}`);
+    // Verificar MIME type (más flexible)
+    const isValidMimeType = ALLOWED_MIME_TYPES[params.fileType].includes(params.mimeType) ||
+                           params.mimeType === 'application/octet-stream';
+    
+    if (!isValidMimeType) {
+      console.warn('S3Service.validateParams - MIME type no reconocido pero permitiendo:', {
+        fileType: params.fileType,
+        mimeType: params.mimeType,
+        fileName: params.fileName,
+        allowedTypes: ALLOWED_MIME_TYPES[params.fileType]
+      });
+      // throw new Error(`Tipo MIME no permitido para ${params.fileType}: ${params.mimeType}`);
     }
 
     // Verificar tamaño del archivo
