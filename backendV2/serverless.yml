@@ -14,7 +14,7 @@ custom:
   # Nombres dinámicos de recursos (se crean si no existen)
   tableName: ${opt:existing-table, '${self:service}-researches-${self:provider.stage}'} # Tabla para Investigaciones
   usersTableName: ${opt:existing-users-table, '${self:service}-users-${self:provider.stage}'} # Tabla para Usuarios
-  s3BucketName: ${opt:existing-bucket, '${self:service}-uploads-${self:provider.stage}'} # Bucket S3 dinámico
+  s3BucketName: ${opt:existing-bucket, 'emotioxv2-uploads-${self:provider.stage}'} # Bucket S3 dinámico (usa el que ya existe)
   
   # Condiciones para crear recursos solo si no se especifican existentes
   createNewBucket: ${env:CREATE_NEW_BUCKET, 'true'}
@@ -90,6 +90,5 @@ provider:
 functions: ${file(./function-definitions.yml)}
 
 resources:
-  Conditions: ${file(./conditions.yml)}
   Resources: ${file(./resources.yml)}
   Outputs: ${file(./outputs.yml)}

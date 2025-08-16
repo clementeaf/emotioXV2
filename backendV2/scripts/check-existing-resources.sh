@@ -78,6 +78,22 @@ echo ""
 check_s3_bucket "$EXPECTED_BUCKET"
 bucket_exists=$?
 
+# Si no existe el bucket esperado, buscar buckets alternativos
+if [ $bucket_exists -ne 0 ]; then
+    echo "🔍 Buscando buckets alternativos..."
+    ALTERNATIVE_BUCKET="emotioxv2-uploads-${STAGE}"
+    echo "🪣 Verificando bucket alternativo: $ALTERNATIVE_BUCKET"
+    
+    if aws s3api head-bucket --bucket "$ALTERNATIVE_BUCKET" 2>/dev/null; then
+        echo "✅ Bucket alternativo '$ALTERNATIVE_BUCKET' existe - se usará este"
+        export EXISTING_BUCKET="$ALTERNATIVE_BUCKET"
+        export CREATE_NEW_BUCKET="false"
+        bucket_exists=0
+    else
+        echo "❌ Bucket alternativo '$ALTERNATIVE_BUCKET' tampoco existe"
+    fi
+fi
+
 # Verificar tabla principal
 check_dynamodb_table "$EXPECTED_MAIN_TABLE" "MAIN"
 main_table_exists=$?
