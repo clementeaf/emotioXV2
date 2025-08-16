@@ -1,5 +1,5 @@
 import { Trash2, Upload } from 'lucide-react';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { UploadedFile } from 'shared/interfaces/cognitive-task.interface';
 
@@ -56,6 +56,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   // Estado para el modal de hitzones
   const [hitzoneModalOpen, setHitzoneModalOpen] = React.useState(false);
   const [hitzoneFile, setHitzoneFile] = React.useState<UIFile | null>(null);
+  
+  // Estado para URLs presignadas
+  const [presignedUrls, setPresignedUrls] = React.useState<Record<string, string>>({});
 
   const titleError = validationErrors ? validationErrors['title'] : null;
   const descriptionError = validationErrors ? validationErrors['description'] : null;
@@ -66,6 +69,32 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   // Filtrar archivos con status 'error' antes de renderizar
   const validFiles: UIFile[] = question.files ? (question.files as UIFile[]).filter(f => f.status !== 'error') : [];
+
+  // Effect para obtener URLs presignadas para archivos con s3Key
+  useEffect(() => {
+    const fetchPresignedUrls = async () => {
+      const newUrls: Record<string, string> = {};
+      
+      for (const file of validFiles) {
+        if (file.s3Key && file.type?.startsWith('image/')) {
+          try {
+            const url = await s3Service.getDownloadUrl(file.s3Key);
+            newUrls[file.id] = url;
+          } catch (error) {
+            console.error('[FileUpload] Error obteniendo URL presignada para preview:', error);
+          }
+        }
+      }
+      
+      if (Object.keys(newUrls).length > 0) {
+        setPresignedUrls(newUrls);
+      }
+    };
+
+    if (validFiles.length > 0) {
+      fetchPresignedUrls();
+    }
+  }, [validFiles.length, validFiles.map(f => f.s3Key).join(',')]) // Dependencias más específicas
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -83,15 +112,19 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   const openHitzoneEditor = async (file: UIFile) => {
     let url = '';
-    if (file.s3Key) {
+    
+    // Priorizar fileUrl si está disponible
+    if ((file as any).fileUrl) {
+      url = (file as any).fileUrl;
+    } else if (file.url?.startsWith('blob:')) {
+      url = file.url;
+    } else if (file.s3Key) {
       try {
         url = await s3Service.getDownloadUrl(file.s3Key);
       } catch (e) {
         console.error('[HITZONE] Error obteniendo URL prefirmada:', e);
         url = '';
       }
-    } else if (file.url?.startsWith('blob:')) {
-      url = file.url;
     }
 
     // Usar SIEMPRE el campo 'hitZones' para las áreas iniciales
@@ -101,21 +134,33 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     setHitzoneModalOpen(true);
   };
 
-  // Antes de mapear los archivos para renderizar:
-  const filesToShow: UIFile[] = validFiles.filter((file, idx, arr) => {
-    if (
-      (file.status === 'uploading' || file.isLoading) &&
-      arr.some(
-        f =>
-          f.name === file.name &&
-          f.size === file.size &&
-          f.status === 'uploaded'
-      )
-    ) {
-      return false;
-    }
-    return true;
-  });
+  // Antes de mapear los archivos para renderizar - evitar duplicados
+  const filesToShow: UIFile[] = (() => {
+    const fileMap = new Map<string, UIFile>();
+    
+    // Procesar archivos en orden de prioridad
+    validFiles.forEach(file => {
+      const key = `${file.name}_${file.size}`;
+      
+      // Si ya existe un archivo con esta clave
+      if (fileMap.has(key)) {
+        const existing = fileMap.get(key)!;
+        
+        // Priorizar: uploaded > uploading > otros estados
+        if (file.status === 'uploaded' && existing.status !== 'uploaded') {
+          fileMap.set(key, file);
+        } else if (file.status === 'uploading' && existing.status !== 'uploaded' && existing.status !== 'uploading') {
+          fileMap.set(key, file);
+        }
+        // Si ambos tienen el mismo status, mantener el primero
+      } else {
+        // Si no existe, agregarlo
+        fileMap.set(key, file);
+      }
+    });
+    
+    return Array.from(fileMap.values());
+  })();
 
   return (
     <div className="space-y-4">
@@ -174,6 +219,10 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             )}
             {(filesToShow as UIFile[]).map((file: UIFile, index) => {
               const isPendingDelete = file.status === 'pending-delete';
+              const hasPresignedUrl = presignedUrls[file.id];
+              const needsPresignedUrl = file.s3Key && file.type?.startsWith('image/') && !hasPresignedUrl;
+              const imageUrl = hasPresignedUrl || (file as any).fileUrl || file.url;
+              
               return (
                 <div
                   key={`${file.id}_${index}`}
@@ -182,14 +231,21 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                   <div className="flex items-center gap-2">
                     {file.type?.startsWith('image/') ? (
                       <div className="relative w-10 h-10">
-                        <img
-                          src={file.url}
-                          alt={file.name}
-                          className={`w-10 h-10 object-cover rounded ${file.isLoading ? 'opacity-50' : ''}`}
-                          onError={(e) => {
-                            e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23f0f0f0"/><text x="20" y="20" font-family="Arial" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
-                          }}
-                        />
+                        {needsPresignedUrl ? (
+                          // Mostrar spinner mientras se carga la URL presignada
+                          <div className="w-10 h-10 bg-gray-100 flex items-center justify-center rounded">
+                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        ) : (
+                          <img
+                            src={imageUrl}
+                            alt={file.name}
+                            className={`w-10 h-10 object-cover rounded ${file.isLoading ? 'opacity-50' : ''}`}
+                            onError={(e) => {
+                              e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23f0f0f0"/><text x="20" y="20" font-family="Arial" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
+                            }}
+                          />
+                        )}
                         {file.isLoading && (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -313,7 +369,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           <div className="bg-white rounded-lg shadow-lg py-6 px-8 w-auto relative flex flex-col items-center">
             <h2 className="text-lg font-semibold mb-4 text-center">Editar hitzones para: {hitzoneFile.name}</h2>
             <LocalHitzoneEditor
-              imageUrl={hitzoneFile.url}
+              imageUrl={(hitzoneFile as any).fileUrl || hitzoneFile.url}
               initialAreas={((hitzoneFile as any).hitZones || []).map((hitZone: any) => ({
                 id: hitZone.id,
                 x: hitZone.region?.x || 0,

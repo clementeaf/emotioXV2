@@ -41,10 +41,10 @@ function mapHitZonesToHitzoneAreas(hitZones?: HitZone[] | HitzoneArea[]): Hitzon
 
 const asUIFile = (file: any): UIFile => ({
   id: file.id || uuidv4(),
-  name: file.name || '',
+  name: file.name || file.fileName || '',
   size: file.size || 0,
-  type: file.type || '',
-  url: file.url || '',
+  type: file.type || file.contentType || '',
+  url: file.fileUrl || file.url || '',
   s3Key: file.s3Key,
   status: file.status || 'uploaded',
   progress: file.progress,
@@ -333,7 +333,7 @@ export const useCognitiveTaskFileUpload = ({
         const finalFileState: UIFile = {
           ...asUIFile(finalUploadedFile),
           id: tempFileId,
-          url: finalUploadedFile.url,
+          url: finalUploadedFile.fileUrl || finalUploadedFile.url,
           status: 'uploaded',
           isLoading: false,
           progress: 100,

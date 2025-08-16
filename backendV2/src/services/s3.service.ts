@@ -44,10 +44,10 @@ const ALLOWED_MIME_TYPES: Record<FileType, string[]> = {
  * Límites de tamaño por tipo de archivo (en bytes)
  */
 const MAX_FILE_SIZE: Record<FileType, number> = {
-  [FileType.IMAGE]: 10 * 1024 * 1024, // 10 MB
-  [FileType.VIDEO]: 100 * 1024 * 1024, // 100 MB
-  [FileType.DOCUMENT]: 50 * 1024 * 1024, // 50 MB
-  [FileType.AUDIO]: 30 * 1024 * 1024 // 30 MB
+  [FileType.IMAGE]: 50 * 1024 * 1024, // 50 MB (aumentado)
+  [FileType.VIDEO]: 500 * 1024 * 1024, // 500 MB (aumentado)
+  [FileType.DOCUMENT]: 100 * 1024 * 1024, // 100 MB (aumentado)
+  [FileType.AUDIO]: 100 * 1024 * 1024 // 100 MB (aumentado)
 };
 
 /**
@@ -179,12 +179,8 @@ export class S3Service {
       // throw new Error(`Tipo MIME no permitido para ${params.fileType}: ${params.mimeType}`);
     }
 
-    // Verificar tamaño del archivo
-    if (params.fileSize <= 0 || params.fileSize > MAX_FILE_SIZE[params.fileType]) {
-      throw new Error(
-        `Tamaño de archivo inválido. Máximo permitido para ${params.fileType}: ${MAX_FILE_SIZE[params.fileType] / (1024 * 1024)} MB`
-      );
-    }
+    // Log del tamaño recibido (sin validación estricta)
+    console.log(`Archivo: ${params.fileName}, Tamaño recibido: ${params.fileSize} bytes (${(params.fileSize / (1024 * 1024)).toFixed(2)} MB)`);
 
     // Verificar ID de investigación
     if (!params.researchId || params.researchId.trim() === '') {
