@@ -11,9 +11,14 @@ plugins:
 
 # Configuración de esbuild para compilación TypeScript optimizada
 custom:
-  tableName: ${self:service}-researches-${self:provider.stage} # Tabla para Investigaciones
-  usersTableName: ${self:service}-users-${self:provider.stage} # Tabla para Usuarios
-  s3BucketName: emotioxv2-uploads-dev # Bucket S3
+  # Nombres dinámicos de recursos (se crean si no existen)
+  tableName: ${opt:existing-table, '${self:service}-researches-${self:provider.stage}'} # Tabla para Investigaciones
+  usersTableName: ${opt:existing-users-table, '${self:service}-users-${self:provider.stage}'} # Tabla para Usuarios
+  s3BucketName: ${opt:existing-bucket, '${self:service}-uploads-${self:provider.stage}'} # Bucket S3 dinámico
+  
+  # Condiciones para crear recursos solo si no se especifican existentes
+  createNewBucket: ${env:CREATE_NEW_BUCKET, 'true'}
+  createNewTables: ${env:CREATE_NEW_TABLES, 'true'}
   eyeTrackingRecruitConfigTable: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
   eyeTrackingRecruitParticipantTable: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
   recruitmentLinkTable: ${self:service}-recruitment-link-${self:provider.stage}
@@ -85,5 +90,6 @@ provider:
 functions: ${file(./function-definitions.yml)}
 
 resources:
+  Conditions: ${file(./conditions.yml)}
   Resources: ${file(./resources.yml)}
   Outputs: ${file(./outputs.yml)}

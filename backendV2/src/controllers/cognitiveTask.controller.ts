@@ -42,10 +42,11 @@ const cognitiveTaskHandler = async (
 
     try {
       const uploadData = JSON.parse(body);
+      structuredLog('debug', 'CognitiveTaskHandler.UPLOAD_URL', 'Datos recibidos para upload', { researchId, uploadData });
       
       // Determinar el tipo de archivo basado en la extensión o MIME type
       let fileType = FileType.DOCUMENT; // Default
-      const mimeType = uploadData.contentType || uploadData.mimeType || 'application/octet-stream';
+      const mimeType = uploadData.contentType || uploadData.mimeType || uploadData.fileType || 'application/octet-stream';
       
       if (mimeType.startsWith('image/')) {
         fileType = FileType.IMAGE;
@@ -54,6 +55,14 @@ const cognitiveTaskHandler = async (
       } else if (mimeType.startsWith('audio/')) {
         fileType = FileType.AUDIO;
       }
+      
+      structuredLog('debug', 'CognitiveTaskHandler.UPLOAD_URL', 'Parámetros para S3Service', { 
+        researchId, 
+        fileName: uploadData.fileName,
+        fileType,
+        mimeType,
+        fileSize: uploadData.size || 0
+      });
       
       // Generar URL presignada real usando S3 Service
       const presignedResponse = await s3Service.generateUploadUrl({

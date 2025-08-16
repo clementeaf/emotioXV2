@@ -1,0 +1,12 @@
+# Condiciones CloudFormation para creación condicional de recursos
+
+Conditions:
+  # Crear bucket S3 solo si la variable indica que se debe crear
+  CreateBucket: !Equals ['${self:custom.createNewBucket}', 'true']
+  
+  # Crear tablas DynamoDB solo si la variable indica que se deben crear
+  CreateTables: !Equals ['${self:custom.createNewTables}', 'true']
+  
+  # Condiciones específicas para cada tabla (por si se quiere granularidad)
+  CreateMainTable: !Equals ['${self:custom.createNewTables}', 'true']
+  CreateUsersTable: !Equals ['${self:custom.createNewTables}', 'true']

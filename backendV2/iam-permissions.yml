@@ -25,14 +25,10 @@ role:
         # si sigue el patrón ${self:service}-<algo>-${self:provider.stage},
         # que es el caso con ${self:service}-module-responses-${self:provider.stage}.
 
-        # Las siguientes entradas parecen ser para una tabla diferente que NO sigue el patrón ${self:service}-*-${self:provider.stage}
-        # Si 'emotioxv2-backend-table-dev' es el nombre literal de la tabla definida por ${self:provider.environment.DYNAMODB_TABLE}
-        # y esta NO es igual a ${self:service}-table-${self:provider.stage}, entonces estas líneas explícitas son necesarias para ella.
-        # Por consistencia, sería mejor que DYNAMODB_TABLE también siga el patrón ${self:service}-table-${self:provider.stage}
-        # o usar Fn::GetAtt si es la tabla principal definida en resources.yml con un nombre lógico.
-        - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev
-        - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev/index/researchId-index
-        - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev/index/EntityTypeSkIndex
+        # Tabla principal dinámica (construida manualmente para funcionar con recursos existentes)
+        - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:custom.tableName}"
+        - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:custom.tableName}/index/researchId-index"
+        - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:custom.tableName}/index/EntityTypeSkIndex"
 
     # Permisos para el bucket S3
     - Effect: Allow
@@ -46,10 +42,10 @@ role:
         - s3:GetBucketPolicy
         - s3:GetObjectVersion
       Resource:
-        # ARN del bucket explícito
-        - arn:aws:s3:::emotioxv2-uploads-dev
+        # ARN del bucket dinámico (construido manualmente para funcionar con recursos existentes)
+        - !Sub "arn:aws:s3:::${self:custom.s3BucketName}"
         # ARN para los objetos dentro del bucket
-        - arn:aws:s3:::emotioxv2-uploads-dev/*
+        - !Sub "arn:aws:s3:::${self:custom.s3BucketName}/*"
 
     # Permisos básicos para Logging en CloudWatch
     - Effect: "Allow"

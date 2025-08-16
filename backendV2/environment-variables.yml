@@ -2,6 +2,7 @@
 
 NODE_ENV: ${self:provider.stage}
 STAGE: ${self:provider.stage}
+SERVICE_NAME: ${self:service}
 AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
 APP_REGION: ${self:provider.region}
 API_ENDPOINT:
@@ -23,7 +24,7 @@ WEBSOCKET_API_ENDPOINT:
       - Ref: "WebsocketsApi"
       - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
 USER_TABLE: ${self:custom.usersTableName}
-DYNAMODB_TABLE: emotioxv2-backend-table-dev
+DYNAMODB_TABLE: ${self:custom.tableName}
 PARTICIPANT_TABLE: ${self:service}-participants-${self:provider.stage}
 MODULE_RESPONSES_TABLE: ${self:service}-module-responses-${self:provider.stage}
 QUOTA_RECORDS_TABLE: ${self:service}-quota-records-${self:provider.stage}

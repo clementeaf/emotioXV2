@@ -132,7 +132,7 @@ export class S3Service {
     this.s3Client = new S3Client(options);
 
     // Obtener nombre del bucket desde variables de entorno
-    this.bucketName = process.env.S3_BUCKET_NAME || `emotiox-v2-${process.env.STAGE || 'dev'}-storage`;
+    this.bucketName = process.env.S3_BUCKET_NAME || `${process.env.SERVICE_NAME || 'emotioxv2-backend'}-uploads-${process.env.STAGE || 'dev'}`;
 
     console.log('S3Service inicializado con bucket:', this.bucketName);
   }
@@ -143,8 +143,14 @@ export class S3Service {
    * @throws Error si los parámetros no son válidos
    */
   private validateParams(params: PresignedUrlParams): void {
+    console.log('S3Service.validateParams - Validando parámetros:', JSON.stringify(params, null, 2));
+    
     // Verificar tipo de archivo
     if (!Object.values(FileType).includes(params.fileType)) {
+      console.error('S3Service.validateParams - Tipo de archivo inválido:', {
+        provided: params.fileType,
+        valid: Object.values(FileType)
+      });
       throw new Error(`Tipo de archivo inválido: ${params.fileType}`);
     }
 
@@ -189,6 +195,7 @@ export class S3Service {
    * @returns Respuesta con URL prefirmada y metadatos
    */
   async generateUploadUrl(params: PresignedUrlParams): Promise<PresignedUrlResponse> {
+    console.log('S3Service.generateUploadUrl - Iniciando con parámetros:', JSON.stringify(params, null, 2));
     try {
       this.validateParams(params);
       const extension = this.getFileExtension(params.fileName);
@@ -220,7 +227,11 @@ export class S3Service {
         expiresAt
       };
     } catch (error) {
-      console.error('Error al generar URL prefirmada para subida:', error);
+      console.error('S3Service.generateUploadUrl - Error detallado:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        params: JSON.stringify(params, null, 2)
+      });
       throw error;
     }
   }

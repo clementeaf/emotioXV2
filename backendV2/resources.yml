@@ -1,37 +1,39 @@
-# Bucket S3 para almacenamiento (ya existe)
-# StorageBucket:
-#   Type: AWS::S3::Bucket
-#   Properties:
-#     BucketName: emotioxv2-uploads-dev
-#     CorsConfiguration:
-#       CorsRules:
-#         - AllowedHeaders:
-#             - '*'
-#           AllowedMethods:
-#             - GET
-#             - PUT
-#             - POST
-#             - DELETE
-#             - HEAD
-#           AllowedOrigins:
-#             - 'http://localhost:3000'        # Frontend desarrollo
-#             - 'http://localhost:4700'        # Public-tests desarrollo
-#             - 'http://localhost:5173'        # Vite alternativo
-#             - 'http://localhost:5174'        # Vite alternativo
-#             - 'https://d2s9nr0bm47yl1.cloudfront.net'  # Frontend CloudFront
-#             - 'https://d2zt8ia21te5mv.cloudfront.net'  # Public-tests CloudFront
-#             - 'http://54.90.132.233:3000'    # Frontend EC2
-#             - '*'                            # Fallback para desarrollo
-#           MaxAge: 3000
-#     PublicAccessBlockConfiguration:
-#       BlockPublicAcls: false
-#       BlockPublicPolicy: false
-#       IgnorePublicAcls: false
-#       RestrictPublicBuckets: false
+# Bucket S3 para almacenamiento - Dinámico (creado condicionalmente)
+StorageBucket:
+  Type: AWS::S3::Bucket
+  Condition: CreateBucket
+  Properties:
+    BucketName: ${self:custom.s3BucketName}
+    CorsConfiguration:
+      CorsRules:
+        - AllowedHeaders:
+            - '*'
+          AllowedMethods:
+            - GET
+            - PUT
+            - POST
+            - DELETE
+            - HEAD
+          AllowedOrigins:
+            - 'http://localhost:3000'        # Frontend desarrollo
+            - 'http://localhost:4700'        # Public-tests desarrollo
+            - 'http://localhost:5173'        # Vite alternativo
+            - 'http://localhost:5174'        # Vite alternativo
+            - 'https://d2s9nr0bm47yl1.cloudfront.net'  # Frontend CloudFront
+            - 'https://d2zt8ia21te5mv.cloudfront.net'  # Public-tests CloudFront
+            - 'http://54.90.132.233:3000'    # Frontend EC2
+            - '*'                            # Fallback para desarrollo
+          MaxAge: 3000
+    PublicAccessBlockConfiguration:
+      BlockPublicAcls: false
+      BlockPublicPolicy: false
+      IgnorePublicAcls: false
+      RestrictPublicBuckets: false
 
-# Tabla de usuarios
+# Tabla de usuarios (creada condicionalmente)
 UsersTable:
   Type: AWS::DynamoDB::Table
+  Condition: CreateUsersTable
   Properties:
     TableName: ${self:provider.environment.USER_TABLE}
     BillingMode: PAY_PER_REQUEST
@@ -57,9 +59,10 @@ UsersTable:
       SSEType: KMS
       KMSMasterKeyId: alias/aws/dynamodb
 
-# Tabla principal DynamoDB
+# Tabla principal DynamoDB (creada condicionalmente)
 DynamoDBTable:
   Type: AWS::DynamoDB::Table
+  Condition: CreateMainTable
   Properties:
     TableName: ${self:provider.environment.DYNAMODB_TABLE}
     BillingMode: PAY_PER_REQUEST
@@ -307,18 +310,18 @@ ModuleResponsesTable:
       KMSMasterKeyId: alias/aws/dynamodb
 
 # Permite acceso público de solo lectura a los archivos bajo cognitive-task-files/
-# S3PublicReadPolicy:
-#   Type: AWS::S3::BucketPolicy
-#   Properties:
-#     Bucket: !Ref StorageBucket
-#     PolicyDocument:
-#       Version: "2012-10-17"
-#       Statement:
-#         - Sid: AllowPublicReadForCognitiveTaskFiles
-#           Effect: Allow
-#           Principal: "*"
-#           Action: "s3:GetObject"
-#           Resource: !Sub "${StorageBucket.Arn}/cognitive-task-files/*"
+S3PublicReadPolicy:
+  Type: AWS::S3::BucketPolicy
+  Properties:
+    Bucket: !Ref StorageBucket
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Sid: AllowPublicReadForCognitiveTaskFiles
+          Effect: Allow
+          Principal: "*"
+          Action: "s3:GetObject"
+          Resource: !Sub "${StorageBucket.Arn}/cognitive-task-files/*"
 
 # Tabla para Location Tracking
 LocationTrackingTable:
