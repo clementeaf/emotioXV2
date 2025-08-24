@@ -43,7 +43,7 @@ export const apiRoutes = {
      * @returns /research/{researchId}/cognitive-task
      */
     base: (researchId: string) => `/research/${researchId}/cognitive-task`,
-    
+
     /**
      * Ruta para obtener URL de subida de archivos
      * @param researchId ID de la investigación

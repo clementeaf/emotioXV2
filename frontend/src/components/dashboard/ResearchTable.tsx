@@ -1,6 +1,5 @@
 'use client';
 
-import { API_HTTP_ENDPOINT } from '@/api/endpoints';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import {
@@ -12,6 +11,8 @@ import {
   DialogTitle
 } from '@/components/ui/Dialog';
 import { useResearchList } from '@/hooks/useResearchList';
+import { apiClient } from '@/config/api';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -99,31 +100,23 @@ function ResearchTableContent() {
   };
 
   const confirmDeleteResearch = async () => {
-    if (!projectToDelete || !projectToDelete.id) {
-      console.error('Error: No se puede eliminar una investigación sin ID válido');
+    if (!projectToDelete?.id) {
+      toast.error('No se puede eliminar una investigación sin ID válido');
       setShowDeleteModal(false);
       setProjectToDelete(null);
       return;
     }
 
     try {
-      const response = await fetch(`${API_HTTP_ENDPOINT}/research/${projectToDelete.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar la investigación');
-      }
-
-      // Refetch data after deletion
+      await apiClient.delete('research', 'delete', { id: projectToDelete.id });
+      
+      toast.success('Investigación eliminada correctamente');
       refetch();
       setShowDeleteModal(false);
       setProjectToDelete(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al eliminar:', error);
+      toast.error(error?.message || 'Error al eliminar la investigación');
     }
   };
 

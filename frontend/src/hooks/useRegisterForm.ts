@@ -1,5 +1,5 @@
-import { getApiUrl } from '@/api/dynamic-endpoints';
 import { validateConfirmPassword, validateEmail, validateName, validatePassword } from '@/utils/auth-validation';
+import { apiClient } from '@/config/api';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -94,29 +94,20 @@ export const useRegisterForm = () => {
     setStatus('registering');
 
     try {
-      const response = await fetch(getApiUrl('auth/register'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          name: state.name,
-          email: state.email,
-          password: state.password
-        })
+      const response = await apiClient.post('auth', 'register', {
+        name: state.name,
+        email: state.email,
+        password: state.password
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response?.success !== false) {
         setStatus('success');
         setTimeout(() => {
           router.push('/login');
         }, 2000);
       } else {
         setStatus('error');
-        setError(data.error || 'Error al registrar usuario');
+        setError(response?.error || 'Error al registrar usuario');
       }
     } catch (err) {
       setStatus('error');

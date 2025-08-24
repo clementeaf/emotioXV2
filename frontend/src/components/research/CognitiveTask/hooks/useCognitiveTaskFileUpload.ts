@@ -278,6 +278,7 @@ export const useCognitiveTaskFileUpload = ({
         const { uploadUrl, file: backendFileInfo } = result;
         finalUploadedFile = backendFileInfo;
 
+        // Upload directo a S3 usando URL presignada (NO usar apiClient aquí)
         const s3Response = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
@@ -288,8 +289,8 @@ export const useCognitiveTaskFileUpload = ({
 
         if (!s3Response.ok) {
           const s3ErrorBody = await s3Response.text();
-          console.error(`[FileUploadHook ${questionId}] Error ${s3Response.status} subiendo a S3:`, s3ErrorBody);
-          throw new Error(`Error del servidor (${s3Response.status}) al subir archivo a S3.`);
+          console.error(`[FileUpload] Error ${s3Response.status} subiendo a S3:`, s3ErrorBody);
+          throw new Error(`Error subiendo archivo: ${s3Response.status === 403 ? 'URL expirada' : 'Error del servidor'}`);
         }
 
         successfulUploads++;

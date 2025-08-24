@@ -2,13 +2,16 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuración para desarrollo y producción
-  output: 'export', // Habilitado para deploy a S3
+  // Configuración diferente para dev vs producción
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'export', // Solo en producción para S3
+    trailingSlash: true,
+  }),
+  
   // Configuración para imágenes y rutas
   images: {
     unoptimized: true,
   },
-  trailingSlash: true,
   // Configuración para App Router
   experimental: {
     scrollRestoration: true,
