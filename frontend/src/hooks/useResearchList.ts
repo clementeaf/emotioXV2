@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { API_HTTP_ENDPOINT } from '../api/endpoints';
-import { apiDeduplicator } from '../lib/api-dedupe';
+import { apiClient } from '../config/api';
 
 interface Research {
   id: string;
@@ -13,41 +12,25 @@ interface Research {
 
 /**
  * Hook centralizado para obtener la lista de research
- * Evita llamadas duplicadas usando React Query con caching
+ * Usa apiClient centralizado con autenticación automática
  */
 export const useResearchList = () => {
   return useQuery<Research[]>({
-    queryKey: ['research', 'all'],
+    queryKey: ['research', 'list'],
     queryFn: async () => {
-      if (typeof window === 'undefined') {
-        throw new Error('Cannot access localStorage on server');
-      }
-
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error al obtener las investigaciones: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      const researchData = data?.data || data;
-
-      // Verificar que cada item tenga un ID válido antes de agregarlo
+      const response = await apiClient.get('research', 'getAll');
+      
+      // Normalizar respuesta del backend
+      const researchData = response?.data || response;
+      
+      // Filtrar datos válidos
       const filteredData = Array.isArray(researchData)
         ? researchData.filter(item => item && item.id)
         : [];
 
       return filteredData;
     },
-    enabled: typeof window !== 'undefined', // Solo ejecutar en el cliente
+    enabled: typeof window !== 'undefined',
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 5 * 60 * 1000, // 5 minutos
     refetchOnWindowFocus: false,
@@ -58,59 +41,30 @@ export const useResearchList = () => {
 
 /**
  * Hook para obtener un research específico por ID
+ * Usa apiClient centralizado con autenticación automática
  */
 export const useResearchById = (researchId: string) => {
   return useQuery<Research>({
-    queryKey: ['research', researchId],
+    queryKey: ['research', 'detail', researchId],
     queryFn: async () => {
-      // Verificar que estamos en el cliente
-      if (typeof window === 'undefined') {
-        throw new Error('Cannot access localStorage on server');
+      if (!researchId || researchId === 'new') {
+        return null;
       }
 
-      // Verificar token antes de hacer la llamada
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.warn('[useResearchById] No hay token disponible, saltando request');
-        throw new Error('No authentication token available');
-      }
-
-      // Usar deduplicador para prevenir llamadas simultáneas
-      return apiDeduplicator.dedupe(`research-${researchId}`, async () => {
-        const response = await fetch(`${API_HTTP_ENDPOINT}/research/${researchId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          // Si es 404, es normal para research nuevo
-          if (response.status === 404) {
-            console.info(`[useResearchById] 📭 Research ${researchId} no encontrado (normal para research nuevo)`);
-            return null;
-          }
-          console.error(`[useResearchById] ❌ Error ${response.status} para research ${researchId}`);
-          throw new Error(`Error al obtener la investigación: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data.data || data;
-      });
+      const response = await apiClient.get('research', 'getById', { id: researchId });
+      return response?.data || response;
     },
-    enabled: !!researchId && typeof window !== 'undefined' && !!localStorage.getItem('token'), // Solo hacer la query si hay token y estamos en cliente
-    staleTime: 60 * 1000, // Aumentar a 60 segundos para reducir refetches
-    gcTime: 10 * 60 * 1000, // Aumentar a 10 minutos
+    enabled: !!researchId && researchId !== 'new' && typeof window !== 'undefined',
+    staleTime: 60 * 1000, // 60 segundos
+    gcTime: 10 * 60 * 1000, // 10 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
     retry: (failureCount, error) => {
-      // No reintentar si es 404 o no hay token
-      if (error?.message?.includes('404') || error?.message?.includes('No authentication token')) {
+      // No reintentar si es 404
+      if ((error as any)?.statusCode === 404) {
         return false;
       }
-      // Solo reintentar 1 vez para otros errores
       return failureCount < 1;
     }
   });

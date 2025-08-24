@@ -4,6 +4,7 @@ import type { HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.int
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAuth } from '@/providers/AuthProvider';
+import { apiClient } from '@/config/api';
 
 import type { Question, UICognitiveTaskFormData } from '../types'; // Usar tipos locales
 
@@ -71,7 +72,6 @@ interface UseCognitiveTaskFileUploadResult {
   loadFilesFromLocalStorage: () => Record<string, UIFile[]> | null;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 function normalizeFileName(name: string): string {
   return name
@@ -257,35 +257,19 @@ export const useCognitiveTaskFileUpload = ({
       let uploadError = false;
 
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL;
-        if (!backendUrl) {
-          console.error('[FileUploadHook] Error: NEXT_PUBLIC_API_URL no está definida en las variables de entorno.');
-          throw new Error('La URL del backend no está configurada.');
-        }
-        const getUploadUrlEndpoint = `${backendUrl}/research/${researchId}/cognitive-task/upload-url`;
-        const apiResponse = await fetch(getUploadUrlEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            fileName: normalizedFileName,
-            fileSize: file.size,
-            fileType: file.type,
-            mimeType: file.type,
-            contentType: file.type,
-            questionId: questionId
-          })
-        });
-
-        if (!apiResponse.ok) {
-          const errorBody = await apiResponse.text();
-          console.error(`[FileUploadHook ${questionId}] Error ${apiResponse.status} obteniendo URL de subida:`, errorBody);
-          throw new Error(`Error del servidor (${apiResponse.status}) al obtener URL de subida.`);
+        // Configurar el token en apiClient para esta operación
+        if (token) {
+          apiClient.setAuthToken(token);
         }
 
-        const result = await apiResponse.json();
+        const result = await apiClient.post('cognitiveTask', 'getUploadUrl', {
+          fileName: normalizedFileName,
+          fileSize: file.size,
+          fileType: file.type,
+          mimeType: file.type,
+          contentType: file.type,
+          questionId: questionId
+        }, { researchId });
         if (!result || !result.uploadUrl || !result.file || !result.file.s3Key) {
           console.error(`[FileUploadHook ${questionId}] Respuesta inválida obteniendo URL de subida:`, result);
           throw new Error('Respuesta inválida del servidor al obtener URL de subida.');
@@ -333,7 +317,7 @@ export const useCognitiveTaskFileUpload = ({
         const finalFileState: UIFile = {
           ...asUIFile(finalUploadedFile),
           id: tempFileId,
-          url: finalUploadedFile.fileUrl || finalUploadedFile.url,
+          url: (finalUploadedFile as any).fileUrl || finalUploadedFile.url,
           status: 'uploaded',
           isLoading: false,
           progress: 100,

@@ -1,10 +1,10 @@
-import { welcomeScreenService } from '@/services/welcomeScreen.service';
 import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../config/api';
 import { WelcomeScreenRecord } from '../../../shared/interfaces/welcome-screen.interface';
 
 /**
  * Hook centralizado para obtener datos de welcome-screen
- * Evita llamadas duplicadas usando React Query con caching
+ * Usa apiClient centralizado con autenticación automática
  */
 export const useWelcomeScreenData = (researchId: string) => {
   return useQuery<WelcomeScreenRecord | null>({
@@ -22,8 +22,8 @@ export const useWelcomeScreenData = (researchId: string) => {
           // Ignorar errores de localStorage
         }
 
-        const record = await welcomeScreenService.getByResearchId(researchId);
-        return record;
+        const response = await apiClient.get('welcome-screen', 'getByResearch', { researchId });
+        return response?.data || response;
       } catch (error: any) {
         // Si es 404 o not found, retornar null en lugar de error
         if (error?.statusCode === 404 ||

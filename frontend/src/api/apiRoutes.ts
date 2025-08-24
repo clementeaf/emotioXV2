@@ -32,10 +32,27 @@ export const apiRoutes = {
     base: (researchId: string) => `/research/${researchId}/thank-you-screen`,
   },
 
+  /**
+   * Rutas para Cognitive Task
+   * Tareas cognitivas y manejo de archivos
+   */
+  cognitiveTask: {
+    /**
+     * Ruta base para operaciones CRUD de cognitive-task
+     * @param researchId ID de la investigación
+     * @returns /research/{researchId}/cognitive-task
+     */
+    base: (researchId: string) => `/research/${researchId}/cognitive-task`,
+    
+    /**
+     * Ruta para obtener URL de subida de archivos
+     * @param researchId ID de la investigación
+     * @returns /research/{researchId}/cognitive-task/upload-url
+     */
+    uploadUrl: (researchId: string) => `/research/${researchId}/cognitive-task/upload-url`,
+  },
+
   // TODO: Agregar otros módulos cuando se consoliden
-  // cognitiveTask: {
-  //   base: (researchId: string) => `/research/${researchId}/cognitive-task`,
-  // },
   // smartVoc: {
   //   base: (researchId: string) => `/research/${researchId}/smart-voc`,
   // },

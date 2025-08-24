@@ -1,5 +1,4 @@
-import tokenService from '@/services/tokenService';
-import { API_BASE_URL, apiClient } from '../config/api';
+import { apiClient } from '../config/api';
 
 // Tipos de archivos soportados
 export enum FileType {
@@ -57,28 +56,6 @@ const determineFileType = (file: File): FileType => {
  * Servicio para gestionar operaciones con S3
  */
 class S3Service {
-  private baseURL: string;
-
-  constructor() {
-    this.baseURL = API_BASE_URL;
-  }
-
-  /**
-   * Obtiene los headers de autenticación con manejo optimizado del token
-   */
-  private getAuthHeaders(): Record<string, string> {
-    const token = tokenService.getToken();
-    const authHeader = token ? `Bearer ${token}` : '';
-
-    if (token && token.split('.').length !== 3) {
-      console.error('TOKEN MALFORMADO: No tiene el formato JWT estándar (xxx.yyy.zzz)');
-    }
-
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': authHeader
-    };
-  }
 
   /**
    * Obtiene una URL prefirmada para subir un archivo
@@ -101,8 +78,7 @@ class S3Service {
 
     try {
       const response = await apiClient.post('s3', 'upload', requestBody);
-
-      return response.data;
+      return response;
     } catch (error) {
       console.error('===== ERROR COMPLETO S3 =====');
       console.error('Error al obtener URL de subida:', error);
@@ -119,13 +95,21 @@ class S3Service {
 
     try {
       const response = await apiClient.get('s3', 'download', undefined, { key: encodedKey });
+      
+      console.log('[DEBUG] s3Service.getDownloadUrl - respuesta completa:', response);
+      console.log('[DEBUG] Tipo de response:', typeof response);
+      console.log('[DEBUG] Keys de response:', Object.keys(response || {}));
 
-      if (!response?.data?.downloadUrl) {
+      // El backend devuelve: { success: true, data: { downloadUrl, key, expiresAt } }
+      // El apiClient probablemente devuelve toda la respuesta o solo la data
+      const downloadUrl = response?.data?.downloadUrl || response?.downloadUrl;
+      
+      if (!downloadUrl) {
         console.error('S3Service.getDownloadUrl - Respuesta exitosa pero falta downloadUrl:', response);
         throw new Error('La respuesta del servidor no contiene la URL de descarga esperada.');
       }
 
-      return response.data.downloadUrl;
+      return downloadUrl;
     } catch (error) {
       console.error('S3Service.getDownloadUrl - Error en respuesta:', error);
       throw new Error(error instanceof Error ? error.message : 'Error al obtener URL de descarga');
@@ -164,20 +148,6 @@ class S3Service {
     onError
   }: FileUploadParams): Promise<{ fileUrl: string; key: string }> {
     try {
-
-      const token = tokenService.getToken();
-      if (!token) {
-        console.error('============ ERROR CRÍTICO: NO HAY TOKEN =============');
-        console.error('No se encontró token en tokenService.');
-        console.error('El usuario debe iniciar sesión nuevamente.');
-        console.error('=======================================================');
-
-        const error = new Error('No has iniciado sesión o tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-        if (onError) {
-          onError(error);
-        }
-        throw error;
-      }
 
       const presignedData = await this.getUploadPresignedUrl(file, researchId, folder);
 

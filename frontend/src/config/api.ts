@@ -107,6 +107,7 @@ export const API_ENDPOINTS = {
     create: '/research/{researchId}/cognitive-task',
     update: '/research/{researchId}/cognitive-task',
     delete: '/research/{researchId}/cognitive-task',
+    getUploadUrl: '/research/{researchId}/cognitive-task/upload-url',
   },
 
   // S3

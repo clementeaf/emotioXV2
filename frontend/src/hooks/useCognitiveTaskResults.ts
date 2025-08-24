@@ -1,7 +1,6 @@
 'use client';
 
-import { getApiUrl } from '@/api/dynamic-endpoints';
-import { moduleResponsesAPI } from '@/config/api';
+import { moduleResponsesAPI, apiClient } from '@/config/api';
 import { useEffect, useState } from 'react';
 
 export type CognitiveQuestionType =
@@ -617,38 +616,27 @@ export function useCognitiveTaskResults(researchId: string) {
     setError(null);
 
     try {
-      // Obtener token usando el servicio correcto
-      const { default: tokenService } = await import('@/services/tokenService');
-      const token = tokenService.getToken();
-
-      if (!token) {
-        console.warn('[useCognitiveTaskResults] No hay token de autenticación disponible');
-      }
-
-      // Cargar configuración y respuestas en paralelo
-      const [configResponse, response] = await Promise.all([
-        fetch(`${getApiUrl(`research/${researchId}/cognitive-task`)}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` })
+      // Cargar configuración y respuestas en paralelo usando apiClient
+      const [configResult, response] = await Promise.all([
+        apiClient.get('cognitiveTask', 'getByResearch', { researchId }).catch(error => {
+          // Si es 404, retornar null para manejar como caso normal
+          if (error?.statusCode === 404) {
+            console.log(`ℹ️ [CognitiveTask] Configuración no encontrada para investigación ${researchId} (normal para investigaciones nuevas)`);
+            return null;
           }
+          throw error;
         }),
         moduleResponsesAPI.getResponsesByResearch(researchId)
       ]);
 
-      // Manejar 404 como caso normal (configuración no existe aún)
-      if (configResponse.status === 404) {
-        console.log(`ℹ️ [CognitiveTask] Configuración no encontrada para investigación ${researchId} (normal para investigaciones nuevas)`);
+      // Manejar caso cuando no hay configuración
+      if (!configResult) {
         setResearchConfig(null);
         setLoadingState('success');
         return;
       }
 
-      if (!configResponse.ok) {
-        throw new Error(`Error ${configResponse.status}: ${configResponse.statusText}`);
-      }
-
-      const configData = await configResponse.json();
+      const configData = configResult?.data || configResult;
       setResearchConfig(configData);
 
       // 🎯 NUEVA LÓGICA: Verificar si es la estructura optimizada
