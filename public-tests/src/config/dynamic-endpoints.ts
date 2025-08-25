@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-08-25T16:33:31.000Z
+// Generado: 2025-08-25T16:46:57.000Z
 // Stage: dev
 
 /**
@@ -16,16 +16,16 @@ export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
   http: isDevelopment
     ? "http://localhost:3000"
-    : (process.env.NEXT_PUBLIC_API_URL || "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev"),
+    : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
 
-  // Endpoint WebSocket - Siempre usar AWS Lambda desde variables de entorno
-  ws: process.env.NEXT_PUBLIC_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint WebSocket - Siempre usar AWS Lambda
+  ws: "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-08-25T16:33:31.000Z",
+  syncedAt: "2025-08-25T16:46:57.000Z",
   syncedFromStage: "dev"
 };
 
@@ -33,7 +33,7 @@ export const DYNAMIC_API_ENDPOINTS = {
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:5173",
-  "generatedAt": "2025-08-25T16:33:31.000Z"
+  "generatedAt": "2025-08-25T16:46:57.000Z"
 };
 
 // Constantes para uso más fácil

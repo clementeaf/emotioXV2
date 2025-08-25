@@ -176,19 +176,17 @@ sync_frontend_endpoints() {
  */
 
 // 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
-const isDevelopment = typeof window !== 'undefined'
-  ? window.location.hostname === 'localhost'
-  : process.env.NODE_ENV === 'development';
+const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
   http: isDevelopment
     ? "http://localhost:3000"
-    : (process.env.NEXT_PUBLIC_API_URL || "$HTTP_ENDPOINT"),
+    : "${HTTP_ENDPOINT}",
 
-  // Endpoint WebSocket - Siempre usar AWS Lambda desde variables de entorno
-  ws: process.env.NEXT_PUBLIC_WS_URL || "$WS_ENDPOINT",
+  // Endpoint WebSocket - Siempre usar AWS Lambda
+  ws: "${WS_ENDPOINT}",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "$STAGE",
@@ -278,10 +276,10 @@ export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
   http: isDevelopment
     ? "http://localhost:3000"
-    : (process.env.NEXT_PUBLIC_API_URL || "$HTTP_ENDPOINT"),
+    : "${HTTP_ENDPOINT}",
 
-  // Endpoint WebSocket - Siempre usar AWS Lambda desde variables de entorno
-  ws: process.env.NEXT_PUBLIC_WS_URL || "$WS_ENDPOINT",
+  // Endpoint WebSocket - Siempre usar AWS Lambda
+  ws: "${WS_ENDPOINT}",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "$STAGE",
