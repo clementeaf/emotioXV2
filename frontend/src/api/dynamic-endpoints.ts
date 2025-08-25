@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-08-15T23:25:36.000Z
+// Generado: 2025-08-25T13:09:46.000Z
 // Stage: dev
 
 /**
@@ -8,9 +8,10 @@
  * Sincronizado automáticamente después del deploy del backend
  */
 
-// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL  
-// Por defecto, siempre usar AWS Lambda a menos que se especifique explícitamente usar local
-const isDevelopment = process.env.NEXT_PUBLIC_USE_LOCAL_BACKEND === 'true';
+// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
+const isDevelopment = typeof window !== 'undefined'
+  ? window.location.hostname === 'localhost'
+  : process.env.NODE_ENV === 'development';
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
@@ -19,22 +20,22 @@ export const DYNAMIC_API_ENDPOINTS = {
     ? "http://localhost:3000"
     : (process.env.NEXT_PUBLIC_API_URL || "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev"),
 
-  // Endpoint WebSocket - Siempre usar AWS Lambda para WebSocket
+  // Endpoint WebSocket - Siempre usar AWS Lambda desde variables de entorno
   ws: process.env.NEXT_PUBLIC_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-08-15T23:25:36.000Z",
+  syncedAt: "2025-08-25T13:09:46.000Z",
   syncedFromStage: "dev"
 };
 
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700",
-  "generatedAt": "2025-08-15T23:25:36.000Z"
+  "publicTests": "http://localhost:5173",
+  "generatedAt": "2025-08-25T13:09:46.000Z"
 };
 
 // Constantes para uso más fácil
@@ -49,8 +50,7 @@ export function getApiUrl(path: string): string {
 
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
-  // Priorizar variable de entorno si existe, sino usar el valor por defecto
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev";
+  const wsUrl = API_WEBSOCKET_ENDPOINT;
   
   if (typeof window !== 'undefined') {
     console.log('🔌 WebSocket URL configurada:', wsUrl);

@@ -10,7 +10,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
+  Copy,
   Download,
+  ExternalLink,
   Eye,
   Search,
   Trash2
@@ -146,6 +148,28 @@ export function ParticipantsTable({
     setParticipantToDelete(null);
   };
 
+  // 🎯 FUNCIÓN PARA GENERAR URL DE PUBLIC-TESTS
+  const generatePublicTestsUrl = (participantId: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app';
+    return `${baseUrl}?researchId=${researchId}&userId=${participantId}`;
+  };
+
+  // 🎯 FUNCIÓN PARA COPIAR URL
+  const copyParticipantUrl = async (participantId: string) => {
+    try {
+      const url = generatePublicTestsUrl(participantId);
+      await navigator.clipboard.writeText(url);
+    } catch (err) {
+      console.error('Error copiando URL:', err);
+    }
+  };
+
+  // 🎯 FUNCIÓN PARA ABRIR PUBLIC-TESTS
+  const openParticipantTest = (participantId: string) => {
+    const url = generatePublicTestsUrl(participantId);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <>
       <Card>
@@ -193,6 +217,7 @@ export function ParticipantsTable({
                   <th className="text-left py-3 px-4 font-medium">Progreso</th>
                   <th className="text-left py-3 px-4 font-medium">Duración</th>
                   <th className="text-left py-3 px-4 font-medium">Última actividad</th>
+                  <th className="text-left py-3 px-4 font-medium">Acceso directo</th>
                   <th className="text-left py-3 px-4 font-medium">Acciones</th>
                 </tr>
               </thead>
@@ -231,9 +256,31 @@ export function ParticipantsTable({
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyParticipantUrl(participant.id)}
+                            className="flex items-center gap-1"
+                            title="Copiar URL del participante"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => openParticipantTest(participant.id)}
+                            className="flex items-center gap-1"
+                            title="Abrir test del participante"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleParticipantClick(participant)}
+                            title="Ver detalles"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -242,6 +289,7 @@ export function ParticipantsTable({
                             size="sm"
                             onClick={() => handleDeleteClick(participant)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Eliminar participante"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

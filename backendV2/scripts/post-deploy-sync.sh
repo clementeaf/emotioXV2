@@ -185,12 +185,10 @@ export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
   http: isDevelopment
     ? "http://localhost:3000"
-    : "$HTTP_ENDPOINT",
+    : (process.env.NEXT_PUBLIC_API_URL || "$HTTP_ENDPOINT"),
 
-  // Endpoint WebSocket
-  ws: isDevelopment
-    ? "ws://localhost:3001"
-    : "$WS_ENDPOINT",
+  // Endpoint WebSocket - Siempre usar AWS Lambda desde variables de entorno
+  ws: process.env.NEXT_PUBLIC_WS_URL || "$WS_ENDPOINT",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "$STAGE",
@@ -203,7 +201,7 @@ export const DYNAMIC_API_ENDPOINTS = {
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700",
+  "publicTests": "http://localhost:5173",
   "generatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
 };
 
@@ -219,7 +217,13 @@ export function getApiUrl(path: string): string {
 
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
-  return API_WEBSOCKET_ENDPOINT;
+  const wsUrl = API_WEBSOCKET_ENDPOINT;
+  
+  if (typeof window !== 'undefined') {
+    console.log('🔌 WebSocket URL configurada:', wsUrl);
+  }
+  
+  return wsUrl;
 }
 
 // Función para obtener URL de public-tests
@@ -274,12 +278,10 @@ export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
   http: isDevelopment
     ? "http://localhost:3000"
-    : "$HTTP_ENDPOINT",
+    : (process.env.NEXT_PUBLIC_API_URL || "$HTTP_ENDPOINT"),
 
-  // Endpoint WebSocket
-  ws: isDevelopment
-    ? "ws://localhost:3001"
-    : "$WS_ENDPOINT",
+  // Endpoint WebSocket - Siempre usar AWS Lambda desde variables de entorno
+  ws: process.env.NEXT_PUBLIC_WS_URL || "$WS_ENDPOINT",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "$STAGE",
@@ -292,7 +294,7 @@ export const DYNAMIC_API_ENDPOINTS = {
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700",
+  "publicTests": "http://localhost:5173",
   "generatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
 };
 
@@ -308,7 +310,13 @@ export function getApiUrl(path: string): string {
 
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
-  return API_WEBSOCKET_ENDPOINT;
+  const wsUrl = API_WEBSOCKET_ENDPOINT;
+  
+  if (typeof window !== 'undefined') {
+    console.log('🔌 WebSocket URL configurada:', wsUrl);
+  }
+  
+  return wsUrl;
 }
 
 // Función para obtener URL de public-tests
@@ -379,7 +387,13 @@ export function getApiUrl(path: string): string {
 
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
-  return API_WEBSOCKET_ENDPOINT;
+  const wsUrl = API_WEBSOCKET_ENDPOINT;
+  
+  if (typeof window !== 'undefined') {
+    console.log('🔌 WebSocket URL configurada:', wsUrl);
+  }
+  
+  return wsUrl;
 }
 
 // Función para obtener URL de public-tests

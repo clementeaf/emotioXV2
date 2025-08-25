@@ -144,6 +144,84 @@ export class ParticipantController {
   }
 
   /**
+   * Verifica si un participante existe (endpoint público para public-tests)
+   */
+  async verifyParticipant(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const participantId = event.pathParameters?.participantId;
+      const researchId = event.queryStringParameters?.researchId;
+
+      if (!participantId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'participantId es requerido',
+            status: 400
+          })
+        };
+      }
+
+      // Verificar que el participante existe
+      const participant = await participantService.findById(participantId);
+
+      if (!participant) {
+        return {
+          statusCode: 404,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Participante no encontrado',
+            valid: false,
+            status: 404
+          })
+        };
+      }
+
+      // Si se proporciona researchId, verificar que la investigación existe
+      if (researchId) {
+        const researchData = await this.researchServiceInstance.getResearchById(researchId, 'public-check');
+        if (!researchData) {
+          return {
+            statusCode: 404,
+            headers: getCorsHeaders(event),
+            body: JSON.stringify({
+              error: 'Investigación no encontrada',
+              valid: false,
+              status: 404
+            })
+          };
+        }
+      }
+
+      // Retornar información básica del participante (sin datos sensibles)
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: {
+            id: participant.id,
+            name: participant.name,
+            email: participant.email,
+            valid: true
+          },
+          status: 200
+        })
+      };
+    } catch (error: any) {
+      console.error('Error verificando participante:', error);
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: 'Error al verificar participante',
+          valid: false,
+          status: 500
+        })
+      };
+    }
+  }
+
+  /**
    * Obtiene todos los participantes
    */
   async getAll(_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
@@ -362,16 +440,32 @@ export class ParticipantController {
       }
 
       // Validar que la investigación existe
-      const researchData = await this.researchServiceInstance.getResearchById(researchId, 'public-check');
-      if (!researchData) {
-        return {
-          statusCode: 404,
-          headers: getCorsHeaders(event),
-          body: JSON.stringify({
-            error: 'La investigación especificada no existe',
-            status: 404
-          })
-        };
+      try {
+        await this.researchServiceInstance.getResearchById(researchId, 'user');
+      } catch (error: any) {
+        console.error('Error validando investigación:', error);
+        // Si es un ResearchError, devolver el código de estado específico
+        if (error.statusCode === 404) {
+          return {
+            statusCode: 404,
+            headers: getCorsHeaders(event),
+            body: JSON.stringify({
+              error: 'La investigación especificada no existe',
+              status: 404
+            })
+          };
+        } else if (error.statusCode === 403) {
+          return {
+            statusCode: 403,
+            headers: getCorsHeaders(event),
+            body: JSON.stringify({
+              error: 'La investigación no está activa',
+              status: 403
+            })
+          };
+        } else {
+          throw error; // Re-lanzar otros errores
+        }
       }
 
       // Generar nombres y emails dummy
@@ -406,7 +500,7 @@ export class ParticipantController {
           id: participant.id,
           name: participant.name,
           email: participant.email,
-          publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'http://localhost:4700'}/${researchId}/${participant.id}`
+          publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'}?researchId=${researchId}&userId=${participant.id}`
         });
       }
 
@@ -475,7 +569,7 @@ export class ParticipantController {
         name: participant.name,
         email: participant.email,
         createdAt: participant.createdAt,
-        publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'http://localhost:4700'}/${researchId}/${participant.id}`
+        publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'}?researchId=${researchId}&participantId=${participant.id}`
       }));
 
       return {
@@ -602,6 +696,9 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     } else if (method === 'DELETE' && path.match(/^\/research\/[\w-]+\/participants\/[\w-]+$/)) {
       // 🎯 NUEVA RUTA: Eliminar participante específico de una investigación
       return controller.deleteParticipant(event);
+    } else if (method === 'GET' && path.match(/^\/participants\/verify\/[\w-]+$/)) {
+      // 🎯 NUEVA RUTA: Verificar participante (público, sin auth)
+      return controller.verifyParticipant(event);
     }
 
     // Ruta no encontrada o método no permitido en ruta existente

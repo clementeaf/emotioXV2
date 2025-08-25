@@ -18,7 +18,7 @@ import { getCurrentStepData, getQuestionType } from './utils';
 
 
 const TestLayoutRenderer: React.FC = () => {
-  const { researchId, participantId } = useTestStore();
+  const { researchId, participantId, participantEmail } = useTestStore();
   const { currentQuestionKey, goToNextStep, updateBackendResponses } = useStepStore();
   const { setFormData, getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
@@ -62,9 +62,11 @@ const TestLayoutRenderer: React.FC = () => {
     // Solo enviar si no se ha enviado ya y tenemos todos los datos
     if (researchId && participantId && isConnected && !participantState.hasLoggedIn) {
       console.log('[TestLayoutRenderer] 🎯 Enviando login inicial del participante');
-      sendParticipantLogin(participantId, `participant-${participantId.slice(-6)}@test.com`);
+      // Usar el email del participante si existe, sino generar uno basado en el ID
+      const email = participantEmail || `${participantId.slice(-8)}@participant.study`;
+      sendParticipantLogin(participantId, email);
     }
-  }, [researchId, participantId, isConnected, participantState.hasLoggedIn, sendParticipantLogin]);
+  }, [researchId, participantId, participantEmail, isConnected, participantState.hasLoggedIn, sendParticipantLogin]);
 
   // 🎯 EFFECTS DESPUÉS DE TODOS LOS HOOKS
   useEffect(() => {

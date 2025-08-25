@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useMonitoringReceiver } from '@/hooks/useMonitoringReceiver';
 import { researchInProgressAPI, setupAuthToken } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
-import { Activity, CheckCircle, Clock, ExternalLink, Users } from 'lucide-react';
+import { Activity, CheckCircle, Clock, ExternalLink, Info, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
@@ -74,6 +74,7 @@ function ResearchInProgressContent() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   // 🎯 ACTUALIZAR DATOS CON MONITOREO EN TIEMPO REAL
   useEffect(() => {
@@ -196,8 +197,7 @@ function ResearchInProgressContent() {
 
   const handleOpenPublicTests = () => {
     if (researchId) {
-      const publicTestsUrl = `${process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'http://localhost:5173'}?research=${researchId}`;
-      window.open(publicTestsUrl, '_blank');
+      setShowInfoModal(true);
     }
   };
 
@@ -255,8 +255,8 @@ function ResearchInProgressContent() {
           </p>
         </div>
         <Button onClick={handleOpenPublicTests} variant="outline">
-          <ExternalLink className="w-4 h-4 mr-2" />
-          Abrir Public Tests
+          <Info className="w-4 h-4 mr-2" />
+          Acceso a Tests
         </Button>
       </div>
 
@@ -367,6 +367,53 @@ function ResearchInProgressContent() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* 🎯 MODAL INFORMATIVO SOBRE ACCESO A TESTS */}
+      {showInfoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <Info className="h-6 w-6 text-blue-500" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Acceso a Tests por Participante
+              </h3>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <p className="text-gray-600">
+                Cada participante tiene una URL única para acceder a los tests sin necesidad de login.
+              </p>
+              
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-800 font-medium">¿Cómo acceder?</p>
+                <ul className="text-sm text-blue-700 mt-1 space-y-1">
+                  <li>• Usa la pestaña "Generar Participantes" para crear participantes</li>
+                  <li>• En la tabla de participantes, usa los botones de "Acceso directo"</li>
+                  <li>• Cada participante tiene su propia URL con su ID incluido</li>
+                </ul>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-xs text-gray-600">
+                  <strong>Formato de URL:</strong><br />
+                  <code className="text-xs">
+                    {process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'}
+                    ?researchId=XXX&userId=YYY
+                  </code>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowInfoModal(false)}
+              >
+                Entendido
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

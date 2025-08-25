@@ -40,17 +40,22 @@ const LoginRedirect: React.FC = () => {
       localStorage.setItem('userId', participantId);
 
       // Configurar participante con participantId
+      // Generar un nombre más descriptivo basado en el ID
+      const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
+      const participantEmail = `${participantId.slice(-8)}@participant.study`;
+      
       setParticipant(
         participantId,
-        `Participante ${participantId.slice(-6)}`, // Nombre basado en últimos 6 caracteres del ID
-        '', // Email vacío por ahora
+        participantName,
+        participantEmail,
         researchId
       );
 
       console.log('[LoginRedirect] ✅ Participante configurado, redirigiendo al test:', {
         participantId,
         researchId,
-        participantName: `Participante ${participantId.slice(-6)}`
+        participantName,
+        participantEmail
       });
 
       // Redirigir al test directamente

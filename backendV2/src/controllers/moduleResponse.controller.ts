@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getCorsHeaders } from '../middlewares/cors';
 import { CreateModuleResponseDtoSchema, ParticipantResponsesDocument, UpdateModuleResponseDtoSchema } from '../models/moduleResponse.model';
 import { moduleResponseService } from '../services/moduleResponse.service';
+import { participantService } from '../services/participant.service';
 
 /**
  * Controlador para el manejo de respuestas de módulos
@@ -30,6 +31,22 @@ export class ModuleResponseController {
 
       // Validar los datos utilizando el esquema
       const validatedData = CreateModuleResponseDtoSchema.parse(data);
+
+      // 🎯 VALIDAR QUE EL PARTICIPANTE EXISTE
+      if (validatedData.participantId) {
+        const participant = await participantService.findById(validatedData.participantId);
+        if (!participant) {
+          return {
+            statusCode: 404,
+            headers: getCorsHeaders(event),
+            body: JSON.stringify({
+              error: `Participante con ID '${validatedData.participantId}' no encontrado`,
+              status: 404
+            })
+          };
+        }
+        console.log(`[ModuleResponse] Participante validado: ${participant.name} (${participant.email})`);
+      }
 
       // Guardar la respuesta (el servicio decide si es crear o actualizar)
       const savedResponse = await moduleResponseService.saveModuleResponse(validatedData);
@@ -165,6 +182,19 @@ export class ModuleResponseController {
           body: JSON.stringify({
             error: 'Se requieren researchId y participantId',
             status: 400
+          })
+        };
+      }
+
+      // 🎯 VALIDAR QUE EL PARTICIPANTE EXISTE
+      const participant = await participantService.findById(participantId);
+      if (!participant) {
+        return {
+          statusCode: 404,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: `Participante con ID '${participantId}' no encontrado`,
+            status: 404
           })
         };
       }

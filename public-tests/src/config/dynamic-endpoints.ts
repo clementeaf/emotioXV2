@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-08-15T23:25:36.000Z
+// Generado: 2025-08-25T13:09:46.000Z
 // Stage: dev
 
 /**
@@ -16,26 +16,24 @@ export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
   http: isDevelopment
     ? "http://localhost:3000"
-    : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
+    : (process.env.NEXT_PUBLIC_API_URL || "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev"),
 
-  // Endpoint WebSocket
-  ws: isDevelopment
-    ? "ws://localhost:3001"
-    : "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint WebSocket - Siempre usar AWS Lambda desde variables de entorno
+  ws: process.env.NEXT_PUBLIC_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-08-15T23:25:36.000Z",
+  syncedAt: "2025-08-25T13:09:46.000Z",
   syncedFromStage: "dev"
 };
 
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700",
-  "generatedAt": "2025-08-15T23:25:36.000Z"
+  "publicTests": "http://localhost:5173",
+  "generatedAt": "2025-08-25T13:09:46.000Z"
 };
 
 // Constantes para uso más fácil
@@ -50,7 +48,13 @@ export function getApiUrl(path: string): string {
 
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
-  return API_WEBSOCKET_ENDPOINT;
+  const wsUrl = API_WEBSOCKET_ENDPOINT;
+  
+  if (typeof window !== 'undefined') {
+    console.log('🔌 WebSocket URL configurada:', wsUrl);
+  }
+  
+  return wsUrl;
 }
 
 // Función para obtener URL de public-tests

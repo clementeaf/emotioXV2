@@ -4,7 +4,7 @@
  * Este archivo es generado automáticamente por el script post-deploy.
  * NO MODIFICAR MANUALMENTE - Los cambios se sobrescribirán en el próximo deploy.
  *
- * Generado: 2025-08-15T23:25:36.000Z
+ * Generado: 2025-08-25T13:09:46.000Z
  * Etapa: dev
  * Backend Deployed: https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev
  */
@@ -15,7 +15,7 @@ export const CENTRALIZED_API_CONFIG = {
   stage: "dev",
   frontend: "http://localhost:3000",
   publicTests: "http://localhost:4700",
-  generatedAt: "2025-08-15T23:25:36.000Z",
+  generatedAt: "2025-08-25T13:09:46.000Z",
   deployedEndpoint: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
   syncMethod: "post-deploy-script"
 };
@@ -32,7 +32,13 @@ export function getApiUrl(path: string): string {
 
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
-  return API_WEBSOCKET_ENDPOINT;
+  const wsUrl = API_WEBSOCKET_ENDPOINT;
+  
+  if (typeof window !== 'undefined') {
+    console.log('🔌 WebSocket URL configurada:', wsUrl);
+  }
+  
+  return wsUrl;
 }
 
 // Función para obtener URL de public-tests
