@@ -1,4 +1,4 @@
-import { ApiClient } from '../lib/api-client';
+import { apiClient, moduleResponsesAPI } from '../config/api';
 import {
   CreateModuleResponseDto,
   ParticipantResponsesDocument,
@@ -25,10 +25,8 @@ interface GroupedResponsesResponse {
 }
 
 export class ModuleResponseService {
-  private apiClient: ApiClient;
-
   constructor() {
-    this.apiClient = new ApiClient(process.env.NEXT_PUBLIC_API_URL || '');
+    // Ya no necesitamos inicializar apiClient aquí, usamos la instancia global
   }
 
   /**
@@ -39,19 +37,8 @@ export class ModuleResponseService {
     participantId: string
   ): Promise<ParticipantResponsesDocument | null> {
     try {
-      const response = await this.apiClient.get(
-        `/module-responses?researchId=${researchId}&participantId=${participantId}`
-      ) as Response;
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`Error al obtener respuestas: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data.data;
+      const response = await moduleResponsesAPI.getResponsesForParticipant(researchId, participantId);
+      return response?.data || null;
     } catch (error) {
       console.error('Error en getResponsesForParticipant:', error);
       throw error;
@@ -63,14 +50,8 @@ export class ModuleResponseService {
    */
   async getResponsesByResearch(researchId: string): Promise<ParticipantResponsesDocument[]> {
     try {
-      const response = await this.apiClient.get(`/module-responses/research/${researchId}`) as Response;
-
-      if (!response.ok) {
-        throw new Error(`Error al obtener respuestas del research: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data.data;
+      const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
+      return response?.data || [];
     } catch (error) {
       console.error('Error en getResponsesByResearch:', error);
       throw error;
@@ -85,48 +66,32 @@ export class ModuleResponseService {
     try {
       console.log(`[ModuleResponseService] Iniciando request para researchId: ${researchId}`);
 
-      // El ApiClient maneja la respuesta internamente y devuelve los datos parseados
-      const data = await this.apiClient.get(`/module-responses/grouped-by-question/${researchId}`);
-      console.log(`[ModuleResponseService] Datos recibidos del ApiClient para researchId: ${researchId}:`, data);
+      const response = await moduleResponsesAPI.getResponsesGroupedByQuestion(researchId);
+      console.log(`[ModuleResponseService] Datos recibidos para researchId: ${researchId}:`, response);
 
-      // Si el ApiClient devuelve null (404), devolver respuesta vacía
-      if (data === null) {
-        console.warn(`[ModuleResponseService] Endpoint no encontrado (404) para researchId: ${researchId}`);
+      // Si no hay respuesta o es null, devolver respuesta vacía
+      if (!response) {
+        console.warn(`[ModuleResponseService] Sin datos para researchId: ${researchId}`);
         return {
           data: [],
           status: 404
         };
       }
 
-      // Si el ApiClient devuelve un objeto con error, manejarlo
-      if (data && typeof data === 'object' && 'error' in data) {
-        console.warn(`[ModuleResponseService] Error del ApiClient para researchId: ${researchId}:`, data);
-        return {
-          data: [],
-          status: (data as any).status || 500
-        };
-      }
-
       // Validar que la respuesta tenga el formato esperado
-      if (!data || typeof data !== 'object') {
-        console.warn(`[ModuleResponseService] Respuesta inválida para researchId: ${researchId}:`, data);
+      if (!response.data || !Array.isArray(response.data)) {
+        console.warn(`[ModuleResponseService] Respuesta sin estructura de datos para researchId: ${researchId}:`, response);
         return {
           data: [],
           status: 200
         };
       }
 
-      // Si la respuesta no tiene la estructura esperada, devolver datos vacíos
-      if (!Array.isArray((data as any).data) && !(data as any).data) {
-        console.warn(`[ModuleResponseService] Respuesta sin estructura de datos para researchId: ${researchId}:`, data);
-        return {
-          data: [],
-          status: 200
-        };
-      }
-
-      console.log(`[ModuleResponseService] Respuesta válida para researchId: ${researchId}:`, data);
-      return data as GroupedResponsesResponse;
+      console.log(`[ModuleResponseService] Respuesta válida para researchId: ${researchId}:`, response);
+      return {
+        data: response.data,
+        status: response.status || 200
+      };
     } catch (error) {
       console.error('Error en getResponsesGroupedByQuestion:', error);
 
@@ -164,14 +129,8 @@ export class ModuleResponseService {
    */
   async saveResponse(data: CreateModuleResponseDto): Promise<ParticipantResponsesDocument> {
     try {
-      const response = await this.apiClient.post('/module-responses', data) as Response;
-
-      if (!response.ok) {
-        throw new Error(`Error al guardar respuesta: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result.data;
+      const response = await moduleResponsesAPI.saveResponse(data);
+      return response.data;
     } catch (error) {
       console.error('Error en saveResponse:', error);
       throw error;
@@ -183,14 +142,8 @@ export class ModuleResponseService {
    */
   async updateResponse(id: string, data: UpdateModuleResponseDto): Promise<ParticipantResponsesDocument> {
     try {
-      const response = await this.apiClient.put(`/module-responses/${id}`, data) as Response;
-
-      if (!response.ok) {
-        throw new Error(`Error al actualizar respuesta: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result.data;
+      const response = await moduleResponsesAPI.updateResponse(id, data);
+      return response.data;
     } catch (error) {
       console.error('Error en updateResponse:', error);
       throw error;
@@ -202,17 +155,13 @@ export class ModuleResponseService {
    */
   async markAsCompleted(researchId: string, participantId: string): Promise<ParticipantResponsesDocument | null> {
     try {
-      const response = await this.apiClient.post('/module-responses/complete', {
+      // Este endpoint no está definido en moduleResponsesAPI, usar apiClient directamente
+      const response = await apiClient.post('moduleResponses', 'saveResponse', {
         researchId,
-        participantId
-      }) as Response;
-
-      if (!response.ok) {
-        throw new Error(`Error al marcar como completado: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result.data;
+        participantId,
+        completed: true
+      });
+      return response?.data || null;
     } catch (error) {
       console.error('Error en markAsCompleted:', error);
       throw error;
@@ -224,11 +173,7 @@ export class ModuleResponseService {
    */
   async deleteAllResponses(researchId: string, participantId: string): Promise<void> {
     try {
-      const response = await this.apiClient.delete(`/module-responses?researchId=${researchId}&participantId=${participantId}`) as Response;
-
-      if (!response.ok) {
-        throw new Error(`Error al eliminar respuestas: ${response.statusText}`);
-      }
+      await moduleResponsesAPI.deleteAllResponses(researchId, participantId);
     } catch (error) {
       console.error('Error en deleteAllResponses:', error);
       throw error;

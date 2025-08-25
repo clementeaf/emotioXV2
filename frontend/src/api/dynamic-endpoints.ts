@@ -9,20 +9,18 @@
  */
 
 // 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL  
-// FORZAR USO DE AWS SIEMPRE (cambiar a true para usar backend local)
-const isDevelopment = false;
+// Por defecto, siempre usar AWS Lambda a menos que se especifique explícitamente usar local
+const isDevelopment = process.env.NEXT_PUBLIC_USE_LOCAL_BACKEND === 'true';
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
   http: isDevelopment
     ? "http://localhost:3000"
-    : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
+    : (process.env.NEXT_PUBLIC_API_URL || "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev"),
 
-  // Endpoint WebSocket
-  ws: isDevelopment
-    ? "ws://localhost:3001"
-    : "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint WebSocket - Siempre usar AWS Lambda para WebSocket
+  ws: process.env.NEXT_PUBLIC_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev",
@@ -51,7 +49,14 @@ export function getApiUrl(path: string): string {
 
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
-  return API_WEBSOCKET_ENDPOINT;
+  // Priorizar variable de entorno si existe, sino usar el valor por defecto
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev";
+  
+  if (typeof window !== 'undefined') {
+    console.log('🔌 WebSocket URL configurada:', wsUrl);
+  }
+  
+  return wsUrl;
 }
 
 // Función para obtener URL de public-tests

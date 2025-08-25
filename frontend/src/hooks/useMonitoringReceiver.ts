@@ -17,6 +17,8 @@ export const useMonitoringReceiver = (researchId: string) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [endpoints, setEndpoints] = useState<any>(null);
   const [isLoadingEndpoints, setIsLoadingEndpoints] = useState(true);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -84,6 +86,7 @@ export const useMonitoringReceiver = (researchId: string) => {
         console.log('✅ WebSocket dinámico conectado exitosamente');
         setIsConnected(true);
         setIsConnecting(false);
+        reconnectAttemptsRef.current = 0; // Reset intentos al conectar exitosamente
 
         // 🎯 ENVIAR EVENTO DE CONEXIÓN DE MONITOREO (mismo formato que public-tests)
         const connectMessage = {
@@ -105,21 +108,35 @@ export const useMonitoringReceiver = (researchId: string) => {
         console.log('❌ WebSocket dinámico desconectado:', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
+        wsRef.current = null; // Limpiar referencia
 
         // 🎯 DELAY ANTES DE RECONECTAR (5 SEGUNDOS)
-        if (event.code !== 1000) { // No es cierre limpio
-          console.log('🔄 Programando reconexión en 5 segundos...');
-          setTimeout(() => {
-            // 🎯 VERIFICAR QUE NO ESTEMOS YA CONECTANDO
-            if (token && researchId && !isConnecting) {
-              connect();
-            }
-          }, 5000);
+        if (event.code !== 1000 && event.code !== 1001) { // No es cierre limpio o going away
+          reconnectAttemptsRef.current++;
+          
+          if (reconnectAttemptsRef.current <= maxReconnectAttempts) {
+            const delay = Math.min(5000 * reconnectAttemptsRef.current, 30000); // Incrementar delay, máximo 30s
+            console.log(`🔄 Reintento ${reconnectAttemptsRef.current}/${maxReconnectAttempts} en ${delay/1000}s...`);
+            
+            setTimeout(() => {
+              // 🎯 VERIFICAR QUE NO ESTEMOS YA CONECTANDO Y QUE NO HAYA OTRA CONEXIÓN
+              if (token && researchId && !wsRef.current && !isConnecting) {
+                connect();
+              }
+            }, delay);
+          } else {
+            console.error('❌ Máximo de reintentos alcanzado. No se reconectará automáticamente.');
+          }
         }
       };
 
-      wsRef.current.onerror = (error) => {
-        console.error('❌ Error en WebSocket dinámico:', error);
+      wsRef.current.onerror = (event) => {
+        console.error('❌ Error en WebSocket dinámico:', {
+          type: event.type,
+          target: event.target ? 'WebSocket' : 'Unknown',
+          readyState: wsRef.current?.readyState,
+          url: wsUrl
+        });
         setIsConnected(false);
         setIsConnecting(false);
       };
@@ -143,10 +160,21 @@ export const useMonitoringReceiver = (researchId: string) => {
   // 🎯 DESCONECTAR
   const disconnect = useCallback(() => {
     if (wsRef.current) {
-      wsRef.current.close();
+      // Limpiar event handlers antes de cerrar para evitar reconexión
+      wsRef.current.onclose = null;
+      wsRef.current.onerror = null;
+      wsRef.current.onmessage = null;
+      wsRef.current.onopen = null;
+      
+      if (wsRef.current.readyState === WebSocket.OPEN || 
+          wsRef.current.readyState === WebSocket.CONNECTING) {
+        wsRef.current.close(1000, 'Disconnect requested');
+      }
       wsRef.current = null;
     }
     setIsConnected(false);
+    setIsConnecting(false);
+    reconnectAttemptsRef.current = 0;
   }, []);
 
   // 🎯 MANEJAR EVENTOS DE MONITOREO

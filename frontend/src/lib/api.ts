@@ -184,7 +184,7 @@ export const eyeTrackingRecruitAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar eye tracking recruit');
     }
-    return apiClient.delete('eyeTrackingRecruit', 'createConfig', { researchId });
+    return apiClient.delete('eyeTrackingRecruit', 'delete', { researchId });
   },
 };
 
