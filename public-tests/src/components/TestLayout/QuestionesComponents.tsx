@@ -160,14 +160,15 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
   onChange,
   multiple = false,
 }) => {
-  console.log('[SingleAndMultipleChoiceQuestion] 🎯 Renderizando opciones:', {
-    choices,
-    choicesLength: choices.length,
+  console.log('[SingleAndMultipleChoiceQuestion] 🎯 PROPS RECIBIDOS:', {
+    choices: choices?.map(c => ({ id: c.id, text: c.text.substring(0, 20) + '...' })),
+    choicesLength: choices?.length,
     value,
     valueType: typeof value,
     isArray: Array.isArray(value),
     multiple,
-    valueStringified: JSON.stringify(value)
+    valueStringified: JSON.stringify(value),
+    propsTimestamp: new Date().toISOString()
   });
 
   // 🎯 FORZAR VALOR CORRECTO PARA MÚLTIPLE

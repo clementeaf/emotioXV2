@@ -40,9 +40,33 @@ export const useFormLoadingState = ({
     }
   }, [onDataLoaded]);
 
-  // 🎯 RESET DEL ESTADO CUANDO CAMBIA LA PREGUNTA
+  // 🎯 RESET COMPLETO DEL ESTADO CUANDO CAMBIA LA PREGUNTA
   useEffect(() => {
     console.log(`[useFormLoadingState] 🔄 Cambiando questionKey a: ${questionKey}`);
+    
+    // 🚨 LIMPIAR DATOS LOCALES PREVIOS PARA EVITAR CONTAMINACIÓN CRUZADA
+    const { clearFormData } = useFormDataStore.getState();
+    
+    // 🎯 OBTENER LISTA DE TODOS LOS QUESTION KEYS PERSISTIDOS
+    try {
+      const localStorageKey = 'emotio-form-data';
+      const existingData = localStorage.getItem(localStorageKey);
+      if (existingData) {
+        const parsed = JSON.parse(existingData);
+        if (parsed.state && parsed.state.formData) {
+          // 🎯 LIMPIAR SOLO LAS KEYS QUE NO SEAN LA ACTUAL
+          Object.keys(parsed.state.formData).forEach(key => {
+            if (key !== questionKey) {
+              console.log(`[useFormLoadingState] 🧹 Limpiando datos residuales de: ${key}`);
+              clearFormData(key);
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('[useFormLoadingState] Error limpiando datos residuales:', error);
+    }
+    
     setFormValues({});
     setHasLoadedData(false);
     setIsLoading(true);
@@ -110,22 +134,23 @@ export const useFormLoadingState = ({
     });
   }, [questionKey, setFormData]);
 
-  // 🎯 GUARDAR EN EL STORE DESPUÉS DEL RENDER PARA EVITAR CONFLICTOS
-  useEffect(() => {
-    if (formValues && Object.keys(formValues).length > 0) {
-      console.log(`[useFormLoadingState] 💾 Guardando en store para ${questionKey}:`, formValues);
-      // Usar setTimeout para evitar setState durante render
-      setTimeout(() => {
-        setFormData(questionKey, formValues);
-      }, 0);
-    }
-  }, [formValues, questionKey, setFormData]);
+  // 🚨 USEEFFECT ELIMINADO: Causaba race condition donde datos del step anterior
+  // se guardaban con la key del step actual. El guardado ahora se maneja
+  // explícitamente a través de saveToStore() y handleInputChange()
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
-    // Usar setTimeout para evitar setState durante render
-    setTimeout(() => {
-      setFormData(questionKey, data);
-    }, 0);
+    console.log(`[useFormLoadingState] 💾 saveToStore llamado para ${questionKey}:`, data);
+    
+    // 🎯 VALIDACIÓN: Solo guardar si los datos son válidos y no están vacíos
+    if (data && Object.keys(data).length > 0) {
+      // Usar setTimeout para evitar setState durante render
+      setTimeout(() => {
+        setFormData(questionKey, data);
+        console.log(`[useFormLoadingState] ✅ Datos guardados exitosamente para ${questionKey}`);
+      }, 0);
+    } else {
+      console.log(`[useFormLoadingState] ⚠️ Datos vacíos o inválidos, no se guardará para ${questionKey}`);
+    }
   }, [questionKey, setFormData]);
 
   return {

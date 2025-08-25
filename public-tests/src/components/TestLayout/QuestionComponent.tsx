@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
+import { useFormDataStore } from '../../stores/useFormDataStore';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 
 interface QuestionComponentProps {
@@ -28,29 +29,75 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
   // 🎯 INICIALIZAR VALOR CORRECTO DESDE EL INICIO
   const [value, setValue] = React.useState<any>([]);
 
-
-
-  // Cargar valor guardado
+  // 🚨 RESET EXPLÍCITO CUANDO CAMBIA EL STEP PARA EVITAR CONTAMINACIÓN CRUZADA
   React.useEffect(() => {
-    if (formValues && Object.keys(formValues).length > 0) {
+    console.log(`[QuestionComponent] 🔄 Cambiando a nuevo step: ${currentStepKey}, question: ${question.title}`);
+    
+    // 🚨 LIMPIAR STORE ANTES DE RESETEAR VALOR LOCAL
+    const { clearFormData } = useFormDataStore.getState();
+    
+    // 🎯 LIMPIAR TODOS LOS DATOS RESIDUALES DE STEPS ANTERIORES
+    try {
+      const existingData = localStorage.getItem('emotio-form-data');
+      if (existingData) {
+        const parsed = JSON.parse(existingData);
+        if (parsed.state && parsed.state.formData) {
+          Object.keys(parsed.state.formData).forEach(key => {
+            if (key !== currentStepKey) {
+              clearFormData(key);
+              console.log(`[QuestionComponent] 🧹 Limpiando datos de step anterior: ${key}`);
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('[QuestionComponent] Error limpiando datos:', error);
+    }
+    
+    // 🎯 RESET INMEDIATO DEL VALOR LOCAL SEGÚN EL TIPO
+    let initialValue;
+    if (question.type === 'emojis' && question.config?.maxSelections > 1) {
+      initialValue = [];
+    } else if (question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') {
+      initialValue = '';
+    } else if (question.type === 'choice' && question.config?.multiple) {
+      initialValue = [];
+    } else {
+      initialValue = null;
+    }
+    
+    console.log(`[QuestionComponent] 🔄 Reset valor a:`, initialValue, 'para tipo:', question.type);
+    setValue(initialValue);
+  }, [currentStepKey, question.type, question.config?.maxSelections, question.config?.multiple, question.title]);
+
+  // 🎯 CARGAR VALOR GUARDADO (SOLO DESPUÉS DEL RESET)
+  React.useEffect(() => {
+    if (hasLoadedData && formValues && Object.keys(formValues).length > 0) {
       const savedValue = formValues.value || formValues.selectedValue;
+      console.log(`[QuestionComponent] 📂 Cargando datos guardados para ${currentStepKey}:`, savedValue);
+      
       // 🎯 MANEJAR VALORES NULL/UNDEFINED PARA TEXTAREA
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (savedValue === null || savedValue === undefined)) {
         setValue('');
       } else {
         setValue(savedValue);
       }
-    } else {
-      // 🎯 INICIALIZAR ARRAY VACÍO PARA SELECCIONES MÚLTIPLES
-      if (question.type === 'emojis' && question.config?.maxSelections > 1) {
-        setValue([]);
-      }
     }
-  }, [currentStepKey, formValues, question.type, question.config?.maxSelections]);
+  }, [currentStepKey, formValues, question.type, question.config?.maxSelections, hasLoadedData]);
 
 
 
   const handleChange = (newValue: any) => {
+    console.log(`[QuestionComponent] 🔄 handleChange llamado:`, {
+      currentStepKey,
+      questionType: question.type,
+      questionTitle: question.title,
+      newValue,
+      currentValue: value,
+      valueType: typeof value,
+      isArray: Array.isArray(value)
+    });
+    
     // 🎯 MANEJAR SELECCIÓN MÚLTIPLE PARA NEV
     if (question.type === 'emojis' && question.config?.maxSelections > 1) {
       const currentSelections = Array.isArray(value) ? value : [];
@@ -58,12 +105,14 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       if (currentSelections.includes(newValue)) {
         // Si ya está seleccionado, removerlo
         const updatedSelections = currentSelections.filter(item => item !== newValue);
+        console.log(`[QuestionComponent] ➖ Removiendo selección:`, { oldValue: currentSelections, newValue: updatedSelections });
         setValue(updatedSelections);
         saveToStore({ value: updatedSelections });
       } else {
         // Si no está seleccionado y no excede el límite, agregarlo
         if (currentSelections.length < question.config.maxSelections) {
           const updatedSelections = [...currentSelections, newValue];
+          console.log(`[QuestionComponent] ➕ Agregando selección:`, { oldValue: currentSelections, newValue: updatedSelections });
           setValue(updatedSelections);
           saveToStore({ value: updatedSelections });
         } else {
@@ -75,6 +124,12 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       }
     } else {
       // 🎯 SELECCIÓN ÚNICA (comportamiento original)
+      console.log(`[QuestionComponent] ⚡ Selección única:`, { 
+        questionType: question.type,
+        oldValue: value, 
+        newValue,
+        currentStepKey 
+      });
       setValue(newValue);
       saveToStore({ value: newValue });
     }
@@ -86,7 +141,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+    <div key={`question-${currentStepKey}-${question.type}`} className="flex flex-col items-center justify-center h-full gap-6 p-8">
       <h2 className="text-2xl font-bold text-gray-800 text-center">
         {question.title}
       </h2>
@@ -115,6 +170,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
               config: question.config
             })}
             <SingleAndMultipleChoiceQuestion
+              key={`choice-${currentStepKey}-${question.title.replace(/\s+/g, '-')}`}
               choices={question.choices}
               value={value}
               onChange={handleChange}

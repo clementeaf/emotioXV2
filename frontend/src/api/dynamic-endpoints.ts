@@ -8,20 +8,20 @@
  * Sincronizado automáticamente después del deploy del backend
  */
 
-// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
-const isDevelopment = typeof window !== 'undefined'
-  ? window.location.hostname === 'localhost'
-  : process.env.NODE_ENV === 'development';
+// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL (SIN USAR process)
+const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
-// Endpoints de API exportados desde backend
+// 🎯 ENDPOINTS HARDCODEADOS POR EL SCRIPT DE DEPLOY
+// Estos valores son sobrescritos automáticamente por el script post-deploy-sync.sh
+// NO USAR process.env AQUÍ - causa errores en el cliente
 export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
   http: isDevelopment
     ? "http://localhost:3000"
-    : (process.env.NEXT_PUBLIC_API_URL || "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev"),
+    : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
 
-  // Endpoint WebSocket - Siempre usar AWS Lambda desde variables de entorno
-  ws: process.env.NEXT_PUBLIC_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint WebSocket - Siempre usar AWS Lambda
+  ws: "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev",

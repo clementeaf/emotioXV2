@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { researchInProgressAPI } from '@/lib/api';
+import { getPublicTestsUrl } from '../../api/client-config';
 import {
   AlertCircle,
   AlertTriangle,
@@ -150,8 +151,15 @@ export function ParticipantsTable({
 
   // 🎯 FUNCIÓN PARA GENERAR URL DE PUBLIC-TESTS
   const generatePublicTestsUrl = (participantId: string) => {
-    const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app';
-    return `${baseUrl}?researchId=${researchId}&userId=${participantId}`;
+    const url = getPublicTestsUrl(researchId, participantId);
+    
+    console.log('[ParticipantsTable] 🔗 URL generada:', {
+      url,
+      participantId,
+      researchId
+    });
+    
+    return url;
   };
 
   // 🎯 FUNCIÓN PARA COPIAR URL

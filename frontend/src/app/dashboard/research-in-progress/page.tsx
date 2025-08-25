@@ -397,8 +397,7 @@ function ResearchInProgressContent() {
                 <p className="text-xs text-gray-600">
                   <strong>Formato de URL:</strong><br />
                   <code className="text-xs">
-                    {process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'}
-                    ?researchId=XXX&userId=YYY
+                    http://localhost:5173?researchId=XXX&userId=YYY
                   </code>
                 </p>
               </div>
