@@ -35,7 +35,7 @@ const cognitiveTaskHandler = async (
   // Manejar la ruta especial de upload-url
   if (path.includes('/upload-url') && httpMethod === 'POST') {
     structuredLog('info', 'CognitiveTaskHandler.UPLOAD_URL', 'Iniciando generación de URL de upload', { researchId });
-    
+
     if (!body) {
       return errorResponse('Se requiere cuerpo en la solicitud para generar URL de upload', 400);
     }
@@ -43,11 +43,11 @@ const cognitiveTaskHandler = async (
     try {
       const uploadData = JSON.parse(body);
       structuredLog('debug', 'CognitiveTaskHandler.UPLOAD_URL', 'Datos recibidos para upload', { researchId, uploadData });
-      
+
       // Determinar el tipo de archivo basado en la extensión o MIME type
       let fileType = FileType.DOCUMENT; // Default
       const mimeType = uploadData.contentType || uploadData.mimeType || uploadData.fileType || 'application/octet-stream';
-      
+
       if (mimeType.startsWith('image/')) {
         fileType = FileType.IMAGE;
       } else if (mimeType.startsWith('video/')) {
@@ -55,15 +55,15 @@ const cognitiveTaskHandler = async (
       } else if (mimeType.startsWith('audio/')) {
         fileType = FileType.AUDIO;
       }
-      
-      structuredLog('debug', 'CognitiveTaskHandler.UPLOAD_URL', 'Parámetros para S3Service', { 
-        researchId, 
+
+      structuredLog('debug', 'CognitiveTaskHandler.UPLOAD_URL', 'Parámetros para S3Service', {
+        researchId,
         fileName: uploadData.fileName,
         fileType,
         mimeType,
         fileSize: uploadData.size || 0
       });
-      
+
       // Generar URL presignada real usando S3 Service
       const presignedResponse = await s3Service.generateUploadUrl({
         researchId,
@@ -74,7 +74,7 @@ const cognitiveTaskHandler = async (
         fileSize: uploadData.size || 0,
         expiresIn: 15 * 60 // 15 minutos
       });
-      
+
       // Estructura de respuesta esperada por el frontend
       const response = {
         uploadUrl: presignedResponse.uploadUrl,
@@ -88,17 +88,17 @@ const cognitiveTaskHandler = async (
           expiresAt: presignedResponse.expiresAt
         }
       };
-      
-      structuredLog('info', 'CognitiveTaskHandler.UPLOAD_URL', 'URL de upload generada exitosamente', { 
-        researchId, 
-        s3Key: presignedResponse.key, 
-        uploadUrl: presignedResponse.uploadUrl 
+
+      structuredLog('info', 'CognitiveTaskHandler.UPLOAD_URL', 'URL de upload generada exitosamente', {
+        researchId,
+        s3Key: presignedResponse.key,
+        uploadUrl: presignedResponse.uploadUrl
       });
       return createResponse(200, response);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      structuredLog('error', 'CognitiveTaskHandler.UPLOAD_URL', 'Error generando URL de upload', { 
-        researchId, 
+      structuredLog('error', 'CognitiveTaskHandler.UPLOAD_URL', 'Error generando URL de upload', {
+        researchId,
         error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined,
         uploadData: body ? JSON.parse(body) : null
@@ -128,19 +128,25 @@ const cognitiveTaskHandler = async (
 
       case 'PUT':
         const taskId = pathParameters?.taskId;
-        if (!taskId) {
-          return errorResponse('Se requiere taskId en la ruta para actualizar', 400);
-        }
         if (!body) {
           return errorResponse('Se requiere cuerpo en la solicitud para actualizar', 400);
         }
 
         const updateData: Partial<CognitiveTaskFormData> = JSON.parse(body);
-        structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por ID', { researchId, taskId, userId });
-        // Corregido: El servicio `update` no espera userId
-        const updatedResult = await cognitiveTaskService.update(taskId, updateData);
-        structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización por ID exitosa', { researchId, taskId });
-        return createResponse(200, updatedResult);
+
+        if (taskId) {
+          // Actualizar por taskId específico
+          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por ID', { researchId, taskId, userId });
+          const updatedResult = await cognitiveTaskService.update(taskId, updateData);
+          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización por ID exitosa', { researchId, taskId });
+          return createResponse(200, updatedResult);
+        } else {
+          // Actualizar por researchId (upsert)
+          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por researchId (upsert)', { researchId, userId });
+          const result = await cognitiveTaskService.updateByResearchId(researchId, updateData as CognitiveTaskFormData, userId);
+          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización por researchId exitosa', { researchId, taskId: result.id });
+          return createResponse(200, result);
+        }
 
       case 'DELETE':
         const taskIdToDelete = pathParameters?.taskId;
