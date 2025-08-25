@@ -15,14 +15,14 @@ export const API_ENDPOINTS = {
     ? DYNAMIC_API_ENDPOINTS.http
     : (isDevelopment
       ? "http://localhost:3000"
-      : "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"),
+      : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev"),
 
   // Endpoint WebSocket - Usar dinámicos si están sincronizados
   ws: isEndpointsSynced()
     ? DYNAMIC_API_ENDPOINTS.ws
     : (isDevelopment
       ? "ws://localhost:3001"
-      : "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"),
+      : "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev"),
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: isEndpointsSynced() ? DYNAMIC_API_ENDPOINTS.stage : "dev"
@@ -38,11 +38,11 @@ export const LOCAL_URLS = {
 // Constantes para uso más fácil
 export const API_HTTP_ENDPOINT = isDevelopment
   ? "http://localhost:3000"
-  : "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
+  : (import.meta.env.VITE_API_URL || "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev");
 
 export const API_WEBSOCKET_ENDPOINT = isDevelopment
   ? "ws://localhost:3001"
-  : "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
+  : (import.meta.env.VITE_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev");
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path: string): string {

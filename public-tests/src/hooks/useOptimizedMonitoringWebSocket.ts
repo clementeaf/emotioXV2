@@ -52,6 +52,15 @@ export const useOptimizedMonitoringWebSocket = () => {
 
     try {
       const wsUrl = import.meta.env.VITE_WS_URL || getWebsocketUrl();
+      
+      // 🐛 DEBUG: Verificar variables de entorno
+      log('info', '🔧 Variables de entorno:', {
+        VITE_WS_URL: import.meta.env.VITE_WS_URL,
+        VITE_API_URL: import.meta.env.VITE_API_URL,
+        fallbackWsUrl: getWebsocketUrl(),
+        finalWsUrl: wsUrl
+      });
+      
       log('info', `🔌 Conectando a WebSocket: ${wsUrl}`);
 
       wsRef.current = new WebSocket(wsUrl);

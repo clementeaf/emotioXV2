@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import * as jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { getCorsHeaders } from '../middlewares/cors';
 import { NewResearchService } from '../services/newResearch.service';
@@ -468,39 +469,47 @@ export class ParticipantController {
         }
       }
 
-      // Generar nombres y emails dummy
+      // Generar nombres y emails dummy ÚNICOS
       const dummyNames = [
         'Ana García', 'Carlos López', 'María Rodríguez', 'Juan Martínez', 'Laura Sánchez',
         'Pedro Gómez', 'Carmen Fernández', 'Miguel Ruiz', 'Isabel Díaz', 'Francisco Moreno',
-        'Pilar Muñoz', 'Antonio Álvarez', 'Rosa Romero', 'José Gutiérrez', 'Elena Navarro'
+        'Pilar Muñoz', 'Antonio Álvarez', 'Rosa Romero', 'José Gutiérrez', 'Elena Navarro',
+        'David Torres', 'Lucía Vázquez', 'Raúl Herrera', 'Sandra Jiménez', 'Roberto Castro'
       ];
 
       const generatedParticipants = [];
-      const maxParticipants = Math.min(count, 15); // Límite de 15 participantes
+      const maxParticipants = Math.min(count, 20);
+      const timestamp = Date.now();
 
       for (let i = 0; i < maxParticipants; i++) {
         const name = dummyNames[i % dummyNames.length];
-        const email = `participante${i + 1}@dummy.com`;
+        // 🎯 GENERAR EMAIL ÚNICO con timestamp + índice + UUID parcial
+        const uniqueId = uuidv4().slice(0, 8);
+        const email = `participante.${timestamp}.${i}.${uniqueId}@study.emotioxv2.com`;
 
-        // Verificar si ya existe un participante con este email
-        const existingParticipant = await participantService.findByEmail(email);
-        
-        let participant;
-        if (existingParticipant) {
-          participant = existingParticipant;
-        } else {
-          // Crear nuevo participante
-          participant = await participantService.create({
-            name,
-            email
-          });
-        }
+        console.log(`[generateDummyParticipants] 🔄 Creando participante ${i + 1}/${maxParticipants}:`, {
+          name,
+          email: email.substring(0, 30) + '...',
+          uniqueId
+        });
+
+        // 🎯 SIEMPRE CREAR NUEVO PARTICIPANTE (no verificar existencia)
+        const participant = await participantService.create({
+          name,
+          email
+        });
 
         generatedParticipants.push({
           id: participant.id,
           name: participant.name,
           email: participant.email,
           publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'}?researchId=${researchId}&userId=${participant.id}`
+        });
+
+        console.log(`[generateDummyParticipants] ✅ Participante creado:`, {
+          id: participant.id,
+          name: participant.name,
+          emailPrefix: participant.email.substring(0, 20) + '...'
         });
       }
 
