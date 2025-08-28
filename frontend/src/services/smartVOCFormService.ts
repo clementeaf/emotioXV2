@@ -85,7 +85,6 @@ export const smartVOCFormService = {
         questions: [...currentQuestions, newQuestion]
       });
     } catch (error) {
-      console.error(`Error al agregar pregunta al formulario ${formId}:`, error);
       throw error;
     }
   },
@@ -113,7 +112,6 @@ export const smartVOCFormService = {
         questions: updatedQuestions
       });
     } catch (error) {
-      console.error(`Error al eliminar pregunta ${questionId} del formulario ${formId}:`, error);
       throw error;
     }
   },
@@ -124,7 +122,6 @@ export const smartVOCFormService = {
     try {
       return await apiClient.get<SmartVOCFormData, 'smartVoc'>('smartVoc', 'GET', { id });
     } catch (error) {
-      console.error(`Error al obtener formulario SmartVOC ${id}:`, error);
       throw error;
     }
   },

@@ -19,7 +19,7 @@ export enum ResearchType {
 export interface NewResearch {
   id?: string;
   name: string;
-  enterprise: string;
+  companyId: string;
   type: ResearchType;
   technique: string;
   description?: string;
@@ -41,7 +41,7 @@ export interface NewResearchDynamoItem {
   userId: string;
   // Datos básicos
   name: string;
-  enterprise: string;
+  companyId: string;
   type: string;
   technique: string;
   description: string;
@@ -104,7 +104,7 @@ export class NewResearchModel {
       userId,
       EntityType: 'RESEARCH',
       name: data.name,
-      enterprise: data.enterprise,
+      companyId: data.companyId,
       type: data.type,
       technique: data.technique,
       description: data.description || '',
@@ -134,7 +134,7 @@ export class NewResearchModel {
       return {
         id: researchId,
         name: data.name,
-        enterprise: data.enterprise,
+        companyId: data.companyId,
         type: data.type,
         technique: data.technique,
         description: data.description || '',
@@ -176,7 +176,7 @@ export class NewResearchModel {
       return {
         id: item.id,
         name: item.name,
-        enterprise: item.enterprise,
+        companyId: item.companyId,
         type: item.type as ResearchType,
         technique: item.technique,
         description: item.description,
@@ -235,7 +235,7 @@ export class NewResearchModel {
       return result.Items.map((item: any) => ({
         id: item.id,
         name: item.name,
-        enterprise: item.enterprise,
+        companyId: item.companyId,
         type: item.type as ResearchType,
         technique: item.technique,
         description: item.description,
@@ -300,9 +300,9 @@ export class NewResearchModel {
         expressionAttributeNames['#name'] = 'name';
       }
       
-      if (data.enterprise !== undefined) {
-        updateExpression += ', enterprise = :enterprise';
-        expressionAttributeValues[':enterprise'] = data.enterprise;
+      if (data.companyId !== undefined) {
+        updateExpression += ', companyId = :companyId';
+        expressionAttributeValues[':companyId'] = data.companyId;
       }
       
       if (data.type !== undefined) {
@@ -369,7 +369,7 @@ export class NewResearchModel {
       return {
         id: updated.id,
         name: updated.name,
-        enterprise: updated.enterprise,
+        companyId: updated.companyId,
         type: updated.type as ResearchType,
         technique: updated.technique,
         description: updated.description,
@@ -552,7 +552,7 @@ export class NewResearchModel {
     return {
       id: item.id,
       name: item.name,
-      enterprise: item.enterprise,
+      companyId: item.companyId,
       type: item.type as ResearchType,
       technique: item.technique,
       description: item.description,

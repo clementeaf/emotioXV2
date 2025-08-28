@@ -12,6 +12,7 @@ export { default as tokenService } from './tokenService';
 
 // Servicios de investigación
 export { default as researchService } from './researchService';
+export { companyService } from './companyService';
 
 // Servicios de pantallas y formularios
 export { default as smartVOCFormService } from './smartVOCFormService';
@@ -31,6 +32,7 @@ export { default as s3Service } from './s3Service';
 // Exportar también los tipos
 export * from './authService';
 export * from './cognitiveTaskService';
+export * from './companyService';
 export * from './eyeTrackingRecruitService';
 export * from './eyeTrackingService';
 export * from './researchService';

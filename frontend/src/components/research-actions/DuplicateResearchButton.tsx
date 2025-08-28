@@ -25,8 +25,8 @@ export function DuplicateResearchButton({
     setIsDuplicating(true);
 
     try {
-      // Por ahora, simular la duplicación
-      // TODO: Implementar lógica real de duplicación cuando la API esté lista
+      // Duplication logic pending - requires backend endpoint for research.duplicate(id)
+      // Currently simulating the process
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
 
       toast.success(`Investigación "${researchName}" duplicada exitosamente`);
@@ -36,7 +36,6 @@ export function DuplicateResearchButton({
       onDuplicateSuccess?.(newResearchId);
 
     } catch (error) {
-      console.error('Error duplicating research:', error);
       toast.error('Error al duplicar la investigación');
     } finally {
       setIsDuplicating(false);

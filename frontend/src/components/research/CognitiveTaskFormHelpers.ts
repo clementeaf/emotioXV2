@@ -62,7 +62,6 @@ export const logFormDebugInfo = (
   error?: any,
   extraInfo?: Record<string, any>
 ) => {
-  // console.log(`[DEBUG:CognitiveTaskForm:${context}]`, {
     // timestamp: new Date().toISOString(),
     // hasData: !!data,
     // dataInfo: data ? {
@@ -84,7 +83,6 @@ export const logFormDebugInfo = (
 // Helper para filtrar preguntas que tienen título (DEPRECATED)
 // @deprecated Use filterValidQuestions from utils instead
 export const filterQuestionsWithTitle = (formData: CognitiveTaskFormData): CognitiveTaskFormData => {
-  console.warn('[DEPRECATED] filterQuestionsWithTitle is deprecated. Use filterValidQuestions instead.');
   // filterValidQuestions debe importarse donde se use este helper
   return formData;
 };
@@ -220,7 +218,6 @@ export function mergeCognitiveTaskFormData(
         allFilesMap.set(file.id, file);
       } else {
         // eslint-disable-next-line no-console
-        console.warn(`[useEffect Form Data] Archivo inválido en backend para pregunta ${question.id}:`, file);
       }
     });
     localStorageFiles.forEach((file) => {
@@ -230,7 +227,6 @@ export function mergeCognitiveTaskFormData(
         }
       } else {
         // eslint-disable-next-line no-console
-        console.warn(`[useEffect Form Data] Archivo inválido en localStorage para pregunta ${question.id}:`, file);
       }
     });
     const validFiles = Array.from(allFilesMap.values())
@@ -238,7 +234,6 @@ export function mergeCognitiveTaskFormData(
         const isValid = file && file.id && file.name && file.size && (file.url || file.s3Key);
         if (!isValid) {
           // eslint-disable-next-line no-console
-          console.warn('[useEffect Form Data] Omitiendo archivo incompleto:', file);
         }
         return isValid;
       })
@@ -280,13 +275,10 @@ export function saveCognitiveTask({
   modals: any;
 }) {
   // eslint-disable-next-line no-console
-  // console.log(`[handleSave] Iniciando guardado. researchId: ${researchId}`);
   const errorsFound = validateCurrentForm();
   const isValid = errorsFound === null;
   // eslint-disable-next-line no-console
-  // console.log(`[handleSave] Resultado de validateCurrentForm: ${isValid}`);
   // eslint-disable-next-line no-console
-  // console.log('[handleSave] Errores encontrados por validateCurrentForm:', errorsFound);
   if (isValid) {
     confirmAndSave();
   } else {
@@ -436,7 +428,6 @@ export async function deleteCognitiveTask({
     });
   } catch (error: any) {
     // eslint-disable-next-line no-console
-    console.error('[CognitiveTaskForm] Error al eliminar:', error);
     modals.showModal({
       title: 'Error',
       message: error.message || 'Error al eliminar los datos de Cognitive Tasks',

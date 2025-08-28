@@ -21,7 +21,6 @@ export const useTrustFlowData = (researchId: string) => {
       }
 
       try {
-        console.log(`[useTrustFlowData] 🔍 Obteniendo datos Trust Flow para research: ${researchId}`);
 
         // Usar el endpoint de SmartVOC que ya tenemos funcionando
         const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
@@ -90,14 +89,11 @@ export const useTrustFlowData = (researchId: string) => {
             };
           }).sort((a, b) => new Date(a.stage).getTime() - new Date(b.stage).getTime());
 
-          console.log(`[useTrustFlowData] ✅ Datos Trust Flow procesados:`, trustFlowData);
           setData(trustFlowData);
         } else {
-          console.warn(`[useTrustFlowData] ⚠️ No se recibieron datos`);
           setError('No se recibieron datos del servidor');
         }
       } catch (err: any) {
-        console.error(`[useTrustFlowData] ❌ Error obteniendo datos Trust Flow:`, err);
         setError(err.message || 'Error desconocido');
       } finally {
         setIsLoading(false);

@@ -113,7 +113,6 @@ export const useCognitiveTaskFileUpload = ({
         localStorage.setItem(storageKey, JSON.stringify(filesMap));
       }
     } catch (error) {
-      console.error('[FileUploadHook] Error guardando en localStorage:', error);
     }
   }, [researchId]);
 
@@ -130,14 +129,12 @@ export const useCognitiveTaskFileUpload = ({
       });
       return filesMapResult;
     } catch (error) {
-      console.error('[FileUploadHook] Error recuperando de localStorage:', error);
       return null;
     }
   }, [researchId]);
 
   const handleFileUpload = useCallback(async (questionId: string, files: FileList) => {
     if (!researchId || files.length === 0 || !token) {
-      console.warn(`[FileUploadHook ${questionId}] Subida abortada: Faltan researchId, archivos o token.`);
       toast.error('No se pudo iniciar la subida. Falta información necesaria o autenticación.');
       return;
     }
@@ -271,7 +268,6 @@ export const useCognitiveTaskFileUpload = ({
           questionId: questionId
         }, { researchId });
         if (!result || !result.uploadUrl || !result.file || !result.file.s3Key) {
-          console.error(`[FileUploadHook ${questionId}] Respuesta inválida obteniendo URL de subida:`, result);
           throw new Error('Respuesta inválida del servidor al obtener URL de subida.');
         }
 
@@ -289,14 +285,12 @@ export const useCognitiveTaskFileUpload = ({
 
         if (!s3Response.ok) {
           const s3ErrorBody = await s3Response.text();
-          console.error(`[FileUpload] Error ${s3Response.status} subiendo a S3:`, s3ErrorBody);
           throw new Error(`Error subiendo archivo: ${s3Response.status === 403 ? 'URL expirada' : 'Error del servidor'}`);
         }
 
         successfulUploads++;
 
       } catch (error: any) {
-        console.error(`[FileUploadHook ${questionId}] Error procesando archivo ${file.name}:`, error);
         toast.error(`Error subiendo ${file.name}: ${error.message || 'Error desconocido'}`);
         uploadError = true;
         setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
@@ -411,7 +405,6 @@ export const useCognitiveTaskFileUpload = ({
       ?.files?.find((f: UIFile) => f.id === fileId);
 
     if (!fileToDelete) {
-      console.error(`[FileUploadHook] Archivo no encontrado para eliminar: ${fileId}`);
       return;
     }
 

@@ -21,7 +21,6 @@ export function ClientSelector({ className, onClientChange }: ClientSelectorProp
   };
 
   if (error) {
-    console.error('Error loading clients:', error);
   }
 
   return (

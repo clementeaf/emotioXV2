@@ -54,7 +54,6 @@ export function ParticipantGenerator({ researchId, onParticipantsGenerated }: Pa
         onParticipantsGenerated?.(response.data.participants);
       }
     } catch (err: any) {
-      console.error('Error generando participantes:', err);
       setError(err.message || 'Error al generar participantes');
     } finally {
       setIsGenerating(false);
@@ -65,7 +64,6 @@ export function ParticipantGenerator({ researchId, onParticipantsGenerated }: Pa
     try {
       await navigator.clipboard.writeText(url);
     } catch (err) {
-      console.error('Error copiando URL:', err);
     }
   };
 

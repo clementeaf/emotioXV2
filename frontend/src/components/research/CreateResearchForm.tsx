@@ -6,15 +6,18 @@ import { toast } from 'react-hot-toast';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { researchAPI } from '@/lib/api';
+import { researchAPI, setupAuthToken } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
+import { useCompanies } from '@/hooks/useCompanies';
 
 import {
   ResearchBasicData,
   ResearchType
 } from 'shared/interfaces/research.model';
+
+import { Company } from 'shared/interfaces/company.interface';
 
 
 interface Step {
@@ -55,7 +58,7 @@ interface FormState {
 const initialFormState: FormState = {
   basic: {
     name: '',
-    enterprise: ''
+    companyId: ''
   },
   currentStep: 1,
   errors: {}
@@ -65,6 +68,9 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   const router = useRouter();
   const { token } = useAuth();
   const { currentDraft, createDraft, updateDraft, clearDraft } = useResearch();
+
+  // Hook para manejar empresas
+  const { companies, loading: loadingCompanies, error: companiesError } = useCompanies();
 
   // Mover la inicialización a un estado básico primero
   const [formData, setFormData] = useState<FormState>(initialFormState);
@@ -77,7 +83,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
         basic: {
           ...prev.basic,
           name: prev.basic.name || currentDraft.data.basic?.name || '',
-          enterprise: prev.basic.enterprise || currentDraft.data.basic?.description || '',
+          companyId: prev.basic.companyId || currentDraft.data.basic?.description || '',
           type: prev.basic.type || (currentDraft.data.basic?.type as ResearchType) || undefined,
           technique: prev.basic.technique || (currentDraft.data.configuration?.technique || '')
         },
@@ -151,8 +157,8 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
         if (!formData.basic.name || formData.basic.name.length < 3) {
           newErrors.name = 'Name must be at least 3 characters';
         }
-        if (!formData.basic.enterprise) {
-          newErrors.enterprise = 'Enterprise is required';
+        if (!formData.basic.companyId) {
+          newErrors.companyId = 'Company is required';
         }
         break;
 
@@ -193,7 +199,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
         {
           basic: {
             title: currentFormData.basic.name,
-            description: currentFormData.basic.enterprise,
+            description: currentFormData.basic.companyId,
             type: currentFormData.basic.type
           },
           configuration: {
@@ -225,7 +231,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
           {
             basic: {
               title: formData.basic.name,
-              description: formData.basic.enterprise,
+              description: formData.basic.companyId,
               type: formData.basic.type
             },
             configuration: {
@@ -256,7 +262,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
         {
           basic: {
             title: formData.basic.name,
-            description: formData.basic.enterprise,
+            description: formData.basic.companyId,
             type: formData.basic.type
           },
           configuration: {
@@ -279,7 +285,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
       // Preparar los datos para la API
       const createData: ResearchBasicData = {
         name: formData.basic.name,
-        enterprise: formData.basic.enterprise,
+        companyId: formData.basic.companyId,
         type: formData.basic.type || ResearchType.BEHAVIOURAL,
         technique: formData.basic.technique || '',
         description: formData.basic.description || ''
@@ -303,7 +309,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
           name: researchName,
           technique: formData.basic.technique,
           type: formData.basic.type,
-          enterprise: formData.basic.enterprise,
+          companyId: formData.basic.companyId,
           createdAt: new Date().toISOString()
         };
 
@@ -342,7 +348,6 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
         throw new Error('Error al crear la investigación: No se recibió respuesta del servidor');
       }
     } catch (error) {
-      console.error('Error al crear la investigación:', error);
       toast.error('Error al crear la investigación. Por favor, inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);
@@ -424,7 +429,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Empresa:</span>
-                  <span>{formData.basic.enterprise}</span>
+                  <span>{companies.find(c => c.id === formData.basic.companyId)?.name || 'Unknown Company'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Tipo de investigación:</span>
@@ -511,27 +516,36 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="enterprise" className="block text-sm font-medium text-neutral-900">
+                        <label htmlFor="companyId" className="block text-sm font-medium text-neutral-900">
                           It&apos;s made for
                         </label>
                         <select
-                          id="enterprise"
+                          id="companyId"
                           ref={enterpriseSelectRef}
-                          value={formData.basic.enterprise}
-                          onChange={(e) => updateFormData('enterprise', e.target.value)}
+                          value={formData.basic.companyId}
+                          onChange={(e) => updateFormData('companyId', e.target.value)}
+                          disabled={loadingCompanies}
                           className={cn(
                             'w-full px-3 py-2 rounded-lg border bg-white text-neutral-900',
-                            formData.errors.enterprise ? 'border-red-500' : 'border-neutral-200',
-                            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                            formData.errors.companyId ? 'border-red-500' : 'border-neutral-200',
+                            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                            loadingCompanies && 'opacity-50 cursor-not-allowed'
                           )}
                         >
-                          <option value="">Select an enterprise</option>
-                          <option value="enterprise1">Enterprise 1</option>
-                          <option value="enterprise2">Enterprise 2</option>
-                          <option value="enterprise3">Enterprise 3</option>
+                          <option value="">{loadingCompanies ? 'Loading companies...' : 'Select a company'}</option>
+                          {companies.filter(company => company.status === 'active').map(company => (
+                            <option key={company.id} value={company.id}>
+                              {company.name}
+                            </option>
+                          ))}
                         </select>
-                        {formData.errors.enterprise && (
-                          <p className="text-sm text-red-500">{formData.errors.enterprise}</p>
+                        {companiesError && !loadingCompanies && (
+                          <p className="text-sm text-yellow-600">
+                            ⚠️ Could not load companies from server. Using fallback options.
+                          </p>
+                        )}
+                        {formData.errors.companyId && (
+                          <p className="text-sm text-red-500">{formData.errors.companyId}</p>
                         )}
                       </div>
                     </div>

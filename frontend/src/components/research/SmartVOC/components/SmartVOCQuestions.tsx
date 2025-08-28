@@ -77,7 +77,6 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               value={question.config.type || 'stars'}
               onChange={(e) => {
                 const newType = e.target.value as any;
-                console.log('[SmartVOCQuestions] 🎯 CSAT type changed:', {
                   questionId: question.id,
                   oldType: question.config.type,
                   newType: newType,

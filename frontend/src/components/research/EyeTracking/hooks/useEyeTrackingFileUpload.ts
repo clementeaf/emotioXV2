@@ -112,7 +112,6 @@ export function useEyeTrackingFileUpload({
         
         return true;
       } catch (error) {
-        console.error('[EyeTrackingForm] Error al cargar archivo:', error);
         errorCount++;
         
         // Actualizar el estado para indicar error en este estímulo

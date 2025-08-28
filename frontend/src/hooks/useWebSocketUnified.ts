@@ -57,7 +57,6 @@ export function useWebSocketUnified() {
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        // console.log('WebSocket conectado');
         setState(prev => ({
           ...prev,
           isConnected: true,
@@ -79,7 +78,6 @@ export function useWebSocketUnified() {
       };
 
       ws.current.onclose = (event) => {
-        // console.log('WebSocket desconectado:', event.code, event.reason);
         setState(prev => ({
           ...prev,
           isConnected: false,
@@ -98,7 +96,6 @@ export function useWebSocketUnified() {
       };
 
       ws.current.onerror = (error) => {
-        console.error('Error en WebSocket:', error);
         setState(prev => ({
           ...prev,
           lastError: 'Error de conexión WebSocket',
@@ -111,7 +108,6 @@ export function useWebSocketUnified() {
           const message: WebSocketMessage = JSON.parse(event.data);
           handleMessage(message);
         } catch (error) {
-          console.error('Error al procesar mensaje:', error);
           setState(prev => ({
             ...prev,
             lastError: 'Error al procesar mensaje del servidor',
@@ -119,7 +115,6 @@ export function useWebSocketUnified() {
         }
       };
     } catch (error) {
-      console.error('Error al crear conexión WebSocket:', error);
       setState(prev => ({
         ...prev,
         lastError: 'Error al crear conexión WebSocket',
@@ -136,14 +131,12 @@ export function useWebSocketUnified() {
       case 'token.update':
       case 'TOKEN_REFRESHED':
         if (message.data?.token) {
-          // console.log('WebSocket recibió token actualizado');
           // Aquí podrías actualizar el token en el contexto de autenticación
         }
         break;
 
       case 'error':
       case 'ERROR':
-        console.error('Error del servidor:', message.data);
         setState(prev => ({
           ...prev,
           lastError: message.data?.message || 'Error del servidor',
@@ -151,13 +144,11 @@ export function useWebSocketUnified() {
         break;
 
       default:
-        // console.log('Mensaje no manejado:', message);
     }
   }, []);
 
   const scheduleReconnect = useCallback(() => {
     if (state.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      // console.log('Máximo número de intentos de reconexión alcanzado');
       setState(prev => ({
         ...prev,
         lastError: 'No se pudo reconectar después de múltiples intentos',
@@ -205,7 +196,6 @@ export function useWebSocketUnified() {
       ws.current.send(JSON.stringify(message));
       return true;
     } else {
-      console.error('WebSocket no está conectado');
       setState(prev => ({
         ...prev,
         lastError: 'No se puede enviar mensaje: WebSocket desconectado',

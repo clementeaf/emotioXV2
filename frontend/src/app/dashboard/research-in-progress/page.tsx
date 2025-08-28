@@ -50,20 +50,10 @@ function ResearchInProgressContent() {
   const researchId = searchParams?.get('research');
   const { token, authLoading } = useAuth();
 
-  console.log('[ResearchInProgress] 🚀 Componente inicializado:', {
-    researchId,
-    hasToken: !!token,
-    authLoading
-  });
 
   // 🎯 MONITOREO EN TIEMPO REAL
   const { isConnected, monitoringData, reconnect } = useMonitoringReceiver(researchId || '');
 
-  console.log('[ResearchInProgress] 📡 Estado del monitoreo:', {
-    isConnected,
-    hasMonitoringData: !!monitoringData,
-    participantsCount: monitoringData?.participants?.length || 0
-  });
 
   const [status, setStatus] = useState<ResearchStatus>({
     status: { value: '--', description: 'Cargando...', icon: 'chart-line' },
@@ -78,25 +68,8 @@ function ResearchInProgressContent() {
 
   // 🎯 ACTUALIZAR DATOS CON MONITOREO EN TIEMPO REAL
   useEffect(() => {
-    console.log('[ResearchInProgress] 🔄 useEffect monitoringData:', {
-      monitoringData: !!monitoringData,
-      researchId,
-      monitoringDataResearchId: monitoringData?.researchId,
-      participantsCount: monitoringData?.participants?.length || 0,
-      isConnected: isConnected
-    });
 
     if (monitoringData && monitoringData.researchId === researchId) {
-      console.log('[ResearchInProgress] ✅ Actualizando datos con monitoreo en tiempo real:', {
-        totalParticipants: monitoringData.totalParticipants,
-        activeParticipants: monitoringData.activeParticipants,
-        participants: monitoringData.participants.map(p => ({
-          participantId: p.participantId,
-          email: p.email,
-          status: p.status,
-          progress: p.progress
-        }))
-      });
 
       // 🎯 ACTUALIZAR ESTADÍSTICAS
       setStatus(prev => ({
@@ -126,16 +99,9 @@ function ResearchInProgressContent() {
         lastActivity: p.lastActivity ? new Date(p.lastActivity).toLocaleString('es-ES') : '--'
       }));
 
-      console.log('[ResearchInProgress] 📊 Participantes actualizados:', updatedParticipants);
 
       setParticipants(updatedParticipants);
     } else {
-      console.log('[ResearchInProgress] ⚠️ No se actualizaron datos:', {
-        reason: !monitoringData ? 'No hay monitoringData' :
-          monitoringData.researchId !== researchId ? 'researchId no coincide' : 'Desconocido',
-        monitoringDataResearchId: monitoringData?.researchId,
-        currentResearchId: researchId
-      });
     }
   }, [monitoringData, researchId, isConnected]);
 
@@ -160,16 +126,8 @@ function ResearchInProgressContent() {
 
         if (participantsResponse.success) {
           setParticipants(participantsResponse.data || []);
-        } else {
-          console.error('Error en la respuesta de participantes:', participantsResponse);
         }
       } catch (error: any) {
-        console.error('Error loading research data:', error);
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        });
         setError(error.message || 'Error al cargar los datos de la investigación');
       } finally {
         setIsLoading(false);
@@ -336,9 +294,8 @@ function ResearchInProgressContent() {
         <TabsContent value="generator" className="space-y-4">
           <ParticipantGenerator
             researchId={researchId || ''}
-            onParticipantsGenerated={(newParticipants) => {
+            onParticipantsGenerated={() => {
               // Actualizar la lista de participantes si es necesario
-              console.log('Participantes generados:', newParticipants);
             }}
           />
         </TabsContent>

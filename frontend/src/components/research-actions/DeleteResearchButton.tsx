@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { researchAPI } from '@/lib/api';
 
 interface DeleteResearchButtonProps {
   researchId: string;
@@ -32,17 +33,19 @@ export function DeleteResearchButton({
     setIsDeleting(true);
 
     try {
-      // Por ahora, simular la eliminación
-      // TODO: Implementar lógica real de eliminación cuando la API esté lista
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
-
-      toast.success(`Investigación "${researchName}" eliminada exitosamente`);
+      // Eliminar la investigación usando la API
+      const result = await researchAPI.delete(researchId);
+      
+      if (result.success) {
+        toast.success(`Investigación "${researchName}" eliminada exitosamente`);
+      } else {
+        throw new Error(result.error || 'Error al eliminar la investigación');
+      }
 
       // Notificar al componente padre
       onDeleteSuccess?.(researchId);
 
     } catch (error) {
-      console.error('Error deleting research:', error);
       toast.error('Error al eliminar la investigación');
     } finally {
       setIsDeleting(false);

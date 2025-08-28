@@ -32,7 +32,6 @@ export const useAuth = () => {
           setUser(JSON.parse(storedUser));
         }
       } catch (error) {
-        console.error('Error loading auth from storage:', error);
       } finally {
         setAuthLoading(false);
       }

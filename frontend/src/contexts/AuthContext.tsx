@@ -40,12 +40,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const expiryTime = (decoded as any).exp * 1000;
 
         if (expiryTime > Date.now()) {
-          // console.log('Token válido encontrado, inicializando sesión');
-          setToken(storedToken);
+            setToken(storedToken);
           setUser(decoded);
         } else {
-          // console.log('Token expirado, removiendo...');
-          localStorage.removeItem('token');
+            localStorage.removeItem('token');
         }
       } catch (error) {
         console.error('Error al decodificar el token:', error);
@@ -79,15 +77,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const handleLogin = (newToken: string) => {
     try {
-      // console.log('Iniciando proceso de login...');
       const decoded = jwtDecode<User>(newToken);
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(decoded);
-      // console.log('Login exitoso, token almacenado');
 
       // Forzar la redirección al dashboard usando replace y asegurando que la navegación sea inmediata
-      // console.log('Redirigiendo al dashboard...');
       router.replace('/dashboard');
       router.refresh(); // Forzar la actualización de la navegación
     } catch (error) {
@@ -98,7 +93,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const handleLogout = async () => {
     try {
-      // console.log('Iniciando proceso de logout...');
       // Intentar hacer logout en el backend
       const logoutUrl = getApiUrl('auth/logout');
 
@@ -117,7 +111,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
-      // console.log('Logout completado, redirigiendo a login');
       router.replace('/login');
       router.refresh(); // Forzar la actualización de la navegación
     }
@@ -130,8 +123,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(newToken);
       setUser(decoded);
 
-      // console.log('Token actualizado:', new Date().toLocaleString());
-      // console.log('Nuevo token expira:', new Date((decoded as any).exp * 1000).toLocaleString());
     } catch (error) {
       console.error('Error al actualizar el token:', error);
     }

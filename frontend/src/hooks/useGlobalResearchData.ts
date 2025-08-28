@@ -27,7 +27,6 @@ class GlobalAPISingleton {
   registerComponent(researchId: string) {
     const key = `component-${researchId}`;
     this.componentCount.set(key, (this.componentCount.get(key) || 0) + 1);
-    console.log(`[GlobalAPISingleton] 🏗️ Componente registrado para ${researchId} (total: ${this.componentCount.get(key)})`);
   }
 
   // Desregistrar componente
@@ -35,7 +34,6 @@ class GlobalAPISingleton {
     const key = `component-${researchId}`;
     const currentCount = this.componentCount.get(key) || 0;
     this.componentCount.set(key, Math.max(0, currentCount - 1));
-    console.log(`[GlobalAPISingleton] 🗑️ Componente desregistrado para ${researchId} (restantes: ${this.componentCount.get(key)})`);
   }
 
   async getSmartVOCForm(researchId: string): Promise<any> {
@@ -45,26 +43,21 @@ class GlobalAPISingleton {
     this.callCount.set(key, (this.callCount.get(key) || 0) + 1);
     const currentCall = this.callCount.get(key) || 0;
 
-    console.log(`[GlobalAPISingleton] 📞 Llamada #${currentCall} para ${key}`);
 
     if (this.promises.has(key)) {
-      console.log(`[GlobalAPISingleton] 🔄 Esperando promesa existente para ${key} (llamada #${currentCall})`);
       return await this.promises.get(key);
     }
 
-    console.log(`[GlobalAPISingleton] 🚀 Creando nueva promesa para ${key} (llamada #${currentCall})`);
     const promise = smartVocFixedAPI.getByResearchId(researchId);
     this.promises.set(key, promise);
     this.isInitialized.set(key, true);
 
     try {
       const result = await promise;
-      console.log(`[GlobalAPISingleton] ✅ Promesa completada para ${key} (llamada #${currentCall})`);
       // Notificar a todos los listeners
       this.notifyListeners(key, result);
       return result;
     } catch (error) {
-      console.warn(`[GlobalAPISingleton] ❌ Error en promesa para ${key} (llamada #${currentCall}):`, error);
       throw error;
     } finally {
       // Limpiar después de 10 segundos
@@ -73,7 +66,6 @@ class GlobalAPISingleton {
         this.isInitialized.delete(key);
         this.callCount.delete(key);
         this.listeners.delete(key);
-        console.log(`[GlobalAPISingleton] 🧹 Limpiando promesa para ${key}`);
       }, 10000);
     }
   }
@@ -85,26 +77,21 @@ class GlobalAPISingleton {
     this.callCount.set(key, (this.callCount.get(key) || 0) + 1);
     const currentCall = this.callCount.get(key) || 0;
 
-    console.log(`[GlobalAPISingleton] 📞 Llamada #${currentCall} para ${key}`);
 
     if (this.promises.has(key)) {
-      console.log(`[GlobalAPISingleton] 🔄 Esperando promesa existente para ${key} (llamada #${currentCall})`);
       return await this.promises.get(key);
     }
 
-    console.log(`[GlobalAPISingleton] 🚀 Creando nueva promesa para ${key} (llamada #${currentCall})`);
     const promise = moduleResponseService.getResponsesGroupedByQuestion(researchId);
     this.promises.set(key, promise);
     this.isInitialized.set(key, true);
 
     try {
       const result = await promise;
-      console.log(`[GlobalAPISingleton] ✅ Promesa completada para ${key} (llamada #${currentCall})`);
       // Notificar a todos los listeners
       this.notifyListeners(key, result);
       return result;
     } catch (error) {
-      console.warn(`[GlobalAPISingleton] ❌ Error en promesa para ${key} (llamada #${currentCall}):`, error);
       throw error;
     } finally {
       // Limpiar después de 10 segundos
@@ -113,7 +100,6 @@ class GlobalAPISingleton {
         this.isInitialized.delete(key);
         this.callCount.delete(key);
         this.listeners.delete(key);
-        console.log(`[GlobalAPISingleton] 🧹 Limpiando promesa para ${key}`);
       }, 10000);
     }
   }
@@ -304,7 +290,6 @@ export const useGlobalResearchData = (researchId: string) => {
         globalStates.cognitiveTaskConfig.set(researchId, data as any);
         setCognitiveTaskConfig(data as any);
       } catch (error) {
-        console.warn('[useGlobalResearchData] Error obteniendo configuración Cognitive Task:', error);
         globalStates.cognitiveTaskConfigError.set(researchId, error as Error);
         setCognitiveTaskConfigError(error as Error);
         setCognitiveTaskConfig(null);
@@ -340,7 +325,6 @@ export const useGlobalResearchData = (researchId: string) => {
         globalStates.smartVOCFormData.set(researchId, data);
         setSmartVOCFormData(data);
       } catch (error) {
-        console.warn('[useGlobalResearchData] Error obteniendo SmartVOC form:', error);
         globalStates.smartVOCFormError.set(researchId, error as Error);
         setSmartVOCFormError(error as Error);
         setSmartVOCFormData(null);
@@ -388,7 +372,6 @@ export const useGlobalResearchData = (researchId: string) => {
         globalStates.groupedResponsesData.set(researchId, data);
         setGroupedResponsesData(data);
       } catch (error) {
-        console.info('[useGlobalResearchData] 📭 Research sin datos (normal para investigaciones nuevas):', error);
         // No setear como error para research nuevos, esto es comportamiento normal
         setGroupedResponsesData({ data: [], status: 200 });
       } finally {

@@ -115,7 +115,6 @@ function ResearchTableContent() {
       setShowDeleteModal(false);
       setProjectToDelete(null);
     } catch (error: any) {
-      console.error('Error al eliminar:', error);
       toast.error(error?.message || 'Error al eliminar la investigación');
     }
   };
@@ -257,7 +256,6 @@ function ResearchTableContent() {
                             }
                             return format(date, "d 'de' MMMM, yyyy", { locale: es });
                           } catch (error) {
-                            console.error('Error formateando fecha:', error);
                             return 'Fecha no disponible';
                           }
                         })()

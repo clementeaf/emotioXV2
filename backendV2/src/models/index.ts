@@ -12,5 +12,6 @@ export * from './thankYouScreen.model';
 export * from './eyeTracking.model';
 export * from './cognitiveTask.model';
 export * from './moduleResponse.model';
+export * from './company.model';
 
 // Otros modelos serán exportados aquí a medida que se creen 

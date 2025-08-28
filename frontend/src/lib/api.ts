@@ -1,4 +1,5 @@
 import { Research, ResearchBasicData } from '../../../shared/interfaces/research.model';
+import { Company, GetCompaniesResponse, CompanyResponse, CreateCompanyRequest, UpdateCompanyRequest } from '../../../shared/interfaces/company.interface';
 import { apiClient } from '../config/api';
 
 // Tipos
@@ -9,11 +10,11 @@ interface LoginRequest {
 
 interface AuthResponse {
   token: string;
-  user: any;
+  user: User;
   expiresAt: number;
 }
 
-interface APIResponse<T = any> {
+interface APIResponse<T = unknown> {
   success: boolean;
   data: T;
   message?: string;
@@ -36,8 +37,30 @@ export const setupAuthToken = () => {
       apiClient.setAuthToken(token);
     }
   }).catch(error => {
-    console.warn('No se pudo configurar el token de autenticación:', error);
   });
+};
+
+// API de empresas
+export const companiesAPI = {
+  getAll: async (): Promise<GetCompaniesResponse> => {
+    return apiClient.get('companies', 'getAll');
+  },
+
+  getById: async (id: string): Promise<CompanyResponse> => {
+    return apiClient.get('companies', 'getById', { id });
+  },
+
+  create: async (data: CreateCompanyRequest): Promise<CompanyResponse> => {
+    return apiClient.post('companies', 'create', data);
+  },
+
+  update: async (id: string, data: UpdateCompanyRequest): Promise<CompanyResponse> => {
+    return apiClient.put('companies', 'update', data, { id });
+  },
+
+  delete: async (id: string): Promise<APIResponse<{ message: string }>> => {
+    return apiClient.delete('companies', 'delete', { id });
+  },
 };
 
 // API de autenticación
@@ -50,7 +73,7 @@ export const authAPI = {
     return apiClient.post('auth', 'logout', {});
   },
 
-  refreshToken: async (): Promise<APIResponse<{ token: string, renewed: boolean, expiresAt: number, user: any }>> => {
+  refreshToken: async (): Promise<APIResponse<{ token: string, renewed: boolean, expiresAt: number, user: User }>> => {
     // Importación dinámica para evitar dependencia circular
     const { default: tokenService } = await import('@/services/tokenService');
     const token = tokenService.getToken();
@@ -110,7 +133,7 @@ export const researchAPI = {
 export const welcomeScreenAPI = {
   getByResearch: (researchId: string) =>
     apiClient.get('welcome-screen', 'getByResearch', { researchId }),
-  save: (researchId: string, data: any) =>
+  save: (researchId: string, data: Record<string, unknown>) =>
     apiClient.post('welcome-screen', 'save', data, { researchId }),
   delete: (researchId: string) =>
     apiClient.delete('welcome-screen', 'delete', { researchId }),
@@ -120,7 +143,7 @@ export const welcomeScreenAPI = {
 export const thankYouScreenAPI = {
   getByResearch: (researchId: string) =>
     apiClient.get('thankYouScreen', 'getByResearch', { researchId }),
-  save: (researchId: string, data: any) =>
+  save: (researchId: string, data: Record<string, unknown>) =>
     apiClient.post('thankYouScreen', 'save', data, { researchId }),
   delete: (researchId: string) =>
     apiClient.delete('thankYouScreen', 'delete', { researchId }),
@@ -128,21 +151,21 @@ export const thankYouScreenAPI = {
 
 // API de eye tracking
 export const eyeTrackingAPI = {
-  create: async (researchId: string, data: any): Promise<APIResponse<any>> => {
+  create: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear eye tracking');
     }
     return apiClient.post('eyeTracking', 'create', data, { researchId });
   },
 
-  getByResearch: async (researchId: string): Promise<APIResponse<any>> => {
+  getByResearch: async (researchId: string): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
     return apiClient.get('eyeTracking', 'getByResearch', { researchId });
   },
 
-  update: async (researchId: string, data: any): Promise<APIResponse<any>> => {
+  update: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar eye tracking');
     }
@@ -159,21 +182,21 @@ export const eyeTrackingAPI = {
 
 // API de eye tracking recruit
 export const eyeTrackingRecruitAPI = {
-  createConfig: async (researchId: string, data: any): Promise<APIResponse<any>> => {
+  createConfig: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear eye tracking recruit');
     }
     return apiClient.post('eyeTrackingRecruit', 'createConfig', data, { researchId });
   },
 
-  getConfigByResearch: async (researchId: string): Promise<APIResponse<any>> => {
+  getConfigByResearch: async (researchId: string): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
     return apiClient.get('eyeTrackingRecruit', 'getConfigByResearch', { researchId });
   },
 
-  updateConfig: async (researchId: string, data: any): Promise<APIResponse<any>> => {
+  updateConfig: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar eye tracking recruit');
     }
@@ -190,21 +213,21 @@ export const eyeTrackingRecruitAPI = {
 
 // API de SmartVOC
 export const smartVocAPI = {
-  create: async (researchId: string, data: any): Promise<APIResponse<any>> => {
+  create: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear SmartVOC');
     }
     return apiClient.post('smartVoc', 'create', data, { researchId });
   },
 
-  getByResearch: async (researchId: string): Promise<APIResponse<any>> => {
+  getByResearch: async (researchId: string): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
     return apiClient.get('smartVoc', 'getByResearch', { researchId });
   },
 
-  update: async (researchId: string, data: any): Promise<APIResponse<any>> => {
+  update: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar SmartVOC');
     }
@@ -221,21 +244,21 @@ export const smartVocAPI = {
 
 // API de tareas cognitivas
 export const cognitiveTaskAPI = {
-  create: async (researchId: string, data: any): Promise<APIResponse<any>> => {
+  create: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear la tarea cognitiva');
     }
     return apiClient.post('cognitiveTask', 'create', data, { researchId });
   },
 
-  getByResearch: async (researchId: string): Promise<APIResponse<any>> => {
+  getByResearch: async (researchId: string): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
     return apiClient.get('cognitiveTask', 'getByResearch', { researchId });
   },
 
-  update: async (researchId: string, data: any): Promise<APIResponse<any>> => {
+  update: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar la tarea cognitiva');
     }
@@ -270,22 +293,22 @@ export const s3API = {
 // API de Module Responses (para datos de public-tests)
 export const moduleResponsesAPI = {
   // Obtener todas las respuestas de un research
-  getResponsesByResearch: async (researchId: string): Promise<APIResponse<any[]>> => {
+  getResponsesByResearch: async (researchId: string): Promise<APIResponse<unknown[]>> => {
     return apiClient.get('moduleResponses', 'getResponsesByResearch', { researchId });
   },
 
   // Obtener respuestas de un participante específico
-  getResponsesForParticipant: async (researchId: string, participantId: string): Promise<APIResponse<any>> => {
+  getResponsesForParticipant: async (researchId: string, participantId: string): Promise<APIResponse<unknown>> => {
     return apiClient.get('moduleResponses', 'getResponsesForParticipant', { researchId, participantId });
   },
 
   // Guardar respuesta
-  saveResponse: async (data: any): Promise<APIResponse<any>> => {
+  saveResponse: async (data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     return apiClient.post('moduleResponses', 'saveResponse', data);
   },
 
   // Actualizar respuesta
-  updateResponse: async (responseId: string, data: any): Promise<APIResponse<any>> => {
+  updateResponse: async (responseId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     return apiClient.put('moduleResponses', 'updateResponse', data, { responseId });
   },
 
@@ -298,22 +321,22 @@ export const moduleResponsesAPI = {
 // API de Participants (para datos de public-tests)
 export const participantsAPI = {
   // Obtener todos los participantes
-  getAll: async (): Promise<APIResponse<any[]>> => {
+  getAll: async (): Promise<APIResponse<unknown[]>> => {
     return apiClient.get('participants', 'getAll');
   },
 
   // Obtener participante por ID
-  getById: async (id: string): Promise<APIResponse<any>> => {
+  getById: async (id: string): Promise<APIResponse<unknown>> => {
     return apiClient.get('participants', 'getById', { id });
   },
 
   // Login de participante
-  login: async (data: { name: string; email: string; researchId: string }): Promise<APIResponse<any>> => {
+  login: async (data: { name: string; email: string; researchId: string }): Promise<APIResponse<unknown>> => {
     return apiClient.post('participants', 'login', data);
   },
 
   // Crear participante
-  create: async (data: any): Promise<APIResponse<any>> => {
+  create: async (data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     return apiClient.post('participants', 'create', data);
   },
 
@@ -326,22 +349,22 @@ export const participantsAPI = {
 // API combinada para Research In Progress
 export const researchInProgressAPI = {
   // Obtener participantes con estados para un research
-  getParticipantsWithStatus: async (researchId: string): Promise<APIResponse<any[]>> => {
+  getParticipantsWithStatus: async (researchId: string): Promise<APIResponse<unknown[]>> => {
     return apiClient.get('researchInProgress', 'getParticipantsWithStatus', { researchId });
   },
 
   // Obtener métricas de overview para un research
-  getOverviewMetrics: async (researchId: string): Promise<APIResponse<any>> => {
+  getOverviewMetrics: async (researchId: string): Promise<APIResponse<unknown>> => {
     return apiClient.get('researchInProgress', 'getOverviewMetrics', { researchId });
   },
 
   // Obtener participantes por research (si existe el endpoint)
-  getParticipantsByResearch: async (researchId: string): Promise<APIResponse<any[]>> => {
+  getParticipantsByResearch: async (researchId: string): Promise<APIResponse<unknown[]>> => {
     return apiClient.get('researchInProgress', 'getParticipantsByResearch', { researchId });
   },
 
   // Obtener detalles completos de un participante específico
-  getParticipantDetails: async (researchId: string, participantId: string): Promise<APIResponse<any>> => {
+  getParticipantDetails: async (researchId: string, participantId: string): Promise<APIResponse<unknown>> => {
     return apiClient.get('researchInProgress', 'getParticipantDetails', { researchId, participantId });
   },
 

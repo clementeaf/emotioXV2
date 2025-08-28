@@ -55,7 +55,6 @@ export const authService = {
 
       return response;
     } catch (error) {
-      console.error('Error durante el registro:', error);
       throw error;
     }
   },
@@ -78,7 +77,6 @@ export const authService = {
 
       return response;
     } catch (error) {
-      console.error('Error durante el inicio de sesión:', error);
       throw error;
     }
   },
@@ -95,7 +93,6 @@ export const authService = {
       localStorage.removeItem('refreshToken');
       apiClient.clearAuthToken();
     } catch (error) {
-      console.error('Error durante el cierre de sesión:', error);
       // Aún así, limpiar tokens locales
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');

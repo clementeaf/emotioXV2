@@ -10,6 +10,7 @@ import { CognitiveTaskFieldsProps as CognitiveTaskSettingsProps } from '../types
  */
 export const CognitiveTaskSettings: React.FC<CognitiveTaskSettingsProps> = ({
   randomizeQuestions,
+  setRandomizeQuestions,
   disabled
 }) => {
   return (
@@ -27,7 +28,7 @@ export const CognitiveTaskSettings: React.FC<CognitiveTaskSettingsProps> = ({
           </span>
           <Switch
             checked={randomizeQuestions}
-            onCheckedChange={() => { /* TODO: Prop 'onRandomizeChange' faltante o incorrecta */ }}
+            onCheckedChange={setRandomizeQuestions}
             disabled={disabled}
           />
         </div>

@@ -10,7 +10,6 @@ export const storage = {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.error('Error accessing localStorage:', error);
       return null;
     }
   },
@@ -20,7 +19,6 @@ export const storage = {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      console.error('Error setting localStorage:', error);
     }
   },
 
@@ -29,7 +27,6 @@ export const storage = {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      console.error('Error removing from localStorage:', error);
     }
   },
 
@@ -38,7 +35,6 @@ export const storage = {
     try {
       localStorage.clear();
     } catch (error) {
-      console.error('Error clearing localStorage:', error);
     }
   },
 
@@ -47,7 +43,6 @@ export const storage = {
     try {
       return localStorage.key(index);
     } catch (error) {
-      console.error('Error getting localStorage key:', error);
       return null;
     }
   },
@@ -57,7 +52,6 @@ export const storage = {
     try {
       return localStorage.length;
     } catch (error) {
-      console.error('Error getting localStorage length:', error);
       return 0;
     }
   },
@@ -68,7 +62,6 @@ export const storage = {
     try {
       return sessionStorage.getItem(key);
     } catch (error) {
-      console.error('Error accessing sessionStorage:', error);
       return null;
     }
   },
@@ -78,7 +71,6 @@ export const storage = {
     try {
       sessionStorage.setItem(key, value);
     } catch (error) {
-      console.error('Error setting sessionStorage:', error);
     }
   },
 
@@ -87,7 +79,6 @@ export const storage = {
     try {
       sessionStorage.removeItem(key);
     } catch (error) {
-      console.error('Error removing from sessionStorage:', error);
     }
   },
 
@@ -97,7 +88,6 @@ export const storage = {
     try {
       return Object.keys(localStorage);
     } catch (error) {
-      console.error('Error getting localStorage keys:', error);
       return [];
     }
   },
@@ -107,7 +97,6 @@ export const storage = {
     try {
       return Object.keys(sessionStorage);
     } catch (error) {
-      console.error('Error getting sessionStorage keys:', error);
       return [];
     }
   }

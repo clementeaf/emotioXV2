@@ -60,19 +60,15 @@ export const useSmartVOCResponses = (researchId: string) => {
       }
 
       try {
-        console.log(`[useSmartVOCResponses] 🔍 Obteniendo resultados SmartVOC para research: ${researchId}`);
 
         // Usar el nuevo endpoint agrupado por pregunta (más eficiente)
         const response = await moduleResponsesAPI.getResponsesGroupedByQuestion(researchId);
 
         if (response.data) {
-          console.log(`[useSmartVOCResponses] ✅ Datos recibidos del endpoint agrupado`);
-          console.log(`[useSmartVOCResponses] 📊 Respuesta completa:`, response.data);
 
           // Procesar datos SmartVOC desde las respuestas
           const smartVOCData = processSmartVOCData(response.data);
 
-          console.log(`[useSmartVOCResponses] ✅ Datos procesados:`, {
             totalResponses: smartVOCData.totalResponses,
             uniqueParticipants: smartVOCData.uniqueParticipants,
             npsScore: smartVOCData.npsScore,
@@ -86,11 +82,9 @@ export const useSmartVOCResponses = (researchId: string) => {
 
           setData(smartVOCData);
         } else {
-          console.warn(`[useSmartVOCResponses] ⚠️ Respuesta sin datos:`, response);
           setError('No se recibieron datos del servidor');
         }
       } catch (err: any) {
-        console.error('[useSmartVOCResponses] ❌ Error:', err);
 
         // Mejorar mensajes de error
         let errorMessage = 'Error al obtener resultados SmartVOC';

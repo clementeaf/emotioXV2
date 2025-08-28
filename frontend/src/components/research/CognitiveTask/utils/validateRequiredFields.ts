@@ -138,7 +138,6 @@ export const filterValidQuestions = (formData: CognitiveTaskFormData): Cognitive
  * @deprecated Use filterValidQuestions instead
  */
 export const filterQuestionsWithTitle = (formData: CognitiveTaskFormData): CognitiveTaskFormData => {
-  console.warn('[DEPRECATED] filterQuestionsWithTitle is deprecated. Use filterValidQuestions instead.');
   return filterValidQuestions(formData);
 };
 
@@ -198,23 +197,17 @@ export const getQuestionsValidationInfo = (formData: CognitiveTaskFormData): {
  */
 export const debugQuestionsToSend = (formData: CognitiveTaskFormData): void => {
   if (process.env.NODE_ENV === 'development') {
-    console.group('🔍 [CognitiveTask] Debug de preguntas a enviar');
 
     const validationInfo = getQuestionsValidationInfo(formData);
 
     validationInfo.valid.forEach((q, index) => {
-      // console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);
     });
 
     if (validationInfo.invalid.length > 0) {
-      // console.log('🚫 Preguntas inválidas (se omitirán):', validationInfo.invalid.length);
       validationInfo.invalid.forEach(({ question, missingFields }, index) => {
-        // console.log(`  ${index + 1}. ${question.type}: "${question.title || '(sin título)'}"`);
-        // console.log(`     Campos faltantes: ${missingFields.join(', ')}`);
       });
     }
 
-    console.groupEnd();
   }
 };
 
@@ -238,22 +231,16 @@ export const filterValidQuestionsLocal = (formData: UICognitiveTaskFormData): UI
  */
 export const debugQuestionsToSendLocal = (formData: UICognitiveTaskFormData): void => {
   if (process.env.NODE_ENV === 'development') {
-    console.group('🔍 [CognitiveTask] Debug de preguntas a enviar');
 
     const validationInfo = getQuestionsValidationInfo(formData as any);
 
     validationInfo.valid.forEach((q, index) => {
-      // console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);
     });
 
     if (validationInfo.invalid.length > 0) {
-      // console.log('🚫 Preguntas inválidas (se omitirán):', validationInfo.invalid.length);
       validationInfo.invalid.forEach(({ question, missingFields }, index) => {
-        // console.log(`  ${index + 1}. ${question.type}: "${question.title || '(sin título)'}"`);
-        // console.log(`     Campos faltantes: ${missingFields.join(', ')}`);
       });
     }
 
-    console.groupEnd();
   }
 };

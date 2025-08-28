@@ -95,7 +95,6 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
 
     const errorCount = Object.keys(errors).length;
     const result = errorCount > 0 ? errors : null;
-    // console.log(`[useCognitiveTaskValidation] Validación completada. ${errorCount} errores encontrados:`, result || '{}');
 
     setValidationErrors(result);
     return result;

@@ -97,10 +97,8 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
       };
       // Lógica condicional: Si tenemos un smartVocId, actualizamos (PUT). Si no, creamos (POST).
       if (data.smartVocId) {
-        // console.log(`[SmartVOCForm] Actualizando (PUT) formulario existente con ID: ${data.smartVocId}`);
         return smartVocFixedAPI.update(researchId, data.smartVocId, cleanedData);
       } else {
-        // console.log(`[SmartVOCForm] Creando (POST) nuevo formulario para researchId: ${researchId}`);
         return smartVocFixedAPI.create(cleanedData);
       }
     },
@@ -115,7 +113,6 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
 
       const responseWithId = savedData as SmartVOCFormData & { id?: string };
       if (responseWithId?.id) {
-        // console.log('[SmartVOCForm] SmartVOC ID actualizado/obtenido:', responseWithId.id);
       }
 
       showModal({
@@ -126,11 +123,6 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
     },
     onError: (error: any, data) => {
       if (process.env.NODE_ENV === 'development') {
-        console.error('[SmartVOCForm] Error al guardar. Datos enviados:', data);
-        console.error('[SmartVOCForm] Preguntas enviadas:', data?.questions);
-        console.error('[SmartVOCForm] Error completo:', error);
-        console.error('[SmartVOCForm] Error message:', error?.message);
-        console.error('[SmartVOCForm] Error response:', error?.response);
       }
 
       let displayMessage = 'Ocurrió un error al guardar los datos. Por favor, intenta de nuevo.';
@@ -148,7 +140,6 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
             displayMessage = 'Se encontraron errores de validación en el formulario. Por favor, revisa los datos de las preguntas.';
           }
         } catch (e) {
-          console.error('Error al parsear el mensaje de la API:', e);
         }
       }
 
@@ -164,7 +155,6 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
   const deleteMutation = useMutation({
     mutationFn: async () => {
       // Usar deleteByResearchId que solo requiere researchId, no un formId específico
-      // console.log(`[SmartVOCForm] Eliminando SmartVOC para researchId: ${researchId}`);
       const success = await smartVocFixedAPI.deleteByResearchId(researchId);
 
       if (!success) {
@@ -180,7 +170,6 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
       toast.success('Datos SmartVOC eliminados correctamente.');
     },
     onError: (error: any) => {
-      console.error('[SmartVOCForm] Error al eliminar:', error);
       showModal({
         title: 'Error',
         message: error.message || 'Error al eliminar los datos SmartVOC',

@@ -50,7 +50,6 @@ export function EmotionalStates({
   const hasData = emotionalStates.length > 0;
 
   // 🎯 DEBUG: Log de los datos recibidos
-  console.log('[EmotionalStates] 🔍 Datos recibidos:', {
     emotionalStates,
     longTermClusters,
     shortTermClusters,

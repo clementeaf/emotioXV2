@@ -17,7 +17,6 @@ interface QRCodeModalProps {
 export function QRCodeModal({ open, onOpenChange, researchUrl }: QRCodeModalProps) {
   const handleDownload = () => {
     // Esta función se implementaría para descargar el código QR como imagen
-    // console.log('Downloading QR code for URL:', researchUrl);
   };
 
   return (

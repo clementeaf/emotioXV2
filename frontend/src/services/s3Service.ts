@@ -80,9 +80,6 @@ class S3Service {
       const response = await apiClient.post('s3', 'upload', requestBody);
       return response;
     } catch (error) {
-      console.error('===== ERROR COMPLETO S3 =====');
-      console.error('Error al obtener URL de subida:', error);
-      console.error('=============================');
       throw new Error(`Error al obtener URL de subida: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
@@ -96,22 +93,17 @@ class S3Service {
     try {
       const response = await apiClient.get('s3', 'download', undefined, { key: encodedKey });
       
-      console.log('[DEBUG] s3Service.getDownloadUrl - respuesta completa:', response);
-      console.log('[DEBUG] Tipo de response:', typeof response);
-      console.log('[DEBUG] Keys de response:', Object.keys(response || {}));
 
       // El backend devuelve: { success: true, data: { downloadUrl, key, expiresAt } }
       // El apiClient probablemente devuelve toda la respuesta o solo la data
       const downloadUrl = response?.data?.downloadUrl || response?.downloadUrl;
       
       if (!downloadUrl) {
-        console.error('S3Service.getDownloadUrl - Respuesta exitosa pero falta downloadUrl:', response);
         throw new Error('La respuesta del servidor no contiene la URL de descarga esperada.');
       }
 
       return downloadUrl;
     } catch (error) {
-      console.error('S3Service.getDownloadUrl - Error en respuesta:', error);
       throw new Error(error instanceof Error ? error.message : 'Error al obtener URL de descarga');
     }
   }
@@ -124,14 +116,12 @@ class S3Service {
   async deleteFile(key: string): Promise<void> {
     const operation = '[Frontend S3Service.deleteFile - POST]';
     if (!key) {
-      console.error(`${operation} - Se requiere clave S3 para eliminar.`);
       throw new Error('Se requiere clave S3 para eliminar');
     }
 
     try {
       await apiClient.post('s3', 'deleteObject', { key: key });
     } catch (error) {
-      console.error(`${operation} - Error al eliminar archivo:`, error);
       throw new Error(`Error al eliminar archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
@@ -181,7 +171,6 @@ class S3Service {
 
             resolve(result);
           } else {
-            console.error('S3Service.uploadFile - Error en subida:', xhr.status, xhr.statusText);
             const error = new Error(`Error al subir archivo: ${xhr.status} ${xhr.statusText}`);
             if (onError) {
               onError(error);
@@ -191,7 +180,6 @@ class S3Service {
         };
 
         xhr.onerror = () => {
-          console.error('S3Service.uploadFile - Error de red en subida');
           const error = new Error('Error de red al subir archivo');
           if (onError) {
             onError(error);
@@ -200,7 +188,6 @@ class S3Service {
         };
 
         xhr.onabort = () => {
-          console.warn('S3Service.uploadFile - Subida cancelada');
           const error = new Error('Subida cancelada');
           if (onError) {
             onError(error);
@@ -213,7 +200,6 @@ class S3Service {
 
       return uploadPromise;
     } catch (error) {
-      console.error('S3Service.uploadFile - Error general:', error);
       if (onError && error instanceof Error) {
         onError(error);
       }
@@ -243,7 +229,6 @@ class S3Service {
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error al descargar archivo:', error);
       throw error;
     }
   }

@@ -44,7 +44,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   // Añadimos log de estado de autenticación para depuración
   useEffect(() => {
     const isTokenInStorage = !!localStorage.getItem('token') || !!sessionStorage.getItem('token');
-    // console.log('[ThankYouScreenForm] Estado de autenticación:', {
     //   isAuthenticated,
     //   tokenInHook: !!token,
     //   tokenInStorage: isTokenInStorage,
@@ -83,7 +82,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           return null; // No hay configuración, está bien
         } else {
           // Solo mostrar en consola si NO es 404
-          console.error('[useThankYouScreenForm] Error al cargar configuración:', error);
           throw error;
         }
       }
@@ -143,7 +141,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       });
     },
     onError: (error: any) => {
-      console.error('[ThankYouScreenForm] Error:', error);
 
       // Reemplazar toast.error por modal de error
       showModal({
@@ -215,7 +212,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
 
     if (!researchId) {
       errors.researchId = ERROR_MESSAGES.VALIDATION_ERRORS.RESEARCH_ID_REQUIRED;
-      // console.log('[useThankYouScreenForm] Error de validación: ID de investigación requerido');
     }
 
     // Solo validar título y mensaje si la pantalla está habilitada
@@ -363,7 +359,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       // Ejecutar la mutación para guardar directamente sin mostrar toasts
       mutate(dataToSave);
     } catch (error: any) {
-      console.error('[ThankYouScreenForm] Error en preparación:', error);
       showModal({
         title: ERROR_MESSAGES.SAVE_ERROR,
         message: error.message || 'Ocurrió un error al preparar la configuración',
@@ -570,7 +565,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         });
       }
     } catch (error) {
-      console.error('[ThankYouScreenForm] Error al generar la previsualización:', error);
 
       showModal({
         title: ERROR_MESSAGES.PREVIEW_ERROR,

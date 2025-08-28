@@ -49,7 +49,6 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
 
     // Función de manejador de clic mejorada
     const handleClick = () => {
-      // console.log('Checkbox clicked, current state:', isChecked);
       if (onCheckedChange) {
         onCheckedChange(!isChecked);
       }
@@ -236,7 +235,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   };
 
   const handleAgeConfigSaveLocal = (options: string[], disqualifyingAges: string[]) => {
-    console.log('[handleAgeConfigSaveLocal] 🎯 Llamando a handleAgeConfigSave:', { options, disqualifyingAges });
     handleAgeConfigSave(options, disqualifyingAges);
     // Aquí también actualizaríamos las edades descalificantes
     // Por ahora solo mostramos un toast con ambas informaciones
@@ -246,104 +244,88 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE EDAD
   const handleAgeQuotasSaveLocal = (quotas: AgeQuotaConfig[]) => {
-    console.log('[handleAgeQuotasSaveLocal] 🎯 Guardando cuotas de edad:', quotas);
     handleAgeQuotasSave(quotas);
     toast.success(`Sistema de cuotas configurado con ${quotas.length} rangos de edad`);
   };
 
   const handleAgeQuotasToggleLocal = (enabled: boolean) => {
-    console.log('[handleAgeQuotasToggleLocal] 🎯 Cambiando estado de cuotas:', enabled);
     toggleAgeQuotasEnabled(enabled);
     toast.success(enabled ? 'Sistema de cuotas habilitado' : 'Sistema de cuotas deshabilitado');
   };
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE PAÍS
   const handleCountryQuotasSaveLocal = (quotas: any[]) => {
-    console.log('[handleCountryQuotasSaveLocal] 🎯 Guardando cuotas de país:', quotas);
     handleCountryQuotasSave(quotas);
     toast.success(`Sistema de cuotas configurado con ${quotas.length} países`);
   };
 
   const handleCountryQuotasToggleLocal = (enabled: boolean) => {
-    console.log('[handleCountryQuotasToggleLocal] 🎯 Cambiando estado de cuotas de país:', enabled);
     toggleCountryQuotasEnabled(enabled);
     toast.success(enabled ? 'Sistema de cuotas de país habilitado' : 'Sistema de cuotas de país deshabilitado');
   };
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE GÉNERO
   const handleGenderQuotasSaveLocal = (quotas: any[]) => {
-    console.log('[handleGenderQuotasSaveLocal] 🎯 Guardando cuotas de género:', quotas);
     handleGenderQuotasSave(quotas);
     toast.success(`Sistema de cuotas configurado con ${quotas.length} géneros`);
   };
 
   const handleGenderQuotasToggleLocal = (enabled: boolean) => {
-    console.log('[handleGenderQuotasToggleLocal] 🎯 Cambiando estado de cuotas de género:', enabled);
     toggleGenderQuotasEnabled(enabled);
     toast.success(enabled ? 'Sistema de cuotas de género habilitado' : 'Sistema de cuotas de género deshabilitado');
   };
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE NIVEL DE EDUCACIÓN
   const handleEducationLevelQuotasSaveLocal = (quotas: any[]) => {
-    console.log('[handleEducationLevelQuotasSaveLocal] 🎯 Guardando cuotas de nivel de educación:', quotas);
     handleEducationLevelQuotasSave(quotas);
     toast.success(`Sistema de cuotas configurado con ${quotas.length} niveles educativos`);
   };
 
   const handleEducationLevelQuotasToggleLocal = (enabled: boolean) => {
-    console.log('[handleEducationLevelQuotasToggleLocal] 🎯 Cambiando estado de cuotas de nivel de educación:', enabled);
     toggleEducationLevelQuotasEnabled(enabled);
     toast.success(enabled ? 'Sistema de cuotas de nivel de educación habilitado' : 'Sistema de cuotas de nivel de educación deshabilitado');
   };
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE INGRESOS FAMILIARES
   const handleHouseholdIncomeQuotasSaveLocal = (quotas: any[]) => {
-    console.log('[handleHouseholdIncomeQuotasSaveLocal] 🎯 Guardando cuotas de ingresos familiares:', quotas);
     handleHouseholdIncomeQuotasSave(quotas);
     toast.success(`Sistema de cuotas configurado con ${quotas.length} niveles de ingresos`);
   };
 
   const handleHouseholdIncomeQuotasToggleLocal = (enabled: boolean) => {
-    console.log('[handleHouseholdIncomeQuotasToggleLocal] 🎯 Cambiando estado de cuotas de ingresos familiares:', enabled);
     toggleHouseholdIncomeQuotasEnabled(enabled);
     toast.success(enabled ? 'Sistema de cuotas de ingresos familiares habilitado' : 'Sistema de cuotas de ingresos familiares deshabilitado');
   };
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE SITUACIÓN LABORAL
   const handleEmploymentStatusQuotasSaveLocal = (quotas: any[]) => {
-    console.log('[handleEmploymentStatusQuotasSaveLocal] 🎯 Guardando cuotas de situación laboral:', quotas);
     handleEmploymentStatusQuotasSave(quotas);
     toast.success(`Sistema de cuotas configurado con ${quotas.length} situaciones laborales`);
   };
 
   const handleEmploymentStatusQuotasToggleLocal = (enabled: boolean) => {
-    console.log('[handleEmploymentStatusQuotasToggleLocal] 🎯 Cambiando estado de cuotas de situación laboral:', enabled);
     toggleEmploymentStatusQuotasEnabled(enabled);
     toast.success(enabled ? 'Sistema de cuotas de situación laboral habilitado' : 'Sistema de cuotas de situación laboral deshabilitado');
   };
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE HORAS DIARIAS EN LÍNEA
   const handleDailyHoursOnlineQuotasSaveLocal = (quotas: any[]) => {
-    console.log('[handleDailyHoursOnlineQuotasSaveLocal] 🎯 Guardando cuotas de horas diarias en línea:', quotas);
     handleDailyHoursOnlineQuotasSave(quotas);
     toast.success(`Sistema de cuotas configurado con ${quotas.length} rangos de horas`);
   };
 
   const handleDailyHoursOnlineQuotasToggleLocal = (enabled: boolean) => {
-    console.log('[handleDailyHoursOnlineQuotasToggleLocal] 🎯 Cambiando estado de cuotas de horas diarias en línea:', enabled);
     toggleDailyHoursOnlineQuotasEnabled(enabled);
     toast.success(enabled ? 'Sistema de cuotas de horas diarias en línea habilitado' : 'Sistema de cuotas de horas diarias en línea deshabilitado');
   };
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE COMPETENCIA TÉCNICA
   const handleTechnicalProficiencyQuotasSaveLocal = (quotas: any[]) => {
-    console.log('[handleTechnicalProficiencyQuotasSaveLocal] 🎯 Guardando cuotas de competencia técnica:', quotas);
     handleTechnicalProficiencyQuotasSave(quotas);
     toast.success(`Sistema de cuotas configurado con ${quotas.length} niveles de competencia`);
   };
 
   const handleTechnicalProficiencyQuotasToggleLocal = (enabled: boolean) => {
-    console.log('[handleTechnicalProficiencyQuotasToggleLocal] 🎯 Cambiando estado de cuotas de competencia técnica:', enabled);
     toggleTechnicalProficiencyQuotasEnabled(enabled);
     toast.success(enabled ? 'Sistema de cuotas de competencia técnica habilitado' : 'Sistema de cuotas de competencia técnica deshabilitado');
   };
@@ -430,7 +412,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           checked={demographicQuestionsEnabled}
                           onChange={(e) => {
-                            // console.log('Demográficas cambiado:', e.target.checked);
                             setDemographicQuestionsEnabled(e.target.checked);
                           }}
                           className="w-5 h-5 mr-3 cursor-pointer"
@@ -447,7 +428,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           id="age"
                           checked={formData.demographicQuestions.age.enabled}
                           onChange={(e) => {
-                            // console.log('Edad cambiado:', e.target.checked);
                             handleDemographicChange('age' as DemographicQuestionKeys, e.target.checked);
                             // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
@@ -466,7 +446,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           id="country"
                           checked={formData.demographicQuestions.country.enabled}
                           onChange={(e) => {
-                            // console.log('País cambiado:', e.target.checked);
                             handleDemographicChange('country' as DemographicQuestionKeys, e.target.checked);
                             // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
@@ -596,7 +575,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           checked={linkConfigEnabled}
                           onChange={(e) => {
-                            // console.log('Configuración enlace cambiado:', e.target.checked);
                             setLinkConfigEnabled(e.target.checked);
                           }}
                           className="w-5 h-5 mr-3 cursor-pointer"
@@ -613,7 +591,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           id="allowMobile"
                           checked={formData.linkConfig.allowMobile}
                           onChange={(e) => {
-                            // console.log('Dispositivos móviles clicado:', e.target.checked);
                             handleLinkConfigChange('allowMobile', e.target.checked);
                           }}
                           disabled={!linkConfigEnabled}
@@ -672,7 +649,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           checked={formData.participantLimit.enabled}
                           onChange={(e) => {
-                            // console.log('Límite cambiado:', e.target.checked);
                             setLimitParticipants(e.target.checked);
                           }}
                           className="w-5 h-5 mr-3 cursor-pointer"

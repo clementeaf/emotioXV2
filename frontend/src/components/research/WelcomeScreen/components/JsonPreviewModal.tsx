@@ -27,7 +27,6 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
   try {
     parsedData = JSON.parse(jsonData);
   } catch (error) {
-    console.error('Error al parsear JSON:', error);
   }
   
   // Extraemos los valores para usar en la vista previa

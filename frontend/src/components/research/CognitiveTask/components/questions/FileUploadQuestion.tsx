@@ -81,7 +81,6 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             const url = await s3Service.getDownloadUrl(file.s3Key);
             newUrls[file.id] = url;
           } catch (error) {
-            console.error('[FileUpload] Error obteniendo URL presignada para preview:', error);
           }
         }
       }
@@ -122,7 +121,6 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       try {
         url = await s3Service.getDownloadUrl(file.s3Key);
       } catch (e) {
-        console.error('[HITZONE] Error obteniendo URL prefirmada:', e);
         url = '';
       }
     }

@@ -83,7 +83,6 @@ const CustomLegend = () => (
 
 export const TrustRelationshipFlow = ({ data, className, hasData = true, isLoading = false }: TrustRelationshipFlowProps) => {
   // Debug logs para verificar datos
-  console.log('[TrustRelationshipFlow] 🔍 Props recibidas:', {
     dataLength: data.length,
     data: data,
     hasData: hasData,

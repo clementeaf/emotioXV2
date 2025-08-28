@@ -15,9 +15,7 @@ export const useAppInitialization = () => {
       if (isDevEnv && typeof window.enableApiDebugger === 'function') {
         try {
           window.enableApiDebugger();
-          // // console.log('🔍 [API-DEBUG] Debugger activado exitosamente');
         } catch (error) {
-          console.warn('🔍 [API-DEBUG] Error al activar debugger:', error);
         }
       }
 
@@ -34,7 +32,6 @@ export const useAppInitialization = () => {
           apiClient.setAuthToken(token);
         }
       } catch (error) {
-        console.error('🔑 [AUTH] Error al inicializar el token en apiClient:', error);
       }
     };
 

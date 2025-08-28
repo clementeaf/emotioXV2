@@ -108,12 +108,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         return true;
       } catch (error) {
-        console.error('Error al decodificar token:', error);
         clearStorage();
         return false;
       }
     } catch (error) {
-      console.error('Error al restaurar sesión:', error);
       return false;
     }
   }, [token]);
@@ -138,7 +136,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       window.location.href = '/dashboard';
     } catch (error) {
-      console.error('Error en login:', error);
       clearStorage();
       setAuthError('Error al procesar el login');
       setIsTransitioning(false);
@@ -155,7 +152,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError(null);
       window.location.href = '/login';
     } catch (error) {
-      console.error('Error durante el logout:', error);
       clearStorage();
       setUser(null);
       setToken(null);
@@ -175,7 +171,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
-      console.error('Error cargando estado:', error);
       clearStorage();
     } finally {
       setAuthLoading(false);

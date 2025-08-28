@@ -104,7 +104,7 @@ const convertHitZonesToPercentageCoordinates = (
 
   return hitZones.map(zone => {
     if (!zone) {
-      console.warn('⚠️ Hitzone inválido:', zone);
+      // Hitzone inválido
       return {
         id: 'unknown',
         x: 0,
@@ -116,7 +116,7 @@ const convertHitZonesToPercentageCoordinates = (
     }
 
     if (!imageNaturalSize) {
-      console.warn('⚠️ Tamaño de imagen no disponible para hitzone:', zone);
+      // Tamaño de imagen no disponible para hitzone
       return {
         id: zone.id || 'unknown',
         x: 0,
@@ -144,10 +144,7 @@ const convertHitZonesToPercentageCoordinates = (
 };
 
 export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ data }) => {
-  // 🎯 DEBUG: Log de datos recibidos
-  console.log('🎯 NavigationFlowResults - Data recibida:', data);
-  console.log('🎯 NavigationFlowResults - visualClickPoints:', data?.visualClickPoints);
-  console.log('🎯 NavigationFlowResults - allClicksTracking:', data?.allClicksTracking);
+  // 🎯 DEBUG: Data recibida
 
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [expandedImageId, setExpandedImageId] = useState<string | null>(null);
@@ -297,11 +294,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
       participants: metrics.participants
     };
 
-    console.log('🎯 AOI creado:', {
-      aoi: finalAOI,
-      clicksDetected: clicksInAOI.length,
-      metrics
-    });
+    // AOI creado con métricas
 
     setAois(prev => [...prev, finalAOI]);
     setIsDrawingAOI(false);
@@ -317,27 +310,23 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
   // 🎯 OBTENER IMÁGENES REALES DEL BACKEND
   const backendImages = useMemo(() => {
-    console.log('🎯 imageSelections:', imageSelections);
-    console.log('🎯 backendFiles:', backendFiles);
+    // Log imageSelections y backendFiles
 
     if (backendFiles && Array.isArray(backendFiles) && backendFiles.length > 0) {
       // Usar archivos con s3Keys reales
       const fileIds = backendFiles.map(file => file.id);
-      console.log('🎯 Using real files with s3Keys:', fileIds);
+      // Using real files with s3Keys
       return fileIds;
     } else if (imageSelections && typeof imageSelections === 'object') {
       const keys = Object.keys(imageSelections);
-      console.log('🎯 backendImages keys:', keys);
+      // backendImages keys
 
       // Log detallado de cada selección
-      Object.entries(imageSelections).forEach(([key, selection]) => {
-        console.log(`🎯 Selection ${key}:`, selection);
-      });
 
       return keys;
     }
     // Fallback: usar datos simulados si no hay datos reales
-    console.log('🎯 Using fallback images');
+    // Using fallback images
     return ['image1', 'image2', 'image3'];
   }, [imageSelections, backendFiles]);
 
@@ -413,7 +402,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
             if (file) {
               // Usar URL del archivo real
-              console.log('🎯 Loading real file:', { imageId, file });
+              // Loading real file
               return {
                 id: imageId,
                 name: file.name || `Imagen ${imageId}`,
@@ -422,7 +411,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
             } else {
               // Fallback a URL de S3
               const s3Url = `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${imageId}`;
-              console.log('🎯 Loading image with fallback:', { imageId, s3Url });
+              // Loading image with fallback
               return {
                 id: imageId,
                 name: `Imagen ${imageId}`,
@@ -434,7 +423,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
           const loadedImages = await Promise.all(imagePromises);
           setRealImages(loadedImages);
         } catch (error) {
-          console.error('Error loading images:', error);
+          // Error loading images
         } finally {
           setLoadingImages(false);
         }
@@ -613,7 +602,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                             </div>
                           ) : (
                             <>
-                              {console.log('🎯 Rendering image with URL:', realImages[index]?.url || 'No URL')}
+                              {/* Rendering image */}
                               <img
                                 ref={imageRef}
                                 src={realImages[index]?.url || '/placeholder.jpg'}
@@ -622,11 +611,11 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                 loading="lazy"
                                 style={{ display: 'block' }}
                                 onLoad={(e) => {
-                                  console.log('🎯 Image loaded successfully:', realImages[index]?.url);
+                                  // Image loaded successfully
                                   handleImageLoad(e);
                                 }}
                                 onError={(e) => {
-                                  console.error('🎯 Error loading image:', realImages[index]?.url);
+                                  // Error loading image
                                   // En lugar de ocultar la imagen, mostrar un mensaje de error más sutil
                                   const target = e.target as HTMLImageElement;
                                   target.style.border = '2px dashed #e5e7eb';
@@ -716,23 +705,11 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                   {config.showHeatmap && !showHeatmapMode && backendVisualClickPoints && Array.isArray(backendVisualClickPoints) && (
                                     <>
                                       {/* 🎯 DEBUG: Log de condición de renderizado */}
-                                      {console.log('🎯 Renderizando clicks - Condiciones:', {
-                                        configShowHeatmap: config.showHeatmap,
-                                        showHeatmapMode,
-                                        hasBackendVisualClickPoints: !!backendVisualClickPoints,
-                                        isArray: Array.isArray(backendVisualClickPoints),
-                                        clickCount: backendVisualClickPoints?.length
-                                      })}
+                                      {/* Renderizando clicks */}
                                       {backendVisualClickPoints?.filter(
                                         point => point.imageIndex === index
                                       ).map((point, pointIndex) => {
-                                        // 🎯 DEBUG: Log de filtrado por imagen
-                                        console.log('🎯 Procesando click:', {
-                                          point,
-                                          imageIndex: index,
-                                          selectedImageIndex,
-                                          matches: point.imageIndex === index
-                                        });
+                                        // DEBUG: Log de filtrado por imagen
 
                                         if ((point.isCorrect && !config.showCorrectClicks) ||
                                           (!point.isCorrect && !config.showIncorrectClicks)) {
@@ -753,15 +730,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                                           transformedX = offsetX + (percentX / 100) * drawWidth;
                                           transformedY = offsetY + (percentY / 100) * drawHeight;
 
-                                          // 🎯 DEBUG: Log de coordenadas transformadas
-                                          console.log('🎯 Click transformado:', {
-                                            original: { x: point.x, y: point.y },
-                                            percent: { x: percentX, y: percentY },
-                                            transformed: { x: transformedX, y: transformedY },
-                                            imageNaturalSize,
-                                            imgRenderSize,
-                                            drawRect: { drawWidth, drawHeight, offsetX, offsetY }
-                                          });
+                                          // DEBUG: Log de coordenadas transformadas
                                         }
 
                                         return (

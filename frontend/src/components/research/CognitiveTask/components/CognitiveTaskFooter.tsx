@@ -26,7 +26,6 @@ export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
 
   // Log para depuración
   React.useEffect(() => {
-    // console.log('[CognitiveTaskFooter] Estado del botón:', {
     //   isSaving,
     //   isExistingForm,
     //   cognitiveTaskId

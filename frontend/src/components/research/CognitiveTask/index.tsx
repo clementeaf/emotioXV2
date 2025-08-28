@@ -83,23 +83,18 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   // Registrar información importante para debugging
   React.useEffect(() => {
     if (cognitiveTaskId) {
-      // console.log('[CognitiveTaskForm] Editando tarea cognitiva existente:', cognitiveTaskId);
 
       // Registrar información sobre archivos en las preguntas
       const questionsWithFiles = formData.questions.filter(q => q.files && q.files.length > 0);
       if (questionsWithFiles.length > 0) {
-        // console.log('[CognitiveTaskForm] Preguntas con archivos:', questionsWithFiles.length);
         questionsWithFiles.forEach(q => {
-          // console.log(`[CognitiveTaskForm] Pregunta ${q.id} (${q.type}) tiene ${q.files?.length || 0} archivos:`,
           //   q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key})));
         });
       }
     } else {
-      // console.log('[CognitiveTaskForm] Creando nueva tarea cognitiva');
     }
 
     // Mostrar el modo actual del botón de guardar
-    // console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? 'Guardando...' : cognitiveTaskId ? 'Actualizar' : 'Guardar y Continuar');
   }, [cognitiveTaskId, formData.questions, isSaving]);
 
   // Listener para guardado automático cuando se definen hitzones

@@ -28,7 +28,6 @@ export const useCPVData = (researchId: string) => {
       }
 
       try {
-        console.log(`[useCPVData] 🔍 Obteniendo datos CPV para research: ${researchId}`);
 
         // Usar el endpoint de SmartVOC que ya tenemos funcionando
         const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
@@ -102,14 +101,11 @@ export const useCPVData = (researchId: string) => {
             peakValue
           };
 
-          console.log(`[useCPVData] ✅ Datos CPV procesados:`, cpvData);
           setData(cpvData);
         } else {
-          console.warn(`[useCPVData] ⚠️ No se recibieron datos`);
           setError('No se recibieron datos del servidor');
         }
       } catch (err: any) {
-        console.error(`[useCPVData] ❌ Error obteniendo datos CPV:`, err);
         setError(err.message || 'Error desconocido');
       } finally {
         setIsLoading(false);

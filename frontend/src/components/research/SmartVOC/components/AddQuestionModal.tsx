@@ -61,7 +61,6 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
                 {availableQuestionTypes.map((questionType) => {
                   const template = QUESTION_TEMPLATES[questionType];
                   if (!template) {
-                    console.warn(`[AddQuestionModal] Template no encontrado para tipo: ${questionType}`);
                     return null;
                   }
                   return (

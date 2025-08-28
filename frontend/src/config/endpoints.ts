@@ -37,22 +37,13 @@ export function validateEndpointConfig(): boolean {
   const config = getEndpointConfig();
 
   if (!config.isConfigured) {
-    console.error('❌ Variables de entorno no configuradas');
-    console.error('❌ NEXT_PUBLIC_API_URL:', config.apiUrl || 'NO DEFINIDA');
-    console.error('❌ NEXT_PUBLIC_WS_URL:', config.wsUrl || 'NO DEFINIDA');
     return false;
   }
 
   if (!config.hasValidUrls) {
-    console.error('❌ URLs no parecen ser de AWS Lambda');
-    console.error('❌ API URL:', config.apiUrl);
-    console.error('❌ WS URL:', config.wsUrl);
     return false;
   }
 
-  console.log('✅ Configuración de endpoints válida');
-  console.log('✅ API URL:', config.apiUrl);
-  console.log('✅ WS URL:', config.wsUrl);
 
   return true;
 }

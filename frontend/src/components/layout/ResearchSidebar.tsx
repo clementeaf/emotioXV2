@@ -127,13 +127,11 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   // Función para navegar a public-tests
   const handleOpenPublicTests = () => {
     if (researchId) {
-      console.log('researchId', researchId);
       // Usar la URL de Vercel en producción, localhost en desarrollo
       const isDevelopment = window.location.hostname === 'localhost';
       const baseUrl = isDevelopment
         ? 'http://localhost:5173'
         : 'https://emotio-xv-2-public-tests.vercel.app';
-      console.log('🌐 Abriendo URL:', baseUrl);
       window.open(`${baseUrl}/?researchId=${researchId}`, '_blank');
     }
   };
@@ -196,7 +194,6 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
         const hasContent = checkIfResearchHasContent();
         setIsPublishEnabled(hasContent);
       } catch (error) {
-        console.error('Error verificando contenido:', error);
         setIsPublishEnabled(false);
       } finally {
         setIsCheckingContent(false);
@@ -227,7 +224,6 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
 
       return false;
     } catch (error) {
-      console.error('Error verificando contenido:', error);
       return false;
     }
   };
@@ -235,9 +231,8 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   // Función para publicar investigación
   const handlePublishResearch = () => {
     if (researchId && isPublishEnabled) {
-      console.log('Publicando investigación:', researchId);
-      // TODO: Implementar lógica de publicación
-      alert('Función de publicación en desarrollo');
+      // Publication logic pending - requires research.updateStatus('published') API call
+      alert('La función de publicación estará disponible próximamente');
     }
   };
 

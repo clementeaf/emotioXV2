@@ -24,21 +24,17 @@ const SHOW_DETAILED_LOGS = process.env.NODE_ENV !== 'production';
 const logService = {
   info: (message: string, ...args: any[]) => {
     if (LOG_LEVEL === 'INFO' || LOG_LEVEL === 'DEBUG') {
-      console.info(`[TokenService] ${message}`, ...args);
     }
   },
   warn: (message: string, ...args: any[]) => {
     // Para advertencias relacionadas con tokens ausentes, usar info en lugar de warn
     if (message.includes('No hay token') || message.includes('token ausente')) {
       if (SHOW_DETAILED_LOGS) {
-        console.info(`[TokenService] (Info) ${message}`, ...args);
       }
     } else {
-      console.warn(`[TokenService] ${message}`, ...args);
     }
   },
   error: (message: string, ...args: any[]) => {
-    console.error(`[TokenService] ${message}`, ...args);
   }
 };
 
@@ -114,7 +110,6 @@ const getToken = (): string | null => {
     if (token) {
       // Remover el prefijo Bearer si existe para devolver solo el token
       const cleanToken = token.replace('Bearer ', '').trim();
-      // console.log('tokenService.getToken - TOKEN ENCONTRADO (primeros caracteres):',
       //   cleanToken.substring(0, 20) + '...');
       return cleanToken;
     }
@@ -124,25 +119,19 @@ const getToken = (): string | null => {
     if (sessionToken) {
       // Remover el prefijo Bearer si existe para devolver solo el token
       const cleanToken = sessionToken.replace('Bearer ', '').trim();
-      // console.log('tokenService.getToken - TOKEN ENCONTRADO en sessionStorage (primeros caracteres):',
       //   cleanToken.substring(0, 20) + '...');
 
       // Guardar en localStorage para futuras solicitudes (sin prefijo Bearer)
       storage.setItem('token', cleanToken);
-      // console.log('tokenService.getToken - Token de sessionStorage copiado a localStorage');
 
       return cleanToken;
     }
 
     // Verificar si hay información de almacenamiento en localStorage
     const storageType = storage.getItem('auth_storage_type');
-    console.warn('tokenService.getToken - NO SE ENCONTRÓ TOKEN. Tipo de almacenamiento:', storageType);
-    console.warn('tokenService.getToken - Keys en localStorage:', storage.getKeys());
-    console.warn('tokenService.getToken - Keys en sessionStorage:', storage.getSessionKeys());
 
     return null;
   } catch (error) {
-    console.error('tokenService.getToken - Error crítico al obtener token:', error);
     return null;
   }
 };

@@ -85,7 +85,6 @@ import { CognitiveTaskForm } from '@/components/research/CognitiveTask';
 
 const ResearchPage = () => {
   const handleSave = (data) => {
-    console.log('Datos guardados:', data);
     // Hacer algo con los datos guardados
   };
 

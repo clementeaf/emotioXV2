@@ -31,7 +31,6 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
 
   // Verificar que los datos sean válidos
   if (!data || !data.options || !Array.isArray(data.options)) {
-    console.error('[PreferenceTestResults] ❌ Datos inválidos:', data);
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500">No hay datos de preferencias disponibles.</p>

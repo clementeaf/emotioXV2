@@ -66,7 +66,6 @@ export const thankYouScreenService = {
       } as ThankYouScreenFormData);
       return response as ThankYouScreenModel;
     } catch (error) {
-      console.error(
         `Error al crear/actualizar pantalla de agradecimiento para investigación ${researchId}:`,
         error
       );

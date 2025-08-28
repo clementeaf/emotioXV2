@@ -157,10 +157,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   const hasTrustFlowDataForDemo = shouldUseTestData ? true : hasTrustFlowData;
 
   // Debug logs
-  console.log('[SmartVOCResults] 📊 CPV Data:', cpvData ? '✅' : '❌', '| Loading:', isCPVLoading, '| Error:', cpvError ? '❌' : '✅');
-  console.log('[SmartVOCResults] 📊 Trust Flow Data:', trustFlowData.length > 0 ? '✅' : '❌', '| Loading:', isTrustFlowLoading, '| Error:', trustFlowError ? '❌' : '✅');
-  console.log('[SmartVOCResults] 📊 SmartVOC Data:', smartVOCData ? '✅' : '❌', '| Loading:', isSmartVOCLoading, '| Error:', smartVOCError ? '❌' : '✅');
-  console.log('[SmartVOCResults] 🔍 SmartVOC Data Details:', {
     hasData: !!smartVOCData,
     totalResponses: smartVOCData?.totalResponses || 0,
     nevScores: smartVOCData?.nevScores || [],
@@ -169,7 +165,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     npsScore: smartVOCData?.npsScore || 0,
     cvScores: smartVOCData?.cvScores || []
   });
-  console.log('[SmartVOCResults] 🔍 Trust Flow Data Details:', {
     dataLength: trustFlowData.length,
     data: trustFlowData,
     hasData: hasTrustFlowData,

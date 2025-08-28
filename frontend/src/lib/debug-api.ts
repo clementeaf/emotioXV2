@@ -57,7 +57,6 @@ export const createResearch = async (data: any): Promise<{ id: string }> => {
     status: 'draft'
   }));
 
-  // console.log(`[DEBUG API] Investigación creada con ID: ${id}`);
 
   // Devolver respuesta simulada
   return { id };

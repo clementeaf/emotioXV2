@@ -174,7 +174,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       setModalVisible(true);
 
     } catch (error) {
-      console.error('Error saving welcome screen:', error);
       setModalError({
         title: 'Error al Guardar',
         message: `No se pudo guardar la pantalla de bienvenida: ${error instanceof Error ? error.message : String(error)}`,

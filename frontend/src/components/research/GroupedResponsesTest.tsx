@@ -18,9 +18,7 @@ export const GroupedResponsesTest: React.FC<GroupedResponsesTestProps> = ({ rese
     setIsLoading(true);
     try {
       await refetch();
-      console.log('✅ Endpoint probado exitosamente');
     } catch (error) {
-      console.error('❌ Error probando endpoint:', error);
     } finally {
       setIsLoading(false);
     }

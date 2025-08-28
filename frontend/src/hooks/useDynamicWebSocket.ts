@@ -29,15 +29,12 @@ export const useDynamicWebSocket = (researchId: string) => {
   useEffect(() => {
     const loadEndpoints = () => {
       try {
-        console.log('�� Cargando endpoints para WebSocket...');
         const dynamicEndpoints = DYNAMIC_API_ENDPOINTS;
         setEndpoints(dynamicEndpoints);
-        console.log('✅ Endpoints de WebSocket cargados:', {
           http: dynamicEndpoints.http,
           ws: dynamicEndpoints.ws
         });
       } catch (error) {
-        console.error('❌ Error cargando endpoints:', error);
         setEndpoints(null);
       } finally {
         setIsLoadingEndpoints(false);
@@ -60,17 +57,14 @@ export const useDynamicWebSocket = (researchId: string) => {
       const wsUrl = endpoints.ws;
 
       if (!wsUrl) {
-        console.error('❌ No se pudo obtener URL de WebSocket desde endpoints dinámicos');
         setIsConnecting(false);
         return;
       }
 
-      console.log('🔌 Conectando a WebSocket dinámico:', wsUrl);
 
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('✅ WebSocket dinámico conectado exitosamente');
         setIsConnected(true);
         setIsConnecting(false);
 
@@ -86,18 +80,15 @@ export const useDynamicWebSocket = (researchId: string) => {
         // 🎯 VERIFICAR QUE EL WEBSOCKET ESTÉ LISTO ANTES DE ENVIAR
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify(subscribeMessage));
-          console.log('📡 Mensaje de suscripción enviado:', subscribeMessage);
         }
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('❌ WebSocket dinámico desconectado:', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
 
         // 🎯 DELAY ANTES DE RECONECTAR (5 SEGUNDOS)
         if (event.code !== 1000) { // No es cierre limpio
-          console.log('🔄 Programando reconexión en 5 segundos...');
           setTimeout(() => {
             // 🎯 VERIFICAR QUE NO ESTEMOS YA CONECTANDO
             if (token && researchId && !isConnecting) {
@@ -108,7 +99,6 @@ export const useDynamicWebSocket = (researchId: string) => {
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('❌ Error en WebSocket dinámico:', error);
         setIsConnected(false);
         setIsConnecting(false);
       };
@@ -116,15 +106,12 @@ export const useDynamicWebSocket = (researchId: string) => {
       wsRef.current.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log('📨 Mensaje recibido en WebSocket dinámico:', message.type);
           // Aquí puedes manejar los mensajes según necesites
         } catch (error) {
-          console.error('❌ Error procesando mensaje:', error);
         }
       };
 
     } catch (error) {
-      console.error('❌ Error al crear WebSocket dinámico:', error);
       setIsConnecting(false);
     }
   }, [token, researchId, endpoints, isLoadingEndpoints]);

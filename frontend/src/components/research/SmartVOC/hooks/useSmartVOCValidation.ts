@@ -39,7 +39,6 @@ export const useSmartVOCValidation = () => {
    * de los títulos de las plantillas por defecto.
    */
   const filterEditedQuestions = useCallback((questions: SmartVOCQuestion[]): SmartVOCQuestion[] => {
-    console.log('[useSmartVOCValidation] 🎯 filterEditedQuestions input:', {
       questionsCount: questions.length,
       questions: questions.map(q => ({
         id: q.id,
@@ -55,7 +54,6 @@ export const useSmartVOCValidation = () => {
       // Se envía si: tiene título Y (no es un título de plantilla O tiene descripción/instrucciones)
       const isEdited = title && (!TEMPLATE_TITLES.has(title) || q.description || q.instructions);
 
-      console.log('[useSmartVOCValidation] 🎯 Question filter result:', {
         id: q.id,
         title: q.title,
         isEdited,
@@ -67,7 +65,6 @@ export const useSmartVOCValidation = () => {
       return isEdited;
     });
 
-    console.log('[useSmartVOCValidation] 🎯 filterEditedQuestions output:', {
       filteredCount: filtered.length,
       filtered: filtered.map(q => ({
         id: q.id,

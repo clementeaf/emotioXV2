@@ -13,6 +13,43 @@ interface ApiResponse<T> {
   loading: boolean;
 }
 
+interface RegisterData {
+  email: string;
+  password: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+interface ResearchData {
+  title: string;
+  description?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface ScreenData {
+  title?: string;
+  description?: string;
+  content?: string;
+  [key: string]: unknown;
+}
+
+interface ConfigData {
+  [key: string]: unknown;
+}
+
+interface ParticipantData {
+  email?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+interface S3UploadData {
+  file: File;
+  key?: string;
+  [key: string]: unknown;
+}
+
 /**
  * Hook simple para llamadas a la API
  * Usa fetch directamente para evitar problemas de tipos
@@ -68,14 +105,14 @@ export function useApiSimple() {
     get: <T>(url: string) => makeRequest<T>(url, { method: 'GET' }),
 
     // POST
-    post: <T>(url: string, data?: any) =>
+    post: <T>(url: string, data?: unknown) =>
       makeRequest<T>(url, {
         method: 'POST',
         body: data ? JSON.stringify(data) : undefined
       }),
 
     // PUT
-    put: <T>(url: string, data?: any) =>
+    put: <T>(url: string, data?: unknown) =>
       makeRequest<T>(url, {
         method: 'PUT',
         body: data ? JSON.stringify(data) : undefined
@@ -89,7 +126,7 @@ export function useApiSimple() {
       login: (data: { email: string; password: string }) =>
         api.post('/auth/login', data),
 
-      register: (data: any) =>
+      register: (data: RegisterData) =>
         api.post('/auth/register', data),
 
       logout: () =>
@@ -102,8 +139,8 @@ export function useApiSimple() {
     research: {
       getAll: () => api.get('/research'),
       getById: (id: string) => api.get(`/research/${id}`),
-      create: (data: any) => api.post('/research', data),
-      update: (id: string, data: any) => api.put(`/research/${id}`, data),
+      create: (data: ResearchData) => api.post('/research', data),
+      update: (id: string, data: Partial<ResearchData>) => api.put(`/research/${id}`, data),
       delete: (id: string) => api.delete(`/research/${id}`),
       updateStatus: (id: string, status: string) =>
         api.put(`/research/${id}/status`, { status }),
@@ -114,9 +151,9 @@ export function useApiSimple() {
     welcomeScreen: {
       getByResearch: (researchId: string) =>
         api.get(`/research/${researchId}/welcome-screen`),
-      create: (researchId: string, data: any) =>
+      create: (researchId: string, data: ScreenData) =>
         api.post(`/research/${researchId}/welcome-screen`, data),
-      update: (researchId: string, screenId: string, data: any) =>
+      update: (researchId: string, screenId: string, data: Partial<ScreenData>) =>
         api.put(`/research/${researchId}/welcome-screen/${screenId}`, data),
       delete: (researchId: string, screenId: string) =>
         api.delete(`/research/${researchId}/welcome-screen/${screenId}`),
@@ -125,9 +162,9 @@ export function useApiSimple() {
     thankYouScreen: {
       getByResearch: (researchId: string) =>
         api.get(`/research/${researchId}/thank-you-screen`),
-      create: (researchId: string, data: any) =>
+      create: (researchId: string, data: ScreenData) =>
         api.post(`/research/${researchId}/thank-you-screen`, data),
-      update: (researchId: string, screenId: string, data: any) =>
+      update: (researchId: string, screenId: string, data: Partial<ScreenData>) =>
         api.put(`/research/${researchId}/thank-you-screen/${screenId}`, data),
       delete: (researchId: string, screenId: string) =>
         api.delete(`/research/${researchId}/thank-you-screen/${screenId}`),
@@ -136,9 +173,9 @@ export function useApiSimple() {
     smartVoc: {
       getByResearch: (researchId: string) =>
         api.get(`/research/${researchId}/smart-voc`),
-      create: (researchId: string, data: any) =>
+      create: (researchId: string, data: ConfigData) =>
         api.post(`/research/${researchId}/smart-voc`, data),
-      update: (researchId: string, data: any) =>
+      update: (researchId: string, data: Partial<ConfigData>) =>
         api.put(`/research/${researchId}/smart-voc`, data),
       delete: (researchId: string) =>
         api.delete(`/research/${researchId}/smart-voc`),
@@ -147,9 +184,9 @@ export function useApiSimple() {
     eyeTracking: {
       getByResearch: (researchId: string) =>
         api.get(`/research/${researchId}/eye-tracking`),
-      create: (researchId: string, data: any) =>
+      create: (researchId: string, data: ConfigData) =>
         api.post(`/research/${researchId}/eye-tracking`, data),
-      update: (researchId: string, data: any) =>
+      update: (researchId: string, data: Partial<ConfigData>) =>
         api.put(`/research/${researchId}/eye-tracking`, data),
       delete: (researchId: string) =>
         api.delete(`/research/${researchId}/eye-tracking`),
@@ -158,11 +195,11 @@ export function useApiSimple() {
     eyeTrackingRecruit: {
       getConfigByResearch: (researchId: string) =>
         api.get(`/eye-tracking-recruit/research/${researchId}/config`),
-      createConfig: (researchId: string, data: any) =>
+      createConfig: (researchId: string, data: ConfigData) =>
         api.post(`/eye-tracking-recruit/research/${researchId}/config`, data),
-      updateConfig: (researchId: string, data: any) =>
+      updateConfig: (researchId: string, data: Partial<ConfigData>) =>
         api.put(`/eye-tracking-recruit/research/${researchId}/config`, data),
-      createParticipant: (configId: string, data: any) =>
+      createParticipant: (configId: string, data: ParticipantData) =>
         api.post(`/eye-tracking-recruit/config/${configId}/participant`, data),
       updateParticipantStatus: (participantId: string, status: string) =>
         api.put(`/eye-tracking-recruit/participant/${participantId}/status`, { status }),
@@ -180,7 +217,7 @@ export function useApiSimple() {
         api.get(`/eye-tracking-recruit/link/${token}/validate`),
       getResearchSummary: (researchId: string) =>
         api.get(`/eye-tracking-recruit/research/${researchId}/summary`),
-      registerPublicParticipant: (data: any) =>
+      registerPublicParticipant: (data: ParticipantData) =>
         api.post('/eye-tracking-recruit/public/participant/start', data),
       updatePublicParticipantStatus: (participantId: string, status: string) =>
         api.put(`/eye-tracking-recruit/public/participant/${participantId}/status`, { status }),
@@ -189,16 +226,16 @@ export function useApiSimple() {
     cognitiveTask: {
       getByResearch: (researchId: string) =>
         api.get(`/research/${researchId}/cognitive-task`),
-      create: (researchId: string, data: any) =>
+      create: (researchId: string, data: ConfigData) =>
         api.post(`/research/${researchId}/cognitive-task`, data),
-      update: (researchId: string, data: any) =>
+      update: (researchId: string, data: Partial<ConfigData>) =>
         api.put(`/research/${researchId}/cognitive-task`, data),
       delete: (researchId: string) =>
         api.delete(`/research/${researchId}/cognitive-task`),
     },
 
     s3: {
-      upload: (data: any) => api.post('/s3/upload', data),
+      upload: (data: S3UploadData) => api.post('/s3/upload', data),
       download: (key: string) => api.get(`/s3/download?key=${encodeURIComponent(key)}`),
       deleteObject: (key: string) => api.delete(`/s3/delete-object?key=${key}`),
     },

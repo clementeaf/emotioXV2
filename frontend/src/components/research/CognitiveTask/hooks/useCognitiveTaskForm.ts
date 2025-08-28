@@ -189,7 +189,6 @@ export const useCognitiveTaskForm = (
             return null;
           }
         } catch (localError) {
-          console.error('[useCognitiveTaskForm] Error al intentar recuperar datos del localStorage:', localError);
         }
 
         return null;
@@ -362,7 +361,6 @@ export const useCognitiveTaskForm = (
       await queryClient.refetchQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
       modals.openInteractivePreview();
     } catch (error) {
-      console.error('Error al refrescar los datos para la vista previa:', error);
       modals.showErrorModal({
         title: 'Error de Sincronización',
         message: 'No se pudieron cargar los datos más recientes para la vista previa. Inténtalo de nuevo.',
@@ -435,7 +433,6 @@ export const useCognitiveTaskForm = (
     if (researchId) {
       deleteMutation(researchId);
     } else {
-      console.error('No se puede eliminar porque researchId es undefined.');
       modals.showErrorModal({
         title: 'Error',
         message: 'No se puede eliminar la configuración porque no se ha proporcionado un ID de investigación.',

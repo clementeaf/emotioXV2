@@ -134,9 +134,7 @@ export const useCognitiveTaskState = ({
     if (updates.files) {
       const filesWithHitZones = updates.files.filter((f: any) => f.hitZones && f.hitZones.length > 0);
       if (filesWithHitZones.length > 0) {
-        // console.log(`🎯 [useCognitiveTaskState] handleQuestionChange recibió ${filesWithHitZones.length} archivos con hitZones para pregunta ${questionId}`);
         filesWithHitZones.forEach((f: any, i: number) => {
-          // console.log(`🎯 [useCognitiveTaskState] Archivo ${i} (${f.name}) hitZones:`, f.hitZones);
         });
       }
     }
@@ -154,7 +152,6 @@ export const useCognitiveTaskState = ({
       if (updatedQuestion?.files) {
         const filesWithHitZones = updatedQuestion.files.filter((f: any) => f.hitZones && f.hitZones.length > 0);
         if (filesWithHitZones.length > 0) {
-          // console.log(`🎯 [useCognitiveTaskState] Después de actualizar, pregunta ${questionId} tiene ${filesWithHitZones.length} archivos con hitZones`);
         }
       }
 

@@ -38,8 +38,8 @@ export interface ResearchBasicData {
   /** Nombre de la investigación */
   name: string;
 
-  /** Empresa o cliente para el que se realiza la investigación */
-  enterprise: string;
+  /** ID de la empresa para la que se realiza la investigación */
+  companyId: string;
 
   /** Tipo de investigación seleccionado en el Paso 2 */
   type?: ResearchType;

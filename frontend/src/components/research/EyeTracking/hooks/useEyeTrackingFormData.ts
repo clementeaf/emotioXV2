@@ -28,7 +28,6 @@ const api = {
     try {
       return await eyeTrackingFixedAPI.getByResearchId(url.split('/').pop() || '').send();
     } catch (error) {
-      console.error('Error en API GET:', error);
       throw error;
     }
   },
@@ -36,7 +35,6 @@ const api = {
     try {
       return await eyeTrackingFixedAPI.create(data).send();
     } catch (error) {
-      console.error('Error en API POST:', error);
       throw error;
     }
   },
@@ -45,7 +43,6 @@ const api = {
       const id = url.split('/').pop() || '';
       return await eyeTrackingFixedAPI.update(id, data).send();
     } catch (error) {
-      console.error('Error en API PUT:', error);
       throw error;
     }
   }

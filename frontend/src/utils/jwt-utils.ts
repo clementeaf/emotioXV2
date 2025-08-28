@@ -21,7 +21,6 @@ export const parseJwt = (token: string): any | null => {
 
     return JSON.parse(jsonPayload);
   } catch (e) {
-    console.error('Error al decodificar token:', e);
     return null;
   }
 };
@@ -65,7 +64,6 @@ export const analyzeToken = (token: string): TokenInfo => {
       payload
     };
   } catch (error) {
-    console.error('Error analizando token:', error);
     return { isValid: false };
   }
 };

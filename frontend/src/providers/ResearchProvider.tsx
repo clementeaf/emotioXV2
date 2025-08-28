@@ -27,7 +27,6 @@ export function ResearchProvider({ children }: { children: ReactNode }) {
         draft.lastUpdated = new Date(draft.lastUpdated);
         setCurrentDraft(draft);
       } catch (error) {
-        console.error('Error al cargar el borrador:', error);
         localStorage.removeItem(DRAFT_STORAGE_KEY);
       }
     }

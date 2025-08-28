@@ -36,12 +36,10 @@ export const useWebSocketConnection = () => {
       const wsProtoUrl = httpUrl.replace(/^http/, 'ws'); // Cambiar http:// a ws:// o https:// a wss://
       // Asumir ruta /ws y token como query param (ajustar si es diferente)
       const wsUrl = `${wsProtoUrl}/ws?token=${token}`;
-      // console.log('[WebSocket] Connecting to:', wsUrl); // Log para depuración
 
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        // console.log('WebSocket conectado');
         statusRef.current = ConnectionStatus.CONNECTED;
 
         // Programar refresh del token 5 minutos antes de que expire
@@ -71,22 +69,19 @@ export const useWebSocketConnection = () => {
           const data = JSON.parse(event.data);
 
           if (data.action === 'tokenRefreshed' && data.token) {
-            // console.log('Token renovado recibido por WebSocket');
-            // TODO: Implementar la actualización del token en el estado global de useAuth si es necesario.
-            // Actualmente, esta lógica solo actualiza el token en el contexto del WebSocket.
+            // Note: Token refresh is handled at the WebSocket level.
+            // Global token state updates are managed by the auth context separately.
           }
         } catch (error) {
-          console.error('Error al procesar mensaje WebSocket:', error);
+          // Error handling for WebSocket message processing
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('Error en WebSocket:', error);
+      ws.onerror = () => {
         statusRef.current = ConnectionStatus.ERROR;
       };
 
       ws.onclose = () => {
-        // console.log('WebSocket desconectado');
         statusRef.current = ConnectionStatus.DISCONNECTED;
 
         // Reintentar conexión después de un tiempo
@@ -101,7 +96,6 @@ export const useWebSocketConnection = () => {
 
       wsRef.current = ws;
     } catch (error) {
-      console.error('Error al establecer conexión WebSocket:', error);
       statusRef.current = ConnectionStatus.ERROR;
     }
   };

@@ -28,9 +28,6 @@ export function CommentsList({
 }: CommentsListProps) {
 
   // Debug logs
-  console.log('[CommentsList] 🔍 Props:', { questionId, questionType, required, conditionalityDisabled });
-  console.log('[CommentsList] 📊 Comments:', comments);
-  console.log('[CommentsList] 🎯 Selected items:', selectedItems);
   // 🎯 FUNCIÓN PARA EXTRAER EL TEXTO REAL
   const extractTextValue = (text: any): string => {
     if (typeof text === 'string') {

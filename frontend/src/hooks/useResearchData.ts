@@ -22,28 +22,23 @@ class GlobalAPISingleton {
     const key = `smartVOCForm-${researchId}`;
 
     if (this.promises.has(key)) {
-      console.log(`[GlobalAPISingleton] Esperando promesa existente para ${key}`);
       return await this.promises.get(key);
     }
 
-    console.log(`[GlobalAPISingleton] Creando nueva promesa para ${key}`);
     const promise = smartVocFixedAPI.getByResearchId(researchId);
     this.promises.set(key, promise);
     this.isInitialized.set(key, true);
 
     try {
       const result = await promise;
-      console.log(`[GlobalAPISingleton] Promesa completada para ${key}`);
       return result;
     } catch (error) {
-      console.warn(`[GlobalAPISingleton] Error en promesa para ${key}:`, error);
       throw error;
     } finally {
       // Limpiar después de 10 segundos
       setTimeout(() => {
         this.promises.delete(key);
         this.isInitialized.delete(key);
-        console.log(`[GlobalAPISingleton] Limpiando promesa para ${key}`);
       }, 10000);
     }
   }
@@ -52,28 +47,23 @@ class GlobalAPISingleton {
     const key = `groupedResponses-${researchId}`;
 
     if (this.promises.has(key)) {
-      console.log(`[GlobalAPISingleton] Esperando promesa existente para ${key}`);
       return await this.promises.get(key);
     }
 
-    console.log(`[GlobalAPISingleton] Creando nueva promesa para ${key}`);
     const promise = moduleResponseService.getResponsesGroupedByQuestion(researchId);
     this.promises.set(key, promise);
     this.isInitialized.set(key, true);
 
     try {
       const result = await promise;
-      console.log(`[GlobalAPISingleton] Promesa completada para ${key}`);
       return result;
     } catch (error) {
-      console.warn(`[GlobalAPISingleton] Error en promesa para ${key}:`, error);
       throw error;
     } finally {
       // Limpiar después de 10 segundos
       setTimeout(() => {
         this.promises.delete(key);
         this.isInitialized.delete(key);
-        console.log(`[GlobalAPISingleton] Limpiando promesa para ${key}`);
       }, 10000);
     }
   }
@@ -149,7 +139,6 @@ export const useResearchData = (researchId: string) => {
       try {
         return await globalAPISingleton.getSmartVOCForm(researchId);
       } catch (error) {
-        console.warn('[useResearchData] Error obteniendo SmartVOC form, devolviendo null:', error);
         return null;
       }
     },
@@ -169,7 +158,6 @@ export const useResearchData = (researchId: string) => {
       try {
         return await globalAPISingleton.getGroupedResponses(researchId);
       } catch (error) {
-        console.warn('[useResearchData] Error obteniendo respuestas agrupadas, devolviendo datos vacíos:', error);
         return {
           data: [],
           status: 404

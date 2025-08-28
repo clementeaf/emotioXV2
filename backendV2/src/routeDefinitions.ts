@@ -16,6 +16,9 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Auth
   { pathPattern: /^\/auth/, controllerType: 'auth' },
 
+  // Companies (NUEVA RUTA)
+  { pathPattern: /^\/companies/, controllerType: 'companies' },
+
   // Welcome Screen (maneja /research/{id}/welcome-screen y /research/{id}/welcome-screen/{screenId})
   { pathPattern: /^\/research\/[^\/]+\/welcome-screen(\/[^\/]+)?$/, controllerType: 'welcome-screen' },
 

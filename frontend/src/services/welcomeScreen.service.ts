@@ -7,7 +7,6 @@ const WelcomeScreenService = {
       const response = await welcomeScreenAPI.getByResearch(researchId);
       return response as WelcomeScreenRecord | null;
     } catch (error) {
-      console.error('[WelcomeScreenService] Error en getByResearchId:', error);
       throw error;
     }
   },

@@ -75,13 +75,11 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
       }
       */
       // Placeholder para evitar error de no uso:
-      // console.log('Funcionalidad fetchUserProfile comentada temporalmente');
       throw new Error('Perfil no disponible temporalmente'); // Simular error ya que no hay datos
 
     } catch (err) {
       // setError('Error al cargar el perfil de usuario'); // Mantenido por el throw
       setError(err instanceof Error ? err.message : 'Error desconocido al cargar perfil');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -130,13 +128,11 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
       }
       */
       // Placeholder:
-      // console.log('Funcionalidad handleSubmit comentada temporalmente');
       throw new Error('Actualización no disponible temporalmente'); // Simular error
 
     } catch (err) {
       // setError('Error al actualizar el perfil'); // Mantenido por el throw
       setError(err instanceof Error ? err.message : 'Error desconocido al actualizar perfil');
-      console.error(err);
     } finally {
       setLoading(false);
     }

@@ -40,7 +40,6 @@ export const ClientsContent = () => {
         const research = response.data || [];
         return filterResearchByClient(research, selectedClientId);
       } catch (error) {
-        console.error('Error loading research data:', error);
         return [];
       }
     },

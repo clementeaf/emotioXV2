@@ -437,7 +437,6 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
     }
 
   } catch (error) {
-    console.error('[useEyeTrackingRecruit] Error procesando respuesta:', error);
   }
 
   return safeResponse;
@@ -573,7 +572,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     // Verificar otras condiciones según sea necesario...
 
     if (errors.length > 0) {
-      // console.log('[useEyeTrackingRecruit] Errores de validación:', errors);
       return false;
     }
 
@@ -591,7 +589,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', actualResearchId] });
     },
     onError: (error: any) => {
-      console.error('[useEyeTrackingRecruit] Error en mutación:', error);
       setApiErrors({
         visible: true,
         title: 'Error al guardar',
@@ -633,13 +630,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         questionKey: restFormData.questionKey === QuestionType.DEMOGRAPHICS ? restFormData.questionKey : QuestionType.DEMOGRAPHICS
       };
 
-      // console.log('[useEyeTrackingRecruit] Guardando config con ID de investigación:', dataToSave.researchId);
-      // console.log('[useEyeTrackingRecruit] ID original de configuración eliminado:', id || 'No tenía ID');
-      // console.log('[useEyeTrackingRecruit] Payload completo:', JSON.stringify(dataToSave, null, 2));
 
       // Enviamos los datos al servidor
       const result = await saveConfigMutation.mutateAsync(dataToSave);
-      // console.log('[useEyeTrackingRecruit] Resultado exitoso:', result);
 
       // Mostrar modal de éxito (tipo info para usar azul)
       showModal({
@@ -648,7 +641,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         type: 'info'
       });
     } catch (error: any) {
-      console.error('[useEyeTrackingRecruit] Error al guardar:', error);
 
       // Mostrar información detallada del error
       let errorMessage = '';
@@ -687,7 +679,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         toast.error('Por favor complete todos los campos requeridos');
       }
     } catch (error: any) {
-      console.error('[useEyeTrackingRecruit] Error al preparar datos para guardar:', error);
       setApiErrors({
         visible: true,
         title: 'Error al preparar datos',
@@ -813,7 +804,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // Función para actualizar las opciones de edad
   const updateAgeOptions = useCallback((options: string[]) => {
-    console.log('[updateAgeOptions] 🎯 Actualizando opciones de edad:', options);
     setFormData(prevData => ({
       ...prevData,
       demographicQuestions: {
@@ -828,13 +818,11 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // Función para actualizar las edades descalificantes
   const updateDisqualifyingAges = useCallback((disqualifyingAges: string[]) => {
-    console.log('[updateDisqualifyingAges] 🎯 Actualizando edades descalificatorias:', disqualifyingAges);
     setFormData(prevData => {
       // 🎯 COMBINAR LAS EDADES DESCALIFICATORIAS CON LAS OPCIONES EXISTENTES
       const currentOptions = prevData.demographicQuestions.age.options || [];
       const allAges = Array.from(new Set([...currentOptions, ...disqualifyingAges]));
 
-      console.log('[updateDisqualifyingAges] 🎯 Opciones combinadas:', allAges);
 
       return {
         ...prevData,
@@ -1048,12 +1036,10 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CONFIGURACIÓN DE EDAD
   const handleAgeConfigSave = useCallback((validAges: string[], disqualifyingAges: string[]) => {
-    console.log('[handleAgeConfigSave] 🎯 Iniciando configuración de edad:', { validAges, disqualifyingAges });
 
     // 🎯 COMBINAR TODAS LAS EDADES (VÁLIDAS + DESCALIFICATORIAS) EN OPTIONS
     const allAges = Array.from(new Set([...validAges, ...disqualifyingAges]));
 
-    console.log('[handleAgeConfigSave] 🎯 Edades combinadas:', allAges);
 
     setFormData(prevData => {
       const newData = {
@@ -1068,14 +1054,12 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         }
       };
 
-      console.log('[handleAgeConfigSave] 🎯 Nuevos datos de edad:', newData.demographicQuestions.age);
       return newData;
     });
   }, []);
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE EDAD
   const handleAgeQuotasSave = useCallback((quotas: AgeQuota[]) => {
-    console.log('[handleAgeQuotasSave] 🎯 Guardando cuotas de edad:', quotas);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1091,7 +1075,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE EDAD
   const toggleAgeQuotasEnabled = useCallback((enabled: boolean) => {
-    console.log('[toggleAgeQuotasEnabled] 🎯 Cambiando estado de cuotas:', enabled);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1107,7 +1090,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE PAÍS
   const handleCountryQuotasSave = useCallback((quotas: CountryQuota[]) => {
-    console.log('[handleCountryQuotasSave] 🎯 Guardando cuotas de país:', quotas);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1123,7 +1105,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE PAÍS
   const toggleCountryQuotasEnabled = useCallback((enabled: boolean) => {
-    console.log('[toggleCountryQuotasEnabled] 🎯 Cambiando estado de cuotas de país:', enabled);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1139,7 +1120,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE GÉNERO
   const handleGenderQuotasSave = useCallback((quotas: GenderQuota[]) => {
-    console.log('[handleGenderQuotasSave] 🎯 Guardando cuotas de género:', quotas);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1155,7 +1135,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE GÉNERO
   const toggleGenderQuotasEnabled = useCallback((enabled: boolean) => {
-    console.log('[toggleGenderQuotasEnabled] 🎯 Cambiando estado de cuotas de género:', enabled);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1171,7 +1150,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE NIVEL DE EDUCACIÓN
   const handleEducationLevelQuotasSave = useCallback((quotas: EducationLevelQuota[]) => {
-    console.log('[handleEducationLevelQuotasSave] 🎯 Guardando cuotas de nivel de educación:', quotas);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1187,7 +1165,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE NIVEL DE EDUCACIÓN
   const toggleEducationLevelQuotasEnabled = useCallback((enabled: boolean) => {
-    console.log('[toggleEducationLevelQuotasEnabled] 🎯 Cambiando estado de cuotas de nivel de educación:', enabled);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1203,7 +1180,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE INGRESOS FAMILIARES
   const handleHouseholdIncomeQuotasSave = useCallback((quotas: HouseholdIncomeQuota[]) => {
-    console.log('[handleHouseholdIncomeQuotasSave] 🎯 Guardando cuotas de ingresos familiares:', quotas);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1219,7 +1195,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE INGRESOS FAMILIARES
   const toggleHouseholdIncomeQuotasEnabled = useCallback((enabled: boolean) => {
-    console.log('[toggleHouseholdIncomeQuotasEnabled] 🎯 Cambiando estado de cuotas de ingresos familiares:', enabled);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1235,7 +1210,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE SITUACIÓN LABORAL
   const handleEmploymentStatusQuotasSave = useCallback((quotas: EmploymentStatusQuota[]) => {
-    console.log('[handleEmploymentStatusQuotasSave] 🎯 Guardando cuotas de situación laboral:', quotas);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1251,7 +1225,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE SITUACIÓN LABORAL
   const toggleEmploymentStatusQuotasEnabled = useCallback((enabled: boolean) => {
-    console.log('[toggleEmploymentStatusQuotasEnabled] 🎯 Cambiando estado de cuotas de situación laboral:', enabled);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1267,7 +1240,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE HORAS DIARIAS EN LÍNEA
   const handleDailyHoursOnlineQuotasSave = useCallback((quotas: DailyHoursOnlineQuota[]) => {
-    console.log('[handleDailyHoursOnlineQuotasSave] 🎯 Guardando cuotas de horas diarias en línea:', quotas);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1283,7 +1255,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE HORAS DIARIAS EN LÍNEA
   const toggleDailyHoursOnlineQuotasEnabled = useCallback((enabled: boolean) => {
-    console.log('[toggleDailyHoursOnlineQuotasEnabled] 🎯 Cambiando estado de cuotas de horas diarias en línea:', enabled);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1299,7 +1270,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE COMPETENCIA TÉCNICA
   const handleTechnicalProficiencyQuotasSave = useCallback((quotas: TechnicalProficiencyQuota[]) => {
-    console.log('[handleTechnicalProficiencyQuotasSave] 🎯 Guardando cuotas de competencia técnica:', quotas);
 
     setFormData(prevData => ({
       ...prevData,
@@ -1315,7 +1285,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE COMPETENCIA TÉCNICA
   const toggleTechnicalProficiencyQuotasEnabled = useCallback((enabled: boolean) => {
-    console.log('[toggleTechnicalProficiencyQuotasEnabled] 🎯 Cambiando estado de cuotas de competencia técnica:', enabled);
 
     setFormData(prevData => ({
       ...prevData,

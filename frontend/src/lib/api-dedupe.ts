@@ -22,12 +22,10 @@ class APIDeduplicator {
     // Si hay una request pendiente, retornarla
     const pending = this.pendingRequests.get(key);
     if (pending) {
-      console.log(`[APIDeduplicator] 🔄 Reutilizando request existente para: ${key}`);
       return pending.promise;
     }
 
     // Crear nueva request
-    console.log(`[APIDeduplicator] 🚀 Nueva request para: ${key}`);
     const promise = fetchFn();
     
     this.pendingRequests.set(key, {
@@ -39,7 +37,6 @@ class APIDeduplicator {
     promise.finally(() => {
       setTimeout(() => {
         this.pendingRequests.delete(key);
-        console.log(`[APIDeduplicator] 🧹 Limpiando cache para: ${key}`);
       }, this.CACHE_TIME);
     });
 
@@ -58,7 +55,6 @@ class APIDeduplicator {
 
     oldKeys.forEach(key => {
       this.pendingRequests.delete(key);
-      console.log(`[APIDeduplicator] 🗑️ Limpiando request antigua: ${key}`);
     });
   }
 }

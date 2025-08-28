@@ -101,7 +101,6 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
 
                 // Solo mostrar error para tipos realmente desconocidos
                 if (!stepType.includes('test') && !stepType.includes('debug') && !stepType.includes('temp')) {
-                    console.error(`[buildQuestionDictionary] ❌ Tipo no soportado: ${stepType}. Usando fallback: ${fallbackQuestionKey}`);
                 }
             }
         }

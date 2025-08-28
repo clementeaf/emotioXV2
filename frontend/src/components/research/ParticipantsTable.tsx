@@ -94,10 +94,8 @@ export function ParticipantsTable({
       if (response.success) {
         setParticipantDetails(response.data);
       } else {
-        console.error('Error al cargar detalles:', response);
       }
     } catch (error) {
-      console.error('Error al cargar detalles del participante:', error);
     }
   };
 
@@ -123,7 +121,6 @@ export function ParticipantsTable({
       const response = await researchInProgressAPI.deleteParticipant(researchId, participantToDelete.id);
 
       if (response.success) {
-        console.log('✅ Participante eliminado exitosamente');
 
         // 🎯 NOTIFICAR AL COMPONENTE PADRE
         onParticipantDeleted?.(participantToDelete.id);
@@ -132,11 +129,9 @@ export function ParticipantsTable({
         setIsDeleteModalOpen(false);
         setParticipantToDelete(null);
       } else {
-        console.error('❌ Error eliminando participante:', response);
         alert('Error al eliminar participante');
       }
     } catch (error) {
-      console.error('❌ Error eliminando participante:', error);
       alert('Error al eliminar participante');
     } finally {
       setIsDeleting(false);
@@ -153,7 +148,6 @@ export function ParticipantsTable({
   const generatePublicTestsUrl = (participantId: string) => {
     const url = getPublicTestsUrl(researchId, participantId);
     
-    console.log('[ParticipantsTable] 🔗 URL generada:', {
       url,
       participantId,
       researchId
@@ -168,7 +162,6 @@ export function ParticipantsTable({
       const url = generatePublicTestsUrl(participantId);
       await navigator.clipboard.writeText(url);
     } catch (err) {
-      console.error('Error copiando URL:', err);
     }
   };
 

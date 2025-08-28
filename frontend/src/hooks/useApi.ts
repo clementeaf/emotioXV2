@@ -48,7 +48,6 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
           mode: 'cors',
         };
 
-        // // console.log('Fetching URL:', url, 'with options:', fetchOptions);
 
         const response = await fetch(url, fetchOptions);
 
@@ -60,7 +59,6 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
         const data = await response.json();
         return { data, error: null, loading: false };
       } catch (error) {
-        console.error('API Error:', error);
         return {
           data: null,
           error: error instanceof Error ? error.message : 'Unknown error',

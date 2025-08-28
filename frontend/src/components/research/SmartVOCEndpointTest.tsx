@@ -18,9 +18,7 @@ export const SmartVOCEndpointTest: React.FC<SmartVOCEndpointTestProps> = ({ rese
     setIsLoading(true);
     try {
       // Simular una nueva carga de datos
-      console.log('✅ Endpoint SmartVOC probado exitosamente');
     } catch (error) {
-      console.error('❌ Error probando endpoint SmartVOC:', error);
     } finally {
       setIsLoading(false);
     }

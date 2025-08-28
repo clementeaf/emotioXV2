@@ -26,7 +26,6 @@ interface ChoiceResultsProps {
 
 export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
   if (!data || !data.options || !Array.isArray(data.options)) {
-    console.error('[ChoiceResults] ❌ Datos inválidos:', data);
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500">No hay datos de selección disponibles.</p>

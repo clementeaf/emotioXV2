@@ -88,7 +88,6 @@ export const useClients = (): UseClientsReturn => {
 
         return uniqueClients;
       } catch (error) {
-        console.error('Error fetching clients:', error);
         return [];
       }
     },

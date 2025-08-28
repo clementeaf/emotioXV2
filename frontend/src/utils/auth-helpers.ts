@@ -49,9 +49,6 @@ export const showAuthDiagnostics = (): void => {
   const localToken = localStorage.getItem('token');
   const sessionToken = sessionStorage.getItem('token');
   
-  console.group('📊 Diagnóstico de Autenticación');
-  // console.log('Token en localStorage:', localToken ? `${localToken.substring(0, 15)}...` : 'No existe');
-  // console.log('Token en sessionStorage:', sessionToken ? `${sessionToken.substring(0, 15)}...` : 'No existe');
   
   try {
     const token = localToken || sessionToken;
@@ -59,7 +56,6 @@ export const showAuthDiagnostics = (): void => {
       const parts = token.split('.');
       if (parts.length === 3) {
         const payload = JSON.parse(atob(parts[1]));
-        // console.log('Payload del token:', payload);
         
         // Verificar expiración
         if (payload.exp) {
@@ -67,22 +63,16 @@ export const showAuthDiagnostics = (): void => {
           const now = new Date();
           const isExpired = now > expDate;
           
-          // console.log('Expiración:', expDate.toLocaleString());
-          // console.log('Expirado:', isExpired ? 'Sí ❌' : 'No ✅');
           
           if (isExpired) {
-            // console.log('Expirado hace:', Math.round((now.getTime() - expDate.getTime()) / 1000 / 60), 'minutos');
           } else {
-            // console.log('Expira en:', Math.round((expDate.getTime() - now.getTime()) / 1000 / 60), 'minutos');
           }
         }
       }
     }
   } catch (error) {
-    console.error('Error al decodificar token:', error);
   }
   
-  console.groupEnd();
   
   // Mostrar toast con mensaje
   toast('Verificando estado de autenticación...', {

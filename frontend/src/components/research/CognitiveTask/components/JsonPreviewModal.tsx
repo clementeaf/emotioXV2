@@ -191,7 +191,6 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
       setParsedData(newParsedData);
       setQuestionsHtml(newQuestionsHtml);
     } catch (error) {
-      console.error('Error parsing JSON:', error);
       setParseError(error instanceof Error ? error.message : 'Error al procesar los datos JSON');
       setParsedData({ questions: [] });
       setQuestionsHtml('');
@@ -568,7 +567,6 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
           `);
           previewWindow.document.close();
         } catch (error) {
-          console.error('Error al generar la vista previa:', error);
           previewWindow.document.write(`
             <html><body>
               <h1>Error al generar la vista previa</h1>

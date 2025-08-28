@@ -45,15 +45,12 @@ export const useMonitoringReceiver = (researchId: string) => {
   useEffect(() => {
     const loadEndpoints = () => {
       try {
-        console.log('🔍 Cargando endpoints para monitoreo...');
         const dynamicEndpoints = DYNAMIC_API_ENDPOINTS;
         setEndpoints(dynamicEndpoints);
-        console.log('✅ Endpoints de monitoreo cargados:', {
           http: dynamicEndpoints.http,
           ws: dynamicEndpoints.ws
         });
       } catch (error) {
-        console.error('❌ Error cargando endpoints:', error);
         setEndpoints(null);
       } finally {
         setIsLoadingEndpoints(false);
@@ -78,12 +75,10 @@ export const useMonitoringReceiver = (researchId: string) => {
       // 🎯 USAR ENDPOINT CORRECTO DE AWS
       const wsUrl = getWebsocketUrl();
 
-      console.log('🔌 Intentando conectar a WebSocket de monitoreo:', wsUrl);
 
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('✅ WebSocket dinámico conectado exitosamente');
         setIsConnected(true);
         setIsConnecting(false);
         reconnectAttemptsRef.current = 0; // Reset intentos al conectar exitosamente
@@ -100,12 +95,10 @@ export const useMonitoringReceiver = (researchId: string) => {
         // 🎯 VERIFICAR QUE EL WEBSOCKET ESTÉ LISTO ANTES DE ENVIAR
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify(connectMessage));
-          console.log('📡 Mensaje de conexión de monitoreo enviado:', connectMessage);
         }
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('❌ WebSocket dinámico desconectado:', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
         wsRef.current = null; // Limpiar referencia
@@ -116,7 +109,6 @@ export const useMonitoringReceiver = (researchId: string) => {
           
           if (reconnectAttemptsRef.current <= maxReconnectAttempts) {
             const delay = Math.min(5000 * reconnectAttemptsRef.current, 30000); // Incrementar delay, máximo 30s
-            console.log(`🔄 Reintento ${reconnectAttemptsRef.current}/${maxReconnectAttempts} en ${delay/1000}s...`);
             
             setTimeout(() => {
               // 🎯 VERIFICAR QUE NO ESTEMOS YA CONECTANDO Y QUE NO HAYA OTRA CONEXIÓN
@@ -125,13 +117,11 @@ export const useMonitoringReceiver = (researchId: string) => {
               }
             }, delay);
           } else {
-            console.error('❌ Máximo de reintentos alcanzado. No se reconectará automáticamente.');
           }
         }
       };
 
       wsRef.current.onerror = (event) => {
-        console.error('❌ Error en WebSocket dinámico:', {
           type: event.type,
           target: event.target ? 'WebSocket' : 'Unknown',
           readyState: wsRef.current?.readyState,
@@ -144,15 +134,12 @@ export const useMonitoringReceiver = (researchId: string) => {
       wsRef.current.onmessage = (event) => {
         try {
           const message: MonitoringEvent = JSON.parse(event.data);
-          console.log('📨 Mensaje recibido en WebSocket dinámico:', message.type);
           handleMonitoringEvent(message);
         } catch (error) {
-          console.error('❌ Error procesando mensaje:', error);
         }
       };
 
     } catch (error) {
-      console.error('❌ Error al crear WebSocket dinámico:', error);
       setIsConnecting(false);
     }
   }, [token, researchId, endpoints, isLoadingEndpoints]);
@@ -179,14 +166,12 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 MANEJAR EVENTOS DE MONITOREO
   const handleMonitoringEvent = useCallback((event: MonitoringEvent) => {
-    console.log('[useMonitoringReceiver] 📨 Procesando evento:', {
       type: event.type,
       data: event.data
     });
 
     switch (event.type) {
       case 'PARTICIPANT_LOGIN':
-        console.log('[useMonitoringReceiver] 🎯 Llamando handleParticipantLogin');
         handleParticipantLogin(event.data);
         break;
       case 'PARTICIPANT_STEP':
@@ -205,13 +190,11 @@ export const useMonitoringReceiver = (researchId: string) => {
         handleParticipantError(event.data);
         break;
       default:
-        console.log('[useMonitoringReceiver] ⚠️ Evento no manejado:', event.type);
     }
   }, []);
 
   // 🎯 MANEJAR LOGIN DE PARTICIPANTE
   const handleParticipantLogin = useCallback((data: any) => {
-    console.log('[useMonitoringReceiver] 🎯 PARTICIPANT_LOGIN recibido:', {
       participantId: data.participantId,
       email: data.email,
       researchId: data.researchId,
@@ -219,7 +202,6 @@ export const useMonitoringReceiver = (researchId: string) => {
     });
 
     setMonitoringData(prev => {
-      console.log('[useMonitoringReceiver] 📊 Estado anterior:', {
         totalParticipants: prev.totalParticipants,
         participants: prev.participants.map(p => ({ participantId: p.participantId, email: p.email }))
       });
@@ -227,7 +209,6 @@ export const useMonitoringReceiver = (researchId: string) => {
       const existingParticipant = prev.participants.find(p => p.participantId === data.participantId);
 
       if (existingParticipant) {
-        console.log('[useMonitoringReceiver] 🔄 Actualizando participante existente:', existingParticipant.participantId);
 
         // Actualizar participante existente
         const updatedParticipants = prev.participants.map(p =>
@@ -243,7 +224,6 @@ export const useMonitoringReceiver = (researchId: string) => {
           lastUpdate: data.timestamp
         };
 
-        console.log('[useMonitoringReceiver] ✅ Estado actualizado (existente):', {
           totalParticipants: newState.totalParticipants,
           activeParticipants: newState.activeParticipants,
           participants: newState.participants.map(p => ({ participantId: p.participantId, email: p.email, status: p.status }))
@@ -251,7 +231,6 @@ export const useMonitoringReceiver = (researchId: string) => {
 
         return newState;
       } else {
-        console.log('[useMonitoringReceiver] 🆕 Agregando nuevo participante:', data.participantId);
 
         // Agregar nuevo participante
         const newParticipant: ParticipantStatus = {
@@ -272,7 +251,6 @@ export const useMonitoringReceiver = (researchId: string) => {
           lastUpdate: data.timestamp
         };
 
-        console.log('[useMonitoringReceiver] ✅ Estado actualizado (nuevo):', {
           totalParticipants: newState.totalParticipants,
           activeParticipants: newState.activeParticipants,
           participants: newState.participants.map(p => ({ participantId: p.participantId, email: p.email, status: p.status }))
@@ -410,7 +388,6 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 CONECTAR AL MONTAR
   useEffect(() => {
-    console.log('[useMonitoringReceiver] 🔄 useEffect de conexión:', {
       token: !!token,
       researchId,
       isLoadingEndpoints,
@@ -419,10 +396,8 @@ export const useMonitoringReceiver = (researchId: string) => {
     });
 
     if (token && researchId && !isLoadingEndpoints && endpoints) {
-      console.log('[useMonitoringReceiver] ✅ Condiciones cumplidas, conectando...');
       connect();
     } else {
-      console.log('[useMonitoringReceiver] ⚠️ No se conectó:', {
         reason: !token ? 'No hay token' :
           !researchId ? 'No hay researchId' :
             isLoadingEndpoints ? 'Cargando endpoints' :
@@ -432,7 +407,6 @@ export const useMonitoringReceiver = (researchId: string) => {
     }
 
     return () => {
-      console.log('[useMonitoringReceiver] 🧹 Limpiando conexión');
       disconnect();
     };
   }, [token, researchId, endpoints, isLoadingEndpoints]);

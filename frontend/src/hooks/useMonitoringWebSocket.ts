@@ -18,7 +18,6 @@ export const useMonitoringWebSocket = (researchId?: string) => {
 
   const connect = useCallback(() => {
     if (!researchId) {
-      console.log('[MonitoringWebSocket] ⚠️ No hay researchId, no se puede conectar');
       return;
     }
 
@@ -26,12 +25,10 @@ export const useMonitoringWebSocket = (researchId?: string) => {
       // 🎯 USAR ENDPOINT CORRECTO DE AWS
       const wsUrl = getWebsocketUrl();
 
-      console.log('[MonitoringWebSocket] 🔌 Intentando conectar a:', wsUrl);
 
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log('[MonitoringWebSocket] ✅ Conectado al servidor de monitoreo');
         isConnectedRef.current = true;
 
         // 🎯 ENVIAR EVENTO DE CONEXIÓN DE MONITOREO
@@ -45,7 +42,6 @@ export const useMonitoringWebSocket = (researchId?: string) => {
       };
 
       ws.current.onclose = (event) => {
-        console.log('[MonitoringWebSocket] ❌ Desconectado del servidor de monitoreo:', {
           code: event.code,
           reason: event.reason,
           wasClean: event.wasClean
@@ -54,7 +50,6 @@ export const useMonitoringWebSocket = (researchId?: string) => {
       };
 
       ws.current.onerror = (error) => {
-        console.error('[MonitoringWebSocket] ❌ Error en WebSocket:', error);
         isConnectedRef.current = false;
       };
 
@@ -62,57 +57,45 @@ export const useMonitoringWebSocket = (researchId?: string) => {
         try {
           const message = JSON.parse(event.data) as WebSocketMessage;
 
-          console.log('[MonitoringWebSocket] 📨 Mensaje recibido:', message.event);
 
           switch (message.event) {
             case WebSocketEvent.MONITORING_CONNECT:
-              console.log('[MonitoringWebSocket] 🎯 MONITORING_CONNECT:', message.data);
               break;
 
             case WebSocketEvent.PARTICIPANT_LOGIN:
               const loginData = message.data as ParticipantLoginData;
-              console.log('[MonitoringWebSocket] 🎯 PARTICIPANT_LOGIN:', loginData);
               // 🎯 AQUÍ PODRÍAS ACTUALIZAR EL ESTADO DEL DASHBOARD
               break;
 
             case WebSocketEvent.PARTICIPANT_STEP:
               const stepData = message.data as ParticipantStepData;
-              console.log('[MonitoringWebSocket] 🎯 PARTICIPANT_STEP:', stepData);
               // 🎯 AQUÍ PODRÍAS ACTUALIZAR EL PROGRESO DEL PARTICIPANTE
               break;
 
             case WebSocketEvent.PARTICIPANT_RESPONSE_SAVED:
               const responseData = message.data as ParticipantResponseSavedData;
-              console.log('[MonitoringWebSocket] 🎯 PARTICIPANT_RESPONSE_SAVED:', responseData);
               // 🎯 AQUÍ PODRÍAS ACTUALIZAR LAS RESPUESTAS Y PROGRESO
               break;
 
             case WebSocketEvent.PARTICIPANT_DISQUALIFIED:
-              console.log('[MonitoringWebSocket] 🎯 PARTICIPANT_DISQUALIFIED:', message.data);
               break;
 
             case WebSocketEvent.PARTICIPANT_QUOTA_EXCEEDED:
-              console.log('[MonitoringWebSocket] 🎯 PARTICIPANT_QUOTA_EXCEEDED:', message.data);
               break;
 
             case WebSocketEvent.PARTICIPANT_COMPLETED:
-              console.log('[MonitoringWebSocket] 🎯 PARTICIPANT_COMPLETED:', message.data);
               break;
 
             case WebSocketEvent.PARTICIPANT_ERROR:
-              console.log('[MonitoringWebSocket] 🎯 PARTICIPANT_ERROR:', message.data);
               break;
 
             default:
-              console.log('[MonitoringWebSocket] ⚠️ Evento no manejado:', message.event);
           }
         } catch (error) {
-          console.error('[MonitoringWebSocket] ❌ Error al procesar mensaje:', error);
         }
       };
 
     } catch (error) {
-      console.error('[MonitoringWebSocket] ❌ Error al conectar:', error);
       isConnectedRef.current = false;
     }
   }, [researchId]);
@@ -127,16 +110,13 @@ export const useMonitoringWebSocket = (researchId?: string) => {
 
   const sendEvent = useCallback((message: WebSocketMessage) => {
     if (!ws.current || !isConnectedRef.current) {
-      console.warn('[MonitoringWebSocket] ⚠️ WebSocket no conectado, evento no enviado:', message.event);
       return false;
     }
 
     try {
       ws.current.send(JSON.stringify(message));
-      console.log('[MonitoringWebSocket] ✅ Evento enviado:', message.event);
       return true;
     } catch (error) {
-      console.error('[MonitoringWebSocket] ❌ Error enviando evento:', error);
       return false;
     }
   }, []);

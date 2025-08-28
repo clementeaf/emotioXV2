@@ -44,7 +44,6 @@ export const useNavigationFlowConfig = () => {
 
   const logDebug = useCallback((message: string, data?: any) => {
     if (config.enableDebugLogging) {
-      console.log(`[NavigationFlow] ${message}`, data);
     }
   }, [config.enableDebugLogging]);
 

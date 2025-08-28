@@ -53,7 +53,3 @@ export const getWebsocketUrl = (): string => {
   return CLIENT_CONFIG.wsUrl;
 };
 
-// 🐛 DEBUG
-if (CLIENT_CONFIG.isDevelopment && typeof window !== 'undefined') {
-  console.log('[CLIENT_CONFIG] 🔧 Configuración cargada:', CLIENT_CONFIG);
-}

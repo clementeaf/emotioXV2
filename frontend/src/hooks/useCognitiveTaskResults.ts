@@ -17,12 +17,20 @@ export type CognitiveQuestionType =
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
 // 🎯 NUEVA INTERFAZ PARA LA ESTRUCTURA OPTIMIZADA
+interface ResponseValue {
+  [key: string]: unknown;
+}
+
+interface ResponseMetadata {
+  [key: string]: unknown;
+}
+
 interface GroupedResponse {
   participantId: string;
-  value: any;
+  value: ResponseValue | string | number | boolean | string[];
   responseTime?: string;
   timestamp: string;
-  metadata?: any;
+  metadata?: ResponseMetadata;
 }
 
 interface GroupedResponsesData {
@@ -35,10 +43,10 @@ export interface ParticipantResponse {
   responses: Array<{
     questionKey: string;
     questionType: CognitiveQuestionType;
-    response: any;
+    response: ResponseValue | string | number | boolean | string[];
     timestamp: string;
   }>;
-  metadata?: any;
+  metadata?: ResponseMetadata;
   isCompleted?: boolean;
 }
 
@@ -192,15 +200,15 @@ export function useCognitiveTaskResults(researchId: string) {
   const [researchConfig, setResearchConfig] = useState<any>(null);
 
   // 🎯 NUEVA FUNCIÓN PARA PROCESAR DATOS DE LA ESTRUCTURA OPTIMIZADA
-  const processOptimizedData = (groupedResponses: GroupedResponsesData, configData: any): ProcessedCognitiveData[] => {
+  const processOptimizedData = (groupedResponses: GroupedResponsesData, configData: { questions?: Array<{ id: string; type: string; [key: string]: unknown }> }): ProcessedCognitiveData[] => {
     const processed: ProcessedCognitiveData[] = [];
 
     // Obtener todas las preguntas cognitivas de la configuración
-    const cognitiveQuestions = configData?.questions?.filter((q: any) =>
+    const cognitiveQuestions = configData?.questions?.filter((q) =>
       q.questionKey?.startsWith('cognitive_')
     ) || [];
 
-    cognitiveQuestions.forEach((questionConfig: any) => {
+    cognitiveQuestions.forEach((questionConfig) => {
       const questionKey = questionConfig.questionKey;
       const responses = groupedResponses[questionKey] || [];
 
@@ -336,7 +344,7 @@ export function useCognitiveTaskResults(researchId: string) {
     return `${avg.toFixed(1)}s`;
   };
 
-  const processLinearScaleData = (responses: GroupedResponse[], questionConfig: any) => {
+  const processLinearScaleData = (responses: GroupedResponse[], questionConfig: { id: string; question?: string; [key: string]: unknown }) => {
     const values = responses.map(r => r.value).filter(v => typeof v === 'number');
     if (values.length === 0) return null;
 
@@ -354,7 +362,7 @@ export function useCognitiveTaskResults(researchId: string) {
     const average = values.reduce((a, b) => a + b, 0) / values.length;
 
     return {
-      question: questionConfig.title || questionConfig.description,
+      question: String(questionConfig.title || questionConfig.description || 'Sin título'),
       scaleRange,
       average,
       distribution,
@@ -363,11 +371,11 @@ export function useCognitiveTaskResults(researchId: string) {
     };
   };
 
-  const processRankingData = (responses: GroupedResponse[], questionConfig: any) => {
+  const processRankingData = (responses: GroupedResponse[], questionConfig: { id: string; choices?: Array<{ id: string; text: string }>; [key: string]: unknown }) => {
     const choices = questionConfig.choices || [];
     if (choices.length === 0) return null;
 
-    const options = choices.map((choice: any, index: number) => {
+    const options = choices.map((choice, index: number) => {
       const choiceText = choice.text;
       const rankings = responses
         .map(r => r.value)
@@ -393,11 +401,11 @@ export function useCognitiveTaskResults(researchId: string) {
 
     return {
       options,
-      question: questionConfig.title || questionConfig.description
+      question: String(questionConfig.title || questionConfig.description || 'Sin título')
     };
   };
 
-  const processChoiceData = (responses: GroupedResponse[], questionConfig: any) => {
+  const processChoiceData = (responses: GroupedResponse[], questionConfig: { id: string; question?: string; choices?: Array<{ id: string; text: string }>; [key: string]: unknown }) => {
     const choices = questionConfig.choices || [];
     if (choices.length === 0) return null;
 
@@ -417,7 +425,7 @@ export function useCognitiveTaskResults(researchId: string) {
       }
     });
 
-    const options = choices.map((choice: any) => ({
+    const options = choices.map((choice) => ({
       id: choice.id,
       text: choice.text,
       count: optionCounts[choice.id] || 0,
@@ -426,14 +434,14 @@ export function useCognitiveTaskResults(researchId: string) {
     }));
 
     return {
-      question: questionConfig.title || questionConfig.description,
+      question: String(questionConfig.title || questionConfig.description || 'Sin título'),
       options,
       totalResponses,
       responseDuration: calculateAverageResponseTime(responses)
     };
   };
 
-  const processSentimentData = (responses: GroupedResponse[], questionConfig: any) => {
+  const processSentimentData = (responses: GroupedResponse[], questionConfig: { id: string; question?: string; [key: string]: unknown }) => {
     const texts = responses
       .map(r => r.value)
       .filter(v => typeof v === 'string' && v.trim().length > 0);
@@ -454,28 +462,24 @@ export function useCognitiveTaskResults(researchId: string) {
     };
   };
 
-  const processNavigationFlowData = (responses: GroupedResponse[], questionConfig: any) => {
+  const processNavigationFlowData = (responses: GroupedResponse[], questionConfig: { id: string; [key: string]: unknown }) => {
     if (!responses || responses.length === 0) return null;
 
     // 🎯 DEBUG: Log de datos de entrada
-    console.log('🎯 processNavigationFlowData - responses:', responses);
-    console.log('🎯 processNavigationFlowData - questionConfig:', questionConfig);
 
     // Agregar todos los clicks de todos los participantes
-    const allVisualClickPoints: any[] = [];
-    const allClicksTracking: any[] = [];
-    const imageSelections: any = {};
+    const allVisualClickPoints: Array<{ x: number; y: number; [key: string]: unknown }> = [];
+    const allClicksTracking: Array<{ x: number; y: number; timestamp: string; [key: string]: unknown }> = [];
+    const imageSelections: Record<string, { hitzoneId: string; click: { x: number; y: number; hitzoneWidth: number; hitzoneHeight: number } }> = {};
 
     responses.forEach(response => {
       if (!response.value) return;
 
       const value = response.value;
-      console.log('🎯 processNavigationFlowData - processing response:', { participantId: response.participantId, value });
 
       // Agregar clicks visuales
       if (value.visualClickPoints && Array.isArray(value.visualClickPoints)) {
-        console.log('🎯 processNavigationFlowData - visualClickPoints encontrados:', value.visualClickPoints.length);
-        value.visualClickPoints.forEach((point: any) => {
+        value.visualClickPoints.forEach((point: { x: number; y: number; [key: string]: unknown }) => {
           allVisualClickPoints.push({
             ...point,
             participantId: response.participantId
@@ -485,8 +489,7 @@ export function useCognitiveTaskResults(researchId: string) {
 
       // Agregar tracking de clicks
       if (value.allClicksTracking && Array.isArray(value.allClicksTracking)) {
-        console.log('🎯 processNavigationFlowData - allClicksTracking encontrados:', value.allClicksTracking.length);
-        value.allClicksTracking.forEach((click: any) => {
+        value.allClicksTracking.forEach((click: { x: number; y: number; timestamp: string; [key: string]: unknown }) => {
           allClicksTracking.push({
             ...click,
             participantId: response.participantId
@@ -501,21 +504,20 @@ export function useCognitiveTaskResults(researchId: string) {
     });
 
     const result = {
-      question: questionConfig.title || questionConfig.description,
+      question: String(questionConfig.title || questionConfig.description || 'Sin título'),
       totalParticipants: responses.length,
       totalSelections: responses.length,
-      researchId: questionConfig.researchId,
+      researchId: String(questionConfig.researchId || ''),
       imageSelections,
       visualClickPoints: allVisualClickPoints,
       allClicksTracking: allClicksTracking,
       files: questionConfig.files || []
     };
 
-    console.log('🎯 processNavigationFlowData - resultado final:', result);
     return result;
   };
 
-  const processPreferenceTestData = (responses: GroupedResponse[], questionConfig: any) => {
+  const processPreferenceTestData = (responses: GroupedResponse[], questionConfig: { id: string; files?: Array<{ id: string; url: string; name?: string; s3Key?: string }>; [key: string]: unknown }) => {
     const files = questionConfig.files || [];
     const totalSelections = responses.length;
 
@@ -539,14 +541,14 @@ export function useCognitiveTaskResults(researchId: string) {
       }
     });
 
-    const processedOptions = files.map((file: any) => {
-      const fileId = file.id || file.s3Key;
+    const processedOptions = files.map((file) => {
+      const fileId = file.id || file.s3Key || '';
       const selected = selectionCounts[fileId] || 0;
       const percentage = totalSelections > 0 ? Math.round((selected / totalSelections) * 100) : 0;
 
       const optionTimes = responseTimesByOption[fileId] || [];
       const avgTime = optionTimes.length > 0
-        ? `${(optionTimes.reduce((a, b) => a + b, 0) / optionTimes.length).toFixed(1)}s`
+        ? `${(optionTimes.reduce((a: number, b: number) => a + b, 0) / optionTimes.length).toFixed(1)}s`
         : 'N/A';
 
       return {
@@ -561,7 +563,7 @@ export function useCognitiveTaskResults(researchId: string) {
     });
 
     return {
-      question: questionConfig.title || questionConfig.description,
+      question: String(questionConfig.title || questionConfig.description || 'Sin título'),
       options: processedOptions,
       totalSelections,
       totalParticipants: responses.length,
@@ -572,7 +574,7 @@ export function useCognitiveTaskResults(researchId: string) {
     };
   };
 
-  const processImageSelectionData = (responses: GroupedResponse[], questionConfig: any) => {
+  const processImageSelectionData = (responses: GroupedResponse[], questionConfig: { id: string; images?: Array<{ id: string; url: string; title?: string }>; [key: string]: unknown }) => {
     // Implementación simplificada - expandir según necesidades
     const images = questionConfig.images || [];
     const totalSelections = responses.length;
@@ -586,7 +588,7 @@ export function useCognitiveTaskResults(researchId: string) {
     }));
 
     return {
-      question: questionConfig.title || questionConfig.description,
+      question: String(questionConfig.title || questionConfig.description || 'Sin título'),
       images: processedImages,
       totalSelections,
       totalParticipants: responses.length,
@@ -621,7 +623,6 @@ export function useCognitiveTaskResults(researchId: string) {
         apiClient.get('cognitiveTask', 'getByResearch', { researchId }).catch(error => {
           // Si es 404, retornar null para manejar como caso normal
           if (error?.statusCode === 404) {
-            console.log(`ℹ️ [CognitiveTask] Configuración no encontrada para investigación ${researchId} (normal para investigaciones nuevas)`);
             return null;
           }
           throw error;
@@ -700,7 +701,6 @@ export function useCognitiveTaskResults(researchId: string) {
       setLoadingState('success');
 
     } catch (err: any) {
-      console.error('[useCognitiveTaskResults] ❌ Error cargando datos:', err);
       setError(err.message || 'Error al cargar los datos');
       setLoadingState('error');
     }

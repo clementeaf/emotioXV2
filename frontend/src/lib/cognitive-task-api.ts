@@ -8,7 +8,6 @@ export const cognitiveTaskAPI = {
 
       // Si data es null (404 manejado por handleResponse), devolver null
       if (data === null) {
-        console.log(`ℹ️ [CognitiveTask] Configuración no encontrada para investigación ${researchId} (normal para investigaciones nuevas)`);
         return null;
       }
 
@@ -41,7 +40,6 @@ export const cognitiveTaskAPI = {
     const payload = { ...sanitizedData, researchId };
 
     // Log detallado del payload que se enviará al backend
-    // console.log('[COGNITIVE_TASK_API] Payload enviado al backend:', JSON.stringify(payload, null, 2));
 
     // Log específico para hitzones
     if (payload.questions) {
@@ -49,7 +47,6 @@ export const cognitiveTaskAPI = {
         if (question.files && question.files.length > 0) {
           question.files.forEach((file, fIndex) => {
             if (file.hitZones && file.hitZones.length > 0) {
-              // console.log(`[COGNITIVE_TASK_API] Hitzones en pregunta ${question.id} (${question.type}), archivo ${fIndex + 1}:`, {
               //   questionId: question.id,
               //   questionType: question.type,
               //   fileId: file.id,
@@ -92,25 +89,19 @@ export const cognitiveTaskAPI = {
   },
 
   mapHitzoneAreasToHitZones(files: any[]): any[] {
-    // console.log('[COGNITIVE_TASK_API] mapHitzoneAreasToHitZones recibió files:', files);
 
     return files.map(file => {
-      // console.log('[COGNITIVE_TASK_API] Procesando archivo:', file.id, file.name);
 
       const hitzonesData = file.hitZones || file.hitzones;
-      // console.log('[COGNITIVE_TASK_API] hitzonesData encontrado:', hitzonesData);
 
       if (!hitzonesData || !Array.isArray(hitzonesData)) {
-        // console.log('[COGNITIVE_TASK_API] No hay hitzones válidos para este archivo');
         return file;
       }
 
       const hitZones = hitzonesData.map((area: any) => {
-        // console.log('[COGNITIVE_TASK_API] Procesando área:', area);
 
         // Verificar si ya está en formato HitZone (tiene region)
         if (area.region && typeof area.region === 'object') {
-          // console.log('[COGNITIVE_TASK_API] Área ya está en formato HitZone, no convertir');
           return area;
         }
 
@@ -126,7 +117,6 @@ export const cognitiveTaskAPI = {
           },
           fileId: file.id
         };
-        // console.log('[COGNITIVE_TASK_API] Área convertida de HitzoneArea a HitZone:', converted);
         return converted;
       });
 
@@ -136,7 +126,6 @@ export const cognitiveTaskAPI = {
         hitzones: undefined
       };
 
-      // console.log('[COGNITIVE_TASK_API] Archivo procesado:', result);
       return result;
     });
   },

@@ -17,9 +17,6 @@ export const WS_BASE_URL = isEndpointsSynced()
 
 // Validación de seguridad - BLOQUEAR localhost completamente
 if (typeof window !== 'undefined' && (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1'))) {
-  console.error('🚨 ERROR CRÍTICO: API_BASE_URL no puede ser localhost en producción!');
-  console.error('🚨 URL actual:', API_BASE_URL);
-  console.error('🚨 Usando URL de fallback segura de AWS Lambda...');
   throw new Error('Configuración de API inválida: No se permite localhost en producción');
 }
 
@@ -40,6 +37,15 @@ export const API_ENDPOINTS = {
     logout: '/auth/logout',
     refreshToken: '/auth/refreshToken',
     profile: '/auth/profile',
+  },
+
+  // Empresas
+  companies: {
+    getAll: '/companies',
+    getById: '/companies/{id}',
+    create: '/companies',
+    update: '/companies/{id}',
+    delete: '/companies/{id}',
   },
 
   // Investigaciones
@@ -172,15 +178,7 @@ export class ApiClient {
     };
 
     if (this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1')) {
-      console.error('🚨 ERROR CRÍTICO: ApiClient inicializado con localhost!');
-      console.error('🚨 URL detectada:', this.baseUrl);
-      console.error('🚨 Usando URL de fallback de AWS Lambda...');
       this.baseUrl = FALLBACK_API_URL;
-    }
-
-    // Verificar que la URL sea de AWS Lambda
-    if (!this.baseUrl.includes('execute-api.us-east-1.amazonaws.com')) {
-      console.warn('⚠️  ADVERTENCIA: URL no parece ser de AWS Lambda:', this.baseUrl);
     }
   }
 
@@ -217,13 +215,7 @@ export class ApiClient {
     const fullUrl = url.startsWith('/') ? `${this.baseUrl}${url}` : `${this.baseUrl}/${url}`;
 
     if (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1')) {
-      console.error('🚨 ERROR CRÍTICO: URL construida apunta a localhost!');
-      console.error('🚨 URL detectada:', fullUrl);
       throw new Error('URL de API no puede ser localhost - Solo AWS Lambda permitido');
-    }
-
-    if (!fullUrl.includes('execute-api.us-east-1.amazonaws.com')) {
-      console.warn('⚠️  ADVERTENCIA: URL construida no parece ser de AWS Lambda:', fullUrl);
     }
 
     return fullUrl;
@@ -357,7 +349,6 @@ export class ApiClient {
         );
 
         if (isExpectedNotFound) {
-          console.log(`ℹ️ [API] ${response.url} - Configuración no encontrada (normal para investigaciones nuevas)`);
           return null as T;
         }
       }
@@ -470,13 +461,7 @@ export function getApiUrl(path: string): string {
   const fullUrl = `${SECURE_API_BASE_URL}/${cleanPath}`;
 
   if (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1')) {
-    console.error('🚨 ERROR CRÍTICO: getApiUrl generó URL localhost!');
-    console.error('🚨 URL detectada:', fullUrl);
     return `${FALLBACK_API_URL}/${cleanPath}`;
-  }
-
-  if (!fullUrl.includes('execute-api.us-east-1.amazonaws.com')) {
-    console.warn('⚠️  ADVERTENCIA: getApiUrl generó URL que no parece ser de AWS Lambda:', fullUrl);
   }
 
   return fullUrl;
@@ -487,8 +472,6 @@ export function getApiUrl(path: string): string {
  */
 export function getWebsocketUrl(): string {
   if (WS_BASE_URL.includes('localhost') || WS_BASE_URL.includes('127.0.0.1')) {
-    console.error('🚨 ERROR CRÍTICO: WebSocket URL apunta a localhost!');
-    console.error('🚨 URL detectada:', WS_BASE_URL);
     return '';
   }
 
@@ -504,9 +487,6 @@ export function validateApiConfiguration(): boolean {
     SECURE_API_BASE_URL.includes('execute-api.us-east-1.amazonaws.com');
 
   if (!isSecure) {
-    console.error('🚨 ERROR CRÍTICO: Configuración API no es segura!');
-    console.error('🚨 URL actual:', SECURE_API_BASE_URL);
-    console.error('🚨 Debe apuntar a AWS Lambda');
     return false;
   }
 

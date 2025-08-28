@@ -42,11 +42,9 @@ export const useDemographicsData = (researchId: string) => {
           const demographicsData = processDemographicsData(response.data);
           setData(demographicsData);
         } else {
-          console.warn(`[useDemographicsData] ⚠️ Respuesta sin datos:`, response);
           setError('No se recibieron datos del servidor');
         }
       } catch (err: any) {
-        console.error('[useDemographicsData] ❌ Error:', err);
         setError('Error al obtener datos demográficos');
       } finally {
         setIsLoading(false);
