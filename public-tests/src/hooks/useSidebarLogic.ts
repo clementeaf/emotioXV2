@@ -37,12 +37,6 @@ export const useSidebarLogic = ({
 
   const steps = useMemo(() => {
     if (formsData?.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
-      // 🔍 LOG PARA DEBUGGEAR LOS STEPS DEL BACKEND
-      console.log('[useSidebarLogic] 📊 Steps del backend:', {
-        stepsFromBackend: formsData.steps,
-        stepsConfiguration: formsData.stepsConfiguration.map(s => s.questionKey),
-        count: formsData.count
-      });
 
       // Usar TODOS los steps que llegan del backend en el orden que vienen
       const backendStepOrder = formsData.steps || [];
@@ -66,7 +60,6 @@ export const useSidebarLogic = ({
           if (questionKey === 'demographics') {
             const hasConfiguredQuestions = Object.values(stepConfig.contentConfiguration?.demographicQuestions || {}).some((q: any) => q?.enabled);
             if (!hasConfiguredQuestions) {
-              console.log('[useSidebarLogic] 🚫 Filtrando step demographics sin configuración');
               return null;
             }
           }
@@ -99,11 +92,6 @@ export const useSidebarLogic = ({
         })
         .filter(step => step !== null);
 
-      console.log('[useSidebarLogic] ✅ Steps procesados:', {
-        originalCount: formsData.count,
-        processedCount: orderedSteps.length,
-        steps: orderedSteps.map(s => ({ questionKey: s.questionKey, title: s.title }))
-      });
 
       return orderedSteps;
     }
@@ -120,10 +108,6 @@ export const useSidebarLogic = ({
   // SINCRONIZAR STEPS CON EL STORE
   useEffect(() => {
     if (steps.length > 0) {
-      console.log('[useSidebarLogic] 🔄 Sincronizando steps con el store:', {
-        stepsCount: steps.length,
-        steps: steps.map(s => ({ questionKey: s.questionKey, title: s.title }))
-      });
 
       // Convertir steps al formato del store
       const storeSteps = steps.map((step) => ({
@@ -187,20 +171,11 @@ export const useSidebarLogic = ({
 
   // FUNCIONES DE ELIMINACIÓN
   const handleDeleteAllResponses = useCallback(async () => {
-    console.log('[useSidebarLogic] 🗑️ handleDeleteAllResponses llamado');
-    console.log('[useSidebarLogic] Estado:', {
-      onDeleteAllResponses: !!onDeleteAllResponses,
-      researchId
-    });
-
     if (!onDeleteAllResponses) {
-      console.error('[useSidebarLogic] ❌ onDeleteAllResponses no está definido');
       return;
     }
 
-    console.log('[useSidebarLogic] 🚀 Ejecutando onDeleteAllResponses...');
     await handleDelete(async () => {
-      console.log('[useSidebarLogic] 🔥 Dentro de handleDelete, ejecutando onDeleteAllResponses');
       await onDeleteAllResponses();
     });
   }, [onDeleteAllResponses, handleDelete, researchId]);

@@ -30,7 +30,6 @@ async function checkForUpdates() {
     const newBuildHash = getMetaBuildHash(html);
 
     if (newBuildHash && newBuildHash !== BUILD_HASH) {
-      console.log('🔄 Nueva versión detectada, recargando...');
       window.location.reload();
     }
   } catch (error) {

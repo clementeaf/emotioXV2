@@ -40,12 +40,8 @@ export const useQuotaVerification = (
     queryKey: ['quotaVerification', params.researchId, params.participantId, params.demographics],
     queryFn: async () => {
       try {
-        console.log('[useQuotaVerification] Verificando estado de cuota:', params);
-
         // 🎯 NUEVO: Si hay demográficos, usar el nuevo sistema de cuotas dinámicas
         if (params.demographics) {
-          console.log('[useQuotaVerification] 🎯 Usando sistema de cuotas dinámicas');
-
           const response = await fetch(
             `${getApiUrl('quota-validation')}/validate`,
             {
@@ -61,13 +57,11 @@ export const useQuotaVerification = (
           );
 
           if (!response.ok) {
-            console.log('[useQuotaVerification] Endpoint de cuotas dinámicas no disponible, usando sistema actual');
             // Fallback al sistema actual
             return await checkLegacyQuota(params);
           }
 
           const data = await response.json();
-          console.log('[useQuotaVerification] Respuesta de cuotas dinámicas:', data);
 
           // 🎯 CONVERTIR RESPUESTA DEL NUEVO SISTEMA AL FORMATO COMPATIBLE
           return {
@@ -85,7 +79,6 @@ export const useQuotaVerification = (
         return await checkLegacyQuota(params);
 
       } catch (error) {
-        console.error('[useQuotaVerification] Error:', error);
         // En caso de error, asumir que no excede la cuota
         return {
           isExceeded: false,
@@ -111,8 +104,6 @@ export const useQuotaVerification = (
  * 🎯 FUNCIÓN AUXILIAR: Verificar cuota usando el sistema actual
  */
 async function checkLegacyQuota(params: QuotaVerificationParams): Promise<QuotaVerificationResponse> {
-  console.log('[useQuotaVerification] 🔄 Usando sistema actual de cuotas');
-
   const response = await fetch(
     `${getApiUrl('research')}/${params.researchId}/participants/${params.participantId}/quota-status`,
     {
@@ -125,7 +116,6 @@ async function checkLegacyQuota(params: QuotaVerificationParams): Promise<QuotaV
 
   if (!response.ok) {
     // Si el endpoint no existe, asumir que no excede la cuota
-    console.log('[useQuotaVerification] Endpoint no disponible, asumiendo cuota no excedida');
     return {
       isExceeded: false,
       currentCount: 0,
@@ -135,7 +125,6 @@ async function checkLegacyQuota(params: QuotaVerificationParams): Promise<QuotaV
   }
 
   const data = await response.json();
-  console.log('[useQuotaVerification] Respuesta de cuota actual:', data);
 
   return data;
 }

@@ -17,15 +17,6 @@ export const useStepStoreWithBackend = () => {
   useEffect(() => {
     if (moduleResponses?.responses) {
       const responses = moduleResponses.responses.filter(response => response != null);
-
-      console.log('[useStepStoreWithBackend] 🔄 SINCRONIZANDO CON BACKEND:', {
-        researchId,
-        participantId,
-        responses: responses.map(r => r.questionKey),
-        currentQuestionKey,
-        totalSteps: getSteps().length
-      });
-
       updateBackendResponses(responses);
     }
   }, [moduleResponses, updateBackendResponses, researchId, participantId, currentQuestionKey]);

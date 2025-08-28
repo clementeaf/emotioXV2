@@ -22,16 +22,6 @@ const LoginRedirect: React.FC = () => {
     const researchId = pathResearchId || queryResearchId;
     const participantId = pathParticipantId || queryUserId;
 
-    console.log('[LoginRedirect] 🔍 Parámetros detectados:', {
-      pathResearchId,
-      pathParticipantId,
-      queryResearchId,
-      queryUserId,
-      finalResearchId: researchId,
-      finalParticipantId: participantId,
-      currentPath: location.pathname,
-      currentSearch: location.search
-    });
 
     if (researchId && participantId) {
       // 🎯 AMBOS PARÁMETROS ESTÁN PRESENTES - PROCEDER DIRECTAMENTE
@@ -51,20 +41,10 @@ const LoginRedirect: React.FC = () => {
         researchId
       );
 
-      console.log('[LoginRedirect] ✅ Participante configurado, redirigiendo al test:', {
-        participantId,
-        researchId,
-        participantName,
-        participantEmail
-      });
 
       // Redirigir al test directamente
       navigate('/test');
     } else {
-      console.log('[LoginRedirect] ❌ Faltan parámetros requeridos:', {
-        researchId: !!researchId,
-        participantId: !!participantId
-      });
       // Faltan parámetros - redirigir a error
       navigate('/error-no-research-id');
     }

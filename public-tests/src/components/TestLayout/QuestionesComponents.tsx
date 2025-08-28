@@ -79,17 +79,6 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
   const displayEndLabel = useStars ? endLabel || '5 - Muy satisfecho' : '';
 
   // 🎯 LOGS DE DEBUG
-  console.log('[EmojiRangeQuestion] ⭐ Configuración:', {
-    type,
-    useStars,
-    min,
-    max,
-    elementsCount: elements.length,
-    elements: elements.map(e => ({ id: e.id, symbol: e.symbol })),
-    startLabel: displayStartLabel,
-    endLabel: displayEndLabel,
-    currentValue: value
-  });
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -132,11 +121,6 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionProps> = ({
   onChange,
   placeholder = 'Escribe tu respuesta aquí...',
 }) => {
-  console.log('[VOCTextQuestion] 🧠 Renderizando textarea:', {
-    value,
-    placeholder,
-    hasOnChange: !!onChange
-  });
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -144,7 +128,6 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionProps> = ({
         className="w-full max-w-md min-h-[150px] min-w-[350px] border border-gray-300 rounded p-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
         value={value || ''}
         onChange={e => {
-          console.log('[VOCTextQuestion] 🔄 Cambio en textarea:', e.target.value);
           onChange?.(e.target.value);
         }}
         placeholder={placeholder}
@@ -160,50 +143,21 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
   onChange,
   multiple = false,
 }) => {
-  console.log('[SingleAndMultipleChoiceQuestion] 🎯 PROPS RECIBIDOS:', {
-    choices: choices?.map(c => ({ id: c.id, text: c.text.substring(0, 20) + '...' })),
-    choicesLength: choices?.length,
-    value,
-    valueType: typeof value,
-    isArray: Array.isArray(value),
-    multiple,
-    valueStringified: JSON.stringify(value),
-    propsTimestamp: new Date().toISOString()
-  });
 
   // 🎯 FORZAR VALOR CORRECTO PARA MÚLTIPLE
   const currentValue = multiple && !Array.isArray(value) ? [] : value;
 
-  console.log('[SingleAndMultipleChoiceQuestion] 🎯 Valor corregido:', {
-    originalValue: value,
-    correctedValue: currentValue,
-    multiple
-  });
 
   const isSelected = (id: string) => {
     const selected = multiple && Array.isArray(currentValue)
       ? currentValue.includes(id)
       : currentValue === id;
 
-    console.log('[SingleAndMultipleChoiceQuestion] 🔍 Verificando selección:', {
-      id,
-      selected,
-      multiple,
-      currentValue,
-      isArray: Array.isArray(currentValue)
-    });
 
     return selected;
   };
 
   const handleClick = (id: string) => {
-    console.log('[SingleAndMultipleChoiceQuestion] 🔄 Click en opción:', {
-      id,
-      currentValue,
-      currentValueType: typeof currentValue,
-      isArray: Array.isArray(currentValue),
-      multiple
-    });
 
     if (multiple) {
       // 🎯 FORZAR COMPORTAMIENTO MÚLTIPLE
@@ -211,27 +165,12 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
 
       if (currentArray.includes(id)) {
         const newValue = currentArray.filter((v) => v !== id);
-        console.log('[SingleAndMultipleChoiceQuestion] 🗑️ Removiendo opción:', {
-          id,
-          oldValue: currentArray,
-          newValue
-        });
         onChange(newValue);
       } else {
         const newValue = [...currentArray, id];
-        console.log('[SingleAndMultipleChoiceQuestion] ➕ Agregando opción:', {
-          id,
-          oldValue: currentArray,
-          newValue
-        });
         onChange(newValue);
       }
     } else {
-      console.log('[SingleAndMultipleChoiceQuestion] ⚠️ Modo single choice:', {
-        id,
-        oldValue: currentValue,
-        newValue: id
-      });
       onChange(id);
     }
   };

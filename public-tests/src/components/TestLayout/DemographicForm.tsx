@@ -33,7 +33,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     const savedData = getFormData('demographics');
     if (savedData && Object.keys(savedData).length > 0) {
       setHasLoadedData(true);
-      console.log('[DemographicForm] ✅ Datos cargados desde persistencia:', savedData);
     }
   }, [getFormData]);
 
@@ -43,7 +42,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       const participantId = getParticipantId();
       const apiUrl = getApiUrl(`module-responses/research/${researchId}`);
 
-      console.log('[DemographicForm] 🔍 Verificando datos en backend para participante:', participantId);
 
       const response = await fetch(apiUrl);
       if (response.ok) {
@@ -55,7 +53,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
         if (participantResponses && participantResponses.responses?.length > 0) {
           const backendData = participantResponses.responses[0].response;
-          console.log('[DemographicForm] ✅ Datos encontrados en backend:', backendData);
 
           // 🎯 CARGAR DATOS DEL BACKEND AL STORE LOCAL
           setFormData('demographics', backendData);
@@ -67,11 +64,9 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
             { questionKey: 'demographics', response: backendData }
           ]);
 
-          console.log('[DemographicForm] ✅ Datos del backend cargados al store local y steps actualizados');
         }
       }
     } catch (error) {
-      console.error('[DemographicForm] ❌ Error verificando datos del backend:', error);
     }
   };
 
@@ -90,7 +85,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       [key]: value
     };
     setFormData('demographics', updatedData);
-    console.log('[DemographicForm] 📝 Datos actualizados:', updatedData);
   };
 
   // 🎯 FUNCIÓN PARA GUARDAR DEMOGRÁFICOS EN BACKEND
@@ -101,7 +95,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       const now = new Date().toISOString();
       const participantId = getParticipantId();
 
-      console.log('[DemographicForm] 🎯 Guardando demográficos para participante:', participantId);
 
       const createData = {
         researchId: researchId || '',
@@ -121,7 +114,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       };
 
       const apiUrl = getApiUrl('module-responses');
-      console.log('[DemographicForm] 🌐 Enviando a:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -137,10 +129,8 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       }
 
       const result = await response.json();
-      console.log('[DemographicForm] ✅ Demográficos guardados exitosamente:', result);
       return result;
     } catch (error) {
-      console.error('[DemographicForm] ❌ Error guardando demográficos:', error);
       // No lanzar error para no interrumpir el flujo
       return null;
     } finally {
@@ -171,7 +161,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     // 🎯 OBTENER DATOS DEL STORE
     const currentFormData = getFormData('demographics');
     if (!currentFormData || Object.keys(currentFormData).length === 0) {
-      console.log('[DemographicForm] ⚠️ No hay datos para enviar');
       return;
     }
 
@@ -184,7 +173,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     const validationResult = validateDemographics(demographicsData, eyeTrackingConfig.demographicQuestions);
 
     if (validationResult.isDisqualified) {
-      console.log('[DemographicForm] Usuario descalificado por selección:', validationResult);
 
       // 🎯 GUARDAR ANTES DE REDIRIGIR
       await saveDemographicsToBackend(demographicsData, true);
@@ -203,7 +191,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       return;
     } else {
       // 🎯 USUARIO CALIFICADO - GUARDAR Y CONTINUAR
-      console.log('[DemographicForm] Usuario calificado, guardando y continuando...');
 
       // 🎯 GUARDAR EN BACKEND
       await saveDemographicsToBackend(demographicsData, false);
@@ -311,8 +298,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
                 required={q.required}
                 className="p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
               >
-                {/* 🎯 DEBUG: Mostrar valor actual */}
-                {console.log('[DemographicForm] 🔍 Valor para', q.key, ':', getFormData('demographics')[q.key])}
                 <option value="">Selecciona una opción</option>
                 {/* 🎯 MOSTRAR TODAS LAS OPCIONES EN ORDEN NORMAL */}
                 {q.options.map((opt: string, i: number) => (

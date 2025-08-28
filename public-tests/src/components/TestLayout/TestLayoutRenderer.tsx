@@ -61,7 +61,6 @@ const TestLayoutRenderer: React.FC = () => {
   useEffect(() => {
     // Solo enviar si no se ha enviado ya y tenemos todos los datos
     if (researchId && participantId && isConnected && !participantState.hasLoggedIn) {
-      console.log('[TestLayoutRenderer] 🎯 Enviando login inicial del participante');
       // Usar el email del participante si existe, sino generar uno basado en el ID
       const email = participantEmail || `${participantId.slice(-8)}@participant.study`;
       sendParticipantLogin(participantId, email);
@@ -71,7 +70,6 @@ const TestLayoutRenderer: React.FC = () => {
   // 🎯 EFFECTS DESPUÉS DE TODOS LOS HOOKS
   useEffect(() => {
     if (moduleResponses?.responses && researchId && participantId) {
-      console.log('[TestLayoutRenderer] 🎯 Procesando respuestas del backend:', moduleResponses.responses);
 
       const backendResponses = moduleResponses.responses.map((response: any) => {
         return {
@@ -80,7 +78,6 @@ const TestLayoutRenderer: React.FC = () => {
         };
       });
 
-      console.log('[TestLayoutRenderer] 🎯 Actualizando store de steps con:', backendResponses);
       updateBackendResponses(backendResponses);
 
       // 🎯 SINCRONIZAR CON FORM DATA STORE
@@ -118,12 +115,6 @@ const TestLayoutRenderer: React.FC = () => {
             setFormData(backendResponse.questionKey, formDataToSave);
           }
 
-          console.log('[TestLayoutRenderer] 🎯 Sincronizando respuesta:', {
-            questionKey: backendResponse.questionKey,
-            value,
-            response: backendResponse.response,
-            savedToFormData: backendResponse.questionKey === 'demographics' ? 'demographics' : backendResponse.questionKey
-          });
         }
       });
     }
@@ -139,10 +130,6 @@ const TestLayoutRenderer: React.FC = () => {
   // 🎯 INICIALIZAR STEPS CUANDO SE OBTIENEN LOS FORMS
   useEffect(() => {
     if (formsData?.steps && formsData.steps.length > 0) {
-      console.log('[TestLayoutRenderer] 🎯 Inicializando steps:', {
-        steps: formsData.steps,
-        currentQuestionKey
-      });
 
       const { setSteps } = useStepStore.getState();
       // Convertir strings a Step objects
@@ -217,47 +204,18 @@ const TestLayoutRenderer: React.FC = () => {
     );
   }
 
-  // Log para debugging
-  console.log('[TestLayoutRenderer] Estado de verificación móvil:', {
-    currentQuestionKey,
-    isBlocked,
-    deviceType,
-    allowMobile,
-    configFound,
-    shouldShowBlockScreen,
-    researchId
-  });
 
   if (isLoading) return <div className='flex flex-col items-center justify-center h-full'>Cargando...</div>;
   if (error) return <div className='flex flex-col items-center justify-center h-full'>Error: {error.message}</div>;
   if (!currentQuestionKey) {
-    console.log('[TestLayoutRenderer] ❌ No hay currentQuestionKey:', { currentQuestionKey });
     return <div className='flex flex-col items-center justify-center h-full'>No se encontró información para este step</div>;
   }
 
-  console.log('[TestLayoutRenderer] 🔍 Buscando step data:', {
-    currentQuestionKey,
-    formsData: formsData ? {
-      steps: formsData.steps?.length,
-      stepsConfiguration: formsData.stepsConfiguration?.length,
-      hasSteps: !!formsData.steps,
-      hasConfig: !!formsData.stepsConfiguration
-    } : 'NO DATA'
-  });
 
   const currentStepData = getCurrentStepData(formsData, currentQuestionKey);
 
-  console.log('[TestLayoutRenderer] 📊 Step data encontrado:', {
-    currentQuestionKey,
-    currentStepData: currentStepData ? {
-      questionKey: currentStepData.questionKey,
-      hasContent: !!currentStepData.contentConfiguration,
-      contentKeys: currentStepData.contentConfiguration ? Object.keys(currentStepData.contentConfiguration) : []
-    } : 'NO STEP DATA'
-  });
 
   if (!currentStepData) {
-    console.log('[TestLayoutRenderer] ❌ No se encontró step data para:', currentQuestionKey);
     return <div>No se encontró información para este step</div>;
   }
 

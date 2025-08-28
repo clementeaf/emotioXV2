@@ -59,22 +59,10 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   ),
 
   smartvoc_csat: ({ contentConfiguration, currentQuestionKey }) => {
-    console.log('[TestLayoutRenderer] 🎯 smartvoc_csat - CONFIGURACIÓN COMPLETA:', {
-      contentConfiguration,
-      currentQuestionKey,
-      configType: contentConfiguration?.type,
-      allKeys: Object.keys(contentConfiguration || {}),
-      fullConfig: JSON.stringify(contentConfiguration, null, 2)
-    });
 
     // 🎯 DETERMINAR EL TIPO DE VISUALIZACIÓN DESDE LA CONFIGURACIÓN
     const displayType = contentConfiguration?.type || 'stars';
 
-    console.log('[TestLayoutRenderer] 🎯 smartvoc_csat - TIPO DETERMINADO:', {
-      displayType,
-      willRenderStars: displayType === 'stars',
-      willRenderNumbers: displayType === 'numbers'
-    });
 
     // 🎯 CONFIGURACIÓN BASE PARA CSAT
     const baseConfig = {
@@ -259,12 +247,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     // 🎯 USAR EL TIPO DEL BACKEND
     const selectorType = contentConfiguration?.type || 'detailed';
 
-    console.log('[TestLayoutRenderer] 🎯 smartvoc_nev:', {
-      selectorType,
-      contentConfigurationType: contentConfiguration?.type,
-      contentConfiguration,
-      currentQuestionKey
-    });
 
     return (
       <QuestionComponent
@@ -333,12 +315,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   },
 
   cognitive_preference_test: ({ contentConfiguration, currentQuestionKey }) => {
-    console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_preference_test:', {
-      currentQuestionKey,
-      contentConfiguration,
-      files: contentConfiguration?.files,
-      filesCount: Array.isArray(contentConfiguration?.files) ? contentConfiguration.files.length : 0
-    });
 
     // 🎯 AGREGAR URLs A LAS IMÁGENES
     const filesWithUrls = Array.isArray(contentConfiguration?.files)
@@ -349,8 +325,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
       }))
       : [];
 
-    console.log('[TestLayoutRenderer] 🎯 Archivos con URLs:', filesWithUrls);
-    console.log('[TestLayoutRenderer] 🎯 Archivos originales:', contentConfiguration?.files);
 
     return (
       <PreferenceTestTask
@@ -367,23 +341,12 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   },
 
   cognitive_ranking: ({ contentConfiguration, currentQuestionKey }) => {
-    console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_ranking:', {
-      contentConfiguration,
-      currentQuestionKey,
-      hasTitle: !!contentConfiguration?.title,
-      hasDescription: !!contentConfiguration?.description,
-      choices: contentConfiguration?.choices,
-      choicesLength: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices.length : 0,
-      items: contentConfiguration?.items,
-      itemsLength: Array.isArray(contentConfiguration?.items) ? contentConfiguration.items.length : 0
-    });
 
     // 🎯 EXTRAER TEXTO DE LAS CHOICES
     const rankingItems = Array.isArray(contentConfiguration?.choices)
       ? contentConfiguration.choices.map((choice: any) => choice.text || choice.id)
       : [];
 
-    console.log('[TestLayoutRenderer] 🎯 Items para ranking:', rankingItems);
 
     return (
       <div className='flex flex-col items-center justify-center h-full gap-6'>
@@ -409,12 +372,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   },
 
   cognitive_short_text: ({ contentConfiguration, currentQuestionKey }) => {
-    console.log('[TestLayoutRenderer] 🧠 Renderizando cognitive_short_text:', {
-      contentConfiguration,
-      currentQuestionKey,
-      hasTitle: !!contentConfiguration?.title,
-      hasDescription: !!contentConfiguration?.description
-    });
 
     const questionConfig = {
       title: String(contentConfiguration?.title || 'Respuesta Corta'),
@@ -425,7 +382,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
       description: String(contentConfiguration?.description || 'Escribe tu respuesta')
     };
 
-    console.log('[TestLayoutRenderer] 🧠 Configuración de pregunta:', questionConfig);
 
     return (
       <QuestionComponent
@@ -450,14 +406,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   ),
 
   cognitive_multiple_choice: ({ contentConfiguration, currentQuestionKey }) => {
-    console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_multiple_choice:', {
-      contentConfiguration,
-      currentQuestionKey,
-      hasTitle: !!contentConfiguration?.title,
-      hasDescription: !!contentConfiguration?.description,
-      choices: contentConfiguration?.choices,
-      choicesLength: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices.length : 0
-    });
 
     const questionConfig = {
       title: String(contentConfiguration?.title || 'Selección Múltiple'),
@@ -468,7 +416,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
       description: String(contentConfiguration?.description || 'Selecciona todas las opciones que apliquen')
     };
 
-    console.log('[TestLayoutRenderer] 🎯 Configuración de pregunta multiple_choice:', questionConfig);
 
     return (
       <QuestionComponent
@@ -479,14 +426,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   },
 
   cognitive_single_choice: ({ contentConfiguration, currentQuestionKey }) => {
-    console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_single_choice:', {
-      contentConfiguration,
-      currentQuestionKey,
-      hasTitle: !!contentConfiguration?.title,
-      hasDescription: !!contentConfiguration?.description,
-      choices: contentConfiguration?.choices,
-      choicesLength: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices.length : 0
-    });
 
     const questionConfig = {
       title: String(contentConfiguration?.title || 'Selección Única'),
@@ -497,7 +436,6 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
       description: String(contentConfiguration?.description || 'Selecciona una opción')
     };
 
-    console.log('[TestLayoutRenderer] 🎯 Configuración de pregunta single_choice:', questionConfig);
 
     return (
       <QuestionComponent
@@ -604,7 +542,6 @@ export const ThankYouScreenComponent: React.FC<{
 
           await saveModuleResponseMutation.mutateAsync(createData);
         } catch (error) {
-          console.error('❌ ThankYouScreenComponent - Error enviando a module-responses:', error);
         }
       };
 
@@ -655,7 +592,6 @@ export const ThankYouScreenComponent: React.FC<{
             ip: ip
           };
         } catch (error) {
-          console.warn('No se pudo obtener información de ubicación:', error);
           return {
             country: 'Chile',
             city: 'Valparaíso',

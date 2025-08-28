@@ -31,7 +31,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
 
   // 🚨 RESET EXPLÍCITO CUANDO CAMBIA EL STEP PARA EVITAR CONTAMINACIÓN CRUZADA
   React.useEffect(() => {
-    console.log(`[QuestionComponent] 🔄 Cambiando a nuevo step: ${currentStepKey}, question: ${question.title}`);
     
     // 🚨 LIMPIAR STORE ANTES DE RESETEAR VALOR LOCAL
     const { clearFormData } = useFormDataStore.getState();
@@ -45,13 +44,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
           Object.keys(parsed.state.formData).forEach(key => {
             if (key !== currentStepKey) {
               clearFormData(key);
-              console.log(`[QuestionComponent] 🧹 Limpiando datos de step anterior: ${key}`);
             }
           });
         }
       }
     } catch (error) {
-      console.warn('[QuestionComponent] Error limpiando datos:', error);
     }
     
     // 🎯 RESET INMEDIATO DEL VALOR LOCAL SEGÚN EL TIPO
@@ -66,7 +63,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       initialValue = null;
     }
     
-    console.log(`[QuestionComponent] 🔄 Reset valor a:`, initialValue, 'para tipo:', question.type);
     setValue(initialValue);
   }, [currentStepKey, question.type, question.config?.maxSelections, question.config?.multiple, question.title]);
 
@@ -74,7 +70,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
   React.useEffect(() => {
     if (hasLoadedData && formValues && Object.keys(formValues).length > 0) {
       const savedValue = formValues.value || formValues.selectedValue;
-      console.log(`[QuestionComponent] 📂 Cargando datos guardados para ${currentStepKey}:`, savedValue);
       
       // 🎯 MANEJAR VALORES NULL/UNDEFINED PARA TEXTAREA
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (savedValue === null || savedValue === undefined)) {
@@ -88,15 +83,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
 
 
   const handleChange = (newValue: any) => {
-    console.log(`[QuestionComponent] 🔄 handleChange llamado:`, {
-      currentStepKey,
-      questionType: question.type,
-      questionTitle: question.title,
-      newValue,
-      currentValue: value,
-      valueType: typeof value,
-      isArray: Array.isArray(value)
-    });
     
     // 🎯 MANEJAR SELECCIÓN MÚLTIPLE PARA NEV
     if (question.type === 'emojis' && question.config?.maxSelections > 1) {
@@ -105,14 +91,12 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       if (currentSelections.includes(newValue)) {
         // Si ya está seleccionado, removerlo
         const updatedSelections = currentSelections.filter(item => item !== newValue);
-        console.log(`[QuestionComponent] ➖ Removiendo selección:`, { oldValue: currentSelections, newValue: updatedSelections });
         setValue(updatedSelections);
         saveToStore({ value: updatedSelections });
       } else {
         // Si no está seleccionado y no excede el límite, agregarlo
         if (currentSelections.length < question.config.maxSelections) {
           const updatedSelections = [...currentSelections, newValue];
-          console.log(`[QuestionComponent] ➕ Agregando selección:`, { oldValue: currentSelections, newValue: updatedSelections });
           setValue(updatedSelections);
           saveToStore({ value: updatedSelections });
         } else {
@@ -124,12 +108,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       }
     } else {
       // 🎯 SELECCIÓN ÚNICA (comportamiento original)
-      console.log(`[QuestionComponent] ⚡ Selección única:`, { 
-        questionType: question.type,
-        oldValue: value, 
-        newValue,
-        currentStepKey 
-      });
       setValue(newValue);
       saveToStore({ value: newValue });
     }
@@ -159,16 +137,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       <div className="w-full max-w-2xl">
         {question.type === 'choice' && (
           <>
-            {console.log('[QuestionComponent] 🎯 Renderizando choice para:', {
-              questionType: question.type,
-              questionTitle: question.title,
-              currentStepKey,
-              choices: question.choices,
-              choicesLength: question.choices.length,
-              value,
-              multiple: question.config?.multiple,
-              config: question.config
-            })}
             <SingleAndMultipleChoiceQuestion
               key={`choice-${currentStepKey}-${question.title.replace(/\s+/g, '-')}`}
               choices={question.choices}
@@ -192,14 +160,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
         )}
         {question.type === 'emoji' && (
           <>
-            {console.log('[QuestionComponent] ⭐ Renderizando emoji/stars:', {
-              questionType: question.type,
-              configType: question.config?.type,
-              min: question.config?.min,
-              max: question.config?.max,
-              startLabel: question.config?.startLabel,
-              endLabel: question.config?.endLabel
-            })}
             <EmojiRangeQuestion
               emojis={question.config?.emojis}
               value={value}
@@ -214,12 +174,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
         )}
         {question.type === 'text' && (
           <>
-            {console.log('[QuestionComponent] 🧠 Renderizando textarea para:', {
-              questionType: question.type,
-              questionTitle: question.title,
-              currentStepKey,
-              value
-            })}
             <VOCTextQuestion
               value={value}
               onChange={handleChange}
@@ -229,12 +183,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
         )}
         {(question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (
           <>
-            {console.log('[QuestionComponent] 🧠 Renderizando textarea para cognitive:', {
-              questionType: question.type,
-              questionTitle: question.title,
-              currentStepKey,
-              value
-            })}
             <VOCTextQuestion
               value={value}
               onChange={handleChange}

@@ -49,7 +49,6 @@ export function useEyeTrackingConfigQuery(researchId: string) {
 
         if (!response.ok) {
           if (response.status === 404) {
-            console.log('[useEyeTrackingConfigQuery] No se encontró configuración para researchId:', researchId);
             return null;
           }
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -58,7 +57,6 @@ export function useEyeTrackingConfigQuery(researchId: string) {
         const data = await response.json();
         return data;
       } catch (error) {
-        console.error('[useEyeTrackingConfigQuery] Error obteniendo configuración:', error);
         return null;
       }
     },

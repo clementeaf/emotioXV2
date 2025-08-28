@@ -42,8 +42,6 @@ export const useFormLoadingState = ({
 
   // 🎯 RESET COMPLETO DEL ESTADO CUANDO CAMBIA LA PREGUNTA
   useEffect(() => {
-    console.log(`[useFormLoadingState] 🔄 Cambiando questionKey a: ${questionKey}`);
-    
     // 🚨 LIMPIAR DATOS LOCALES PREVIOS PARA EVITAR CONTAMINACIÓN CRUZADA
     const { clearFormData } = useFormDataStore.getState();
     
@@ -57,14 +55,13 @@ export const useFormLoadingState = ({
           // 🎯 LIMPIAR SOLO LAS KEYS QUE NO SEAN LA ACTUAL
           Object.keys(parsed.state.formData).forEach(key => {
             if (key !== questionKey) {
-              console.log(`[useFormLoadingState] 🧹 Limpiando datos residuales de: ${key}`);
               clearFormData(key);
             }
           });
         }
       }
     } catch (error) {
-      console.warn('[useFormLoadingState] Error limpiando datos residuales:', error);
+      // Handle cleanup error silently
     }
     
     setFormValues({});
@@ -78,12 +75,6 @@ export const useFormLoadingState = ({
       return;
     }
 
-    console.log(`[useFormLoadingState] 🔄 Procesando datos para ${questionKey}:`, {
-      hasModuleResponses: !!moduleResponses,
-      responsesCount: moduleResponses?.responses?.length || 0,
-      isLoadingResponses
-    });
-
     // Buscar respuesta existente para este questionKey en el backend
     if (moduleResponses?.responses && Array.isArray(moduleResponses.responses)) {
       const existingResponse = (moduleResponses.responses as any[]).find(
@@ -91,7 +82,6 @@ export const useFormLoadingState = ({
       );
 
       if (existingResponse?.responses?.[0]?.response) {
-        console.log(`[useFormLoadingState] ✅ Datos encontrados en backend para ${questionKey}:`, existingResponse.responses[0].response);
         setFormValues(existingResponse.responses[0].response as Record<string, unknown>);
         setHasLoadedData(true);
         setIsLoading(false);
@@ -105,14 +95,11 @@ export const useFormLoadingState = ({
     // Si no hay datos en el backend, cargar del store local
     const existingData = getFormData(questionKey);
     if (existingData && Object.keys(existingData).length > 0) {
-      console.log(`[useFormLoadingState] ✅ Datos encontrados en store local para ${questionKey}:`, existingData);
       setFormValues(existingData as Record<string, unknown>);
       setHasLoadedData(true);
 
       // Callback opcional cuando se cargan los datos
       stableOnDataLoaded(existingData as Record<string, unknown>);
-    } else {
-      console.log(`[useFormLoadingState] ℹ️ No hay datos previos para ${questionKey}, formulario vacío`);
     }
 
     setIsLoading(false);
@@ -139,17 +126,12 @@ export const useFormLoadingState = ({
   // explícitamente a través de saveToStore() y handleInputChange()
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
-    console.log(`[useFormLoadingState] 💾 saveToStore llamado para ${questionKey}:`, data);
-    
     // 🎯 VALIDACIÓN: Solo guardar si los datos son válidos y no están vacíos
     if (data && Object.keys(data).length > 0) {
       // Usar setTimeout para evitar setState durante render
       setTimeout(() => {
         setFormData(questionKey, data);
-        console.log(`[useFormLoadingState] ✅ Datos guardados exitosamente para ${questionKey}`);
       }, 0);
-    } else {
-      console.log(`[useFormLoadingState] ⚠️ Datos vacíos o inválidos, no se guardará para ${questionKey}`);
     }
   }, [questionKey, setFormData]);
 

@@ -83,17 +83,6 @@ function App() {
     setShowLocationModal(false);
   };
 
-  // Log para debugging
-  useEffect(() => {
-    console.log('[App] Estado de tracking de ubicación:', {
-      researchId,
-      trackLocationEnabled,
-      hasConsent,
-      hasRequested,
-      location: location ? `${location.latitude}, ${location.longitude}` : null,
-      error: locationError
-    });
-  }, [researchId, trackLocationEnabled, hasConsent, hasRequested, location, locationError]);
 
   return (
     <QueryClientProvider client={queryClient}>

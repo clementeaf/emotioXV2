@@ -18,26 +18,21 @@ export const useParticipantStore = create<ParticipantState>()(
 
       setParticipantId: (id: string) => {
         set({ participantId: id });
-        console.log('[ParticipantStore] ✅ ParticipantId establecido:', id);
       },
 
       setEmail: (email: string) => {
         set({ email });
-        console.log('[ParticipantStore] ✅ Email establecido:', email);
       },
 
       clearParticipant: () => {
         set({ participantId: null, email: null });
-        console.log('[ParticipantStore] 🗑️ Datos de participante limpiados');
       },
 
       getParticipantId: () => {
         const currentId = get().participantId;
         if (!currentId) {
-          // 🎯 GENERAR NUEVO ID SI NO EXISTE
           const newId = `participant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           set({ participantId: newId });
-          console.log('[ParticipantStore] 🆔 Nuevo participantId generado:', newId);
           return newId;
         }
         return currentId;

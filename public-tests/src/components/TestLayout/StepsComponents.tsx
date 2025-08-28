@@ -58,7 +58,6 @@ const getLocationInfo = async (): Promise<{ country: string, city: string, ip: s
       ip: ip
     };
   } catch (error) {
-    console.warn('No se pudo obtener información de ubicación:', error);
     return {
       country: 'Chile',
       city: 'Valparaíso',
@@ -155,7 +154,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
       case 'smartvoc_nev':
       case 'detailed':
       case 'emojis':
-        console.log('[StepsComponents] 🎯 ENTRANDO EN CASE SMARTVOC_NEV/DETAILED!');
         return (
           <div className="space-y-6">
             {/* Primera fila - 7 emociones */}
@@ -384,14 +382,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
           </div>
         );
       default:
-        console.log('[StepsComponents] ❌ Caso no manejado:', {
-          questionType,
-          questionTitle: question.title,
-          questionConfig: question.config,
-          currentStepKey,
-          questionTypeExact: `"${questionType}"`,
-          questionTypeLength: questionType.length
-        });
         return (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="text-center">
@@ -407,18 +397,9 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     }
   };
 
-  console.log('[StepsComponents] 🎯 ANTES DE RENDERIZAR:', {
-    questionTitle: question.title,
-    questionType,
-    willCallRenderQuestion: true
-  });
 
   const renderedContent = renderQuestion();
 
-  console.log('[StepsComponents] 🎯 DESPUÉS DE RENDERIZAR:', {
-    renderedContent: !!renderedContent,
-    renderedContentType: typeof renderedContent
-  });
 
   return (
     <div className="flex flex-col items-center justify-center h-full">
@@ -504,7 +485,6 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
 
         await saveModuleResponseMutation.mutateAsync(createData);
       } catch (error) {
-        console.error('❌ ScreenComponent - Error enviando a module-responses:', error);
       }
     }
 
