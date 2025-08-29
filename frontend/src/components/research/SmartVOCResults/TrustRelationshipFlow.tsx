@@ -82,13 +82,6 @@ const CustomLegend = () => (
 );
 
 export const TrustRelationshipFlow = ({ data, className, hasData = true, isLoading = false }: TrustRelationshipFlowProps) => {
-  // Debug logs para verificar datos
-    dataLength: data.length,
-    data: data,
-    hasData: hasData,
-    className: className,
-    isLoading: isLoading
-  });
 
   // Si está cargando, mostrar skeleton
   if (isLoading) {

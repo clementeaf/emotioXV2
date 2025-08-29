@@ -148,6 +148,7 @@ export function ParticipantsTable({
   const generatePublicTestsUrl = (participantId: string) => {
     const url = getPublicTestsUrl(researchId, participantId);
     
+    console.log('Generated URL:', {
       url,
       participantId,
       researchId

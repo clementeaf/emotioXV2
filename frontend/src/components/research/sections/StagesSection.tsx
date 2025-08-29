@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
 
-import { StagesSectionProps } from '../../../../../shared/interfaces/research-creation.interface';
+import { StagesSectionProps } from '../../../../../../shared/interfaces/research-creation.interface';
 
 /**
  * Sección de configuración de etapas

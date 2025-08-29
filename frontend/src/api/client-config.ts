@@ -21,7 +21,7 @@ export const CLIENT_CONFIG = {
   wsUrl: NEXT_PUBLIC_WS_URL || 'wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev',
   
   // Public Tests
-  publicTestsUrl: isDevelopment ? 'http://localhost:5173' : (NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'),
+  publicTestsUrl: isDevelopment ? 'http://localhost:5173' : (NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://public-tests.emotioxv2.com'),
   
   // Environment flags
   isDevelopment,

@@ -103,22 +103,11 @@ export const useSmartVOCState = (researchId: string) => {
 
   // Función para actualizar una pregunta específica
   const updateQuestion = useCallback((id: string, updates: Partial<SmartVOCQuestion>) => {
-      id,
-      updates,
-      hasConfig: !!updates.config,
-      configType: updates.config?.type
-    });
-
     setFormData(prev => {
       const newFormData = {
         ...prev,
         questions: prev.questions.map(q => q.id === id ? { ...q, ...updates } : q)
       };
-
-        questionCount: newFormData.questions.length,
-        updatedQuestion: newFormData.questions.find(q => q.id === id),
-        updatedQuestionConfig: newFormData.questions.find(q => q.id === id)?.config
-      });
 
       return newFormData;
     });

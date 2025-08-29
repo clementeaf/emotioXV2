@@ -127,11 +127,11 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   // Función para navegar a public-tests
   const handleOpenPublicTests = () => {
     if (researchId) {
-      // Usar la URL de Vercel en producción, localhost en desarrollo
+      // Usar la URL local en desarrollo, configurada en producción
       const isDevelopment = window.location.hostname === 'localhost';
       const baseUrl = isDevelopment
         ? 'http://localhost:5173'
-        : 'https://emotio-xv-2-public-tests.vercel.app';
+        : 'https://public-tests.emotioxv2.com';
       window.open(`${baseUrl}/?researchId=${researchId}`, '_blank');
     }
   };

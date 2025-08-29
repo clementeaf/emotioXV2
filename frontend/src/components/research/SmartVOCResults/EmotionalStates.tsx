@@ -49,17 +49,6 @@ export function EmotionalStates({
   // Verificar si hay datos disponibles
   const hasData = emotionalStates.length > 0;
 
-  // 🎯 DEBUG: Log de los datos recibidos
-    emotionalStates,
-    longTermClusters,
-    shortTermClusters,
-    totalResponses,
-    positivePercentage: customPositivePercentage,
-    negativePercentage: customNegativePercentage,
-    hasData,
-    calculatedPositive: calculatedPositivePercentage,
-    calculatedNegative: calculatedNegativePercentage
-  });
 
   return (
     <Card className={cn('p-6 pb-14', className)}>

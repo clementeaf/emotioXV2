@@ -33,7 +33,7 @@ export const LazyProvider: React.FC<LazyProviderProps> = ({ children }) => {
     try {
       await importFn();
       
-      setPreloadedModules(prev => new Set([...prev, moduleName]));
+      setPreloadedModules(prev => new Set([...Array.from(prev), moduleName]));
     } catch (error) {
     } finally {
       setIsPreloading(false);

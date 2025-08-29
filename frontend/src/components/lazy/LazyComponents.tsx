@@ -8,13 +8,13 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 // Lazy load de componentes pesados
 export const LazyCognitiveTask = lazy(() => 
   import('@/components/research/CognitiveTask').then(module => ({
-    default: module.default || module.CognitiveTask
+    default: module.CognitiveTaskForm
   }))
 );
 
 export const LazySmartVOC = lazy(() => 
   import('@/components/research/SmartVOC').then(module => ({
-    default: module.default || module.SmartVOC
+    default: module.SmartVOCForm
   }))
 );
 
@@ -38,7 +38,7 @@ export const LazyCognitiveTaskResults = lazy(() =>
 
 export const LazySmartVOCResults = lazy(() => 
   import('@/components/research/SmartVOCResults').then(module => ({
-    default: module.default
+    default: module.SmartVOCResults
   }))
 );
 

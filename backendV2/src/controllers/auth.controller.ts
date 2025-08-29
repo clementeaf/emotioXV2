@@ -457,3 +457,12 @@ const createCorsResponse = (statusCode: number, body: any, event: APIGatewayProx
     body: JSON.stringify(body)
   };
 };
+
+// Export the handler for the dynamic loader
+export const handler = mainHandler;
+
+// Export por defecto para compatibilidad con dispatcher
+export default {
+  handler: mainHandler,
+  mainHandler
+};

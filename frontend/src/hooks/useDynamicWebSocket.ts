@@ -31,9 +31,6 @@ export const useDynamicWebSocket = (researchId: string) => {
       try {
         const dynamicEndpoints = DYNAMIC_API_ENDPOINTS;
         setEndpoints(dynamicEndpoints);
-          http: dynamicEndpoints.http,
-          ws: dynamicEndpoints.ws
-        });
       } catch (error) {
         setEndpoints(null);
       } finally {

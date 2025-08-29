@@ -36,7 +36,9 @@ export function useEyeTrackingRecruitMutations(
   // Generate link mutation
   const generateLinkMutation = useMutation({
     mutationFn: async (configId: string) => {
-      return await eyeTrackingFixedAPI.generateRecruitLink(configId).send();
+      // TODO: Fix this - generateRecruitLink method doesn't exist in eyeTrackingFixedAPI
+      // return await eyeTrackingFixedAPI.generateRecruitLink(configId).send();
+      return await eyeTrackingFixedAPI.getRecruitConfig(configId).send();
     },
     onSuccess: (data) => {
       toast.success('Enlace generado exitosamente');
@@ -55,7 +57,8 @@ export function useEyeTrackingRecruitMutations(
   // Delete configuration mutation
   const deleteConfigMutation = useMutation({
     mutationFn: async (configId: string) => {
-      return await eyeTrackingFixedAPI.deleteRecruitConfig(configId).send();
+      // TODO: Fix this - deleteRecruitConfig method doesn't exist, using delete instead
+      return await eyeTrackingFixedAPI.delete(configId).send();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ 

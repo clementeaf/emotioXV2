@@ -178,4 +178,50 @@ export const getUserIdFromEvent = (event: APIGatewayProxyEvent): string | null =
     console.error('Error al obtener el ID del usuario:', error);
     return null;
   }
+};
+
+/**
+ * Creates a controller with common error handling and CORS setup
+ * @param controllerClass Class instance with methods to handle routes
+ * @returns Handler function for API Gateway events
+ */
+export const createController = (controllerClass: any) => {
+  return async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+    try {
+      const method = event.httpMethod;
+      const path = event.path;
+      
+      // Handle different HTTP methods and routes
+      if (method === 'GET' && path === '/companies') {
+        return await controllerClass.getAllCompanies(event);
+      } else if (method === 'POST' && path === '/companies') {
+        return await controllerClass.createCompany(event);
+      } else if (method === 'PUT' && path.startsWith('/companies/')) {
+        return await controllerClass.updateCompany(event);
+      } else if (method === 'DELETE' && path.startsWith('/companies/')) {
+        return await controllerClass.deleteCompany(event);
+      }
+      
+      return createResponseWithDynamicCors(404, { message: 'Route not found' }, event);
+    } catch (error: any) {
+      console.error('Controller error:', error);
+      return createResponseWithDynamicCors(500, { message: 'Internal server error', error: error.message }, event);
+    }
+  };
+};
+
+/**
+ * Extracts authentication data from the API Gateway event
+ * @param event API Gateway event
+ * @returns Object with user authentication data
+ */
+export const extractAuthDataFromEvent = (event: APIGatewayProxyEvent) => {
+  const authHeader = event.headers.Authorization || event.headers.authorization;
+  const token = authHeader ? authHeader.replace('Bearer ', '') : null;
+  
+  return {
+    token,
+    userId: event.requestContext.authorizer?.claims?.sub || null,
+    isAuthenticated: !!token
+  };
 }; 

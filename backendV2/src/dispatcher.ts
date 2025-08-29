@@ -6,6 +6,7 @@ const handlers: Record<string, any> = {};
 // Mapa de importadores dinámicos para los controladores
 const controllerImports = {
   'auth': () => import('./controllers/auth.controller'),
+  'companies': () => import('./controllers/company.controller'),
   'research': () => import('./controllers/newResearch.controller'),
   'welcome-screen': () => import('./controllers/welcomeScreen.controller'),
   'thank-you-screen': () => import('./controllers/thankYouScreen.controller'),

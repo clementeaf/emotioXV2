@@ -47,9 +47,6 @@ export const useMonitoringReceiver = (researchId: string) => {
       try {
         const dynamicEndpoints = DYNAMIC_API_ENDPOINTS;
         setEndpoints(dynamicEndpoints);
-          http: dynamicEndpoints.http,
-          ws: dynamicEndpoints.ws
-        });
       } catch (error) {
         setEndpoints(null);
       } finally {
@@ -122,11 +119,6 @@ export const useMonitoringReceiver = (researchId: string) => {
       };
 
       wsRef.current.onerror = (event) => {
-          type: event.type,
-          target: event.target ? 'WebSocket' : 'Unknown',
-          readyState: wsRef.current?.readyState,
-          url: wsUrl
-        });
         setIsConnected(false);
         setIsConnecting(false);
       };
@@ -166,9 +158,6 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 MANEJAR EVENTOS DE MONITOREO
   const handleMonitoringEvent = useCallback((event: MonitoringEvent) => {
-      type: event.type,
-      data: event.data
-    });
 
     switch (event.type) {
       case 'PARTICIPANT_LOGIN':
@@ -195,16 +184,7 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 MANEJAR LOGIN DE PARTICIPANTE
   const handleParticipantLogin = useCallback((data: any) => {
-      participantId: data.participantId,
-      email: data.email,
-      researchId: data.researchId,
-      timestamp: data.timestamp
-    });
-
     setMonitoringData(prev => {
-        totalParticipants: prev.totalParticipants,
-        participants: prev.participants.map(p => ({ participantId: p.participantId, email: p.email }))
-      });
 
       const existingParticipant = prev.participants.find(p => p.participantId === data.participantId);
 
@@ -223,11 +203,6 @@ export const useMonitoringReceiver = (researchId: string) => {
           activeParticipants: updatedParticipants.filter(p => p.status === 'in_progress').length,
           lastUpdate: data.timestamp
         };
-
-          totalParticipants: newState.totalParticipants,
-          activeParticipants: newState.activeParticipants,
-          participants: newState.participants.map(p => ({ participantId: p.participantId, email: p.email, status: p.status }))
-        });
 
         return newState;
       } else {
@@ -250,11 +225,6 @@ export const useMonitoringReceiver = (researchId: string) => {
           activeParticipants: updatedParticipants.filter(p => p.status === 'in_progress').length,
           lastUpdate: data.timestamp
         };
-
-          totalParticipants: newState.totalParticipants,
-          activeParticipants: newState.activeParticipants,
-          participants: newState.participants.map(p => ({ participantId: p.participantId, email: p.email, status: p.status }))
-        });
 
         return newState;
       }
@@ -388,22 +358,8 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 CONECTAR AL MONTAR
   useEffect(() => {
-      token: !!token,
-      researchId,
-      isLoadingEndpoints,
-      endpoints: !!endpoints,
-      isConnecting
-    });
-
     if (token && researchId && !isLoadingEndpoints && endpoints) {
       connect();
-    } else {
-        reason: !token ? 'No hay token' :
-          !researchId ? 'No hay researchId' :
-            isLoadingEndpoints ? 'Cargando endpoints' :
-              !endpoints ? 'No hay endpoints' :
-                isConnecting ? 'Ya conectando' : 'Desconocido'
-      });
     }
 
     return () => {

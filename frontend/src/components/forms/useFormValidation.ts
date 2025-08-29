@@ -99,7 +99,7 @@ export function useFormValidation<T extends Record<string, any>>({
   }, [touched, validateField]);
 
   // Marcar campo como tocado
-  const setTouched = useCallback((fieldName: keyof T) => {
+  const setFieldTouched = useCallback((fieldName: keyof T) => {
     setTouched(prev => ({
       ...prev,
       [fieldName]: true
@@ -115,8 +115,8 @@ export function useFormValidation<T extends Record<string, any>>({
 
   // Handle blur
   const handleBlur = useCallback((fieldName: keyof T) => {
-    setTouched(fieldName);
-  }, [setTouched]);
+    setFieldTouched(fieldName);
+  }, [setFieldTouched]);
 
   // Handle change
   const handleChange = useCallback((fieldName: keyof T, value: any) => {
@@ -196,7 +196,7 @@ export function useFormValidation<T extends Record<string, any>>({
     
     // Acciones
     setValue,
-    setTouched,
+    setTouched: setFieldTouched,
     handleChange,
     handleBlur,
     handleSubmit,

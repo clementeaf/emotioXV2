@@ -10,7 +10,7 @@ export const DEFAULT_WELCOME_SCREEN_CONFIG: Partial<WelcomeScreenServiceData> = 
 };
 
 // Importar los tipos correctos desde el servicio (con alias)
-import { WelcomeScreenRecord, WelcomeScreenFormData as WelcomeScreenServiceData } from '../../../../../shared/interfaces/welcome-screen.interface';
+import { WelcomeScreenRecord, WelcomeScreenFormData as WelcomeScreenServiceData } from '../../../../../../shared/interfaces/welcome-screen.interface';
 
 export interface ErrorModalData {
   title: string;

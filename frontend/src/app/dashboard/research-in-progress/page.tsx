@@ -119,13 +119,13 @@ function ResearchInProgressContent() {
         const metricsResponse = await researchInProgressAPI.getOverviewMetrics(researchId);
 
         if (metricsResponse.success) {
-          setStatus(metricsResponse.data);
+          setStatus(metricsResponse.data as ResearchStatus);
         }
 
         const participantsResponse = await researchInProgressAPI.getParticipantsWithStatus(researchId);
 
         if (participantsResponse.success) {
-          setParticipants(participantsResponse.data || []);
+          setParticipants((participantsResponse.data as Participant[]) || []);
         }
       } catch (error: any) {
         setError(error.message || 'Error al cargar los datos de la investigación');

@@ -81,9 +81,9 @@ export const useDisqualificationRedirect = () => {
       return;
     }
 
-    // 🎯 CORREGIR PROTOCOLO HTTPS SI ES NECESARIO
-    if (disqualificationUrl.includes('vercel.app')) {
-      disqualificationUrl = disqualificationUrl.replace('https://', 'http://');
+    // 🎯 MANTENER PROTOCOLO HTTPS PARA URLs SEGURAS
+    if (!disqualificationUrl.startsWith('http://') && !disqualificationUrl.startsWith('https://')) {
+      disqualificationUrl = 'https://' + disqualificationUrl;
     }
 
     // 🎯 VERIFICAR QUE LA URL SEA VÁLIDA

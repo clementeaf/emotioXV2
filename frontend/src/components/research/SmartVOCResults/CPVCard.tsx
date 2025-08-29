@@ -137,17 +137,6 @@ export const CPVCard = ({
 }: CPVCardProps) => {
   const percentChange = 2.5; // Valor de ejemplo para el cambio porcentual
 
-  // Debug logs para verificar datos
-    value,
-    trendDataLength: trendData.length,
-    trendData: trendData,
-    hasData: hasData,
-    csatPercentage,
-    cesPercentage,
-    peakValue,
-    isLoading
-  });
-
   // Si está cargando, mostrar skeleton
   if (isLoading) {
     return <CPVCardSkeleton />;

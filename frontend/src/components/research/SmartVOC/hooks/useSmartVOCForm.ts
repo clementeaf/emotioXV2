@@ -222,15 +222,6 @@ export const useSmartVOCForm = (researchId: string) => {
       }),
     };
 
-      cleanedData,
-      smartVocId,
-      questions: cleanedData.questions.map(q => ({
-        id: q.id,
-        type: q.type,
-        config: q.config
-      }))
-    });
-
     saveMutation.mutate({ ...cleanedData, smartVocId });
   }, [formData, filterEditedQuestions, validateForm, setValidationErrors, saveMutation, smartVocId]);
 

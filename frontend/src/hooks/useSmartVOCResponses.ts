@@ -69,17 +69,6 @@ export const useSmartVOCResponses = (researchId: string) => {
           // Procesar datos SmartVOC desde las respuestas
           const smartVOCData = processSmartVOCData(response.data);
 
-            totalResponses: smartVOCData.totalResponses,
-            uniqueParticipants: smartVOCData.uniqueParticipants,
-            npsScore: smartVOCData.npsScore,
-            cpvValue: smartVOCData.cpvValue,
-            cvScores: smartVOCData.cvScores,
-            cvScoresLength: smartVOCData.cvScores?.length,
-            csatScores: smartVOCData.csatScores,
-            cesScores: smartVOCData.cesScores,
-            nevScores: smartVOCData.nevScores
-          });
-
           setData(smartVOCData);
         } else {
           setError('No se recibieron datos del servidor');

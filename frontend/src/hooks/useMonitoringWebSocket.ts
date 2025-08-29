@@ -42,10 +42,6 @@ export const useMonitoringWebSocket = (researchId?: string) => {
       };
 
       ws.current.onclose = (event) => {
-          code: event.code,
-          reason: event.reason,
-          wasClean: event.wasClean
-        });
         isConnectedRef.current = false;
       };
 

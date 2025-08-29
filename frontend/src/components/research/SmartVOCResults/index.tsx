@@ -156,20 +156,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   const finalTrustFlowDataForDemo = shouldUseTestData ? [] : finalTrustFlowData;
   const hasTrustFlowDataForDemo = shouldUseTestData ? true : hasTrustFlowData;
 
-  // Debug logs
-    hasData: !!smartVOCData,
-    totalResponses: smartVOCData?.totalResponses || 0,
-    nevScores: smartVOCData?.nevScores || [],
-    nevScoresLength: smartVOCData?.nevScores?.length || 0,
-    csatScores: smartVOCData?.csatScores || [],
-    npsScore: smartVOCData?.npsScore || 0,
-    cvScores: smartVOCData?.cvScores || []
-  });
-    dataLength: trustFlowData.length,
-    data: trustFlowData,
-    hasData: hasTrustFlowData,
-    finalData: finalTrustFlowData
-  });
+  // Debug logs removed
 
   // Obtener el valor real de Cognitive Value (CV) desde smartVOCData
   const cvValue = smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0

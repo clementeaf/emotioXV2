@@ -56,10 +56,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         timestamp: new Date().toISOString(),
         files: fileInfos
       }));
-
-        count: files.length,
-        storageKey
-      });
     } catch (error) {
     }
   };
@@ -72,9 +68,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
       if (savedData) {
         const parsed = JSON.parse(savedData);
-          storageKey,
-          filesCount: parsed.files?.length || 0
-        });
 
         // No podemos recuperar los File objects, pero podemos mostrar la UI
         // para indicar al usuario que tenía archivos seleccionados
@@ -115,10 +108,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
             // Eliminamos del localStorage primero
             localStorage.removeItem(completedStorageKey);
-
-              key: completedStorageKey,
-              data: parsedData
-            });
 
             // Notificamos con pequeño retraso para dar tiempo al componente de estabilizarse
             setTimeout(() => {
@@ -224,9 +213,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       // incluso si el usuario navega fuera antes de que se complete el callback
       const completedStorageKey = `fileuploader_completed_${researchId}_${folder}`;
       localStorage.setItem(completedStorageKey, JSON.stringify(result));
-        completedStorageKey,
-        result
-      });
 
       if (onUploadComplete) {
         onUploadComplete(result);
@@ -244,8 +230,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       try {
         const storageKey = getStorageKey(researchId, folder);
         localStorage.removeItem(storageKey);
-          storageKey
-        });
       } catch (error) {
       }
     } catch (err) {
