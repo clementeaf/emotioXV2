@@ -15,7 +15,7 @@ const isDevelopment = NEXT_PUBLIC_ENV === 'development' ||
 // 🎯 CONFIGURACIÓN DE ENDPOINTS
 export const CLIENT_CONFIG = {
   // API HTTP
-  apiUrl: isDevelopment ? 'http://localhost:3000' : (NEXT_PUBLIC_API_URL || 'https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev'),
+  apiUrl: NEXT_PUBLIC_API_URL || 'https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev',
   
   // WebSocket
   wsUrl: NEXT_PUBLIC_WS_URL || 'wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev',
