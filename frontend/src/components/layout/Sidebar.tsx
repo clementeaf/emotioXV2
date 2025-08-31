@@ -13,7 +13,7 @@ import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
-import type { Research, ResearchWithExtensions } from '@/types/research';
+import type { Research } from '@/types/research';
 
 import { SidebarBase } from './SidebarBase';
 
@@ -150,11 +150,11 @@ function SidebarContent({ className }: SidebarProps) {
       const sortedResearch = allResearch
         .sort((a: Research, b: Research) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5)
-        .map((item: ResearchWithExtensions) => ({
+        .map((item: Research) => ({
           id: item.id,
-          name: item.name || item.title || 'Sin nombre',
-          technique: item.technique || 'Unknown',
-          createdAt: item.createdAt
+          name: item.name || 'Sin nombre',
+          technique: item.basic?.technique || 'Unknown',
+          createdAt: new Date(item.createdAt)
         }));
 
       setRecentResearch(sortedResearch);

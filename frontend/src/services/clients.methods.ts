@@ -2,16 +2,14 @@
  * Client service methods for API operations
  */
 
-import { createAlova } from '@/config/api-alova';
+import { alovaInstance } from '@/config/alova.config';
 import type { Client, ClientResponse, ClientsListResponse } from '@/types/clients';
-
-const alova = createAlova();
 
 /**
  * Fetch all clients
  */
 export const fetchClients = () => 
-  alova.Get<ClientsListResponse>('/clients', {
+  alovaInstance.Get<ClientsListResponse>('/clients', {
     name: 'fetchClients'
   });
 
@@ -19,7 +17,7 @@ export const fetchClients = () =>
  * Fetch client by ID
  */
 export const fetchClientById = (id: string) =>
-  alova.Get<ClientResponse>(`/clients/${id}`, {
+  alovaInstance.Get<ClientResponse>(`/clients/${id}`, {
     name: 'fetchClientById'
   });
 
@@ -27,7 +25,7 @@ export const fetchClientById = (id: string) =>
  * Create new client
  */
 export const createClient = (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) =>
-  alova.Post<ClientResponse>('/clients', clientData, {
+  alovaInstance.Post<ClientResponse>('/clients', clientData, {
     name: 'createClient'
   });
 
@@ -35,7 +33,7 @@ export const createClient = (clientData: Omit<Client, 'id' | 'createdAt' | 'upda
  * Update client
  */
 export const updateClient = (id: string, clientData: Partial<Client>) =>
-  alova.Put<ClientResponse>(`/clients/${id}`, clientData, {
+  alovaInstance.Put<ClientResponse>(`/clients/${id}`, clientData, {
     name: 'updateClient'
   });
 
@@ -43,15 +41,13 @@ export const updateClient = (id: string, clientData: Partial<Client>) =>
  * Delete client
  */
 export const deleteClient = (id: string) =>
-  alova.Delete(`/clients/${id}`, {
-    name: 'deleteClient'
-  });
+  alovaInstance.Delete(`/clients/${id}`);
 
 /**
  * Get all research (for clients)
  */
 export const getAllResearch = () =>
-  alova.Get('/research', {
+  alovaInstance.Get('/research', {
     name: 'getAllResearch'
   });
 

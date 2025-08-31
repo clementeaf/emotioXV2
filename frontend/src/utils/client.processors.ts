@@ -15,6 +15,8 @@ export function processClientResponse(response: ClientResponse): Client {
     email: response.data.email,
     company: response.data.company,
     status: response.data.status || 'active',
+    researchCount: response.data.researchCount || 0,
+    lastActivity: response.data.lastActivity || new Date().toISOString(),
     createdAt: response.data.createdAt,
     updatedAt: response.data.updatedAt
   };
@@ -30,6 +32,8 @@ export function processClientsListResponse(response: ClientsListResponse): Clien
     email: client.email,
     company: client.company,
     status: client.status || 'active',
+    researchCount: client.researchCount || 0,
+    lastActivity: client.lastActivity || new Date().toISOString(),
     createdAt: client.createdAt,
     updatedAt: client.updatedAt
   }));
@@ -122,7 +126,7 @@ export function filterClients(clients: Client[], filters: {
 /**
  * Sort clients with different criteria
  */
-export function sortClients(clients: Client[], criteria: 'name' | 'company' | 'lastActivity' = 'name'): Client[] {
+export function sortClients(clients: Client[], criteria: 'name' | 'company' | 'lastActivity' | 'researchCount' = 'name'): Client[] {
   switch (criteria) {
     case 'name':
       return sortClientsByName(clients);
@@ -132,6 +136,8 @@ export function sortClients(clients: Client[], criteria: 'name' | 'company' | 'l
       return [...clients].sort((a, b) => 
         new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
       );
+    case 'researchCount':
+      return [...clients].sort((a, b) => b.researchCount - a.researchCount);
     default:
       return sortClientsByName(clients);
   }

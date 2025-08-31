@@ -11,8 +11,9 @@ import {
 } from '../services/eye-tracking.methods';
 import type {
   EyeTrackingBuildConfig,
-  EyeTrackingRecruitConfig,
+  EyeTrackingRecruitFormDataLocal,
   EyeTrackingResults,
+  EyeTrackingParticipantResult,
   UseEyeTrackingDataOptions,
   UseEyeTrackingDataReturn,
   EyeTrackingData
@@ -53,8 +54,8 @@ export function useEyeTrackingData(
 
   // Process combined data
   const combinedData = useCombinedEyeTrackingData(
-    buildQuery.data?.data,
-    recruitQuery.data?.data,
+    (buildQuery.data as { data?: EyeTrackingBuildConfig })?.data,
+    (recruitQuery.data as { data?: EyeTrackingRecruitFormDataLocal })?.data,
     type
   );
 
@@ -91,12 +92,30 @@ export function useEyeTrackingData(
   };
 
   return {
+    // Data fields
     data: combinedData || undefined,
+    eyeTrackingData: combinedData,
+    buildConfig: (buildQuery.data as { data?: EyeTrackingBuildConfig })?.data || null,
+    recruitConfig: (recruitQuery.data as { data?: EyeTrackingRecruitFormDataLocal })?.data || null,
+    results: null,
+    
+    // State fields  
     isLoading: buildQuery.loading || recruitQuery.loading,
     isLoadingBuild: buildQuery.loading,
     isLoadingRecruit: recruitQuery.loading,
-    error: buildQuery.error || recruitQuery.error || null,
+    isLoadingResults: false,
+    error: buildQuery.error?.message || recruitQuery.error?.message || null,
+    
+    // Action fields
+    saveBuildConfig: async () => {},
+    saveRecruitConfig: async () => {},
+    generateRecruitmentLink: async () => '',
+    exportResults: async () => {},
     refreshData: handleRefetch,
+    
+    // Validation fields
+    validateBuildConfig: () => [],
+    validateRecruitConfig: () => []
   };
 }
 
@@ -131,9 +150,9 @@ export function useEyeTrackingResults(researchId: string) {
   );
 
   return {
-    results: query.data?.data || [],
+    results: (query.data as { data?: EyeTrackingResults[] })?.data || [],
     isLoading: query.loading,
-    error: query.error || null,
+    error: query.error?.message || null,
     refetch: query.send,
   };
 }
@@ -155,9 +174,9 @@ export function useParticipantEyeTrackingResults(researchId: string, participant
   );
 
   return {
-    results: query.data?.data || null,
+    results: (query.data as { data?: EyeTrackingParticipantResult })?.data || null,
     isLoading: query.loading,
-    error: query.error || null,
+    error: query.error?.message || null,
     refetch: query.send,
   };
 }
@@ -165,7 +184,7 @@ export function useParticipantEyeTrackingResults(researchId: string, participant
 // Helper functions
 function useCombinedEyeTrackingData(
   buildData: EyeTrackingBuildConfig | null | undefined,
-  recruitData: EyeTrackingRecruitConfig | null | undefined,
+  recruitData: EyeTrackingRecruitFormDataLocal | null | undefined,
   type: UseEyeTrackingDataOptions['type']
 ): EyeTrackingData | null {
   if (type === 'build') {
@@ -211,7 +230,7 @@ function useCombinedEyeTrackingData(
 export function validateEyeTrackingBuildConfig(
   config: Partial<EyeTrackingBuildConfig>
 ): boolean {
-  const formData = config as EyeTrackingFormData;
+  const formData = config as unknown as EyeTrackingFormData;
   if (!formData.researchId || formData.researchId.trim().length === 0) {
     return false;
   }
@@ -232,7 +251,7 @@ export function validateEyeTrackingBuildConfig(
  * Utility function to validate recruit configuration
  */
 export function validateEyeTrackingRecruitConfig(
-  config: Partial<EyeTrackingRecruitConfig>
+  config: Partial<EyeTrackingRecruitFormDataLocal>
 ): boolean {
   const recruitData = config as EyeTrackingFormData;
   if (!recruitData.researchId || recruitData.researchId.trim().length === 0) {

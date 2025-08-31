@@ -136,14 +136,14 @@ export function useEyeTrackingFormData({
             showHeatmap: true
           },
           parameters: {
-            samplingRate: buildData.settings.sampleRate || 60,
+            samplingRate: buildData.settings?.sampleRate || 60,
             fixationThreshold: 100,
             saccadeVelocityThreshold: 30
           }
         };
 
         // Mapear stimuli de build a EyeTrackingStimuliConfig
-        const mappedStimuli = buildData.stimuli.map((stimulus: any) => ({
+        const mappedStimuli = buildData.stimuli?.map((stimulus: any) => ({
           id: stimulus.id,
           fileName: `stimulus_${stimulus.order}`,
           fileType: stimulus.type,
@@ -154,9 +154,9 @@ export function useEyeTrackingFormData({
         }));
 
         const stimuli: EyeTrackingStimuliConfig = {
-          items: mappedStimuli,
+          items: mappedStimuli || [],
           presentationSequence: 'sequential',
-          durationPerStimulus: buildData.settings.duration || 5
+          durationPerStimulus: buildData.settings?.duration || 5
         };
 
         // Actualizar el estado del formulario con los datos build mapeados

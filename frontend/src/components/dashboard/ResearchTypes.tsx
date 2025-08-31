@@ -3,16 +3,17 @@
 import { useResearchList } from '@/hooks/useResearchList';
 import { ResearchTypesProps } from '@/interfaces/research';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-import type { Research, ResearchWithExtensions } from '@/types/research';
+import type { Research } from '@/types/research';
 
 function ResearchTypesContent() {
   // Usar el hook centralizado para obtener research data
   const { researches: researchData = [], isLoading, error } = useResearchList();
 
   // Extraer tipos únicos de investigación
-  const researchTypes = Array.from(new Set(researchData.map((research: ResearchWithExtensions) => research.technique)));
+  const researchTypes = Array.from(new Set(researchData.map((research: Research) => research.basic?.technique || 'unknown')));
 
-  const getTypeDisplayName = (type: string) => {
+  const getTypeDisplayName = (type: string | undefined) => {
+    if (!type) return 'Unknown';
     const typeNames: { [key: string]: string } = {
       'eye-tracking': 'Eye Tracking',
       'aim-framework': 'AIM Framework',
@@ -23,7 +24,7 @@ function ResearchTypesContent() {
   };
 
   const getTypeCount = (type: string) => {
-    return researchData.filter((research: ResearchWithExtensions) => research.technique === type).length;
+    return researchData.filter((research: Research) => research.basic?.technique === type).length;
   };
 
   if (isLoading) {
@@ -75,7 +76,7 @@ function ResearchTypesContent() {
                   {getTypeDisplayName(type)}
                 </span>
                 <span className="text-xs text-neutral-500 bg-white px-2 py-1 rounded">
-                  {getTypeCount(type)} investigación{getTypeCount(type) !== 1 ? 'es' : ''}
+                  {getTypeCount(type || '')} investigación{getTypeCount(type || '') !== 1 ? 'es' : ''}
                 </span>
               </div>
             ))}

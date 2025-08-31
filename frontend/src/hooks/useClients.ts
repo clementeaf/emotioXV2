@@ -12,6 +12,7 @@ import type {
   UseClientsReturn,
   UseClientByIdReturn
 } from '../types/clients';
+import type { ResearchListResponse } from '../types/research';
 
 interface UseClientsParams {
   filters?: {
@@ -44,8 +45,16 @@ export function useClients(params: UseClientsParams = {}): UseClientsReturn {
   );
 
   // Process clients from research data
+  const researchData = researchQuery.data as ResearchListResponse | undefined;
   const processedClients = useProcessClients(
-    researchQuery.data?.data || [],
+    (researchData?.data || []).map(research => ({
+      id: research.id,
+      enterprise: research.basic?.title || 'Unknown',
+      basic: { enterprise: research.basic?.title || 'Unknown' },
+      status: research.status.toString(),
+      createdAt: new Date(research.createdAt).toISOString(),
+      updatedAt: new Date(research.updatedAt).toISOString()
+    })),
     filters,
     sortBy,
     sortOrder
@@ -63,7 +72,7 @@ export function useClients(params: UseClientsParams = {}): UseClientsReturn {
   return {
     clients: processedClients,
     isLoading: researchQuery.loading,
-    error: researchQuery.error || null,
+    error: researchQuery.error?.message || null,
     refetch: handleRefetch,
   };
 }

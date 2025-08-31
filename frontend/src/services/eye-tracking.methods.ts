@@ -2,16 +2,14 @@
  * Eye tracking service methods for API operations
  */
 
-import { createAlova } from '@/config/api-alova';
+import { alovaInstance } from '@/config/alova.config';
 import type { EyeTrackingData, EyeTrackingFormData } from '@/types/eye-tracking';
-
-const alova = createAlova();
 
 /**
  * Fetch eye tracking data
  */
 export const fetchEyeTrackingData = (researchId: string) =>
-  alova.Get<{ data: EyeTrackingData }>(`/eye-tracking/${researchId}`, {
+  alovaInstance.Get<{ data: EyeTrackingData }>(`/eye-tracking/${researchId}`, {
     name: 'fetchEyeTrackingData'
   });
 
@@ -19,7 +17,7 @@ export const fetchEyeTrackingData = (researchId: string) =>
  * Create eye tracking configuration
  */
 export const createEyeTrackingConfig = (configData: EyeTrackingFormData) =>
-  alova.Post<{ data: EyeTrackingData }>('/eye-tracking', configData, {
+  alovaInstance.Post<{ data: EyeTrackingData }>('/eye-tracking', configData, {
     name: 'createEyeTrackingConfig'
   });
 
@@ -27,7 +25,7 @@ export const createEyeTrackingConfig = (configData: EyeTrackingFormData) =>
  * Update eye tracking configuration
  */
 export const updateEyeTrackingConfig = (id: string, configData: Partial<EyeTrackingFormData>) =>
-  alova.Put<{ data: EyeTrackingData }>(`/eye-tracking/${id}`, configData, {
+  alovaInstance.Put<{ data: EyeTrackingData }>(`/eye-tracking/${id}`, configData, {
     name: 'updateEyeTrackingConfig'
   });
 
@@ -35,7 +33,7 @@ export const updateEyeTrackingConfig = (id: string, configData: Partial<EyeTrack
  * Get eye tracking results
  */
 export const getEyeTrackingResults = (researchId: string) =>
-  alova.Get<{ data: any }>(`/eye-tracking/${researchId}/results`, {
+  alovaInstance.Get<{ data: any }>(`/eye-tracking/${researchId}/results`, {
     name: 'getEyeTrackingResults'
   });
 
@@ -43,7 +41,7 @@ export const getEyeTrackingResults = (researchId: string) =>
  * Upload eye tracking stimuli
  */
 export const uploadStimuliFiles = (files: File[]) =>
-  alova.Post<{ data: { urls: string[] } }>('/eye-tracking/upload-stimuli', 
+  alovaInstance.Post<{ data: { urls: string[] } }>('/eye-tracking/upload-stimuli', 
     { files }, 
     {
       name: 'uploadStimuliFiles'
@@ -54,7 +52,7 @@ export const uploadStimuliFiles = (files: File[]) =>
  * Get eye tracking by research ID
  */
 export const getByResearchId = (researchId: string) =>
-  alova.Get(`/eye-tracking/build/${researchId}`, {
+  alovaInstance.Get(`/eye-tracking/build/${researchId}`, {
     name: 'getByResearchId'
   });
 
@@ -82,7 +80,7 @@ export const eyeTrackingRecruitMethods = {
  * Get results by research ID
  */
 export const getResults = (researchId: string) =>
-  alova.Get(`/eye-tracking/results/${researchId}`, {
+  alovaInstance.Get(`/eye-tracking/results/${researchId}`, {
     name: 'getResults'
   });
 
@@ -90,7 +88,7 @@ export const getResults = (researchId: string) =>
  * Get participant results
  */
 export const getParticipantResults = (researchId: string, participantId: string) =>
-  alova.Get(`/eye-tracking/results/${researchId}/participant/${participantId}`, {
+  alovaInstance.Get(`/eye-tracking/results/${researchId}/participant/${participantId}`, {
     name: 'getParticipantResults'
   });
 

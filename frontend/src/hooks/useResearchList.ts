@@ -8,6 +8,7 @@ import { useRequest, useWatcher } from 'alova/client';
 import { researchMethods } from '../services/research.methods';
 import type {
   Research,
+  ResearchRecord,
   ResearchListResponse,
   CreateResearchRequest,
   UpdateResearchRequest,
@@ -60,7 +61,7 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
 
   // Main query for research list
   const listQuery = useRequest(
-    () => researchMethods.getAll({ ...pagination, ...filters }),
+    () => researchMethods.getAll(),
     {
       initialData: createEmptyListResponse(),
       immediate: true,
@@ -68,7 +69,7 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
   );
 
   // Auto-refresh watcher (always call but conditionally enable)
-  useWatcher(() => researchMethods.getAll({ ...pagination, ...filters }), [pagination, filters], {
+  useWatcher(() => researchMethods.getAll(), [pagination, filters], {
     immediate: autoRefresh,
   });
 
@@ -156,11 +157,11 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
     }
   };
 
-  const listData = listQuery.data?.data || createEmptyListResponse();
+  const listData = (listQuery.data as unknown as { data?: ResearchListResponse })?.data || createEmptyListResponse();
 
   return {
     // Data
-    researches: listData.data || [],
+    researches: (listData.data as unknown as Research[]) || [],
     total: listData.total || 0,
     currentPage: listData.page || 1,
     totalPages: Math.ceil((listData.total || 0) / (listData.limit || 10)),
@@ -170,7 +171,19 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
     error: listQuery.error || createMutation.error || updateMutation.error || deleteMutation.error || null,
 
     // Actions
-    refetch: listQuery.send,
+    refetch: async () => {
+      const response = await listQuery.send();
+      return {
+        data: {
+          researches: (response as unknown as { data?: ResearchRecord[] })?.data || [],
+          data: (response as unknown as { data?: ResearchRecord[] })?.data || [],
+          total: 0,
+          page: 1,
+          limit: 10
+        },
+        success: true
+      };
+    },
     createResearch: handleCreateResearch,
     updateResearch: handleUpdateResearch,
     deleteResearch: handleDeleteResearch,
@@ -197,7 +210,10 @@ export function useResearchById(researchId: string): UseResearchByIdReturn {
     data: query.data?.data || null,
     isLoading: query.loading,
     error: query.error || null,
-    refetch: query.send,
+    refetch: async () => {
+      const response = await query.send();
+      return { data: response.data, success: true };
+    },
   };
 }
 
@@ -225,6 +241,7 @@ export function useMyResearch(pagination?: PaginationParams) {
 // Helper functions
 function createEmptyListResponse(): ResearchListResponse {
   return {
+    researches: [],
     data: [],
     total: 0,
     page: 1,
@@ -236,7 +253,7 @@ function createEmptyListResponse(): ResearchListResponse {
  * Utility function to validate research data
  */
 export function validateResearchData(data: CreateResearchRequest | UpdateResearchRequest): boolean {
-  if ('title' in data && (!data.title || data.title.trim().length === 0)) {
+  if ('basic' in data && data.basic?.name && data.basic.name.trim().length === 0) {
     return false;
   }
   

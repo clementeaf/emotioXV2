@@ -16,18 +16,37 @@ export interface EyeTrackingData {
   buildConfig?: EyeTrackingBuildConfig;
   recruitConfig?: EyeTrackingRecruitFormDataLocal;
   results?: EyeTrackingResults;
-  build?: any;
-  recruit?: any;
+  build?: EyeTrackingBuildConfig;
+  recruit?: EyeTrackingRecruitFormDataLocal;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface EyeTrackingBuildConfig extends EyeTrackingFormData {
+export interface EyeTrackingBuildConfig {
+  id?: string;
+  researchId: string;
   status: 'draft' | 'configured' | 'active' | 'completed';
+  calibration?: {
+    enabled: boolean;
+    points: number;
+    validationEnabled: boolean;
+  };
+  settings?: {
+    sampleRate: number;
+    smoothing: boolean;
+    accuracy: string;
+    duration: number;
+  };
+  stimuli?: Array<{
+    id: string;
+    url: string;
+    type: string;
+    duration?: number;
+  }>;
   validationErrors?: string[];
 }
 
-export interface EyeTrackingRecruitConfigExtended extends EyeTrackingRecruitFormData {
+export interface EyeTrackingRecruitConfigExtended extends EyeTrackingRecruitFormDataLocal {
   status: 'draft' | 'active' | 'paused' | 'completed';
   generatedLink?: string;
   participantCount?: number;
@@ -174,7 +193,7 @@ export interface UseEyeTrackingDataReturn {
   data?: EyeTrackingData;
   eyeTrackingData: EyeTrackingData | null;
   buildConfig: EyeTrackingBuildConfig | null;
-  recruitConfig: EyeTrackingRecruitConfig | null;
+  recruitConfig: EyeTrackingRecruitFormDataLocal | null;
   results: EyeTrackingResults | null;
   
   // State
@@ -186,7 +205,7 @@ export interface UseEyeTrackingDataReturn {
   
   // Actions
   saveBuildConfig: (config: Partial<EyeTrackingBuildConfig>) => Promise<void>;
-  saveRecruitConfig: (config: Partial<EyeTrackingRecruitConfig>) => Promise<void>;
+  saveRecruitConfig: (config: Partial<EyeTrackingRecruitFormDataLocal>) => Promise<void>;
   generateRecruitmentLink: () => Promise<string>;
   exportResults: (format: 'csv' | 'json' | 'xlsx') => Promise<void>;
   refreshData: () => Promise<void>;
@@ -199,13 +218,34 @@ export interface UseEyeTrackingDataReturn {
 // Form data types for frontend components - using types from shared interfaces
 // Note: DemographicQuestions, LinkConfig, etc. are exported from eyeTrackingRecruit.interface.ts
 export interface EyeTrackingRecruitFormDataLocal {
+  id?: string;
   researchId: string;
-  demographicQuestions: DemographicQuestions;
-  linkConfig: LinkConfig;
-  participantLimit: ParticipantLimit;
-  backlinks: Backlinks;
+  demographicQuestions: {
+    age?: { enabled: boolean; required: boolean; };
+    country?: { enabled: boolean; required: boolean; };
+    gender?: { enabled: boolean; required: boolean; };
+  };
+  linkConfig: {
+    allowMobile: boolean;
+    trackLocation: boolean;
+    allowMultipleAttempts: boolean;
+  };
+  participantLimit: {
+    enabled: boolean;
+    value: number;
+  };
+  backlinks: {
+    complete: string;
+    disqualified: string;
+    overquota: string;
+  };
   researchUrl: string;
-  parameterOptions: ParameterOptions;
+  parameterOptions: {
+    saveDeviceInfo: boolean;
+    saveLocationInfo: boolean;
+    saveResponseTimes: boolean;
+    saveUserJourney: boolean;
+  };
 }
 
 // Additional utility types

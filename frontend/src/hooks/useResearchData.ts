@@ -14,6 +14,7 @@ import {
 import type {
   Research,
   GroupedResponsesResponse,
+  QuestionWithResponses,
   SmartVOCFormData,
   SmartVOCResults,
   CPVData,
@@ -89,14 +90,26 @@ export function useResearchData({ researchId }: UseResearchDataParams): UseResea
     }
   );
 
-  // Process data when available
-  const processedData = useProcessedData(groupedResponsesQuery.data);
+  // Process data when available  
+  const processedData = useProcessedData({
+    researchId: researchId || '',
+    questions: (groupedResponsesQuery.data as { questions?: QuestionWithResponses[] })?.questions || [],
+    data: (groupedResponsesQuery.data as { questions?: QuestionWithResponses[] })?.questions || [],
+    total: 0,
+    participantCount: 0
+  });
 
   return {
     // Core data
     researchData: researchQuery.data?.data || null,
     smartVOCFormData: smartVOCFormQuery.data?.data || null,
-    groupedResponses: groupedResponsesQuery.data,
+    groupedResponses: {
+      researchId: researchId || '',
+      questions: (groupedResponsesQuery.data as { questions?: QuestionWithResponses[] })?.questions || [] as QuestionWithResponses[],
+      data: (groupedResponsesQuery.data as { questions?: QuestionWithResponses[] })?.questions || [] as QuestionWithResponses[],
+      total: 0,
+      participantCount: 0
+    },
     
     // Processed data
     smartVOCResults: processedData.smartVOCResults,
@@ -114,9 +127,24 @@ export function useResearchData({ researchId }: UseResearchDataParams): UseResea
     groupedResponsesError: groupedResponsesQuery.error || null,
     
     // Actions
-    refetchResearch: researchQuery.send,
-    refetchSmartVOCForm: smartVOCFormQuery.send,
-    refetchGroupedResponses: groupedResponsesQuery.send,
+    refetchResearch: async () => {
+      const response = await researchQuery.send();
+      return { data: response.data, success: true };
+    },
+    refetchSmartVOCForm: async () => {
+      const response = await smartVOCFormQuery.send();
+      return { data: response.data, success: true };
+    },
+    refetchGroupedResponses: async () => {
+      const response = await groupedResponsesQuery.send();
+      return {
+        researchId: researchId || '',
+        questions: (response as { questions?: QuestionWithResponses[] })?.questions || [],
+        data: (response as { questions?: QuestionWithResponses[] })?.questions || [],
+        total: 0,
+        participantCount: 0
+      };
+    },
   };
 }
 

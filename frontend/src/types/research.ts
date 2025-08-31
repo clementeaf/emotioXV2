@@ -3,9 +3,27 @@
  * Re-exports from shared interfaces and defines frontend-specific types
  */
 
-// Simple re-exports to avoid conflicts
-export * from '../../../shared/interfaces/research.interface';
-export * from '../../../shared/interfaces/research.model';
+// Import specific types to avoid conflicts
+import type {
+  ResearchType as SharedResearchType,
+  ResearchStatus as SharedResearchStatus,
+  ResearchRecord,
+  ResearchConfig,
+  ResearchFormData,
+  ResearchCreationResponse
+} from '../../../shared/interfaces/research.interface';
+
+import type {
+  Research,
+  CreateResearchRequest,
+  CreateResearchResponse,
+  ResearchBasicData
+} from '../../../shared/interfaces/research.model';
+
+// Re-export with explicit names
+export type { ResearchRecord, ResearchConfig, ResearchFormData, ResearchCreationResponse };
+export type { Research, CreateResearchRequest, CreateResearchResponse, ResearchBasicData };
+export { SharedResearchType as ResearchType, SharedResearchStatus as ResearchStatus };
 
 // Type alias for extended research (non-conflicting)
 export type ResearchWithExtensions = ResearchRecord & {
@@ -41,6 +59,7 @@ export interface LoginRequest {
 // Research list and pagination types
 export interface ResearchListResponse {
   researches: ResearchRecord[];
+  data: ResearchRecord[];
   total: number;
   page: number;
   limit: number;
@@ -52,8 +71,8 @@ export interface PaginationParams {
 }
 
 export interface FilterParams {
-  status?: ResearchStatus;
-  type?: ResearchType;
+  status?: SharedResearchStatus;
+  type?: SharedResearchType;
   search?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -109,6 +128,7 @@ export interface QuestionResponse {
 export interface GroupedResponsesResponse {
   researchId: string;
   questions: QuestionWithResponses[];
+  data: QuestionWithResponses[];
   total: number;
   participantCount: number;
 }
