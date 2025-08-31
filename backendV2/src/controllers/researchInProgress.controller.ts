@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getCorsHeaders } from '../middlewares/cors';
 import { moduleResponseService } from '../services/moduleResponse.service';
 import { participantService } from '../services/participant.service';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Controlador para Research In Progress
@@ -80,7 +81,7 @@ export class ResearchInProgressController {
 
             progress = calculatedProgress;
 
-            console.log('[ResearchInProgressController] 📊 Progreso calculado:', {
+            structuredLog('info', 'ResearchInProgressController.getParticipantsWithStatus', 'Progreso calculado para participante', {
               participantId: participant.id,
               responseTypes,
               calculatedProgress,
@@ -124,7 +125,7 @@ export class ResearchInProgressController {
         })
       };
     } catch (error: any) {
-      console.error('Error al obtener participantes con estados:', error);
+      structuredLog('error', 'ResearchInProgressController.getParticipantsWithStatus', 'Error al obtener participantes con estados', { error });
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
@@ -234,7 +235,7 @@ export class ResearchInProgressController {
         })
       };
     } catch (error: any) {
-      console.error('Error al obtener métricas de overview:', error);
+      structuredLog('error', 'ResearchInProgressController.getOverviewMetrics', 'Error al obtener métricas de overview', { error });
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
@@ -284,7 +285,7 @@ export class ResearchInProgressController {
         })
       };
     } catch (error: any) {
-      console.error('Error al obtener participantes por research:', error);
+      structuredLog('error', 'ResearchInProgressController.getParticipantsByResearch', 'Error al obtener participantes por research', { error });
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
@@ -328,12 +329,12 @@ export class ResearchInProgressController {
       try {
         // Intentar método original primero
         await participantService.deleteParticipantData(researchId, participantId);
-        console.log('✅ Eliminación exitosa usando método original');
+        structuredLog('info', 'ResearchInProgressController.deleteParticipant', 'Eliminación exitosa usando método original', { researchId, participantId });
       } catch (error) {
-        console.warn('⚠️ Error con método original, intentando método simple:', error);
+        structuredLog('warn', 'ResearchInProgressController.deleteParticipant', 'Error con método original, intentando método simple', { error, researchId, participantId });
         // Si falla el método original, usar el método simple
         await participantService.deleteParticipantDataSimple(researchId, participantId);
-        console.log('✅ Eliminación exitosa usando método simple');
+        structuredLog('info', 'ResearchInProgressController.deleteParticipant', 'Eliminación exitosa usando método simple', { researchId, participantId });
       }
 
       return {
@@ -351,7 +352,7 @@ export class ResearchInProgressController {
       };
 
     } catch (error) {
-      console.error('Error eliminando participante:', error);
+      structuredLog('error', 'ResearchInProgressController.deleteParticipant', 'Error eliminando participante', { error });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -499,7 +500,7 @@ export class ResearchInProgressController {
         })
       };
     } catch (error: any) {
-      console.error('Error al obtener detalles del participante:', error);
+      structuredLog('error', 'ResearchInProgressController.getParticipantDetails', 'Error al obtener detalles del participante', { error });
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
@@ -572,35 +573,35 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     const path = event.path.toLowerCase();
     const method = event.httpMethod;
 
-    console.log('[ResearchInProgressHandler] Procesando:', { method, path });
+    structuredLog('info', 'ResearchInProgressHandler', 'Procesando request', { method, path });
 
     // Enrutar según el método y path
     if (method === 'GET' && path.match(/^\/research\/[^\/]+\/participants\/status$/)) {
-      console.log('[ResearchInProgressHandler] Ejecutando getParticipantsWithStatus');
+      structuredLog('info', 'ResearchInProgressHandler', 'Ejecutando getParticipantsWithStatus');
       return controller.getParticipantsWithStatus(event);
     } else if (method === 'GET' && path.match(/^\/research\/[^\/]+\/metrics$/)) {
-      console.log('[ResearchInProgressHandler] Ejecutando getOverviewMetrics');
+      structuredLog('info', 'ResearchInProgressHandler', 'Ejecutando getOverviewMetrics');
       return controller.getOverviewMetrics(event);
     } else if (method === 'GET' && path.match(/^\/research\/[^\/]+\/participants\/[^\/]+$/)) {
-      console.log('[ResearchInProgressHandler] Ejecutando getParticipantDetails');
+      structuredLog('info', 'ResearchInProgressHandler', 'Ejecutando getParticipantDetails');
       return controller.getParticipantDetails(event);
     } else if (method === 'GET' && path.match(/^\/research\/[^\/]+\/participants$/)) {
-      console.log('[ResearchInProgressHandler] Ejecutando getParticipantsByResearch');
+      structuredLog('info', 'ResearchInProgressHandler', 'Ejecutando getParticipantsByResearch');
       return controller.getParticipantsByResearch(event);
     } else if (method === 'DELETE' && path.match(/^\/research\/[^\/]+\/participants\/[^\/]+$/)) {
-      console.log('[ResearchInProgressHandler] Ejecutando deleteParticipant');
+      structuredLog('info', 'ResearchInProgressHandler', 'Ejecutando deleteParticipant');
       return controller.deleteParticipant(event);
     }
 
     // Ruta no encontrada
-    console.log('[ResearchInProgressHandler] Ruta/Método no manejado:', { method, path });
+    structuredLog('warn', 'ResearchInProgressHandler', 'Ruta/Método no manejado', { method, path });
     return {
       statusCode: 404,
       headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
     };
   } catch (error: any) {
-    console.error('Error en researchInProgressHandler:', error);
+    structuredLog('error', 'ResearchInProgressHandler', 'Error en researchInProgressHandler', { error });
     return {
       statusCode: 500,
       headers: getCorsHeaders(event),
@@ -611,3 +612,4 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     };
   }
 };
+export const handler = mainHandler;

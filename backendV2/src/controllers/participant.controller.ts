@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { getCorsHeaders } from '../middlewares/cors';
 import { NewResearchService } from '../services/newResearch.service';
 import { participantService } from '../services/participant.service';
+import { structuredLog } from '../utils/logging.util';
 
 // Schema de validación para participantes
 const ParticipantSchema = z.object({
@@ -73,7 +74,7 @@ export class ParticipantController {
         })
       };
     } catch (error: any) {
-      console.error('Error al crear participante:', error);
+      structuredLog('error', 'ParticipantController.create', 'Error creating participant', { error: error.message || error, stack: error.stack });
       if (error instanceof z.ZodError) {
         return {
           statusCode: 400,
@@ -132,7 +133,7 @@ export class ParticipantController {
         })
       };
     } catch (error: any) {
-      console.error('Error al obtener participante:', error);
+      structuredLog('error', 'ParticipantController.getById', 'Error retrieving participant by ID', { participantId: event.pathParameters?.id, error: error.message || error, stack: error.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -209,7 +210,7 @@ export class ParticipantController {
         })
       };
     } catch (error: any) {
-      console.error('Error verificando participante:', error);
+      structuredLog('error', 'ParticipantController.verifyParticipant', 'Error verifying participant', { participantId: event.pathParameters?.participantId, researchId: event.queryStringParameters?.researchId, error: error.message || error, stack: error.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -237,7 +238,7 @@ export class ParticipantController {
         })
       };
     } catch (error: any) {
-      console.error('Error al obtener participantes:', error);
+      structuredLog('error', 'ParticipantController.getAll', 'Error retrieving all participants', { error: error.message || error, stack: error.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(_event),
@@ -292,7 +293,7 @@ export class ParticipantController {
         })
       };
     } catch (error: any) {
-      console.error('Error al eliminar participante:', error);
+      structuredLog('error', 'ParticipantController.delete', 'Error deleting participant', { participantId: event.pathParameters?.id, error: error.message || error, stack: error.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -325,7 +326,7 @@ export class ParticipantController {
 
       const researchData = await this.researchServiceInstance.getResearchById(validatedData.researchId, 'public-check');
       if (!researchData) {
-        console.warn(`[ParticipantController.login] Intento de login para investigación inexistente: ${validatedData.researchId}`);
+        structuredLog('warn', 'ParticipantController.login', 'Login attempt for non-existent research', { researchId: validatedData.researchId, email: validatedData.email });
         return {
           statusCode: 404,
           headers: getCorsHeaders(event),
@@ -337,7 +338,7 @@ export class ParticipantController {
 
       if (participant) {
         if (participant.name !== validatedData.name) {
-          console.warn(`[ParticipantController.login] Conflicto de nombre para email existente. Email: ${validatedData.email}, Nombre Guardado: ${participant.name}, Nombre Solicitado: ${validatedData.name}`);
+          structuredLog('warn', 'ParticipantController.login', 'Name conflict for existing email', { email: validatedData.email, existingName: participant.name, requestedName: validatedData.name });
           return {
             statusCode: 409,
             headers: getCorsHeaders(event),
@@ -347,14 +348,14 @@ export class ParticipantController {
             })
           };
         }
-        console.log(`[ParticipantController.login] Participante existente encontrado por email: ${validatedData.email}, ID: ${participant.id}`);
+        structuredLog('info', 'ParticipantController.login', 'Existing participant found by email', { email: validatedData.email, participantId: participant.id });
       } else {
-        console.log(`[ParticipantController.login] Creando nuevo participante para email: ${validatedData.email}`);
+        structuredLog('info', 'ParticipantController.login', 'Creating new participant for email', { email: validatedData.email });
         participant = await participantService.create({
           name: validatedData.name,
           email: validatedData.email
         });
-        console.log(`[ParticipantController.login] Nuevo participante creado. ID: ${participant.id}`);
+        structuredLog('info', 'ParticipantController.login', 'New participant created successfully', { participantId: participant.id, email: validatedData.email });
       }
 
       const token = jwt.sign(
@@ -384,7 +385,7 @@ export class ParticipantController {
         })
       };
     } catch (error: any) {
-      console.error('[ParticipantController.login] Error en login de participante:', error);
+      structuredLog('error', 'ParticipantController.login', 'Error in participant login', { error: error.message || error, stack: error.stack, statusCode: error.statusCode });
       if (error instanceof z.ZodError) {
         return {
           statusCode: 400,
@@ -444,7 +445,7 @@ export class ParticipantController {
       try {
         await this.researchServiceInstance.getResearchById(researchId, 'user');
       } catch (error: any) {
-        console.error('Error validando investigación:', error);
+        structuredLog('error', 'ParticipantController.generateDummyParticipants', 'Error validating research', { researchId, error: error.message || error, statusCode: error.statusCode });
         // Si es un ResearchError, devolver el código de estado específico
         if (error.statusCode === 404) {
           return {
@@ -487,10 +488,11 @@ export class ParticipantController {
         const uniqueId = uuidv4().slice(0, 8);
         const email = `participante.${timestamp}.${i}.${uniqueId}@study.emotioxv2.com`;
 
-        console.log(`[generateDummyParticipants] 🔄 Creando participante ${i + 1}/${maxParticipants}:`, {
+        structuredLog('info', 'ParticipantController.generateDummyParticipants', `Creating participant ${i + 1}/${maxParticipants}`, {
           name,
-          email: email.substring(0, 30) + '...',
-          uniqueId
+          emailPrefix: email.substring(0, 30) + '...',
+          uniqueId,
+          researchId
         });
 
         // 🎯 SIEMPRE CREAR NUEVO PARTICIPANTE (no verificar existencia)
@@ -506,10 +508,11 @@ export class ParticipantController {
           publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'}?researchId=${researchId}&userId=${participant.id}`
         });
 
-        console.log(`[generateDummyParticipants] ✅ Participante creado:`, {
-          id: participant.id,
+        structuredLog('info', 'ParticipantController.generateDummyParticipants', 'Participant created successfully', {
+          participantId: participant.id,
           name: participant.name,
-          emailPrefix: participant.email.substring(0, 20) + '...'
+          emailPrefix: participant.email.substring(0, 20) + '...',
+          researchId
         });
       }
 
@@ -526,7 +529,7 @@ export class ParticipantController {
         })
       };
     } catch (error: any) {
-      console.error('Error generando participantes dummy:', error);
+      structuredLog('error', 'ParticipantController.generateDummyParticipants', 'Error generating dummy participants', { researchId: JSON.parse(event.body || '{}').researchId, error: error.message || error, stack: error.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -594,7 +597,7 @@ export class ParticipantController {
         })
       };
     } catch (error: any) {
-      console.error('Error obteniendo participantes por investigación:', error);
+      structuredLog('error', 'ParticipantController.getParticipantsByResearch', 'Error retrieving participants by research', { researchId: event.pathParameters?.researchId, error: error.message || error, stack: error.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -651,8 +654,8 @@ export class ParticipantController {
         })
       };
 
-    } catch (error) {
-      console.error('Error eliminando participante:', error);
+    } catch (error: any) {
+      structuredLog('error', 'ParticipantController.deleteParticipant', 'Error deleting participant', { researchId: event.pathParameters?.researchId, participantId: event.pathParameters?.participantId, error: error.message || error, stack: error.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -711,14 +714,14 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     }
 
     // Ruta no encontrada o método no permitido en ruta existente
-    console.log('[ParticipantHandler] Ruta/Método no manejado:', { method, path });
+    structuredLog('warn', 'ParticipantController.mainHandler', 'Unhandled route/method', { method, path });
     return {
       statusCode: 404, // Cambiado a 404 genérico para rutas no encontradas
       headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
     };
   } catch (error: any) {
-    console.error('Error en participantHandler:', error);
+    structuredLog('error', 'ParticipantController.mainHandler', 'Error in participant handler', { error: error.message || error, stack: error.stack });
     return {
       statusCode: 500,
       headers: getCorsHeaders(event),
@@ -729,3 +732,4 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     };
   }
 };
+export const handler = mainHandler;

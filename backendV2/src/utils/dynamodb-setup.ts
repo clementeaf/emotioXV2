@@ -2,7 +2,7 @@ import {
   DynamoDBClient, 
   CreateTableCommand, 
   DescribeTableCommand,
-  UpdateTableCommand,
+  // UpdateTableCommand,
   ResourceNotFoundException,
   TableStatus,
   ScalarAttributeType,
@@ -183,7 +183,7 @@ export class DynamoDBSetup {
         console.log(`📋 Faltan los siguientes GSI: ${missingIndexes.join(', ')}`);
         console.log('ℹ️  Para agregar GSI a una tabla existente, use la consola de AWS o CLI');
         console.log('ℹ️  Comando CLI ejemplo:');
-        missingIndexes.forEach(indexName => {
+        missingIndexes.forEach(_indexName => {
           console.log(`   aws dynamodb update-table --table-name ${this.tableName} --global-secondary-index-updates ...`);
         });
       } else {

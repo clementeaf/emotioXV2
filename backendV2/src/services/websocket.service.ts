@@ -52,13 +52,13 @@ export class WebSocketService {
       const now = new Date().toISOString();
       const ttl = Math.floor(Date.now() / 1000) + (24 * 60 * 60); // 24 horas TTL
 
-      const connection: WebSocketConnection = {
-        connectionId,
-        researchId,
-        connectedAt: now,
-        lastActivity: now,
-        ttl
-      };
+      // const connection: WebSocketConnection = {
+      //   connectionId,
+      //   researchId,
+      //   connectedAt: now,
+      //   lastActivity: now,
+      //   ttl
+      // };
 
       await this.dynamoClient.send(new PutCommand({
         TableName: this.tableName,

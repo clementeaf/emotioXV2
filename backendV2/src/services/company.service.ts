@@ -1,5 +1,6 @@
 import { Company, companyModel } from '../models/company.model';
-import { ValidationError, validateRequiredFields } from '../utils/validation';
+import { ValidationError } from '../utils/validation';
+// import { validateRequiredFields } from '../utils/validation';
 
 /**
  * Clase de error para operaciones de empresa

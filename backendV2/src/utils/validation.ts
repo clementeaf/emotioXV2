@@ -5,6 +5,7 @@ import {
     ThankYouScreenFormData
 } from '../../../shared/interfaces/thank-you-screen.interface';
 import { WelcomeScreenFormData } from '../../../shared/interfaces/welcome-screen.interface';
+import { QuestionType } from '../../../shared/interfaces/question-types.enum';
 import { NewResearch, ResearchType } from '../models/newResearch.model';
 import { errorResponse } from './controller.utils';
 
@@ -404,7 +405,7 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
   const error = ERROR_MESSAGES.VALIDATION;
 
   switch (type) {
-    case 'CSAT':
+    case QuestionType.SMARTVOC_CSAT:
       if (!config.companyName) {
         return errorResponse(error.REQUIRED_FIELD(`nombre de empresa en ${questionLabel.toLowerCase()}`), 400);
       }
@@ -416,9 +417,9 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
       }
       break;
 
-    case 'NPS':
-    case 'CES':
-    case 'CV':
+    case QuestionType.SMARTVOC_NPS:
+    case QuestionType.SMARTVOC_CES:
+    case QuestionType.SMARTVOC_CV:
       if (config.type !== 'scale') {
         return errorResponse(
           `${questionLabel} de tipo ${type} debe tener un tipo de entrada 'scale'`,
@@ -431,7 +432,7 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
       }
       break;
 
-    case 'VOC':
+    case QuestionType.SMARTVOC_VOC:
       if (config.type !== 'text') {
         return errorResponse(
           `${questionLabel} de tipo VOC debe tener un tipo de entrada 'text'`,
@@ -440,7 +441,7 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
       }
       break;
 
-    case 'NEV':
+    case QuestionType.SMARTVOC_NEV:
       if (!config) return errorResponse(`NEV: ${ERROR_MESSAGES.VALIDATION.MISSING_CONFIG('config')}`);
 
       // Permitir múltiples tipos de configuración para NEV

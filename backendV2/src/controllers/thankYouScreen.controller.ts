@@ -74,5 +74,6 @@ const thankYouScreenHandler = async (
   }
 };
 
+export const handler = thankYouScreenHandler;
 export const mainHandler = thankYouScreenHandler;
 export default mainHandler;

@@ -1,5 +1,6 @@
 import { NewResearch, newResearchModel } from '../models/newResearch.model';
 import { ValidationError, validateNewResearch, validateRequiredFields } from '../utils/validation';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Clase de error para operaciones de investigación
@@ -28,22 +29,21 @@ export class NewResearchService {
    */
   async createResearch(data: NewResearch, userId: string): Promise<NewResearch> {
     try {
-      console.log('Creando nueva investigación con datos:', JSON.stringify(data));
-      console.log('Usuario ID:', userId);
+      structuredLog('info', 'NewResearchService.createResearch', 'Creando nueva investigación', { researchName: data.name, type: data.type, userId });
 
       // Validar campos requeridos
       validateRequiredFields(data);
-      console.log('Validación de campos requeridos completada');
+      structuredLog('info', 'NewResearchService.createResearch', 'Validación de campos requeridos completada');
 
       // Validar todos los datos
       validateNewResearch(data);
-      console.log('Validación completa de datos completada');
+      structuredLog('info', 'NewResearchService.createResearch', 'Validación completa de datos completada');
 
       const result = await newResearchModel.create(data, userId);
-      console.log('Investigación creada exitosamente:', JSON.stringify(result));
+      structuredLog('info', 'NewResearchService.createResearch', 'Investigación creada exitosamente', { researchId: result.id });
       return result;
     } catch (error) {
-      console.error('Error detallado al crear investigación:', error);
+      structuredLog('error', 'NewResearchService.createResearch', 'Error detallado al crear investigación', { error });
 
       if (error instanceof ResearchError) {
         throw error;
@@ -53,7 +53,7 @@ export class NewResearchService {
         throw new ResearchError('Error de validación en los datos', 400, error.errors);
       }
 
-      console.error('Error al crear investigación:', error);
+      structuredLog('error', 'NewResearchService.createResearch', 'Error al crear investigación', { error });
       throw new ResearchError('Error al crear la investigación', 500);
     }
   }
@@ -67,15 +67,15 @@ export class NewResearchService {
    */
   async getResearchById(id: string, context: 'user' | 'public-check', _userId?: string): Promise<NewResearch> {
     try {
-      console.log(`[NewResearchService] Buscando research por ID: ${id}`);
+      structuredLog('info', 'NewResearchService.getResearchById', 'Buscando research por ID', { id });
       const research = await newResearchModel.getById(id);
       
       if (!research) {
-        console.log(`[NewResearchService] Research ${id} no encontrado, devolviendo 404`);
+        structuredLog('info', 'NewResearchService.getResearchById', 'Research no encontrado', { id });
         throw new ResearchError('Investigación no encontrada', 404);
       }
       
-      console.log(`[NewResearchService] Research ${id} encontrado exitosamente`);
+      structuredLog('info', 'NewResearchService.getResearchById', 'Research encontrado exitosamente', { id });
       
       // Solo validar estado para acceso público
       if (context === 'public-check') {

@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { BadRequestError, InternalServerError, NotFoundError } from '../errors';
+import { BadRequestError, NotFoundError } from '../errors';
+// import { InternalServerError } from '../errors';
 import { getCorsHeaders } from '../middlewares/cors';
 import { CompanyError, companyService } from '../services/company.service';
 import { createController } from '../utils/controller.utils';

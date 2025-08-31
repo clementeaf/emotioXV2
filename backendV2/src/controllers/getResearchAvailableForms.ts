@@ -343,6 +343,10 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
 /**
  * Handler de API Gateway para obtener los tipos de formularios disponibles para una investigación específica.
  */
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  return mainHandler(event);
+};
+
 export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[GetResearchAvailableForms] Evento recibido:', JSON.stringify(event));
 

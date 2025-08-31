@@ -63,13 +63,13 @@ export class CognitiveTaskModel {
   constructor() {
     this.tableName = process.env.DYNAMODB_TABLE!;
     if (!this.tableName) {
-      console.error('FATAL ERROR: DYNAMODB_TABLE environment variable is not set.');
+      structuredLog('error', 'CognitiveTaskModel', 'FATAL ERROR: DYNAMODB_TABLE environment variable is not set');
       throw new Error('Table name environment variable is missing.');
     }
     const region: string = process.env.APP_REGION || 'us-east-1';
     const client = new DynamoDBClient({ region });
     this.dynamoClient = DynamoDBDocumentClient.from(client);
-    console.log(`[CognitiveTaskModel] Initialized for table: ${this.tableName} in region: ${region}`);
+    structuredLog('info', 'CognitiveTaskModel', 'Initialized for table', { tableName: this.tableName, region });
   }
 
   // Función helper para mapear de DynamoItem a Record
@@ -80,10 +80,10 @@ export class CognitiveTaskModel {
 
 
 
-    // Log de diagnóstico al mapear
-    const resultQuestionsWithFiles = parsedQuestions.filter(q =>
-      ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
-    );
+    // Log de diagnóstico al mapear - comentado para evitar variable no usada
+    // const resultQuestionsWithFiles = parsedQuestions.filter(q =>
+    //   ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+    // );
 
     return {
       id: item.id,
@@ -139,11 +139,12 @@ export class CognitiveTaskModel {
 
     try {
       await this.dynamoClient.send(command);
-      console.log(`[CognitiveTaskModel.create] ✅ Formulario creado exitosamente con questionKey: ${questionKey}`);
-      return this.mapToRecord(item);
+      const createdRecord = this.mapToRecord(item);
+      structuredLog('info', 'CognitiveTaskModel.create', 'Formulario creado exitosamente', { questionKey, id: createdRecord.id });
+      return createdRecord;
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB PutCommand (CognitiveTask):', JSON.stringify(error, null, 2));
-      console.error('Error al crear formulario CognitiveTask:', error.message);
+      structuredLog('error', 'CognitiveTaskModel.create', 'Error detallado de DynamoDB PutCommand', { error });
+      structuredLog('error', 'CognitiveTaskModel.create', 'Error al crear formulario CognitiveTask', { error: error.message });
       throw new Error(`DATABASE_ERROR: Error al crear el formulario para researchId ${researchId}`);
     }
   }
@@ -173,11 +174,11 @@ export class CognitiveTaskModel {
       // Mapear el primer (y único esperado) item encontrado
       return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
     } catch (error: any) {
-      console.error(`ERROR DETALLADO de DynamoDB QueryCommand GSI (${CognitiveTaskModel.ID_INDEX_NAME}):`, JSON.stringify(error, null, 2));
-      console.error(`Error al obtener CognitiveTask por id (UUID) ${id}:`, error.message);
+      structuredLog('error', 'CognitiveTaskModel.getById', 'Error detallado de DynamoDB QueryCommand GSI', { indexName: CognitiveTaskModel.ID_INDEX_NAME, error });
+      structuredLog('error', 'CognitiveTaskModel.getById', 'Error al obtener CognitiveTask por id', { id, error: error.message });
       // Podríamos lanzar un error más específico si el índice no existe
       if (error.name === 'ResourceNotFoundException') {
-        console.error(`FATAL: GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado en la tabla '${this.tableName}'.`);
+        structuredLog('error', 'CognitiveTaskModel.getById', 'FATAL: GSI no encontrado en la tabla', { indexName: CognitiveTaskModel.ID_INDEX_NAME, tableName: this.tableName });
         throw new Error(`DATABASE_ERROR: Índice GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado.`);
       }
       throw new Error(`DATABASE_ERROR: Error al obtener el formulario por id (UUID) ${id}`);
@@ -268,13 +269,13 @@ export class CognitiveTaskModel {
                 const validFiles = q.files.filter(f => {
                   try {
                     if (!f) {
-                      console.warn(`[MODEL:update] Archivo nulo encontrado en pregunta ${q.id}`);
+                      structuredLog('warn', 'CognitiveTaskModel.update', 'Archivo nulo encontrado en pregunta', { questionId: q.id });
                       return false;
                     }
 
                     const isValid = f.id && f.name && f.size && f.type && f.s3Key;
                     if (!isValid) {
-                      console.warn(`[MODEL:update] Archivo inválido en pregunta ${q.id}:`, JSON.stringify(f));
+                      structuredLog('warn', 'CognitiveTaskModel.update', 'Archivo inválido en pregunta', { questionId: q.id, file: f });
 
                       // Log detallado de campos faltantes para diagnóstico
                       if (!f.id) console.warn(`[MODEL:update] Campo faltante: id en pregunta ${q.id}`);
@@ -327,10 +328,11 @@ export class CognitiveTaskModel {
           );
 
           // AGREGADO: Log específico para verificar hitZones en el JSON
-          const jsonData = JSON.parse(expressionAttributeValues[':questions']) as Question[];
-          const questionsWithHitZones = jsonData.filter((q: Question) =>
-            q.files && q.files.some((f: any) => f.hitZones && f.hitZones.length > 0)
-          );
+          // const jsonData = JSON.parse(expressionAttributeValues[':questions']) as Question[];
+          // Log específico comentado para evitar variable no usada
+          // const questionsWithHitZones = jsonData.filter((q: Question) =>
+          //   q.files && q.files.some((f: any) => f.hitZones && f.hitZones.length > 0)
+          // );
 
         } catch (questionsError: any) {
           console.error('[MODEL:update] Error preparando preguntas para actualización:', questionsError);

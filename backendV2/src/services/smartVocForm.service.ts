@@ -131,7 +131,9 @@ export class SmartVOCFormService {
    * @throws ApiError si ocurre un error de base de datos
    */
   async getByResearchId(researchId: string): Promise<SmartVOCFormRecord | null> {
-    console.log(`[SmartVOCFormService.getByResearchId] Buscando por researchId: ${researchId}`);
+    const context = 'getByResearchId';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Buscando formulario por researchId', { researchId });
+    
     if (!researchId) {
       throw new ApiError(`${SmartVOCError.RESEARCH_REQUIRED}: Se requiere ID de investigación`, 400);
     }
@@ -139,7 +141,7 @@ export class SmartVOCFormService {
       // Delegar completamente al modelo
       return await this.model.getByResearchId(researchId);
     } catch (error: any) {
-      console.error('[SmartVOCFormService.getByResearchId] Error desde el modelo:', error);
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo', { error, researchId });
       // Envolver el error del modelo en ApiError
       throw new ApiError(
         `${SmartVOCError.DATABASE_ERROR}: Error al obtener formulario por researchId - ${error.message}`,
@@ -155,7 +157,9 @@ export class SmartVOCFormService {
    * @throws ApiError si no se encuentra o hay error de DB
    */
   async getById(id: string): Promise<SmartVOCFormRecord> {
-    console.log(`[SmartVOCFormService.getById] Buscando por ID: ${id}`);
+    const context = 'getById';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Buscando formulario por ID', { id });
+    
     try {
       const form = await this.model.getById(id);
       if (!form) {
@@ -167,7 +171,7 @@ export class SmartVOCFormService {
       if (error instanceof ApiError) {
         throw error;
       }
-      console.error('[SmartVOCFormService.getById] Error desde el modelo:', error);
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo', { error, id });
       throw new ApiError(
         `${SmartVOCError.DATABASE_ERROR}: Error al obtener formulario por ID - ${error.message}`,
         500
@@ -182,7 +186,7 @@ export class SmartVOCFormService {
    * @param userId ID del usuario que crea el formulario
    * @returns El formulario creado
    */
-  async create(formData: SmartVOCFormData, researchId: string, userId: string): Promise<SmartVOCFormRecord> {
+  async create(formData: SmartVOCFormData, researchId: string, _userId: string): Promise<SmartVOCFormRecord> {
     const context = 'create';
 
     try {
@@ -193,7 +197,7 @@ export class SmartVOCFormService {
       }
 
       // Extraer questionKey del frontend si existe en las preguntas
-      const questionKey = formData.questions?.[0]?.questionKey || null;
+      const questionKey = formData.questions?.[0]?.questionKey || undefined;
 
       // Guardar el formulario preservando el questionKey del frontend
       const result = await this.model.create(formData, researchId, questionKey);
@@ -223,7 +227,8 @@ export class SmartVOCFormService {
    * @throws ApiError si no se encuentra, datos inválidos o error de DB
    */
   async update(id: string, formData: Partial<SmartVOCFormData>, _userId?: string): Promise<SmartVOCFormRecord> {
-    console.log(`[SmartVOCFormService.update] Actualizando formulario ID: ${id}`);
+    const context = 'update';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando formulario', { id });
 
     // Validar datos parciales (la función debe manejar Partial)
     this.validateData(formData);
@@ -237,7 +242,7 @@ export class SmartVOCFormService {
       if (error.message === 'SMART_VOC_FORM_NOT_FOUND') {
         throw new ApiError(`${SmartVOCError.NOT_FOUND}: Formulario con ID ${id} no encontrado para actualizar`, 404);
       }
-      console.error('[SmartVOCFormService.update] Error desde el modelo:', error);
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo', { error, id });
       throw new ApiError(
         `${SmartVOCError.DATABASE_ERROR}: Error al actualizar formulario SmartVOC - ${error.message}`,
         500
@@ -252,7 +257,9 @@ export class SmartVOCFormService {
    * @throws ApiError si hay error de DB
    */
   async delete(formId: string, _userId?: string): Promise<void> {
-    console.log(`[SmartVOCFormService.delete] Eliminando formulario con ID: ${formId}`);
+    const context = 'delete';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Eliminando formulario', { formId });
+    
     if (!formId) {
       throw new ApiError(`${SmartVOCError.INVALID_DATA}: Se requiere ID del formulario para eliminar`, 400);
     }
@@ -262,13 +269,13 @@ export class SmartVOCFormService {
       // Llamar directamente al delete del modelo con el ID del formulario.
       // El modelo maneja la idempotencia (no falla si no existe).
       await this.model.delete(formId);
-      console.log(`[SmartVOCFormService.delete] Llamada a model.delete completada para ID: ${formId}`);
+      structuredLog('info', `${this.serviceName}.${context}`, 'Formulario eliminado exitosamente', { formId });
     } catch (error: any) {
       // Ya no debería haber ApiError aquí si el modelo no lo lanza para delete
       // if (error instanceof ApiError) {
       //     throw error;
       // }
-      console.error(`[SmartVOCFormService.delete] Error desde el modelo al eliminar ID ${formId}:`, error);
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo al eliminar', { error, formId });
       throw new ApiError(
         `${SmartVOCError.DATABASE_ERROR}: Error al eliminar formulario SmartVOC - ${error.message}`,
         500
@@ -284,7 +291,8 @@ export class SmartVOCFormService {
    * @throws ApiError si hay error de validación o base de datos
    */
   async deleteByResearchId(researchId: string, _userId?: string): Promise<boolean> {
-    console.log(`[SmartVOCFormService.deleteByResearchId] Eliminando formulario para researchId: ${researchId}`);
+    const context = 'deleteByResearchId';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Eliminando formulario por researchId', { researchId });
 
     if (!researchId) {
       throw new ApiError(`${SmartVOCError.RESEARCH_REQUIRED}: Se requiere ID de investigación`, 400);
@@ -295,14 +303,14 @@ export class SmartVOCFormService {
       const deleted = await this.model.deleteByResearchId(researchId);
 
       if (deleted) {
-        console.log(`[SmartVOCFormService.deleteByResearchId] Formulario eliminado exitosamente para researchId: ${researchId}`);
+        structuredLog('info', `${this.serviceName}.${context}`, 'Formulario eliminado exitosamente', { researchId });
       } else {
-        console.log(`[SmartVOCFormService.deleteByResearchId] No se encontró formulario para eliminar con researchId: ${researchId}`);
+        structuredLog('info', `${this.serviceName}.${context}`, 'No se encontró formulario para eliminar', { researchId });
       }
 
       return deleted;
     } catch (error: any) {
-      console.error('[SmartVOCFormService.deleteByResearchId] Error desde el modelo:', error);
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo', { error, researchId });
       throw new ApiError(
         `${SmartVOCError.DATABASE_ERROR}: Error al eliminar formulario por researchId - ${error.message}`,
         500
@@ -316,11 +324,13 @@ export class SmartVOCFormService {
    * @throws ApiError si hay error de DB
    */
   async getAll(): Promise<SmartVOCFormRecord[]> {
-    console.warn('[SmartVOCFormService.getAll] Obteniendo TODOS los formularios SmartVOC. Esta operación puede ser costosa.');
+    const context = 'getAll';
+    structuredLog('warn', `${this.serviceName}.${context}`, 'Obteniendo TODOS los formularios SmartVOC - operación costosa');
+    
     try {
       return await this.model.getAll();
     } catch (error: any) {
-      console.error('[SmartVOCFormService.getAll] Error desde el modelo:', error);
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo', { error });
       throw new ApiError(
         `${SmartVOCError.DATABASE_ERROR}: Error al obtener todos los formularios - ${error.message}`,
         500

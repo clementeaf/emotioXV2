@@ -43,12 +43,15 @@ const ALLOWED_MIME_TYPES: Record<FileType, string[]> = {
 /**
  * Límites de tamaño por tipo de archivo (en bytes)
  */
-const MAX_FILE_SIZE: Record<FileType, number> = {
+// Límites de tamaño comentados para evitar variable no usada
+/*
+const _MAX_FILE_SIZE: Record<FileType, number> = {
   [FileType.IMAGE]: 50 * 1024 * 1024, // 50 MB (aumentado)
   [FileType.VIDEO]: 500 * 1024 * 1024, // 500 MB (aumentado)
   [FileType.DOCUMENT]: 100 * 1024 * 1024, // 100 MB (aumentado)
   [FileType.AUDIO]: 100 * 1024 * 1024 // 100 MB (aumentado)
 };
+*/
 
 /**
  * Parámetros para la generación de URL prefirmada

@@ -394,7 +394,7 @@ export class CognitiveTaskService {
    * @param userId ID del usuario que crea el formulario
    * @returns El formulario creado
    */
-  async create(formData: CognitiveTaskFormData, researchId: string, userId: string): Promise<CognitiveTaskRecord> {
+  async create(formData: CognitiveTaskFormData, researchId: string, _userId: string): Promise<CognitiveTaskRecord> {
     const context = 'create';
 
     try {

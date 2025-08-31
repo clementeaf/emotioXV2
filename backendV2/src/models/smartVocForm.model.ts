@@ -175,30 +175,21 @@ export class SmartVOCFormModel {
     });
 
     try {
-      console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Buscando por researchId: ${researchId} usando índice 'researchId-index' SIN filtro SK y SIN límite`);
       const result = await this.dynamoClient.send(command);
 
-      // Imprimir cuántos items devuelve la consulta SIN límite
-      console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Query devolvió ${result.Items?.length ?? 0} items.`);
 
       if (!result.Items || result.Items.length === 0) {
-        console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Ningún item encontrado para researchId: ${researchId} usando índice 'researchId-index' SIN filtro SK y SIN límite`);
         return null;
       }
 
       // Iterar sobre los resultados para encontrar el correcto
       for (const item of result.Items) {
           const dynamoItem = item as SmartVOCFormDynamoItem;
-          // Imprimir el SK de cada item encontrado para depurar
-          console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Verificando item con SK: ${dynamoItem.sk}`);
           if (dynamoItem.sk === SmartVOCFormModel.SORT_KEY_VALUE) {
-              console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Item SMART_VOC_FORM encontrado! ID: ${dynamoItem.id}`);
               return this.mapToRecord(dynamoItem);
           }
       }
 
-      // Si el bucle termina sin encontrarlo
-      console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Se encontraron ${result.Items.length} items, pero ninguno tenía SK = SMART_VOC_FORM.`);
       return null;
 
     } catch (error: any) {

@@ -50,7 +50,7 @@ export class EyeTrackingController {
    * Obtiene una configuración de eye tracking según el ID de investigación
    * MÉTODO PÚBLICO - NO REQUIERE AUTENTICACIÓN
    */
-  public async getEyeTracking(event: APIGatewayProxyEvent, userId?: string): Promise<APIGatewayProxyResult> {
+  public async getEyeTracking(event: APIGatewayProxyEvent, _userId?: string): Promise<APIGatewayProxyResult> {
     const context = 'getEyeTracking';
     let researchId: string | undefined;
     try {
@@ -175,9 +175,11 @@ const eyeTrackingRouteMap: RouteMap = {
 };
 
 // Nueva exportación con el nombre estándar
-export const mainHandler = createController(eyeTrackingRouteMap, {
+export const handler = createController(eyeTrackingRouteMap, {
   basePath: '',
   publicRoutes: [
     { path: '/research/{researchId}/eye-tracking', method: 'GET' }
   ]
 });
+
+export const mainHandler = handler;

@@ -190,3 +190,52 @@ export class QuotaValidationController {
     }
   }
 }
+// Instancia del controlador
+const controller = new QuotaValidationController();
+
+/**
+ * Handler principal para validación de cuotas
+ */
+export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    // Manejar preflight CORS
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: ''
+      };
+    }
+
+    const path = event.path.toLowerCase();
+    const method = event.httpMethod;
+
+    // Enrutar según el método y path
+    if (method === 'POST' && path === '/quota/analyze') {
+      return controller.analyzeParticipantQuotas(event);
+    } else if (method === 'GET' && path.match(/^\/quota\/stats\/[\w-]+$/)) {
+      return controller.getQuotaStats(event);
+    } else if (method === 'POST' && path === '/quota/reset') {
+      return controller.resetQuotaCounters(event);
+    }
+
+    // Ruta no encontrada
+    return {
+      statusCode: 404,
+      headers: getCorsHeaders(event),
+      body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
+    };
+  } catch (error: any) {
+    structuredLog('error', 'QuotaValidationHandler', 'Error en quotaValidationHandler', { error });
+    return {
+      statusCode: 500,
+      headers: getCorsHeaders(event),
+      body: JSON.stringify({
+        error: 'Error interno del servidor',
+        status: 500
+      })
+    };
+  }
+};
+
+export const handler = mainHandler;

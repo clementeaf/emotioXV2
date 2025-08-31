@@ -1,20 +1,33 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { MonitoringEvent } from '../../../shared/interfaces/websocket-events.interface';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { MonitoringEvent, ParticipantLoginEvent, ParticipantStepEvent, ParticipantDisqualifiedEvent, ParticipantQuotaExceededEvent, ParticipantCompletedEvent, ParticipantErrorEvent, ParticipantResponseSavedEvent } from '../../../shared/interfaces/websocket-events.interface';
 import { structuredLog } from '../utils/logging.util';
 import { webSocketService } from '../services/websocket.service';
+import { uuidv4 } from '../utils/id-generator';
 
 /**
  * Controlador para manejar eventos de monitoreo en tiempo real
  */
 export class MonitoringController {
   private readonly controllerName = 'MonitoringController';
+  private readonly dynamoClient: DynamoDBDocumentClient;
+  private readonly tableName: string;
+
+  constructor() {
+    const client = new DynamoDBClient({
+      region: process.env.AWS_REGION || 'us-east-1'
+    });
+    this.dynamoClient = DynamoDBDocumentClient.from(client);
+    this.tableName = process.env.DYNAMODB_TABLE || 'emotioxv2-backend-table-dev';
+  }
 
   /**
    * Maneja eventos de monitoreo desde public-tests
    */
   async handleMonitoringEvent(
     event: APIGatewayProxyEvent,
-    context: Context
+    _context: Context
   ): Promise<APIGatewayProxyResult> {
     const contextName = 'handleMonitoringEvent';
 
@@ -22,10 +35,15 @@ export class MonitoringController {
       const body = JSON.parse(event.body || '{}');
       const monitoringEvent: MonitoringEvent = body;
 
+      // Type guard para verificar si el evento tiene participantId
+      const hasParticipantId = (event: MonitoringEvent): event is ParticipantLoginEvent | ParticipantStepEvent | ParticipantDisqualifiedEvent | ParticipantQuotaExceededEvent | ParticipantCompletedEvent | ParticipantErrorEvent | ParticipantResponseSavedEvent => {
+        return 'participantId' in event.data;
+      };
+
       structuredLog('info', `${this.controllerName}.${contextName}`, 'Evento de monitoreo recibido', {
         eventType: monitoringEvent.type,
-        researchId: monitoringEvent.data?.researchId,
-        participantId: monitoringEvent.data?.participantId
+        researchId: monitoringEvent.data.researchId,
+        participantId: hasParticipantId(monitoringEvent) ? monitoringEvent.data.participantId : undefined
       });
 
       // 🎯 PROCESAR EVENTO SEGÚN TIPO
@@ -80,7 +98,7 @@ export class MonitoringController {
   /**
    * Maneja login de participante
    */
-  private async handleParticipantLogin(data: any): Promise<void> {
+  private async handleParticipantLogin(data: ParticipantLoginEvent['data']): Promise<void> {
     structuredLog('info', `${this.controllerName}.handleParticipantLogin`, 'Participante inició sesión', {
       researchId: data.researchId,
       participantId: data.participantId,
@@ -88,13 +106,40 @@ export class MonitoringController {
     });
 
     // 🎯 GUARDAR EN DYNAMODB PARA HISTORIAL
-    // TODO: Implementar guardado en DynamoDB
+    try {
+      await this.dynamoClient.send(new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          id: uuidv4(),
+          sk: 'MONITORING_EVENT',
+          eventType: 'PARTICIPANT_LOGIN',
+          researchId: data.researchId,
+          participantId: data.participantId,
+          email: data.email,
+          userAgent: data.userAgent,
+          ipAddress: data.ipAddress,
+          timestamp: data.timestamp,
+          createdAt: new Date().toISOString()
+        }
+      }));
+      
+      structuredLog('info', `${this.controllerName}.handleParticipantLogin`, 'Evento guardado en DynamoDB', {
+        researchId: data.researchId,
+        participantId: data.participantId
+      });
+    } catch (error) {
+      structuredLog('error', `${this.controllerName}.handleParticipantLogin`, 'Error guardando en DynamoDB', {
+        error,
+        researchId: data.researchId,
+        participantId: data.participantId
+      });
+    }
   }
 
   /**
    * Maneja progreso de step
    */
-  private async handleParticipantStep(data: any): Promise<void> {
+  private async handleParticipantStep(data: ParticipantStepEvent['data']): Promise<void> {
     structuredLog('info', `${this.controllerName}.handleParticipantStep`, 'Participante avanzó de step', {
       researchId: data.researchId,
       participantId: data.participantId,
@@ -103,13 +148,45 @@ export class MonitoringController {
     });
 
     // 🎯 ACTUALIZAR PROGRESO EN DYNAMODB
-    // TODO: Implementar actualización en DynamoDB
+    try {
+      await this.dynamoClient.send(new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          id: uuidv4(),
+          sk: 'MONITORING_EVENT',
+          eventType: 'PARTICIPANT_STEP',
+          researchId: data.researchId,
+          participantId: data.participantId,
+          stepName: data.stepName,
+          stepNumber: data.stepNumber,
+          totalSteps: data.totalSteps,
+          progress: data.progress,
+          duration: data.duration,
+          timestamp: data.timestamp,
+          createdAt: new Date().toISOString()
+        }
+      }));
+      
+      structuredLog('info', `${this.controllerName}.handleParticipantStep`, 'Progreso guardado en DynamoDB', {
+        researchId: data.researchId,
+        participantId: data.participantId,
+        stepName: data.stepName,
+        progress: data.progress
+      });
+    } catch (error) {
+      structuredLog('error', `${this.controllerName}.handleParticipantStep`, 'Error guardando progreso en DynamoDB', {
+        error,
+        researchId: data.researchId,
+        participantId: data.participantId,
+        stepName: data.stepName
+      });
+    }
   }
 
   /**
    * Maneja descalificación de participante
    */
-  private async handleParticipantDisqualified(data: any): Promise<void> {
+  private async handleParticipantDisqualified(data: ParticipantDisqualifiedEvent['data']): Promise<void> {
     structuredLog('info', `${this.controllerName}.handleParticipantDisqualified`, 'Participante descalificado', {
       researchId: data.researchId,
       participantId: data.participantId,
@@ -118,13 +195,42 @@ export class MonitoringController {
     });
 
     // 🎯 GUARDAR DESCALIFICACIÓN EN DYNAMODB
-    // TODO: Implementar guardado en DynamoDB
+    try {
+      await this.dynamoClient.send(new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          id: uuidv4(),
+          sk: 'MONITORING_EVENT',
+          eventType: 'PARTICIPANT_DISQUALIFIED',
+          researchId: data.researchId,
+          participantId: data.participantId,
+          reason: data.reason,
+          disqualificationType: data.disqualificationType,
+          demographicData: data.demographicData,
+          timestamp: data.timestamp,
+          createdAt: new Date().toISOString()
+        }
+      }));
+      
+      structuredLog('info', `${this.controllerName}.handleParticipantDisqualified`, 'Descalificación guardada en DynamoDB', {
+        researchId: data.researchId,
+        participantId: data.participantId,
+        reason: data.reason
+      });
+    } catch (error) {
+      structuredLog('error', `${this.controllerName}.handleParticipantDisqualified`, 'Error guardando descalificación en DynamoDB', {
+        error,
+        researchId: data.researchId,
+        participantId: data.participantId,
+        reason: data.reason
+      });
+    }
   }
 
   /**
    * Maneja exceso de cuota
    */
-  private async handleParticipantQuotaExceeded(data: any): Promise<void> {
+  private async handleParticipantQuotaExceeded(data: ParticipantQuotaExceededEvent['data']): Promise<void> {
     structuredLog('info', `${this.controllerName}.handleParticipantQuotaExceeded`, 'Participante excedió cuota', {
       researchId: data.researchId,
       participantId: data.participantId,
@@ -135,13 +241,45 @@ export class MonitoringController {
     });
 
     // 🎯 GUARDAR EXCESO DE CUOTA EN DYNAMODB
-    // TODO: Implementar guardado en DynamoDB
+    try {
+      await this.dynamoClient.send(new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          id: uuidv4(),
+          sk: 'MONITORING_EVENT',
+          eventType: 'PARTICIPANT_QUOTA_EXCEEDED',
+          researchId: data.researchId,
+          participantId: data.participantId,
+          quotaType: data.quotaType,
+          quotaValue: data.quotaValue,
+          currentCount: data.currentCount,
+          maxQuota: data.maxQuota,
+          demographicData: data.demographicData,
+          timestamp: data.timestamp,
+          createdAt: new Date().toISOString()
+        }
+      }));
+      
+      structuredLog('info', `${this.controllerName}.handleParticipantQuotaExceeded`, 'Exceso de cuota guardado en DynamoDB', {
+        researchId: data.researchId,
+        participantId: data.participantId,
+        quotaType: data.quotaType,
+        maxQuota: data.maxQuota
+      });
+    } catch (error) {
+      structuredLog('error', `${this.controllerName}.handleParticipantQuotaExceeded`, 'Error guardando exceso de cuota en DynamoDB', {
+        error,
+        researchId: data.researchId,
+        participantId: data.participantId,
+        quotaType: data.quotaType
+      });
+    }
   }
 
   /**
    * Maneja completación de participante
    */
-  private async handleParticipantCompleted(data: any): Promise<void> {
+  private async handleParticipantCompleted(data: ParticipantCompletedEvent['data']): Promise<void> {
     structuredLog('info', `${this.controllerName}.handleParticipantCompleted`, 'Participante completó investigación', {
       researchId: data.researchId,
       participantId: data.participantId,
@@ -150,13 +288,40 @@ export class MonitoringController {
     });
 
     // 🎯 GUARDAR COMPLETACIÓN EN DYNAMODB
-    // TODO: Implementar guardado en DynamoDB
+    try {
+      await this.dynamoClient.send(new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          id: uuidv4(),
+          sk: 'MONITORING_EVENT',
+          eventType: 'PARTICIPANT_COMPLETED',
+          researchId: data.researchId,
+          participantId: data.participantId,
+          totalDuration: data.totalDuration,
+          responsesCount: data.responsesCount,
+          timestamp: data.timestamp,
+          createdAt: new Date().toISOString()
+        }
+      }));
+      
+      structuredLog('info', `${this.controllerName}.handleParticipantCompleted`, 'Completación guardada en DynamoDB', {
+        researchId: data.researchId,
+        participantId: data.participantId,
+        totalDuration: data.totalDuration
+      });
+    } catch (error) {
+      structuredLog('error', `${this.controllerName}.handleParticipantCompleted`, 'Error guardando completación en DynamoDB', {
+        error,
+        researchId: data.researchId,
+        participantId: data.participantId
+      });
+    }
   }
 
   /**
    * Maneja error de participante
    */
-  private async handleParticipantError(data: any): Promise<void> {
+  private async handleParticipantError(data: ParticipantErrorEvent['data']): Promise<void> {
     structuredLog('error', `${this.controllerName}.handleParticipantError`, 'Error de participante', {
       researchId: data.researchId,
       participantId: data.participantId,
@@ -165,7 +330,35 @@ export class MonitoringController {
     });
 
     // 🎯 GUARDAR ERROR EN DYNAMODB
-    // TODO: Implementar guardado en DynamoDB
+    try {
+      await this.dynamoClient.send(new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          id: uuidv4(),
+          sk: 'MONITORING_EVENT',
+          eventType: 'PARTICIPANT_ERROR',
+          researchId: data.researchId,
+          participantId: data.participantId,
+          error: data.error,
+          stepName: data.stepName,
+          timestamp: data.timestamp,
+          createdAt: new Date().toISOString()
+        }
+      }));
+      
+      structuredLog('info', `${this.controllerName}.handleParticipantError`, 'Error guardado en DynamoDB', {
+        researchId: data.researchId,
+        participantId: data.participantId,
+        stepName: data.stepName
+      });
+    } catch (error) {
+      structuredLog('error', `${this.controllerName}.handleParticipantError`, 'Error guardando error en DynamoDB', {
+        error,
+        researchId: data.researchId,
+        participantId: data.participantId,
+        originalError: data.error
+      });
+    }
   }
 
   /**
@@ -183,10 +376,14 @@ export class MonitoringController {
       // 🎯 BROADCAST A TODAS LAS CONEXIONES DE LA INVESTIGACIÓN
       const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, event);
       
+      const eventHasParticipantId = (evt: MonitoringEvent): evt is ParticipantLoginEvent | ParticipantStepEvent | ParticipantDisqualifiedEvent | ParticipantQuotaExceededEvent | ParticipantCompletedEvent | ParticipantErrorEvent | ParticipantResponseSavedEvent => {
+        return 'participantId' in evt.data;
+      };
+
       structuredLog('info', `${this.controllerName}.broadcastToDashboard`, 'Evento broadcast completado', {
         eventType: event.type,
         researchId,
-        participantId: event.data?.participantId,
+        participantId: eventHasParticipantId(event) ? event.data.participantId : undefined,
         successfulBroadcasts
       });
 
@@ -200,7 +397,7 @@ export class MonitoringController {
    */
   async subscribeToResearch(
     event: APIGatewayProxyEvent,
-    context: Context
+    _context: Context
   ): Promise<APIGatewayProxyResult> {
     const contextName = 'subscribeToResearch';
 
@@ -218,13 +415,40 @@ export class MonitoringController {
         };
       }
 
+      const connectionId = event.requestContext.connectionId;
+
       structuredLog('info', `${this.controllerName}.${contextName}`, 'Dashboard suscrito a investigación', {
         researchId,
-        connectionId: event.requestContext.connectionId
+        connectionId
       });
 
-      // 🎯 GUARDAR SUSCRIPCIÓN
-      // TODO: Implementar guardado de suscripción
+      // 🎯 GUARDAR SUSCRIPCIÓN EN DYNAMODB
+      try {
+        await this.dynamoClient.send(new PutCommand({
+          TableName: this.tableName,
+          Item: {
+            id: uuidv4(),
+            sk: 'WEBSOCKET_SUBSCRIPTION',
+            connectionId,
+            researchId,
+            subscriptionType: 'DASHBOARD_MONITORING',
+            status: 'ACTIVE',
+            createdAt: new Date().toISOString(),
+            ttl: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // TTL de 24 horas
+          }
+        }));
+
+        structuredLog('info', `${this.controllerName}.${contextName}`, 'Suscripción guardada en DynamoDB', {
+          researchId,
+          connectionId
+        });
+      } catch (error) {
+        structuredLog('error', `${this.controllerName}.${contextName}`, 'Error guardando suscripción en DynamoDB', {
+          error,
+          researchId,
+          connectionId
+        });
+      }
 
       return {
         statusCode: 200,
@@ -246,3 +470,35 @@ export class MonitoringController {
     }
   }
 }
+// Instancia del controlador
+const monitoringController = new MonitoringController();
+
+/**
+ * Handler principal para eventos de monitoreo
+ */
+export const mainHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  try {
+    // Enrutar según el path
+    const path = event.path.toLowerCase();
+
+    if (path === '/monitoring/events' && event.httpMethod === 'POST') {
+      return monitoringController.handleMonitoringEvent(event, context);
+    } else if (path === '/monitoring/subscribe' && event.httpMethod === 'POST') {
+      return monitoringController.subscribeToResearch(event, context);
+    }
+
+    // Ruta no encontrada
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ error: 'Recurso no encontrado' })
+    };
+  } catch (error: any) {
+    structuredLog('error', 'MonitoringHandler', 'Error en monitoringHandler', { error });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Error interno del servidor' })
+    };
+  }
+};
+
+export const handler = mainHandler;

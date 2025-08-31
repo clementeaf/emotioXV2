@@ -1,4 +1,5 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+// import { APIGatewayProxyEvent } from 'aws-lambda';
+import { APIGatewayProxyResult } from 'aws-lambda';
 import { getCorsHeaders } from '../middlewares/cors';
 import { APIGatewayEventWebsocketRequestContext } from '../types/websocket';
 import { webSocketService } from '../services/websocket.service';

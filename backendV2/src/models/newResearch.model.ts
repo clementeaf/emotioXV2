@@ -20,6 +20,7 @@ export interface NewResearch {
   id?: string;
   name: string;
   companyId: string;
+  enterprise?: string;
   type: ResearchType;
   technique: string;
   description?: string;
@@ -65,22 +66,21 @@ export class NewResearchModel {
   private dynamoClient: DynamoDBDocumentClient;
 
   constructor() {
-    console.log('======== RESEARCH MODEL CONSTRUCTOR ========');
+    structuredLog('info', 'NewResearchModel', '======== RESEARCH MODEL CONSTRUCTOR ========');
     
     // Obtenemos el nombre de la tabla desde variables de entorno o usamos un valor por defecto
     this.tableName = process.env.DYNAMODB_TABLE || 'emotioXV2-table-dev';
-    console.log('Nombre de tabla DynamoDB:', this.tableName);
+    structuredLog('info', 'NewResearchModel', 'Nombre de tabla DynamoDB', { tableName: this.tableName });
     
     // Configuración para DynamoDB en AWS Cloud (producción)
     const options = {
       region: process.env.APP_REGION || 'us-east-1'
     };
     
-    console.log('Configuración DynamoDB:', options);
-    console.log('SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
+    structuredLog('info', 'NewResearchModel', 'Configuración DynamoDB - SIEMPRE usando AWS Cloud', { options });
     
     this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient(options));
-    console.log('=======================================');
+    structuredLog('info', 'NewResearchModel', '=======================================');
   }
 
   /**
@@ -92,7 +92,7 @@ export class NewResearchModel {
   async create(data: NewResearch, userId: string): Promise<NewResearch> {
     // Generar ID único para la investigación
     const researchId = uuidv4();
-    console.log('ID de investigación generado:', researchId);
+    structuredLog('info', 'NewResearchModel.create', 'ID de investigación generado', { researchId });
     
     // Fecha actual para created/updated
     const now = new Date().toISOString();
@@ -116,8 +116,7 @@ export class NewResearchModel {
       updatedAt: now
     };
 
-    console.log('Item a insertar en DynamoDB:', JSON.stringify(item));
-    console.log('Nombre de la tabla de DynamoDB:', this.tableName);
+    structuredLog('info', 'NewResearchModel.create', 'Item a insertar en DynamoDB', { item, tableName: this.tableName });
 
     // Guardar en DynamoDB
     const params = new PutCommand({
@@ -126,9 +125,9 @@ export class NewResearchModel {
     });
 
     try {
-      console.log('Intentando guardar en DynamoDB con params:', JSON.stringify(params));
+      structuredLog('info', 'NewResearchModel.create', 'Intentando guardar en DynamoDB', { params });
       await this.dynamoClient.send(params);
-      console.log('Operación put completada exitosamente');
+      structuredLog('info', 'NewResearchModel.create', 'Operación put completada exitosamente');
       
       // Devolver el objeto creado con su ID
       return {

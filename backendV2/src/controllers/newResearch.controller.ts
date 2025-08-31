@@ -6,6 +6,7 @@ import {
     errorResponse,
     validateTokenAndSetupAuth
 } from '../utils/controller.utils';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Controlador para manejar las peticiones relacionadas con nuevas investigaciones
@@ -19,40 +20,38 @@ export class NewResearchController {
    */
   async createResearch(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
-      console.log('Request recibida en createResearch:', {
+      structuredLog('info', 'NewResearchController.createResearch', 'Request recibida', {
         path: event.path,
         method: event.httpMethod,
-        headers: event.headers,
-        body: event.body,
-        requestContext: event.requestContext
+        hasBody: !!event.body
       });
 
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
-        console.log('Error: No hay cuerpo en la petición');
+        structuredLog('error', 'NewResearchController.createResearch', 'No hay cuerpo en la petición');
         return errorResponse('Se requieren datos para crear la investigación', 400);
       }
 
-      console.log('ID de usuario extraído:', userId);
+      structuredLog('info', 'NewResearchController.createResearch', 'ID de usuario extraído', { userId });
 
       if (!userId) {
-        console.log('Error: Usuario no autenticado');
+        structuredLog('error', 'NewResearchController.createResearch', 'Usuario no autenticado');
         return errorResponse('Usuario no autenticado', 401);
       }
 
       // Parsear el cuerpo de la petición
       const researchData: NewResearch = JSON.parse(event.body);
-      console.log('Datos de investigación parseados:', researchData);
+      structuredLog('info', 'NewResearchController.createResearch', 'Datos de investigación parseados', { researchName: researchData.name, type: researchData.type });
 
       // Crear la investigación usando el servicio
-      console.log('Llamando al servicio para crear la investigación...');
+      structuredLog('info', 'NewResearchController.createResearch', 'Llamando al servicio para crear la investigación');
       const newResearch = await newResearchService.createResearch(researchData, userId);
-      console.log('Investigación creada correctamente:', newResearch);
+      structuredLog('info', 'NewResearchController.createResearch', 'Investigación creada correctamente', { researchId: newResearch.id });
 
       // Verificar que la investigación se creó correctamente y tiene un ID
       if (newResearch && newResearch.id) {
         // La pantalla de bienvenida se creará solo cuando el usuario la configure explícitamente
-        console.log(`Nueva investigación creada con ID: ${newResearch.id}`);
+        structuredLog('info', 'NewResearchController.createResearch', 'Nueva investigación creada', { researchId: newResearch.id });
       }
 
       return createResponse(201, {
@@ -60,7 +59,7 @@ export class NewResearchController {
         data: newResearch
       });
     } catch (error) {
-      console.error('Error completo en createResearch:', error);
+      structuredLog('error', 'NewResearchController.createResearch', 'Error completo en createResearch', { error });
       return this.handleError(error);
     }
   }
@@ -243,7 +242,7 @@ export class NewResearchController {
    * @returns Respuesta HTTP con detalles del error
    */
   private handleError(error: any): APIGatewayProxyResult {
-    console.error('Error en controlador de investigaciones:', error);
+    structuredLog('error', 'NewResearchController.handler', 'Error en controlador de investigaciones', { error });
 
     if (error instanceof ResearchError) {
       const responseBody: any = {
@@ -356,3 +355,11 @@ export const newResearchHandler_original = createController(newResearchRouteMap,
   basePath: '/research',
 });
 */
+
+// Export handler for index.ts compatibility
+export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  return {
+    statusCode: 501,
+    body: JSON.stringify({ message: 'NewResearch handler not implemented yet' })
+  };
+};

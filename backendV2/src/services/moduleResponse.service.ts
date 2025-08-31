@@ -9,7 +9,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import {
   CreateModuleResponseDto,
-  ModuleResponse,
+  // ModuleResponse,
   ParticipantResponsesDocument,
   UpdateModuleResponseDto
 } from '../models/moduleResponse.model';
@@ -64,95 +64,6 @@ export class ModuleResponseService {
     console.log(`[ModuleResponseService] Initialized for table: ${this.tableName} in region: ${region}`);
   }
 
-  /**
-   * Crea un documento de respuestas nuevo para un participante
-   * @param data Datos iniciales para el documento
-   */
-  private async createNewDocument(
-    researchId: string,
-    participantId: string,
-    initialResponse: ModuleResponse
-  ): Promise<ModuleResponse> {
-    const id = uuidv4();
-    const now = new Date().toISOString();
-
-    // Mantener metadata como objeto en memoria
-    const responseForMemory = {
-      ...initialResponse,
-      metadata: initialResponse.metadata
-    };
-
-    const newDocument: ParticipantResponsesDocument = {
-      id,
-      researchId,
-      participantId,
-      responses: [responseForMemory],
-      metadata: initialResponse.metadata || {},
-      createdAt: now,
-      updatedAt: now,
-      isCompleted: false
-    };
-
-    // Serializar metadata solo para guardar en DynamoDB
-    const itemToSave = {
-      ...newDocument,
-      responses: newDocument.responses.map(r => ({
-        ...r,
-        metadata: serializeMetadata(r.metadata)
-      })),
-      metadata: serializeMetadata(newDocument.metadata)
-    };
-
-    const command = new PutCommand({
-      TableName: this.tableName,
-      Item: itemToSave,
-      ConditionExpression: 'attribute_not_exists(id)'
-    });
-
-    try {
-      await this.dynamoClient.send(command);
-
-      // NUEVO: Manejar consistencia eventual de DynamoDB con retry
-      let createdDoc: ParticipantResponsesDocument | null = null;
-      let retryCount = 0;
-      const maxRetries = 3;
-
-      while (retryCount < maxRetries && !createdDoc) {
-        try {
-          // Pequeño delay para permitir que DynamoDB propague la escritura
-          if (retryCount > 0) {
-            await new Promise(resolve => setTimeout(resolve, 100 * retryCount));
-          }
-
-          createdDoc = await this.findByResearchAndParticipant(researchId, participantId);
-
-          if (createdDoc && createdDoc.responses && createdDoc.responses.length > 0) {
-            console.log(`[ModuleResponseService.createNewDocument] ✅ Documento recuperado exitosamente en intento ${retryCount + 1}`);
-            return createdDoc.responses[0];
-          }
-        } catch (retryError) {
-          console.warn(`[ModuleResponseService.createNewDocument] ⚠️ Intento ${retryCount + 1} falló:`, retryError);
-        }
-
-        retryCount++;
-      }
-
-      // Si llegamos aquí, no pudimos recuperar el documento después de los retries
-      console.error(`[ModuleResponseService.createNewDocument] ❌ No se pudo recuperar el documento después de ${maxRetries} intentos`);
-
-      // NUEVO: En lugar de fallar, devolver la respuesta que acabamos de crear
-      // Esto es más robusto que fallar completamente
-      console.log(`[ModuleResponseService.createNewDocument] 🔄 Devolviendo respuesta creada sin recuperación de DynamoDB`);
-      return initialResponse;
-
-    } catch (error: any) {
-      console.error('[ModuleResponseService.createNewDocument] Error:', error);
-      if (error.name === 'ConditionalCheckFailedException') {
-        throw new ApiError('Conflict: Document ID collision.', 409);
-      }
-      throw new ApiError(`Database Error: Could not create response document - ${error.message}`, 500);
-    }
-  }
 
   /**
    * Encuentra un documento de respuestas por research y participante
@@ -277,7 +188,7 @@ export class ModuleResponseService {
   async updateModuleResponse(
     researchId: string,
     participantId: string,
-    responseId: string,
+    _responseId: string,
     updateDto: UpdateModuleResponseDto
   ): Promise<ParticipantResponsesDocument> {
     // Buscar documento existente

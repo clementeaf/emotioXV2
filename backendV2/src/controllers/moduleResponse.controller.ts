@@ -531,7 +531,7 @@ export class ModuleResponseController {
       const maxNpsScore = npsScores.length > 0 ? Math.max(...npsScores) : 10;
       const isScale0to6 = maxNpsScore <= 6;
 
-      let promoters, detractors, neutrals;
+      let promoters: number, detractors: number, neutrals: number;
 
       if (isScale0to6) {
         // Escala 0-6: 0-2 detractores, 3 neutral, 4-6 promotores
@@ -1122,23 +1122,24 @@ export class ModuleResponseController {
           groupedResponses[questionKey] = [];
         }
 
-        // Extraer el valor de la respuesta
+        // Extraer el valor de la respuesta con type guards
         let responseValue: any;
         if (response.response && typeof response.response === 'object') {
+          const responseObj = response.response as Record<string, any>;
           // Para respuestas complejas como ranking
-          if (response.response.selectedValue) {
+          if ('selectedValue' in responseObj && responseObj.selectedValue) {
             // Intentar parsear JSON si es un string
-            if (typeof response.response.selectedValue === 'string') {
+            if (typeof responseObj.selectedValue === 'string') {
               try {
-                responseValue = JSON.parse(response.response.selectedValue);
+                responseValue = JSON.parse(responseObj.selectedValue);
               } catch {
-                responseValue = response.response.selectedValue;
+                responseValue = responseObj.selectedValue;
               }
             } else {
-              responseValue = response.response.selectedValue;
+              responseValue = responseObj.selectedValue;
             }
-          } else if (response.response.value !== undefined) {
-            responseValue = response.response.value;
+          } else if ('value' in responseObj && responseObj.value !== undefined) {
+            responseValue = responseObj.value;
           } else {
             responseValue = response.response;
           }
@@ -1261,4 +1262,12 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       })
     };
   }
+};
+
+// Export handler for index.ts compatibility
+export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  return {
+    statusCode: 501,
+    body: JSON.stringify({ message: 'ModuleResponse handler not implemented yet' })
+  };
 };

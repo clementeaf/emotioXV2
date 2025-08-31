@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createController, RouteMap } from '../utils/controller.decorator';
 import { createResponse } from '../utils/controller.utils';
 import s3Service, { FileType, PresignedUrlParams } from '../services/s3.service';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Controlador para operaciones relacionadas con Amazon S3
@@ -15,7 +16,7 @@ export class S3Controller {
    */
   async generateUploadUrl(event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
     try {
-      console.log('S3Controller.generateUploadUrl - Inicio');
+      structuredLog('info', 'S3Controller.generateUploadUrl', 'Inicio');
       
       // Verificar que haya un cuerpo en la petición
       if (!event.body) {
@@ -66,7 +67,7 @@ export class S3Controller {
       // Generar URL prefirmada
       const presignedUrlData = await s3Service.generateUploadUrl(params);
       
-      console.log('S3Controller.generateUploadUrl - URL generada exitosamente');
+      structuredLog('info', 'S3Controller.generateUploadUrl', 'URL generada exitosamente');
       
       // Devolver respuesta exitosa
       return createResponse(200, {
@@ -75,7 +76,7 @@ export class S3Controller {
       });
       
     } catch (error: any) {
-      console.error('S3Controller.generateUploadUrl - Error:', error);
+      structuredLog('error', 'S3Controller.generateUploadUrl', 'Error', { error });
       
       // Determinar el tipo de error para una respuesta apropiada
       if (error.message && (
@@ -106,7 +107,7 @@ export class S3Controller {
    */
   async generateDownloadUrl(event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
     try {
-      console.log('S3Controller.generateDownloadUrl - Inicio');
+      structuredLog('info', 'S3Controller.generateDownloadUrl', 'Inicio');
       
       // <<< LEER key DESDE QUERY STRING PARAMETERS >>>
       const key = event.queryStringParameters?.key;
@@ -118,7 +119,7 @@ export class S3Controller {
       
       // Decodificar la clave si viene codificada en la URL
       const decodedKey = decodeURIComponent(key);
-      console.log(`[S3Controller.generateDownloadUrl] - Key decodificada: ${decodedKey}`);
+      structuredLog('info', 'S3Controller.generateDownloadUrl', 'Key decodificada', { decodedKey });
       
       // Extraer tiempo de expiración (opcional del body o query string? Usaremos body por consistencia)
       let expiresIn: number | undefined;
@@ -127,14 +128,14 @@ export class S3Controller {
           const requestBody = JSON.parse(event.body);
           expiresIn = requestBody.expiresIn;
         } catch (parseError) {
-            console.warn('[S3Controller.generateDownloadUrl] - No se pudo parsear el body para expiresIn');
+            structuredLog('warn', 'S3Controller.generateDownloadUrl', 'No se pudo parsear el body para expiresIn');
         }
       }
       
       // Generar URL prefirmada para descarga
       const downloadUrl = await s3Service.generateDownloadUrl(decodedKey, expiresIn);
       
-      console.log('S3Controller.generateDownloadUrl - URL generada exitosamente');
+      structuredLog('info', 'S3Controller.generateDownloadUrl', 'URL generada exitosamente');
       
       // Devolver respuesta exitosa
       return createResponse(200, {
@@ -147,7 +148,7 @@ export class S3Controller {
       });
       
     } catch (error: any) {
-      console.error('S3Controller.generateDownloadUrl - Error:', error);
+      structuredLog('error', 'S3Controller.generateDownloadUrl', 'Error', { error });
       // Manejar caso específico si s3Service lanza error por clave no encontrada
       if (error.name === 'NoSuchKey') { 
           return createResponse(404, { error: `No se encontró el archivo con la clave proporcionada.` });
@@ -166,8 +167,7 @@ export class S3Controller {
    * @returns Respuesta de éxito (204 No Content) o error
    */
   async deleteObject(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    console.log('[Backend S3Controller.deleteObject] - Iniciando eliminación');
-    console.log('[Backend S3Controller.deleteObject] - Event:', JSON.stringify(event, null, 2));
+    structuredLog('info', 'S3Controller.deleteObject', 'Iniciando eliminación', { hasBody: !!event.body });
 
     let key: string | undefined;
     try {
@@ -175,26 +175,26 @@ export class S3Controller {
       if (event.body) {
         const body = JSON.parse(event.body);
         key = body.key;
-        console.log(`[Backend S3Controller.deleteObject] - Key obtenida del body: ${key}`);
+        structuredLog('info', 'S3Controller.deleteObject', 'Key obtenida del body', { key });
       } else {
-        console.warn('[Backend S3Controller.deleteObject] - El cuerpo de la solicitud está vacío.');
+        structuredLog('warn', 'S3Controller.deleteObject', 'El cuerpo de la solicitud está vacío');
       }
 
       if (!key) {
-        console.warn('[Backend S3Controller.deleteObject] - Falta el parámetro "key" en el body de la solicitud.');
+        structuredLog('warn', 'S3Controller.deleteObject', 'Falta el parámetro key en el body de la solicitud');
         return createResponse(400, { error: 'Falta el parámetro "key" en el body' });
       }
 
       // Decodificar la clave si está codificada como URL (aunque viene del body, podría estarlo)
       const decodedKey = decodeURIComponent(key);
-      console.log(`[Backend S3Controller.deleteObject] - Key decodificada: ${decodedKey}`);
+      structuredLog('info', 'S3Controller.deleteObject', 'Key decodificada', { decodedKey });
 
       await s3Service.deleteObject(decodedKey);
-      console.log(`[Backend S3Controller.deleteObject] - Archivo eliminado exitosamente de S3: ${decodedKey}`);
+      structuredLog('info', 'S3Controller.deleteObject', 'Archivo eliminado exitosamente de S3', { decodedKey });
       return createResponse(200, { message: 'Archivo eliminado exitosamente' });
 
     } catch (error: any) {
-      console.error(`[Backend S3Controller.deleteObject] - Error al eliminar objeto de S3 con key '${key}':`, error);
+      structuredLog('error', 'S3Controller.deleteObject', 'Error al eliminar objeto de S3', { key, error });
       if (error.name === 'NoSuchKey') {
         return createResponse(404, { error: 'El archivo no existe en S3' });
       }
@@ -234,5 +234,6 @@ export const mainHandler = createController(routeMap, {
 });
 
 // Exportar controlador para uso en otros módulos
-// export default s3Controller; 
-export default mainHandler; // <<< Exportar el handler principal como default >>> 
+export default mainHandler;
+
+export const handler = mainHandler;

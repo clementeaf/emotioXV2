@@ -13,6 +13,13 @@ import { initializationService } from './services/initialization.service';
 
 type ConnectionType = 'http' | 'websocket';
 
+// Interface para controllers con handlers requeridos - escalable y type-safe
+interface ControllerModule {
+  handler?: (event: APIGatewayProxyEvent, context?: Context) => Promise<APIGatewayProxyResult>;
+  mainHandler?: (event: APIGatewayProxyEvent, context?: Context) => Promise<APIGatewayProxyResult>;
+  [key: string]: any;
+}
+
 // Importaciones lazy para reducir el tamaño de carga inicial
 const handlers: Record<string, any> = {};
 
@@ -40,7 +47,7 @@ async function getHandler(type: string): Promise<Function | null> {
   if (type === 'websocket') {
     // 🎯 IMPLEMENTAR WEBSOCKET HANDLER REAL
     try {
-      const websocketHandler = async (event: any, context: any, logger: any) => {
+      const websocketHandler = async (event: any, _context: any, logger: any) => {
         const routeKey = event.requestContext.routeKey;
         logger.info(`WebSocket route: ${routeKey}`);
 
@@ -135,7 +142,7 @@ async function getHandler(type: string): Promise<Function | null> {
 
   if (importer) {
     try {
-      const module = await importer();
+      const module = await importer() as ControllerModule;
       // Convention: Expect a 'handler' export (not mainHandler)
       const handler = module.handler || module.mainHandler;
 
