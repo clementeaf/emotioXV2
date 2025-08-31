@@ -19,11 +19,9 @@ interface SmartVOCResponse {
  */
 export const useSmartVOC = (researchId: string | null) => {
   return useRequest(
-    researchId 
-      ? alovaInstance.Get<SmartVOCResponse>(`/research/${researchId}/smart-voc`)
-      : null,
+    alovaInstance.Get<SmartVOCResponse>(`/research/${researchId || 'null'}/smart-voc`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: !!researchId,
     }
   );
@@ -34,12 +32,10 @@ export const useSmartVOC = (researchId: string | null) => {
  */
 export const useWatchSmartVOC = (researchId: string | null) => {
   return useWatcher(
-    () => researchId 
-      ? alovaInstance.Get<SmartVOCResponse>(`/research/${researchId}/smart-voc`)
-      : null,
+    () => alovaInstance.Get<SmartVOCResponse>(`/research/${researchId || 'null'}/smart-voc`),
     [researchId],
     {
-      initialData: null,
+      initialData: undefined,
       immediate: !!researchId,
       debounce: 1000, // Debounce de 1 segundo para evitar múltiples llamadas
     }
@@ -255,11 +251,9 @@ export const useSmartVOCManager = (researchId: string | null) => {
     error: queryError,
     send: refetch
   } = useRequest(
-    researchId 
-      ? alovaInstance.Get<SmartVOCResponse>(`/research/${researchId}/smart-voc`)
-      : null,
+    alovaInstance.Get<SmartVOCResponse>(`/research/${researchId || 'null'}/smart-voc`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: !!researchId,
     }
   );
@@ -296,7 +290,7 @@ export const useSmartVOCManager = (researchId: string | null) => {
 
     // Utilidades
     hasData: !!data?.data,
-    isConfigured: !!data?.data?.forms?.length,
+    isConfigured: !!data?.data,
   };
 };
 

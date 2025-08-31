@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { useClients } from '@/hooks/useClients';
 import { cn } from '@/lib/utils';
+import type { Client } from '@/types/clients';
 
 interface ClientSelectorProps {
   className?: string;
@@ -39,7 +40,7 @@ export function ClientSelector({ className, onClientChange }: ClientSelectorProp
           <option value="" disabled>
             {isLoading ? 'Loading clients...' : 'Select a client'}
           </option>
-          {clients.map((client) => (
+          {clients.map((client: Client) => (
             <option key={client.id} value={client.id}>
               {client.name}
             </option>

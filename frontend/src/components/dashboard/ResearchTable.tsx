@@ -19,15 +19,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ErrorBoundary } from '../common/ErrorBoundary';
+import type { Research } from '@/types/research';
 
-interface Research {
-  id: string;
+// Tipo local para la tabla que incluye las propiedades necesarias
+type ResearchTableItem = Research & {
   name: string;
-  status: string;
-  createdAt: string;
-  progress?: number;
   technique: string;
-}
+};
 
 interface ResearchTableProps {
   className?: string;
@@ -76,16 +74,19 @@ function TableSkeleton() {
 function ResearchTableContent() {
   const router = useRouter();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<Research | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<ResearchTableItem | null>(null);
 
   // Usar el hook centralizado para obtener research data
-  const { data: research = [], isLoading, error, refetch } = useResearchList();
+  const { researches: researchData = [], isLoading, error, refetch } = useResearchList();
+  
+  // Cast del tipo para compatibilidad con la interfaz esperada
+  const research = researchData as ResearchTableItem[];
 
   const handleRefresh = () => {
     refetch();
   };
 
-  const handleViewResearch = (item: Research) => {
+  const handleViewResearch = (item: ResearchTableItem) => {
     if (item.technique === 'eye-tracking' || item.technique === 'aim-framework') {
       router.push(`/dashboard?research=${item.id}&section=welcome-screen`);
     } else {
@@ -93,7 +94,7 @@ function ResearchTableContent() {
     }
   };
 
-  const handleDeleteResearch = (e: React.MouseEvent, item: Research) => {
+  const handleDeleteResearch = (e: React.MouseEvent, item: ResearchTableItem) => {
     e.stopPropagation();
     setProjectToDelete(item);
     setShowDeleteModal(true);
@@ -109,13 +110,14 @@ function ResearchTableContent() {
 
     try {
       await apiClient.delete('research', 'delete', { id: projectToDelete.id });
-      
+
       toast.success('Investigación eliminada correctamente');
       refetch();
       setShowDeleteModal(false);
       setProjectToDelete(null);
-    } catch (error: any) {
-      toast.error(error?.message || 'Error al eliminar la investigación');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al eliminar la investigación';
+      toast.error(errorMessage);
     }
   };
 
@@ -237,7 +239,7 @@ function ResearchTableContent() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-neutral-200">
-                {research.map((item, index) => (
+                {research.map((item: ResearchTableItem, index: number) => (
                   <tr key={`research-item-${item.id || index}`} className="hover:bg-neutral-50">
                     <td className="px-6 py-4 text-sm text-neutral-900 max-w-xs truncate">
                       {item.name}
@@ -246,6 +248,7 @@ function ResearchTableContent() {
                       {getStatusBadge(item.status)}
                     </td>
                     <td className="px-6 py-4 text-sm text-neutral-500 whitespace-nowrap">
+
                       {item.createdAt ?
                         (() => {
                           try {

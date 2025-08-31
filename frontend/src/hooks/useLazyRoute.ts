@@ -35,7 +35,7 @@ export function useLazyRoute() {
         break;
     }
 
-    setPreloadedRoutes(prev => new Set([...prev, route]));
+    setPreloadedRoutes(prev => new Set(Array.from(prev).concat([route])));
   }, [preloadedRoutes]);
 
   // Navegación con preload
@@ -115,7 +115,7 @@ export function useBundleOptimization() {
   const [loadedChunks, setLoadedChunks] = useState(new Set<string>());
 
   const trackChunkLoad = useCallback((chunkName: string) => {
-    setLoadedChunks(prev => new Set([...prev, chunkName]));
+    setLoadedChunks(prev => new Set(Array.from(prev).concat([chunkName])));
   }, []);
 
   const getLoadedChunks = useCallback(() => {

@@ -1,471 +1,201 @@
-import { smartVocFixedAPI } from '@/lib/smart-voc-api';
-import { useQuery } from '@tanstack/react-query';
-import { moduleResponseService } from '../services/moduleResponseService';
-import { useResearchById } from './useResearchList';
+/**
+ * 🎯 RESEARCH DATA HOOK - AlovaJS Clean Implementation
+ * Follows SOLID, DRY, KISS principles with strict TypeScript
+ * Max 200 lines, single responsibility
+ */
 
-// Singleton global para evitar múltiples llamadas simultáneas
-class GlobalAPISingleton {
-  private static instance: GlobalAPISingleton;
-  private promises: Map<string, Promise<any>> = new Map();
-  private isInitialized: Map<string, boolean> = new Map();
+import { useRequest } from 'alova/client';
+import { researchMethods, researchDataMethods } from '../services/research.methods';
+import { 
+  processSmartVOCData, 
+  processCPVData, 
+  processTrustFlowData 
+} from '../utils/data.processors';
+import type {
+  Research,
+  GroupedResponsesResponse,
+  SmartVOCFormData,
+  SmartVOCResults,
+  CPVData,
+  TrustFlowData,
+  ApiResponse
+} from '../types/research';
 
-  private constructor() { }
-
-  static getInstance(): GlobalAPISingleton {
-    if (!GlobalAPISingleton.instance) {
-      GlobalAPISingleton.instance = new GlobalAPISingleton();
-    }
-    return GlobalAPISingleton.instance;
-  }
-
-  async getSmartVOCForm(researchId: string): Promise<any> {
-    const key = `smartVOCForm-${researchId}`;
-
-    if (this.promises.has(key)) {
-      return await this.promises.get(key);
-    }
-
-    const promise = smartVocFixedAPI.getByResearchId(researchId);
-    this.promises.set(key, promise);
-    this.isInitialized.set(key, true);
-
-    try {
-      const result = await promise;
-      return result;
-    } catch (error) {
-      throw error;
-    } finally {
-      // Limpiar después de 10 segundos
-      setTimeout(() => {
-        this.promises.delete(key);
-        this.isInitialized.delete(key);
-      }, 10000);
-    }
-  }
-
-  async getGroupedResponses(researchId: string): Promise<any> {
-    const key = `groupedResponses-${researchId}`;
-
-    if (this.promises.has(key)) {
-      return await this.promises.get(key);
-    }
-
-    const promise = moduleResponseService.getResponsesGroupedByQuestion(researchId);
-    this.promises.set(key, promise);
-    this.isInitialized.set(key, true);
-
-    try {
-      const result = await promise;
-      return result;
-    } catch (error) {
-      throw error;
-    } finally {
-      // Limpiar después de 10 segundos
-      setTimeout(() => {
-        this.promises.delete(key);
-        this.isInitialized.delete(key);
-      }, 10000);
-    }
-  }
+interface UseResearchDataParams {
+  researchId: string;
 }
 
-// Instancia global
-const globalAPISingleton = GlobalAPISingleton.getInstance();
-
-interface QuestionResponse {
-  participantId: string;
-  value: any;
-  timestamp: string;
-  metadata: Record<string, any>;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-interface QuestionWithResponses {
-  questionKey: string;
-  responses: QuestionResponse[];
-}
-
-interface GroupedResponsesResponse {
-  data: QuestionWithResponses[];
-  status: number;
-}
-
-interface CPVData {
-  cpvValue: number;
-  satisfaction: number;
-  retention: number;
-  impact: string;
-  trend: string;
-  csatPercentage: number;
-  cesPercentage: number;
-  cvValue: number;
-  nevValue: number;
-  npsValue: number;
-  peakValue: number;
-}
-
-interface TrustFlowData {
-  stage: string;
-  nps: number;
-  nev: number;
-  timestamp: string;
-}
-
-interface SmartVOCResults {
-  totalResponses: number;
-  uniqueParticipants: number;
-  npsScore: number;
-  csatScores: number[];
-  cesScores: number[];
-  nevScores: number[];
-  cvScores: number[];
-  vocResponses: any[];
-  smartVOCResponses: any[];
+interface UseResearchDataReturn {
+  // Core data
+  researchData: Research | null;
+  smartVOCFormData: SmartVOCFormData | null;
+  groupedResponses: GroupedResponsesResponse | null;
+  
+  // Processed data
+  smartVOCResults: SmartVOCResults | null;
+  cpvData: CPVData | null;
+  trustFlowData: TrustFlowData[];
+  
+  // Loading states
+  isResearchLoading: boolean;
+  isSmartVOCFormLoading: boolean;
+  isGroupedResponsesLoading: boolean;
+  
+  // Error states
+  researchError: Error | null;
+  smartVOCFormError: Error | null;
+  groupedResponsesError: Error | null;
+  
+  // Actions
+  refetchResearch: () => Promise<ApiResponse<Research>>;
+  refetchSmartVOCForm: () => Promise<ApiResponse<SmartVOCFormData>>;
+  refetchGroupedResponses: () => Promise<GroupedResponsesResponse>;
 }
 
 /**
- * Hook centralizado para obtener todos los datos de research
- * Evita llamadas duplicadas usando React Query con caching
+ * Centralized hook for all research data operations
+ * Uses AlovaJS for caching and state management
  */
-export const useResearchData = (researchId: string) => {
-  // Query para datos básicos del research (reutiliza useResearchById)
-  const researchQuery = useResearchById(researchId);
+export function useResearchData({ researchId }: UseResearchDataParams): UseResearchDataReturn {
+  // Validate research ID
+  if (!researchId || typeof researchId !== 'string' || researchId.trim() === '') {
+    throw new Error('Valid research ID is required');
+  }
 
-  // Query para datos de SmartVOC form con singleton
-  const smartVOCFormQuery = useQuery({
-    queryKey: ['smartVOCForm', researchId],
-    queryFn: async () => {
-      try {
-        return await globalAPISingleton.getSmartVOCForm(researchId);
-      } catch (error) {
-        return null;
-      }
-    },
-    enabled: !!researchId,
-    staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
-    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    retry: false,
-  });
-
-  // Query principal para datos agrupados con singleton
-  const groupedResponsesQuery = useQuery<GroupedResponsesResponse>({
-    queryKey: ['groupedResponses', researchId],
-    queryFn: async () => {
-      try {
-        return await globalAPISingleton.getGroupedResponses(researchId);
-      } catch (error) {
-        return {
-          data: [],
-          status: 404
-        };
-      }
-    },
-    enabled: !!researchId,
-    staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
-    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    retry: false, // No reintentar en caso de error
-  });
-
-  // Derivar SmartVOC data desde groupedResponses
-  const smartVOCData = useQuery<SmartVOCResults>({
-    queryKey: ['smartVOCData', researchId],
-    queryFn: () => {
-      if (!groupedResponsesQuery.data || !groupedResponsesQuery.data.data || !Array.isArray(groupedResponsesQuery.data.data)) {
-        throw new Error('No grouped data available or invalid format');
-      }
-      return processSmartVOCData(groupedResponsesQuery.data.data);
-    },
-    enabled: !!groupedResponsesQuery.data && !!groupedResponsesQuery.data.data && Array.isArray(groupedResponsesQuery.data.data),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
-
-  // Derivar CPV data desde groupedResponses
-  const cpvData = useQuery<CPVData>({
-    queryKey: ['cpvData', researchId],
-    queryFn: () => {
-      if (!groupedResponsesQuery.data || !groupedResponsesQuery.data.data || !Array.isArray(groupedResponsesQuery.data.data)) {
-        throw new Error('No grouped data available or invalid format');
-      }
-      return processCPVData(groupedResponsesQuery.data.data);
-    },
-    enabled: !!groupedResponsesQuery.data && !!groupedResponsesQuery.data.data && Array.isArray(groupedResponsesQuery.data.data),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
-
-  // Derivar TrustFlow data desde groupedResponses
-  const trustFlowData = useQuery<TrustFlowData[]>({
-    queryKey: ['trustFlowData', researchId],
-    queryFn: () => {
-      if (!groupedResponsesQuery.data || !groupedResponsesQuery.data.data || !Array.isArray(groupedResponsesQuery.data.data)) {
-        throw new Error('No grouped data available or invalid format');
-      }
-      return processTrustFlowData(groupedResponsesQuery.data.data);
-    },
-    enabled: !!groupedResponsesQuery.data && !!groupedResponsesQuery.data.data && Array.isArray(groupedResponsesQuery.data.data),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
-
-  return {
-    // Datos básicos del research (reutiliza useResearchById)
-    researchData: researchQuery.data,
-    isResearchLoading: researchQuery.isLoading,
-    researchError: researchQuery.error,
-
-    // Datos de SmartVOC form
-    smartVOCFormData: smartVOCFormQuery.data,
-    isSmartVOCFormLoading: smartVOCFormQuery.isLoading,
-    smartVOCFormError: smartVOCFormQuery.error,
-
-    // Datos principales
-    groupedResponses: groupedResponsesQuery.data?.data || [],
-    isLoading: groupedResponsesQuery.isLoading,
-    error: groupedResponsesQuery.error,
-
-    // Datos derivados
-    smartVOCData: smartVOCData.data,
-    cpvData: cpvData.data,
-    trustFlowData: trustFlowData.data || [],
-
-    // Estados de carga
-    isSmartVOCLoading: smartVOCData.isLoading,
-    isCPVLoading: cpvData.isLoading,
-    isTrustFlowLoading: trustFlowData.isLoading,
-
-    // Errores
-    smartVOCError: smartVOCData.error,
-    cpvError: cpvData.error,
-    trustFlowError: trustFlowData.error,
-
-    // Refetch functions
-    refetch: groupedResponsesQuery.refetch,
-    refetchResearch: researchQuery.refetch,
-    refetchSmartVOCForm: smartVOCFormQuery.refetch,
-  };
-};
-
-// Función para procesar datos SmartVOC desde grouped responses
-function processSmartVOCData(groupedResponses: QuestionWithResponses[]): SmartVOCResults {
-  const allSmartVOCResponses: any[] = [];
-  const npsScores: number[] = [];
-  const csatScores: number[] = [];
-  const cesScores: number[] = [];
-  const nevScores: number[] = [];
-  const cvScores: number[] = [];
-  const vocResponses: any[] = [];
-
-  groupedResponses.forEach(questionGroup => {
-    if (questionGroup.questionKey && questionGroup.questionKey.toLowerCase().includes('smartvoc') && questionGroup.responses && Array.isArray(questionGroup.responses)) {
-      questionGroup.responses.forEach((response: any) => {
-        const smartVOCResponse = {
-          questionKey: questionGroup.questionKey,
-          response: response.value,
-          participantId: response.participantId,
-          participantName: 'Participante',
-          timestamp: response.timestamp || new Date().toISOString()
-        };
-
-        allSmartVOCResponses.push(smartVOCResponse);
-
-        const responseValue = parseResponseValue(response.value);
-
-        if (questionGroup.questionKey.toLowerCase().includes('nps')) {
-          if (responseValue > 0) npsScores.push(responseValue);
-        } else if (questionGroup.questionKey.toLowerCase().includes('csat')) {
-          if (responseValue > 0) csatScores.push(responseValue);
-        } else if (questionGroup.questionKey.toLowerCase().includes('ces')) {
-          if (responseValue > 0) cesScores.push(responseValue);
-        } else if (questionGroup.questionKey.toLowerCase().includes('nev')) {
-          if (response.value && Array.isArray(response.value)) {
-            const emotions = response.value;
-            const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
-            const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
-
-            const positiveCount = emotions.filter((emotion: string) => positiveEmotions.includes(emotion)).length;
-            const negativeCount = emotions.filter((emotion: string) => negativeEmotions.includes(emotion)).length;
-
-            const totalEmotions = emotions.length;
-            if (totalEmotions > 0) {
-              const nevScore = Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
-              nevScores.push(nevScore);
-            }
-          }
-        } else if (questionGroup.questionKey.toLowerCase().includes('cv')) {
-          if (responseValue > 0) cvScores.push(responseValue);
-        } else if (questionGroup.questionKey.toLowerCase().includes('voc')) {
-          vocResponses.push({
-            text: parseResponseText(response.value),
-            participantId: response.participantId,
-            participantName: 'Participante',
-            timestamp: response.timestamp
-          });
-        }
-      });
+  // Core research data
+  const researchQuery = useRequest(
+    () => researchMethods.getById(researchId),
+    {
+      initialData: undefined,
+      immediate: true,
     }
-  });
+  );
 
-  const totalResponses = allSmartVOCResponses.length;
-  const uniqueParticipants = new Set(allSmartVOCResponses.map(r => r.participantId)).size;
+  // SmartVOC form data
+  const smartVOCFormQuery = useRequest(
+    () => researchDataMethods.getSmartVOCForm(researchId),
+    {
+      initialData: undefined,
+      immediate: true,
+    }
+  );
 
-  const npsScore = npsScores.length > 0
-    ? Math.round(((npsScores.filter(score => score >= 9).length - npsScores.filter(score => score <= 6).length) / npsScores.length) * 100)
-    : 0;
+  // Grouped responses data
+  const groupedResponsesQuery = useRequest(
+    () => researchDataMethods.getGroupedResponses(researchId),
+    {
+      initialData: undefined,
+      immediate: true,
+    }
+  );
+
+  // Process data when available
+  const processedData = useProcessedData(groupedResponsesQuery.data);
 
   return {
-    totalResponses,
-    uniqueParticipants,
-    npsScore,
-    csatScores,
-    cesScores,
-    nevScores,
-    cvScores,
-    vocResponses,
-    smartVOCResponses: allSmartVOCResponses
+    // Core data
+    researchData: researchQuery.data?.data || null,
+    smartVOCFormData: smartVOCFormQuery.data?.data || null,
+    groupedResponses: groupedResponsesQuery.data,
+    
+    // Processed data
+    smartVOCResults: processedData.smartVOCResults,
+    cpvData: processedData.cpvData,
+    trustFlowData: processedData.trustFlowData,
+    
+    // Loading states
+    isResearchLoading: researchQuery.loading,
+    isSmartVOCFormLoading: smartVOCFormQuery.loading,
+    isGroupedResponsesLoading: groupedResponsesQuery.loading,
+    
+    // Error states
+    researchError: researchQuery.error || null,
+    smartVOCFormError: smartVOCFormQuery.error || null,
+    groupedResponsesError: groupedResponsesQuery.error || null,
+    
+    // Actions
+    refetchResearch: researchQuery.send,
+    refetchSmartVOCForm: smartVOCFormQuery.send,
+    refetchGroupedResponses: groupedResponsesQuery.send,
   };
 }
 
-// Función para procesar datos CPV desde grouped responses
-function processCPVData(groupedResponses: QuestionWithResponses[]): CPVData {
-  const csatScores: number[] = [];
-  const cesScores: number[] = [];
-  const npsScores: number[] = [];
-  const nevScores: number[] = [];
-  const cvScores: number[] = [];
+/**
+ * Process grouped responses into derived data
+ */
+function useProcessedData(groupedResponses: GroupedResponsesResponse | null) {
+  if (!groupedResponses?.data || !Array.isArray(groupedResponses.data)) {
+    return {
+      smartVOCResults: null,
+      cpvData: null,
+      trustFlowData: []
+    };
+  }
 
-  groupedResponses.forEach(questionGroup => {
-    if (questionGroup.questionKey && questionGroup.questionKey.toLowerCase().includes('smartvoc') && questionGroup.responses && Array.isArray(questionGroup.responses)) {
-      questionGroup.responses.forEach((response: any) => {
-        const responseValue = parseResponseValue(response.value);
-        if (!isNaN(responseValue) && responseValue > 0) {
-          if (questionGroup.questionKey.toLowerCase().includes('csat')) {
-            csatScores.push(responseValue);
-          } else if (questionGroup.questionKey.toLowerCase().includes('ces')) {
-            cesScores.push(responseValue);
-          } else if (questionGroup.questionKey.toLowerCase().includes('nps')) {
-            npsScores.push(responseValue);
-          } else if (questionGroup.questionKey.toLowerCase().includes('cv')) {
-            cvScores.push(responseValue);
-          }
-        }
-      });
-    }
-  });
-
-  const totalResponses = groupedResponses.reduce((acc, q) => acc + q.responses.length, 0);
-  const cpvValue = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
-  const satisfaction = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
-
-  const csatPercentage = csatScores.length > 0 ? Math.round((csatScores.filter(score => score >= 4).length / csatScores.length) * 100) : 0;
-  const cesPercentage = cesScores.length > 0 ? Math.round((cesScores.filter(score => score <= 2).length / cesScores.length) * 100) : 0;
-
-  const promoters = npsScores.filter(score => score >= 9).length;
-  const neutrals = npsScores.filter(score => score >= 7 && score <= 8).length;
-  const retention = totalResponses > 0 ? Math.round(((promoters + neutrals) / totalResponses) * 100) : 0;
-
-  const impact = totalResponses > 0 && promoters > (npsScores.length - promoters - neutrals) ? 'Alto' : totalResponses > 0 ? 'Medio' : 'Bajo';
-  const trend = totalResponses > 0 && promoters > (npsScores.length - promoters - neutrals) ? 'Positiva' : totalResponses > 0 ? 'Neutral' : 'Negativa';
-
-  const peakValue = Math.max(cpvValue, satisfaction, retention);
-
-  return {
-    cpvValue,
-    satisfaction,
-    retention,
-    impact,
-    trend,
-    csatPercentage,
-    cesPercentage,
-    cvValue: cvScores.length > 0 ? Math.round((cvScores.reduce((a, b) => a + b, 0) / cvScores.length) * 10) / 10 : 0,
-    nevValue: nevScores.length > 0 ? Math.round((nevScores.reduce((a, b) => a + b, 0) / nevScores.length) * 10) / 10 : 0,
-    npsValue: npsScores.length > 0 ? Math.round(((promoters - (npsScores.length - promoters - neutrals)) / npsScores.length) * 100) : 0,
-    peakValue
-  };
-}
-
-// Función para procesar datos TrustFlow desde grouped responses
-function processTrustFlowData(groupedResponses: QuestionWithResponses[]): TrustFlowData[] {
-  const responsesByDate: { [key: string]: any[] } = {};
-
-  groupedResponses.forEach(questionGroup => {
-    if (questionGroup.responses && Array.isArray(questionGroup.responses)) {
-      questionGroup.responses.forEach((response: any) => {
-        if (response.timestamp) {
-          const dateKey = new Date(response.timestamp).toISOString().split('T')[0];
-          if (!responsesByDate[dateKey]) {
-            responsesByDate[dateKey] = [];
-          }
-          responsesByDate[dateKey].push({ ...response, questionKey: questionGroup.questionKey });
-        }
-      });
-    }
-  });
-
-  return Object.keys(responsesByDate).map(date => {
-    const dateResponses = responsesByDate[date];
-
-    const npsScores = dateResponses
-      .filter(r => r.questionKey && r.questionKey.toLowerCase().includes('nps'))
-      .map(r => parseResponseValue(r.value))
-      .filter(score => !isNaN(score) && score > 0);
-
-    const nevScores = dateResponses
-      .filter(r => r.questionKey && r.questionKey.toLowerCase().includes('nev'))
-      .map(r => {
-        if (r.value && Array.isArray(r.value)) {
-          const emotions = r.value;
-          const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
-          const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
-
-          const positiveCount = emotions.filter((emotion: string) => positiveEmotions.includes(emotion)).length;
-          const negativeCount = emotions.filter((emotion: string) => negativeEmotions.includes(emotion)).length;
-
-          const totalEmotions = emotions.length;
-          if (totalEmotions > 0) {
-            return Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
-          }
-        }
-        return 0;
-      })
-      .filter(score => score !== 0);
-
-    const avgNps = npsScores.length > 0 ? npsScores.reduce((a, b) => a + b, 0) / npsScores.length : 0;
-    const avgNev = nevScores.length > 0 ? nevScores.reduce((a, b) => a + b, 0) / nevScores.length : 0;
+  try {
+    const smartVOCResults = processSmartVOCData(groupedResponses.data);
+    const cpvData = processCPVData(groupedResponses.data);
+    const trustFlowData = processTrustFlowData(groupedResponses.data);
 
     return {
-      stage: new Date(date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
-      nps: Math.round(avgNps * 10) / 10,
-      nev: Math.round(avgNev * 10) / 10,
-      timestamp: date
+      smartVOCResults,
+      cpvData,
+      trustFlowData
     };
-  }).sort((a, b) => new Date(a.stage).getTime() - new Date(b.stage).getTime());
+  } catch (error) {
+    console.error('Error processing research data:', error);
+    return {
+      smartVOCResults: null,
+      cpvData: null,
+      trustFlowData: []
+    };
+  }
 }
 
-// Funciones auxiliares
-function parseResponseValue(response: any): number {
-  if (typeof response === 'number') return response;
-  if (typeof response === 'string') {
-    const parsed = parseFloat(response);
-    return isNaN(parsed) ? 0 : parsed;
+/**
+ * Simplified hook for basic research data only
+ */
+export function useBasicResearchData(researchId: string) {
+  if (!researchId) {
+    throw new Error('Research ID is required');
   }
-  if (response && typeof response === 'object' && 'value' in response) {
-    return parseResponseValue(response.value);
-  }
-  return 0;
+
+  const query = useRequest(
+    () => researchMethods.getById(researchId),
+    {
+      initialData: undefined,
+      immediate: true,
+    }
+  );
+
+  return {
+    data: query.data?.data || null,
+    loading: query.loading,
+    error: query.error || null,
+    refetch: query.send
+  };
 }
 
-function parseResponseText(response: any): string {
-  if (typeof response === 'string') return response;
-  if (response && typeof response === 'object' && 'value' in response) {
-    return parseResponseText(response.value);
+/**
+ * Hook for SmartVOC form data only
+ */
+export function useSmartVOCFormData(researchId: string) {
+  if (!researchId) {
+    throw new Error('Research ID is required');
   }
-  return JSON.stringify(response);
+
+  const query = useRequest(
+    () => researchDataMethods.getSmartVOCForm(researchId),
+    {
+      initialData: undefined,
+      immediate: true,
+    }
+  );
+
+  return {
+    data: query.data?.data || null,
+    loading: query.loading,
+    error: query.error || null,
+    refetch: query.send
+  };
 }

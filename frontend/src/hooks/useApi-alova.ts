@@ -236,7 +236,7 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
       if (pattern) {
         alovaInstance.snapshots.match(pattern).forEach(method => method.abort());
       } else {
-        alovaInstance.snapshots.clear();
+        alovaInstance.snapshots.match(/.*/g).forEach(method => method.abort());
       }
     }
   };

@@ -13,18 +13,12 @@ import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
+import type { Research, ResearchWithExtensions } from '@/types/research';
 
 import { SidebarBase } from './SidebarBase';
 
 interface SidebarProps {
   className?: string;
-}
-
-interface Research {
-  id: string;
-  name: string;
-  technique?: string;
-  createdAt: string;
 }
 
 interface User {
@@ -149,17 +143,17 @@ function SidebarContent({ className }: SidebarProps) {
     }
   };
 
-  const { data: allResearch = [], isLoading: isLoadingResearchData } = useResearchList();
+  const { researches: allResearch = [], isLoading: isLoadingResearchData } = useResearchList();
 
   useEffect(() => {
     if (allResearch.length > 0) {
       const sortedResearch = allResearch
         .sort((a: Research, b: Research) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5)
-        .map((item: Research) => ({
+        .map((item: ResearchWithExtensions) => ({
           id: item.id,
-          name: typeof item.name === 'string' && item.name ? item.name : 'Sin nombre',
-          technique: typeof item.technique === 'string' && item.technique ? item.technique : 'Unknown',
+          name: item.name || item.title || 'Sin nombre',
+          technique: item.technique || 'Unknown',
           createdAt: item.createdAt
         }));
 

@@ -205,18 +205,18 @@ export function useCognitiveTaskResults(researchId: string) {
 
     // Obtener todas las preguntas cognitivas de la configuración
     const cognitiveQuestions = configData?.questions?.filter((q) =>
-      q.questionKey?.startsWith('cognitive_')
+      typeof q.questionKey === 'string' && q.questionKey.startsWith('cognitive_')
     ) || [];
 
     cognitiveQuestions.forEach((questionConfig) => {
-      const questionKey = questionConfig.questionKey;
+      const questionKey = questionConfig.questionKey as string;
       const responses = groupedResponses[questionKey] || [];
 
       if (responses.length === 0) return;
 
       const questionType = questionConfig.type as CognitiveQuestionType;
       const questionId = questionConfig.id;
-      const questionText = questionConfig.title || questionConfig.description || 'Sin título';
+      const questionText = (questionConfig.title as string) || (questionConfig.description as string) || 'Sin título';
 
       // Procesar según el tipo de pregunta
       switch (questionType) {
@@ -349,9 +349,10 @@ export function useCognitiveTaskResults(researchId: string) {
     if (values.length === 0) return null;
 
     const distribution: Record<number, number> = {};
+    const scaleConfig = questionConfig.scaleConfig as { startValue?: number; endValue?: number } | undefined;
     const scaleRange = {
-      start: questionConfig.scaleConfig?.startValue || 1,
-      end: questionConfig.scaleConfig?.endValue || 5
+      start: scaleConfig?.startValue || 1,
+      end: scaleConfig?.endValue || 5
     };
 
     // Contar distribución
@@ -417,11 +418,13 @@ export function useCognitiveTaskResults(researchId: string) {
       if (Array.isArray(value)) {
         // Multiple choice
         value.forEach(v => {
-          optionCounts[v] = (optionCounts[v] || 0) + 1;
+          const key = String(v);
+          optionCounts[key] = (optionCounts[key] || 0) + 1;
         });
       } else {
         // Single choice
-        optionCounts[value] = (optionCounts[value] || 0) + 1;
+        const key = String(value);
+        optionCounts[key] = (optionCounts[key] || 0) + 1;
       }
     });
 
@@ -441,7 +444,7 @@ export function useCognitiveTaskResults(researchId: string) {
     };
   };
 
-  const processSentimentData = (responses: GroupedResponse[], questionConfig: { id: string; question?: string; [key: string]: unknown }) => {
+  const processSentimentData = (responses: GroupedResponse[], _questionConfig: { id: string; question?: string; [key: string]: unknown }) => {
     const texts = responses
       .map(r => r.value)
       .filter(v => typeof v === 'string' && v.trim().length > 0);
@@ -450,7 +453,7 @@ export function useCognitiveTaskResults(researchId: string) {
 
     const sentimentResults = texts.map((text, index) => ({
       id: `sentiment-${index + 1}`,
-      text,
+      text: text as string,
       sentiment: 'neutral' as const // Placeholder - implementar análisis de sentimiento real
     }));
 
@@ -468,8 +471,8 @@ export function useCognitiveTaskResults(researchId: string) {
     // 🎯 DEBUG: Log de datos de entrada
 
     // Agregar todos los clicks de todos los participantes
-    const allVisualClickPoints: Array<{ x: number; y: number; [key: string]: unknown }> = [];
-    const allClicksTracking: Array<{ x: number; y: number; timestamp: string; [key: string]: unknown }> = [];
+    const allVisualClickPoints: Array<{ x: number; y: number; timestamp: number; isCorrect: boolean; imageIndex: number; participantId?: string }> = [];
+    const allClicksTracking: Array<{ x: number; y: number; timestamp: number; hitzoneId?: string; imageIndex: number; isCorrectHitzone: boolean; participantId?: string }> = [];
     const imageSelections: Record<string, { hitzoneId: string; click: { x: number; y: number; hitzoneWidth: number; hitzoneHeight: number } }> = {};
 
     responses.forEach(response => {
@@ -478,28 +481,46 @@ export function useCognitiveTaskResults(researchId: string) {
       const value = response.value;
 
       // Agregar clicks visuales
-      if (value.visualClickPoints && Array.isArray(value.visualClickPoints)) {
-        value.visualClickPoints.forEach((point: { x: number; y: number; [key: string]: unknown }) => {
-          allVisualClickPoints.push({
-            ...point,
-            participantId: response.participantId
+      if (typeof value === 'object' && value !== null && 'visualClickPoints' in value) {
+        const valueObj = value as { visualClickPoints?: Array<{ x: number; y: number; [key: string]: unknown }> };
+        if (valueObj.visualClickPoints && Array.isArray(valueObj.visualClickPoints)) {
+          valueObj.visualClickPoints.forEach((point) => {
+            allVisualClickPoints.push({
+              x: point.x,
+              y: point.y,
+              timestamp: (point.timestamp as number) || Date.now(),
+              isCorrect: (point.isCorrect as boolean) || false,
+              imageIndex: (point.imageIndex as number) || 0,
+              participantId: response.participantId
+            });
           });
-        });
+        }
       }
 
       // Agregar tracking de clicks
-      if (value.allClicksTracking && Array.isArray(value.allClicksTracking)) {
-        value.allClicksTracking.forEach((click: { x: number; y: number; timestamp: string; [key: string]: unknown }) => {
-          allClicksTracking.push({
-            ...click,
-            participantId: response.participantId
+      if (typeof value === 'object' && value !== null && 'allClicksTracking' in value) {
+        const valueObj = value as { allClicksTracking?: Array<{ x: number; y: number; timestamp: string; [key: string]: unknown }> };
+        if (valueObj.allClicksTracking && Array.isArray(valueObj.allClicksTracking)) {
+          valueObj.allClicksTracking.forEach((click) => {
+            allClicksTracking.push({
+              x: click.x,
+              y: click.y,
+              timestamp: parseInt(click.timestamp) || Date.now(),
+              hitzoneId: (click.hitzoneId as string) || undefined,
+              imageIndex: (click.imageIndex as number) || 0,
+              isCorrectHitzone: (click.isCorrectHitzone as boolean) || false,
+              participantId: response.participantId
+            });
           });
-        });
+        }
       }
 
       // Agregar selecciones de imagen
-      if (value.imageSelections && typeof value.imageSelections === 'object') {
-        Object.assign(imageSelections, value.imageSelections);
+      if (typeof value === 'object' && value !== null && 'imageSelections' in value) {
+        const valueObj = value as { imageSelections?: Record<string, any> };
+        if (valueObj.imageSelections && typeof valueObj.imageSelections === 'object') {
+          Object.assign(imageSelections, valueObj.imageSelections);
+        }
       }
     });
 
@@ -511,7 +532,12 @@ export function useCognitiveTaskResults(researchId: string) {
       imageSelections,
       visualClickPoints: allVisualClickPoints,
       allClicksTracking: allClicksTracking,
-      files: questionConfig.files || []
+      files: Array.isArray(questionConfig.files) ? questionConfig.files.map((file: any) => ({
+        id: file.id || '',
+        name: file.name || '',
+        s3Key: file.s3Key || '',
+        url: file.url || ''
+      })) : []
     };
 
     return result;
@@ -528,7 +554,13 @@ export function useCognitiveTaskResults(researchId: string) {
       const selectedValue = response.value;
 
       if (selectedValue) {
-        const fileId = typeof selectedValue === 'object' ? selectedValue.id || selectedValue.fileId : selectedValue;
+        let fileId: string;
+        if (typeof selectedValue === 'object' && selectedValue !== null && !Array.isArray(selectedValue)) {
+          const selectedObj = selectedValue as { id?: string; fileId?: string };
+          fileId = selectedObj.id || selectedObj.fileId || '';
+        } else {
+          fileId = String(selectedValue);
+        }
         selectionCounts[fileId] = (selectionCounts[fileId] || 0) + 1;
 
         if (!responseTimesByOption[fileId]) {
@@ -604,7 +636,7 @@ export function useCognitiveTaskResults(researchId: string) {
   };
 
   // 🎯 FUNCIÓN LEGACY MANTENIDA PARA COMPATIBILIDAD
-  const processDataByType = (responses: ParticipantResponse[], configData: any): ProcessedCognitiveData[] => {
+  const processDataByType = (_responses: ParticipantResponse[], _configData: any): ProcessedCognitiveData[] => {
     // Esta función se mantiene para compatibilidad pero ya no se usa
     // La nueva lógica está en processOptimizedData
     return [];

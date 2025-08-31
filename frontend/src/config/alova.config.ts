@@ -4,7 +4,7 @@
  */
 
 import { createAlova } from 'alova';
-import { ReactHook } from 'alova/client';
+import ReactHook from 'alova/react';
 import { DYNAMIC_API_ENDPOINTS, isEndpointsSynced } from '../api/dynamic-endpoints';
 
 // URLs base - Priorizar endpoints dinámicos
@@ -35,9 +35,10 @@ export const alovaInstance = createAlova({
   // Configurar para React
   statesHook: ReactHook,
   
-  // Request adapter usando fetch nativo
+  // Request adapter usando fetch nativo con formato correcto de Alova
   requestAdapter: (elements, method) => {
-    const { url, data, headers, params } = elements;
+    const { url, data, headers } = elements;
+    const params = (elements as any).params;
     
     // Construir URL con query params si existen
     let finalUrl = url;
@@ -67,8 +68,12 @@ export const alovaInstance = createAlova({
       }
     }
     
-    // Realizar la petición
-    return fetch(finalUrl, fetchOptions).then(async response => {
+    // Crear AbortController para permitir cancelación
+    const controller = new AbortController();
+    fetchOptions.signal = controller.signal;
+    
+    // Realizar la petición y devolver objeto con formato requerido por Alova
+    const fetchPromise = fetch(finalUrl, fetchOptions).then(async response => {
       // Manejar errores HTTP
       if (!response.ok) {
         let errorData: any;
@@ -122,6 +127,13 @@ export const alovaInstance = createAlova({
         return response.text();
       }
     });
+    
+    // Devolver objeto con formato requerido por Alova
+    return {
+      response: () => fetchPromise,
+      headers: () => fetchPromise.then(() => ({})),
+      abort: () => controller.abort()
+    };
   },
   
   // Interceptor de request para agregar token
@@ -178,8 +190,10 @@ export const invalidateCache = (matcher?: string | RegExp) => {
       method.abort();
     });
   } else {
-    // Invalidar toda la caché
-    alovaInstance.snapshots.clear();
+    // Invalidar toda la caché - match all and abort
+    alovaInstance.snapshots.match(/.*/g).forEach(method => {
+      method.abort();
+    });
   }
 };
 

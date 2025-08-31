@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 import { CreateResearchForm } from '@/components/research/CreateResearchForm';
 
-import { CreateSectionProps } from '../../../../../../shared/interfaces/research-creation.interface';
+import { CreateSectionProps } from '../../../../../shared/interfaces/research-creation.interface';
 
 /**
  * Sección de creación de investigación

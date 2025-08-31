@@ -1,98 +1,231 @@
-'use client';
+/**
+ * 🔐 AUTH HOOK - AlovaJS Clean Implementation
+ * Strict TypeScript, SOLID principles
+ * Authentication state management with AlovaJS
+ */
 
-import { useMutation } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRequest } from 'alova/client';
+import { alovaInstance } from '../config/alova.config';
+import { updateAlovaToken } from '../config/alova.config';
+import type { 
+  AuthResponse, 
+  LoginRequest, 
+  User,
+  ApiResponse 
+} from '../types/research';
 
-import { authAPI } from '../lib/api';
+interface UseAuthReturn {
+  // State
+  token: string | null;
+  user: User | null;
+  isAuthenticated: boolean;
+  isAuthLoading: boolean;
 
-interface AuthResponse {
-  token: string | undefined;
-  user: { id: string | undefined; email: string | undefined; name: string | undefined; };
+  // Actions
+  login: (credentials: LoginRequest) => Promise<void>;
+  logout: () => Promise<void>;
+
+  // Loading states
+  isLoggingIn: boolean;
+  isLoggingOut: boolean;
+
+  // Errors
+  loginError: Error | null;
+  logoutError: Error | null;
 }
 
-export const useAuth = () => {
+interface StorageAuthData {
+  token: string;
+  user: User;
+}
+
+/**
+ * Authentication hook using AlovaJS
+ */
+export function useAuth(): UseAuthReturn {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // 🎯 CARGAR TOKEN DEL LOCALSTORAGE AL MONTAR
+  // Login mutation
+  const loginMutation = useRequest(
+    (credentials: LoginRequest) => 
+      alovaInstance.Post<ApiResponse<AuthResponse>>('/auth/login', credentials),
+    {
+      immediate: false,
+    }
+  );
+
+  // Logout mutation
+  const logoutMutation = useRequest(
+    () => alovaInstance.Post<ApiResponse<{ message: string }>>('/auth/logout'),
+    {
+      immediate: false,
+    }
+  );
+
+  // Load auth from localStorage on mount
   useEffect(() => {
-    const loadAuthFromStorage = () => {
-      try {
-        const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-
-        if (storedToken) {
-          setToken(storedToken);
-        }
-
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        }
-      } catch (error) {
-      } finally {
-        setAuthLoading(false);
-      }
-    };
-
     loadAuthFromStorage();
   }, []);
 
-  const loginMutation = useMutation<
-    AuthResponse,
-    Error,
-    { email: string; password: string }
-  >({
-    mutationFn: async ({ email, password }) => {
-      const response = await authAPI.login({ email, password });
-      const data = response.data as { token?: string; user?: { id?: string; email?: string; name?: string } };
-      const authData = {
-        token: data.token,
-        user: {
-          id: data.user?.id,
-          email: data.user?.email,
-          name: data.user?.name
-        }
-      };
+  // Handle login
+  const handleLogin = async (credentials: LoginRequest): Promise<void> => {
+    try {
+      const response = await loginMutation.send(credentials);
+      const authData = response.data;
 
-      if (authData.token) {
-        localStorage.setItem('token', authData.token);
-        localStorage.setItem('user', JSON.stringify(authData.user));
-        setToken(authData.token);
-        setUser(authData.user);
+      if (!authData?.token || !authData?.user) {
+        throw new Error('Invalid authentication response');
       }
 
-      router.push('/dashboard');
-      return authData;
-    }
-  });
+      const storageData: StorageAuthData = {
+        token: authData.token,
+        user: authData.user
+      };
 
-  const logoutMutation = useMutation<
-    { message: string },
-    Error,
-    void
-  >({
-    mutationFn: async () => {
-      const response = await authAPI.logout();
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      // Update state
+      setToken(authData.token);
+      setUser(authData.user);
+
+      // Update localStorage
+      saveAuthToStorage(storageData);
+
+      // Update AlovaJS token
+      updateAlovaToken(authData.token);
+
+      // Navigate to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
+  };
+
+  // Handle logout
+  const handleLogout = async (): Promise<void> => {
+    try {
+      await logoutMutation.send();
+    } catch (error) {
+      console.error('Logout request failed:', error);
+      // Continue with local logout even if server request fails
+    } finally {
+      // Clear state
       setToken(null);
       setUser(null);
-      return { message: (response.data as { message?: string })?.message || 'Sesión cerrada correctamente' };
+
+      // Clear localStorage
+      clearAuthFromStorage();
+
+      // Update AlovaJS token
+      updateAlovaToken(null);
+
+      // Navigate to login
+      router.push('/login');
     }
-  });
+  };
 
   return {
+    // State
     token,
     user,
-    authLoading,
-    login: loginMutation.mutate,
-    logout: logoutMutation.mutate,
-    isLoggingIn: loginMutation.isPending,
-    isLoggingOut: logoutMutation.isPending,
-    loginError: loginMutation.error,
-    logoutError: logoutMutation.error
+    isAuthenticated: Boolean(token && user),
+    isAuthLoading,
+
+    // Actions
+    login: handleLogin,
+    logout: handleLogout,
+
+    // Loading states
+    isLoggingIn: loginMutation.loading,
+    isLoggingOut: logoutMutation.loading,
+
+    // Errors
+    loginError: loginMutation.error || null,
+    logoutError: logoutMutation.error || null,
   };
-};
+}
+
+/**
+ * Load authentication data from localStorage
+ */
+function loadAuthFromStorage(): StorageAuthData | null {
+  try {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+
+    if (!storedToken || !storedUser) {
+      return null;
+    }
+
+    const user = JSON.parse(storedUser) as User;
+    
+    // Validate user object structure
+    if (!isValidUser(user)) {
+      clearAuthFromStorage();
+      return null;
+    }
+
+    return { token: storedToken, user };
+  } catch (error) {
+    console.error('Error loading auth from storage:', error);
+    clearAuthFromStorage();
+    return null;
+  }
+}
+
+/**
+ * Save authentication data to localStorage
+ */
+function saveAuthToStorage(authData: StorageAuthData): void {
+  try {
+    localStorage.setItem('token', authData.token);
+    localStorage.setItem('user', JSON.stringify(authData.user));
+  } catch (error) {
+    console.error('Error saving auth to storage:', error);
+  }
+}
+
+/**
+ * Clear authentication data from localStorage
+ */
+function clearAuthFromStorage(): void {
+  try {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  } catch (error) {
+    console.error('Error clearing auth from storage:', error);
+  }
+}
+
+/**
+ * Validate user object structure
+ */
+function isValidUser(user: unknown): user is User {
+  return (
+    typeof user === 'object' &&
+    user !== null &&
+    typeof (user as User).id === 'string' &&
+    typeof (user as User).email === 'string' &&
+    typeof (user as User).name === 'string'
+  );
+}
+
+/**
+ * Hook for checking authentication status only
+ */
+export function useAuthStatus() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const authData = loadAuthFromStorage();
+    setIsAuthenticated(Boolean(authData));
+    setIsLoading(false);
+  }, []);
+
+  return { isAuthenticated, isLoading };
+}

@@ -147,7 +147,7 @@ export class CacheManager {
     let expiredEntries = 0;
     let totalSize = 0;
 
-    for (const [, entry] of this.cache) {
+    for (const [, entry] of Array.from(this.cache)) {
       totalSize += JSON.stringify(entry.data).length;
       
       if (now - entry.timestamp > entry.ttl) {
@@ -173,7 +173,7 @@ export class CacheManager {
   invalidatePattern(pattern: RegExp): number {
     let deleted = 0;
     
-    for (const key of this.cache.keys()) {
+    for (const key of Array.from(this.cache.keys())) {
       if (pattern.test(key)) {
         this.delete(key);
         deleted++;
@@ -209,27 +209,29 @@ export class CacheManager {
   private evict(): void {
     if (this.cache.size === 0) return;
     
-    let keyToEvict: string;
+    let keyToEvict: string = '';
     
     switch (this.config.strategy) {
       case 'LRU':
         keyToEvict = this.findLRUKey();
         break;
       case 'FIFO':
-        keyToEvict = this.cache.keys().next().value;
+        const firstKeyFIFO = Array.from(this.cache.keys())[0];
+        if (firstKeyFIFO) keyToEvict = firstKeyFIFO;
         break;
       default:
-        keyToEvict = this.cache.keys().next().value;
+        const firstKeyDefault = Array.from(this.cache.keys())[0];
+        if (firstKeyDefault) keyToEvict = firstKeyDefault;
     }
     
-    this.cache.delete(keyToEvict);
+    if (keyToEvict) this.cache.delete(keyToEvict);
   }
 
   private findLRUKey(): string {
     let oldestKey = '';
     let oldestTime = Date.now();
     
-    for (const [key, entry] of this.cache) {
+    for (const [key, entry] of Array.from(this.cache)) {
       if (entry.lastAccess < oldestTime) {
         oldestTime = entry.lastAccess;
         oldestKey = key;
@@ -246,7 +248,7 @@ export class CacheManager {
     const now = Date.now();
     const keysToDelete: string[] = [];
     
-    for (const [key, entry] of this.cache) {
+    for (const [key, entry] of Array.from(this.cache)) {
       if (now - entry.timestamp > entry.ttl) {
         keysToDelete.push(key);
       }

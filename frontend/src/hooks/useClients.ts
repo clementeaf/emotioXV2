@@ -1,104 +1,203 @@
-import { useQuery } from '@tanstack/react-query';
+/**
+ * 🏢 CLIENTS HOOK - AlovaJS Clean Implementation
+ * Client management with strict TypeScript and SOLID principles
+ */
 
-import { researchAPI } from '@/lib/api';
+import { useRequest } from 'alova/client';
+import { researchForClientsMethods } from '../services/clients.methods';
+import { extractClientsFromResearch, filterClients, sortClients } from '../utils/client.processors';
+import type {
+  Client,
+  ClientStatus,
+  UseClientsReturn,
+  UseClientByIdReturn
+} from '../types/clients';
 
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  company: string;
-  status: 'active' | 'inactive';
-  researchCount: number;
-  lastActivity: string;
+interface UseClientsParams {
+  filters?: {
+    status?: ClientStatus;
+    company?: string;
+    search?: string;
+  };
+  sortBy?: 'name' | 'company' | 'researchCount' | 'lastActivity';
+  sortOrder?: 'asc' | 'desc';
 }
 
-interface Research {
-  id: string;
-  title: string;
-  status: 'draft' | 'active' | 'completed' | 'archived';
-  participants: number;
-  completionRate: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface UseClientsReturn {
-  clients: Client[];
-  isLoading: boolean;
-  error: any;
-  refetch: () => void;
-}
-
-export const useClients = (): UseClientsReturn => {
+/**
+ * Hook for managing clients extracted from research data
+ * Uses AlovaJS for caching and state management
+ */
+export function useClients(params: UseClientsParams = {}): UseClientsReturn {
   const {
-    data: clients = [],
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ['clients'],
-    queryFn: async (): Promise<Client[]> => {
-      try {
-        const response = await researchAPI.list();
-        const research = response.data || [];
+    filters = {},
+    sortBy = 'name',
+    sortOrder = 'asc'
+  } = params;
 
-        // Extraer clientes únicos de las investigaciones
-        const clientsMap = new Map<string, Client>();
+  // Get research data to extract clients
+  const researchQuery = useRequest(
+    () => researchForClientsMethods.getAllResearch(),
+    {
+      initialData: { data: [] },
+      immediate: true,
+    }
+  );
 
-        research.forEach((item: any) => {
-          const clientName = item.enterprise || item.basic?.enterprise;
-          if (clientName && !clientsMap.has(clientName)) {
-            clientsMap.set(clientName, {
-              id: clientName,
-              name: clientName,
-              email: '',
-              company: clientName,
-              status: 'active' as const,
-              researchCount: 1,
-              lastActivity: new Date().toISOString()
-            });
-          }
-        });
+  // Process clients from research data
+  const processedClients = useProcessClients(
+    researchQuery.data?.data || [],
+    filters,
+    sortBy,
+    sortOrder
+  );
 
-        const uniqueClients = Array.from(clientsMap.values());
-
-        // Si no hay clientes en las investigaciones, devolver datos por defecto
-        if (uniqueClients.length === 0) {
-          return [
-            {
-              id: '1',
-              name: 'Universidad del Desarrollo',
-              email: 'contacto@udd.cl',
-              company: 'Universidad del Desarrollo',
-              status: 'active' as const,
-              researchCount: 5,
-              lastActivity: new Date().toISOString()
-            },
-            {
-              id: '2',
-              name: 'Cliente Demo',
-              email: 'demo@cliente.com',
-              company: 'Cliente Demo',
-              status: 'active' as const,
-              researchCount: 2,
-              lastActivity: new Date().toISOString()
-            }
-          ];
-        }
-
-        return uniqueClients;
-      } catch (error) {
-        return [];
-      }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    retry: 2
-  });
+  const handleRefetch = async (): Promise<void> => {
+    try {
+      await researchQuery.send();
+    } catch (error) {
+      console.error('Failed to refetch clients:', error);
+      throw error;
+    }
+  };
 
   return {
-    clients,
+    clients: processedClients,
+    isLoading: researchQuery.loading,
+    error: researchQuery.error || null,
+    refetch: handleRefetch,
+  };
+}
+
+/**
+ * Hook for getting a single client by ID
+ */
+export function useClientById(clientId: string): UseClientByIdReturn {
+  if (!clientId) {
+    throw new Error('Client ID is required');
+  }
+
+  const { clients, isLoading, error } = useClients();
+
+  const client = clients.find((c: Client) => c.id === clientId) || null;
+
+  const handleRefetch = async (): Promise<void> => {
+    // Since clients are derived from research data, 
+    // we don't have a separate refetch for individual clients
+  };
+
+  return {
+    client,
     isLoading,
     error,
-    refetch
+    refetch: handleRefetch,
   };
-};
+}
+
+/**
+ * Hook for clients with active status only
+ */
+export function useActiveClients(params?: Omit<UseClientsParams, 'filters'>) {
+  return useClients({
+    ...params,
+    filters: { status: 'active' }
+  });
+}
+
+/**
+ * Hook for client statistics
+ */
+export function useClientStats() {
+  const { clients, isLoading, error } = useClients();
+
+  const stats = useComputeClientStats(clients);
+
+  return {
+    stats,
+    isLoading,
+    error
+  };
+}
+
+// Helper functions
+function useProcessClients(
+  researchData: Array<{
+    id: string;
+    enterprise?: string;
+    basic?: { enterprise?: string };
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  }>,
+  filters: UseClientsParams['filters'] = {},
+  sortBy: NonNullable<UseClientsParams['sortBy']>,
+  sortOrder: NonNullable<UseClientsParams['sortOrder']>
+): Client[] {
+  if (!Array.isArray(researchData)) {
+    return [];
+  }
+
+  try {
+    // Extract clients from research data
+    let clients = extractClientsFromResearch(researchData);
+
+    // Apply filters
+    if (Object.keys(filters).length > 0) {
+      clients = filterClients(clients, filters);
+    }
+
+    // Apply sorting
+    clients = sortClients(clients, sortBy || 'name');
+
+    return clients;
+  } catch (error) {
+    console.error('Error processing clients:', error);
+    return [];
+  }
+}
+
+function useComputeClientStats(clients: Client[]) {
+  if (!Array.isArray(clients)) {
+    return {
+      totalClients: 0,
+      activeClients: 0,
+      totalResearch: 0,
+      avgCompletionRate: 0
+    };
+  }
+
+  const totalClients = clients.length;
+  const activeClients = clients.filter(c => c.status === 'active').length;
+  const totalResearch = clients.reduce((sum, client) => sum + client.researchCount, 0);
+  const avgCompletionRate = totalResearch > 0 ? Math.round((activeClients / totalClients) * 100) : 0;
+
+  return {
+    totalClients,
+    activeClients,
+    totalResearch,
+    avgCompletionRate
+  };
+}
+
+/**
+ * Utility function to validate client data
+ */
+export function validateClientData(client: Partial<Client>): boolean {
+  if (!client.name || client.name.trim().length === 0) {
+    return false;
+  }
+
+  if (!client.company || client.company.trim().length === 0) {
+    return false;
+  }
+
+  if (client.email && !isValidEmail(client.email)) {
+    return false;
+  }
+
+  return true;
+}
+
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}

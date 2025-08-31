@@ -103,57 +103,74 @@ export function useEyeTrackingFormData({
       return;
     }
 
-    if (eyeTrackingData.data) {
-      logger.info('Datos completos recibidos:', eyeTrackingData.data);
+    if (eyeTrackingData.build || eyeTrackingData.recruit) {
+      logger.info('Datos completos recibidos:', eyeTrackingData);
 
-      // Si hay datos, actualizar el estado del formulario
-      const existingData = eyeTrackingData.data;
+      // Priorizar datos build si existen, sino usar recruit
+      const buildData = eyeTrackingData.build;
+      const recruitData = eyeTrackingData.recruit;
 
-      // Almacenar el ID para actualizaciones
-      if (existingData.id) {
-        logger.debug('ID de Eye Tracking encontrado:', existingData.id);
-        setEyeTrackingId(existingData.id);
+      // Almacenar el ID para actualizaciones (priorizar build)
+      const id = buildData?.id || recruitData?.id;
+      if (id) {
+        logger.debug('ID de Eye Tracking encontrado:', id);
+        setEyeTrackingId(id);
       }
 
-      // Crear un objeto de config que coincida con el tipo EyeTrackingConfig
-      const config: EyeTrackingConfig = {
-        enabled: existingData.config?.enabled !== undefined ? existingData.config.enabled : true,
-        trackingDevice: existingData.config?.trackingDevice || 'webcam',
-        calibration: existingData.config?.calibration !== undefined ? existingData.config.calibration : true,
-        validation: existingData.config?.validation !== undefined ? existingData.config.validation : true,
-        recording: {
-          audio: existingData.config?.recording?.audio !== undefined ? existingData.config.recording.audio : false,
-          video: existingData.config?.recording?.video !== undefined ? existingData.config.recording.video : true
-        },
-        visualization: {
-          showGaze: existingData.config?.visualization?.showGaze !== undefined ? existingData.config.visualization.showGaze : true,
-          showFixations: existingData.config?.visualization?.showFixations !== undefined ? existingData.config.visualization.showFixations : true,
-          showSaccades: existingData.config?.visualization?.showSaccades !== undefined ? existingData.config.visualization.showSaccades : true,
-          showHeatmap: existingData.config?.visualization?.showHeatmap !== undefined ? existingData.config.visualization.showHeatmap : true
-        },
-        parameters: {
-          samplingRate: existingData.config?.parameters?.samplingRate || 60,
-          fixationThreshold: existingData.config?.parameters?.fixationThreshold || 100,
-          saccadeVelocityThreshold: existingData.config?.parameters?.saccadeVelocityThreshold || 30
-        }
-      };
+      // Mapear datos build a EyeTrackingFormData si existen
+      if (buildData) {
+        // Crear configuración a partir de los datos build
+        const config: EyeTrackingConfig = {
+          enabled: true,
+          trackingDevice: 'webcam',
+          calibration: buildData.calibration?.validationEnabled || true,
+          validation: buildData.calibration?.validationEnabled || true,
+          recording: {
+            audio: false,
+            video: true
+          },
+          visualization: {
+            showGaze: true,
+            showFixations: true,
+            showSaccades: true,
+            showHeatmap: true
+          },
+          parameters: {
+            samplingRate: buildData.settings.sampleRate || 60,
+            fixationThreshold: 100,
+            saccadeVelocityThreshold: 30
+          }
+        };
 
-      // Crear un objeto stimuli que coincida con el tipo EyeTrackingStimuliConfig
-      const stimuli: EyeTrackingStimuliConfig = {
-        items: existingData.stimuli?.items || [],
-        presentationSequence: existingData.stimuli?.presentationSequence || 'sequential',
-        durationPerStimulus: existingData.stimuli?.durationPerStimulus || 5
-      };
+        // Mapear stimuli de build a EyeTrackingStimuliConfig
+        const mappedStimuli = buildData.stimuli.map((stimulus: any) => ({
+          id: stimulus.id,
+          fileName: `stimulus_${stimulus.order}`,
+          fileType: stimulus.type,
+          fileSize: 0,
+          fileUrl: stimulus.url,
+          order: stimulus.order,
+          s3Key: undefined
+        }));
 
-      // Actualizar el estado del formulario con los datos cargados usando la forma funcional
-      // para evitar dependencia de formData
-      setFormData(prevFormData => ({
-        ...prevFormData,
-        config,
-        stimuli
-      }));
+        const stimuli: EyeTrackingStimuliConfig = {
+          items: mappedStimuli,
+          presentationSequence: 'sequential',
+          durationPerStimulus: buildData.settings.duration || 5
+        };
 
-      logger.info('Estado del formulario actualizado con datos existentes');
+        // Actualizar el estado del formulario con los datos build mapeados
+        setFormData(prevFormData => ({
+          ...prevFormData,
+          config,
+          stimuli
+        }));
+
+        logger.info('Estado del formulario actualizado con datos build existentes');
+      } else {
+        // Solo tenemos datos recruit, usar valores por defecto
+        logger.info('Solo datos recruit disponibles, usando configuración por defecto');
+      }
     }
   }, [eyeTrackingData, isLoadingEyeTracking, logger]);
 

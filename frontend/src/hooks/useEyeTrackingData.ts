@@ -1,87 +1,244 @@
-import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
-import { useQuery } from '@tanstack/react-query';
+/**
+ * 👁️ EYE TRACKING DATA HOOK - AlovaJS Clean Implementation
+ * Centralized eye tracking data management with strict typing
+ */
+
+import { useRequest } from 'alova/client';
+import { 
+  eyeTrackingBuildMethods, 
+  eyeTrackingRecruitMethods,
+  eyeTrackingResultsMethods 
+} from '../services/eye-tracking.methods';
+import type {
+  EyeTrackingBuildConfig,
+  EyeTrackingRecruitConfig,
+  EyeTrackingResults,
+  UseEyeTrackingDataOptions,
+  UseEyeTrackingDataReturn,
+  EyeTrackingData
+} from '../types/eye-tracking';
+import type { EyeTrackingFormData } from '../../../shared/interfaces/eye-tracking.interface';
+import type { ApiResponse } from '../types/research';
 
 /**
- * Hook centralizado para obtener datos de eye-tracking
- * Evita llamadas duplicadas usando React Query con caching
- * Maneja tanto configuración de build como de recruit
+ * Hook for eye tracking data (build and recruit configurations)
  */
-export const useEyeTrackingData = (researchId: string, options?: {
-  enabled?: boolean;
-  type?: 'build' | 'recruit' | 'both';
-}) => {
-  const type = options?.type || 'both';
+export function useEyeTrackingData(
+  researchId: string,
+  options: UseEyeTrackingDataOptions = {}
+): UseEyeTrackingDataReturn {
+  if (!researchId) {
+    throw new Error('Research ID is required for eye tracking data');
+  }
 
-  // Query para configuración de build
-  const buildQuery = useQuery({
-    queryKey: ['eyeTracking', 'build', researchId],
-    queryFn: async () => {
-      if (!researchId) return null;
-      try {
-        const response = await eyeTrackingFixedAPI.getByResearchId(researchId).send();
-        return response;
-      } catch (error: any) {
-        if (error?.statusCode === 404 || error?.message?.includes('not found')) {
-          return null;
-        }
-        throw error;
-      }
-    },
-    enabled: (type === 'build' || type === 'both') && options?.enabled !== false && !!researchId,
-    staleTime: 30 * 1000, // 30 segundos
-    gcTime: 5 * 60 * 1000, // 5 minutos
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-  });
+  const { enabled = true, type = 'both' } = options;
 
-  // Query para configuración de recruit
-  const recruitQuery = useQuery({
-    queryKey: ['eyeTracking', 'recruit', researchId],
-    queryFn: async () => {
-      if (!researchId) return null;
-      try {
-        const response = await eyeTrackingFixedAPI.getRecruitConfig(researchId).send();
-        return response;
-      } catch (error: any) {
-        if (error?.statusCode === 404 || error?.message?.includes('not found')) {
-          return null;
-        }
-        throw error;
+  // Build configuration query
+  const buildQuery = useRequest(
+    () => eyeTrackingBuildMethods.getByResearchId(researchId),
+    {
+      initialData: undefined,
+      immediate: enabled && (type === 'build' || type === 'both'),
+    }
+  );
+
+  // Recruit configuration query
+  const recruitQuery = useRequest(
+    () => eyeTrackingRecruitMethods.getByResearchId(researchId),
+    {
+      initialData: undefined,
+      immediate: enabled && (type === 'recruit' || type === 'both'),
+    }
+  );
+
+  // Process combined data
+  const combinedData = useCombinedEyeTrackingData(
+    buildQuery.data?.data,
+    recruitQuery.data?.data,
+    type
+  );
+
+  const handleRefetch = async (): Promise<void> => {
+    try {
+      if (type === 'build' || type === 'both') {
+        await buildQuery.send();
       }
-    },
-    enabled: (type === 'recruit' || type === 'both') && options?.enabled !== false && !!researchId,
-    staleTime: 5 * 60 * 1000, // 5 minutos - datos que no cambian frecuentemente
-    gcTime: 30 * 60 * 1000, // 30 minutos - mantener en cache más tiempo
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    retry: false, // No reintentar en caso de error
-  });
+      if (type === 'recruit' || type === 'both') {
+        await recruitQuery.send();
+      }
+    } catch (error) {
+      console.error('Failed to refetch eye tracking data:', error);
+      throw error;
+    }
+  };
+
+  const handleRefetchBuild = async (): Promise<void> => {
+    try {
+      await buildQuery.send();
+    } catch (error) {
+      console.error('Failed to refetch build config:', error);
+      throw error;
+    }
+  };
+
+  const handleRefetchRecruit = async (): Promise<void> => {
+    try {
+      await recruitQuery.send();
+    } catch (error) {
+      console.error('Failed to refetch recruit config:', error);
+      throw error;
+    }
+  };
 
   return {
-    // Datos combinados
-    data: type === 'both' ? {
-      build: buildQuery.data,
-      recruit: recruitQuery.data
-    } : type === 'build' ? buildQuery.data : recruitQuery.data,
-
-    // Estados de carga
-    isLoading: buildQuery.isLoading || recruitQuery.isLoading,
-    isLoadingBuild: buildQuery.isLoading,
-    isLoadingRecruit: recruitQuery.isLoading,
-
-    // Estados de error
-    error: buildQuery.error || recruitQuery.error,
-    errorBuild: buildQuery.error,
-    errorRecruit: recruitQuery.error,
-
-    // Métodos de refetch
-    refetch: () => {
-      buildQuery.refetch();
-      recruitQuery.refetch();
-    },
-    refetchBuild: buildQuery.refetch,
-    refetchRecruit: recruitQuery.refetch,
+    data: combinedData || undefined,
+    isLoading: buildQuery.loading || recruitQuery.loading,
+    isLoadingBuild: buildQuery.loading,
+    isLoadingRecruit: recruitQuery.loading,
+    error: buildQuery.error || recruitQuery.error || null,
+    refreshData: handleRefetch,
   };
-};
+}
+
+/**
+ * Hook for eye tracking build configuration only
+ */
+export function useEyeTrackingBuildData(researchId: string) {
+  return useEyeTrackingData(researchId, { type: 'build' });
+}
+
+/**
+ * Hook for eye tracking recruit configuration only
+ */
+export function useEyeTrackingRecruitData(researchId: string) {
+  return useEyeTrackingData(researchId, { type: 'recruit' });
+}
+
+/**
+ * Hook for eye tracking results
+ */
+export function useEyeTrackingResults(researchId: string) {
+  if (!researchId) {
+    throw new Error('Research ID is required for eye tracking results');
+  }
+
+  const query = useRequest(
+    () => eyeTrackingResultsMethods.getResults(researchId),
+    {
+      initialData: [],
+      immediate: true,
+    }
+  );
+
+  return {
+    results: query.data?.data || [],
+    isLoading: query.loading,
+    error: query.error || null,
+    refetch: query.send,
+  };
+}
+
+/**
+ * Hook for specific participant eye tracking results
+ */
+export function useParticipantEyeTrackingResults(researchId: string, participantId: string) {
+  if (!researchId || !participantId) {
+    throw new Error('Research ID and Participant ID are required');
+  }
+
+  const query = useRequest(
+    () => eyeTrackingResultsMethods.getParticipantResults(researchId, participantId),
+    {
+      initialData: undefined,
+      immediate: true,
+    }
+  );
+
+  return {
+    results: query.data?.data || null,
+    isLoading: query.loading,
+    error: query.error || null,
+    refetch: query.send,
+  };
+}
+
+// Helper functions
+function useCombinedEyeTrackingData(
+  buildData: EyeTrackingBuildConfig | null | undefined,
+  recruitData: EyeTrackingRecruitConfig | null | undefined,
+  type: UseEyeTrackingDataOptions['type']
+): EyeTrackingData | null {
+  if (type === 'build') {
+    return buildData ? {
+      id: `build-${Date.now()}`,
+      researchId: 'unknown',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      build: buildData
+    } : null;
+  }
+
+  if (type === 'recruit') {
+    return recruitData ? {
+      id: `recruit-${Date.now()}`,
+      researchId: 'unknown',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      recruit: recruitData
+    } : null;
+  }
+
+  // type === 'both'
+  if (!buildData && !recruitData) {
+    return null;
+  }
+
+  const result: EyeTrackingData = {
+    id: `combined-${Date.now()}`,
+    researchId: 'unknown',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  if (buildData) result.build = buildData;
+  if (recruitData) result.recruit = recruitData;
+
+  return result;
+}
+
+/**
+ * Utility function to validate eye tracking configuration
+ */
+export function validateEyeTrackingBuildConfig(
+  config: Partial<EyeTrackingBuildConfig>
+): boolean {
+  const formData = config as EyeTrackingFormData;
+  if (!formData.researchId || formData.researchId.trim().length === 0) {
+    return false;
+  }
+
+  // Check required properties from EyeTrackingFormData
+  if (!formData.config) {
+    return false;
+  }
+
+  if (!formData.stimuli) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Utility function to validate recruit configuration
+ */
+export function validateEyeTrackingRecruitConfig(
+  config: Partial<EyeTrackingRecruitConfig>
+): boolean {
+  const recruitData = config as EyeTrackingFormData;
+  if (!recruitData.researchId || recruitData.researchId.trim().length === 0) {
+    return false;
+  }
+
+  // For now, just check basic structure since recruit config structure may vary
+  return Boolean(config);
+}

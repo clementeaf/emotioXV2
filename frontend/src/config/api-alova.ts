@@ -169,8 +169,10 @@ export const invalidateApiCache = (category?: string, operation?: string) => {
       });
     }
   } else {
-    // Invalidar toda la caché
-    alovaInstance.snapshots.clear();
+    // Invalidar toda la caché - match all and abort
+    alovaInstance.snapshots.match(/.*/g).forEach(method => {
+      method.abort();
+    });
   }
 };
 

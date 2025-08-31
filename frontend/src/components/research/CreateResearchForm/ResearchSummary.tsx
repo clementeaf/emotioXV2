@@ -1,5 +1,5 @@
 import React from 'react';
-import { Company } from '../../../../../../shared/interfaces/company.interface';
+import { Company } from '../../../../../shared/interfaces/company.interface';
 
 interface ResearchSummaryProps {
   formData: {

@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { researchAPI, setupAuthToken } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
-import { ResearchBasicData, ResearchType } from '../../../../../../shared/interfaces/research.model';
+import { ResearchBasicData, ResearchType } from '../../../../../shared/interfaces/research.model';
 
 interface Step {
   id: number;

@@ -24,7 +24,7 @@ export const thankYouScreenService = {
    * @returns Pantalla creada
    */
   async create(data: ThankYouScreenFormData): Promise<ThankYouScreenModel> {
-    const response = await thankYouScreenAPI.save(data.researchId!, data);
+    const response = await thankYouScreenAPI.save(data.researchId!, data as unknown as Record<string, unknown>);
     return response as ThankYouScreenModel;
   },
 
@@ -63,7 +63,7 @@ export const thankYouScreenService = {
       const response = await thankYouScreenAPI.save(researchId, {
         ...data,
         researchId
-      } as ThankYouScreenFormData);
+      } as unknown as Record<string, unknown>);
       return response as ThankYouScreenModel;
     } catch (error) {
       throw error;

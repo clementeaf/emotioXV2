@@ -1,8 +1,7 @@
 'use client';
 
 import { CognitiveTaskQuestion } from '../types';
-
-import { NavigationFlowData } from '../types';
+import { NavigationFlowData } from './NavigationFlow/types';
 import { AnalysisTabType } from './AnalysisTabs';
 import { ChoiceQuestionData } from './ChoiceResults';
 import { ImageSelectionData } from './ImageSelectionResults';
@@ -160,6 +159,7 @@ export function QuestionContainer({
       {viewType === 'navigation_flow' && (
         navigationFlowData ? (
           <NavigationFlowResults
+            researchId={questionId}
             data={navigationFlowData}
           />
         ) : (

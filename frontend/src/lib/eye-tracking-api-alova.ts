@@ -24,11 +24,9 @@ interface EyeTrackingResponse {
  */
 export const useEyeTrackingByResearch = (researchId: string | null) => {
   return useRequest(
-    researchId 
-      ? alovaInstance.Get<EyeTrackingResponse>(`/research/${researchId}/eye-tracking`)
-      : null,
+    alovaInstance.Get<EyeTrackingResponse>(`/research/${researchId || 'null'}/eye-tracking`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: !!researchId,
     }
   );
@@ -39,11 +37,9 @@ export const useEyeTrackingByResearch = (researchId: string | null) => {
  */
 export const useWatchEyeTracking = (researchId: string | null) => {
   const { data, loading, error } = useRequest(
-    researchId 
-      ? alovaInstance.Get<EyeTrackingResponse>(`/research/${researchId}/eye-tracking`)
-      : null,
+    alovaInstance.Get<EyeTrackingResponse>(`/research/${researchId || 'null'}/eye-tracking`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: !!researchId,
       // Refresco automático cada 30 segundos para datos en tiempo real
       pollingTime: 30000,
@@ -354,11 +350,9 @@ export const eyeTrackingRecruitAPI = {
 export const useEyeTrackingRecruit = (researchId: string | null) => {
   // Configuración de reclutamiento
   const configQuery = useRequest(
-    researchId 
-      ? alovaInstance.Get(`/eye-tracking-recruit/research/${researchId}/config`)
-      : null,
+    alovaInstance.Get(`/eye-tracking-recruit/research/${researchId || 'null'}/config`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: !!researchId,
     }
   );

@@ -65,7 +65,7 @@ export const useCompanyById = (id: string) => {
   return useRequest(
     alovaInstance.Get<CompanyResponse>(`/companies/${id}`),
     {
-      initialData: null,
+      initialData: undefined,
     }
   );
 };
@@ -82,9 +82,9 @@ export const useResearchList = () => {
 
 export const useResearchById = (id: string) => {
   return useRequest(
-    id ? alovaInstance.Get<APIResponse<Research>>(`/research/${id}`) : null,
+    alovaInstance.Get<APIResponse<Research>>(`/research/${id || 'null'}`),
     {
-      initialData: null,
+      initialData: undefined,
     }
   );
 };
@@ -92,9 +92,9 @@ export const useResearchById = (id: string) => {
 // Hook para welcome screen con Alova
 export const useWelcomeScreen = (researchId: string) => {
   return useRequest(
-    researchId ? alovaInstance.Get(`/research/${researchId}/welcome-screen`) : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/welcome-screen`),
     {
-      initialData: null,
+      initialData: undefined,
     }
   );
 };
@@ -102,9 +102,9 @@ export const useWelcomeScreen = (researchId: string) => {
 // Hook para thank you screen con Alova
 export const useThankYouScreen = (researchId: string) => {
   return useRequest(
-    researchId ? alovaInstance.Get(`/research/${researchId}/thank-you-screen`) : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/thank-you-screen`),
     {
-      initialData: null,
+      initialData: undefined,
     }
   );
 };
@@ -112,9 +112,9 @@ export const useThankYouScreen = (researchId: string) => {
 // Hook para eye tracking con Alova
 export const useEyeTracking = (researchId: string) => {
   return useRequest(
-    researchId ? alovaInstance.Get(`/research/${researchId}/eye-tracking`) : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/eye-tracking`),
     {
-      initialData: null,
+      initialData: undefined,
     }
   );
 };
@@ -122,9 +122,9 @@ export const useEyeTracking = (researchId: string) => {
 // Hook para SmartVOC con Alova
 export const useSmartVOC = (researchId: string) => {
   return useRequest(
-    researchId ? alovaInstance.Get(`/research/${researchId}/smart-voc`) : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/smart-voc`),
     {
-      initialData: null,
+      initialData: undefined,
     }
   );
 };
@@ -132,9 +132,9 @@ export const useSmartVOC = (researchId: string) => {
 // Hook para cognitive task con Alova
 export const useCognitiveTask = (researchId: string) => {
   return useRequest(
-    researchId ? alovaInstance.Get(`/research/${researchId}/cognitive-task`) : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/cognitive-task`),
     {
-      initialData: null,
+      initialData: undefined,
     }
   );
 };
@@ -142,7 +142,7 @@ export const useCognitiveTask = (researchId: string) => {
 // Hook para module responses con Alova
 export const useModuleResponses = (researchId: string) => {
   return useRequest(
-    researchId ? alovaInstance.Get(`/module-responses/research/${researchId}`) : null,
+    alovaInstance.Get(`/module-responses/research/${researchId || 'null'}`),
     {
       initialData: [],
     }
@@ -162,10 +162,10 @@ export const useParticipants = () => {
 // Hook reactivo que observa cambios (útil para actualizaciones en tiempo real)
 export const useWatchResearch = (researchId: string) => {
   return useWatcher(
-    () => researchId ? alovaInstance.Get<APIResponse<Research>>(`/research/${researchId}`) : null,
+    () => alovaInstance.Get<APIResponse<Research>>(`/research/${researchId || 'null'}`),
     [researchId],
     {
-      initialData: null,
+      initialData: undefined,
       immediate: true,
     }
   );

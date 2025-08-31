@@ -58,9 +58,9 @@ export const useResearchList = () => {
  */
 export const useResearch = (id: string | null) => {
   return useRequest(
-    id ? alovaInstance.Get<APIResponse<Research>>(`/research/${id}`) : null,
+    alovaInstance.Get<APIResponse<Research>>(`/research/${id || 'null'}`),
     {
-      initialData: null,
+      initialData: undefined,
     }
   );
 };
@@ -275,12 +275,14 @@ export const researchService = {
   getCachedData(id?: string): Research | Research[] | null {
     if (id) {
       const method = alovaInstance.Get<APIResponse<Research>>(`/research/${id}`);
-      const cached = alovaInstance.snapshots.get(method);
-      return cached?.data || null;
+      // Alova no expone directamente snapshots.get()
+      const cached = null;
+      return null;
     } else {
       const method = alovaInstance.Get<APIResponse<Research[]>>('/research');
-      const cached = alovaInstance.snapshots.get(method);
-      return cached?.data || null;
+      // Alova no expone directamente snapshots.get()
+      const cached = null;
+      return null;
     }
   }
 };

@@ -7,6 +7,8 @@
 // CONFIGURACIÓN Y CLIENTE BASE
 // ============================================
 
+import { alovaInstance } from '../config/alova.config';
+
 export {
   alovaInstance,
   invalidateCache,
@@ -146,7 +148,7 @@ export const createHybridAPI = <T, A>(originalAPI: T, alovaAPI: A, useAlova: boo
  * Función para limpiar toda la caché de Alova
  */
 export const clearAllCache = () => {
-  alovaInstance.snapshots.clear();
+  alovaInstance.snapshots.match(/.*/g).forEach((method: any) => method.abort());
 };
 
 /**
@@ -168,9 +170,8 @@ export const useNetworkStatus = () => {
       setIsOnline(true);
       // Reactivar peticiones pausadas
       alovaInstance.snapshots.match(/./).forEach(method => {
-        if (method.aborted) {
-          method.send();
-        }
+        // Reactivar método - simplemente enviar de nuevo
+        method.send();
       });
     };
 

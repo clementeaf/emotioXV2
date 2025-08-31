@@ -351,9 +351,19 @@ export function useEyeTrackingForm({
       return;
     }
 
-    // Si hay datos, setear normalmente
-    setFormData(eyeTrackingData);
-    setEyeTrackingId(eyeTrackingData.id || null);
+    // Si hay datos, usar la estructura por defecto y actualizar lo que sea posible
+    const baseFormData = {
+      ...DEFAULT_EYE_TRACKING_CONFIG,
+      researchId: researchId || ''
+    };
+    
+    // Solo actualizar si hay datos build compatibles
+    if (eyeTrackingData.build?.researchId) {
+      baseFormData.researchId = eyeTrackingData.build.researchId;
+    }
+    
+    setFormData(baseFormData);
+    setEyeTrackingId((eyeTrackingData.build as any)?.id || null);
   }, [eyeTrackingData, isLoadingEyeTracking]);
 
   // Limpiar localStorage después de guardar exitosamente

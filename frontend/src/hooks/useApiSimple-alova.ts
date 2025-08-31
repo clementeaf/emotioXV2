@@ -64,7 +64,7 @@ export function useApiSimple() {
     async <T>(
       url: string,
       method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
-      data?: unknown
+      data?: any
     ): Promise<ApiResponse<T>> => {
       setLoading(true);
 
@@ -253,18 +253,23 @@ export function useApiSimple() {
       if (pattern) {
         alovaInstance.snapshots.match(pattern).forEach(method => method.abort());
       } else {
-        alovaInstance.snapshots.clear();
+        alovaInstance.snapshots.match(/.*/g).forEach(method => method.abort());
       }
     },
     
     // Obtener datos del caché sin hacer petición
     getCachedData: <T>(url: string): T | null => {
-      const method = alovaInstance.Get<T>(url);
-      return alovaInstance.snapshots.get(method) || null;
+      try {
+        // Usar el URL como filtro en lugar del objeto method
+        const matchedMethods = alovaInstance.snapshots.match(new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+        return matchedMethods.length > 0 ? (matchedMethods[0] as any).data : null;
+      } catch {
+        return null;
+      }
     },
     
     // Pre-cargar datos en caché
-    prefetch: async <T>(url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: unknown) => {
+    prefetch: async <T>(url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any) => {
       try {
         await makeRequest<T>(url, method, data);
       } catch (error) {

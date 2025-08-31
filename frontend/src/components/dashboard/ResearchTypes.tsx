@@ -3,21 +3,14 @@
 import { useResearchList } from '@/hooks/useResearchList';
 import { ResearchTypesProps } from '@/interfaces/research';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-
-interface Research {
-  id: string;
-  name: string;
-  status: string;
-  createdAt: string;
-  technique: string;
-}
+import type { Research, ResearchWithExtensions } from '@/types/research';
 
 function ResearchTypesContent() {
   // Usar el hook centralizado para obtener research data
-  const { data: researchData = [], isLoading, error } = useResearchList();
+  const { researches: researchData = [], isLoading, error } = useResearchList();
 
   // Extraer tipos únicos de investigación
-  const researchTypes = Array.from(new Set(researchData.map((research: Research) => research.technique)));
+  const researchTypes = Array.from(new Set(researchData.map((research: ResearchWithExtensions) => research.technique)));
 
   const getTypeDisplayName = (type: string) => {
     const typeNames: { [key: string]: string } = {
@@ -30,7 +23,7 @@ function ResearchTypesContent() {
   };
 
   const getTypeCount = (type: string) => {
-    return researchData.filter((research: Research) => research.technique === type).length;
+    return researchData.filter((research: ResearchWithExtensions) => research.technique === type).length;
   };
 
   if (isLoading) {

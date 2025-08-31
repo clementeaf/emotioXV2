@@ -31,11 +31,9 @@ export const useResearchData = (researchId: string | null): UseResearchDataRetur
     send: refetch,
     update
   } = useRequest(
-    researchId 
-      ? alovaInstance.Get<{ success: boolean; data: Research }>(`/research/${researchId}`)
-      : null,
+    alovaInstance.Get<{ success: boolean; data: Research }>(`/research/${researchId || 'null'}`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: !!researchId, // Solo ejecutar si hay researchId
     }
   );
@@ -67,8 +65,10 @@ export const useResearchData = (researchId: string | null): UseResearchDataRetur
         setLocalData(response.data);
         // Actualizar caché de Alova
         update({
-          success: true,
-          data: response.data
+          data: {
+            success: true,
+            data: response.data
+          }
         });
       }
     } catch (err) {
@@ -145,12 +145,10 @@ export const useWatchResearch = (researchId: string | null) => {
     data,
     error,
   } = useWatcher(
-    () => researchId 
-      ? alovaInstance.Get<{ success: boolean; data: Research }>(`/research/${researchId}`)
-      : null,
+    alovaInstance.Get<{ success: boolean; data: Research }>(`/research/${researchId || 'null'}`),
     [researchId], // Dependencias que disparan re-fetch
     {
-      initialData: null,
+      initialData: undefined,
       immediate: !!researchId,
       debounce: 500, // Debounce de 500ms para evitar múltiples llamadas
     }
@@ -217,55 +215,45 @@ export const useResearchStatus = (researchId: string | null) => {
 export const useResearchModules = (researchId: string | null) => {
   // SmartVOC
   const smartVoc = useRequest(
-    researchId 
-      ? alovaInstance.Get(`/research/${researchId}/smart-voc`)
-      : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/smart-voc`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: false, // Cargar bajo demanda
     }
   );
   
   // Eye Tracking
   const eyeTracking = useRequest(
-    researchId 
-      ? alovaInstance.Get(`/research/${researchId}/eye-tracking`)
-      : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/eye-tracking`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: false,
     }
   );
   
   // Cognitive Task
   const cognitiveTask = useRequest(
-    researchId 
-      ? alovaInstance.Get(`/research/${researchId}/cognitive-task`)
-      : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/cognitive-task`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: false,
     }
   );
   
   // Welcome Screen
   const welcomeScreen = useRequest(
-    researchId 
-      ? alovaInstance.Get(`/research/${researchId}/welcome-screen`)
-      : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/welcome-screen`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: false,
     }
   );
   
   // Thank You Screen
   const thankYouScreen = useRequest(
-    researchId 
-      ? alovaInstance.Get(`/research/${researchId}/thank-you-screen`)
-      : null,
+    alovaInstance.Get(`/research/${researchId || 'null'}/thank-you-screen`),
     {
-      initialData: null,
+      initialData: undefined,
       immediate: false,
     }
   );

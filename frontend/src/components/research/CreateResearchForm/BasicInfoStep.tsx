@@ -1,7 +1,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
-import { Company } from '../../../../../../shared/interfaces/company.interface';
+import { Company } from '../../../../../shared/interfaces/company.interface';
 
 interface BasicInfoStepProps {
   formData: {
