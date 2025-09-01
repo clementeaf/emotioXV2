@@ -4,6 +4,48 @@
 api:
   handler: src/index.handler
   events:
+    # --- Rutas de Autenticación ---
+    - http:
+        path: /auth/login
+        method: POST
+        cors: true
+    - http:
+        path: /auth/register
+        method: POST
+        cors: true
+    - http:
+        path: /auth/logout
+        method: POST
+        cors: true
+    - http:
+        path: /auth/refreshToken
+        method: POST
+        cors: true
+    - http:
+        path: /auth/profile
+        method: GET
+        cors: true
+    - http:
+        path: /auth/me
+        method: GET
+        cors: true
+    - http:
+        path: /auth/users
+        method: GET
+        cors: true
+    - http:
+        path: /auth/user/{id}
+        method: GET
+        cors: true
+    - http:
+        path: /auth/user/{id}
+        method: PUT
+        cors: true
+    - http:
+        path: /auth/user/{id}
+        method: DELETE
+        cors: true
+
     # --- Rutas de Participantes ---
     - http:
         path: /participants/login

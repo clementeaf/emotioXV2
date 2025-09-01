@@ -90,5 +90,6 @@ provider:
 functions: ${file(./function-definitions.yml)}
 
 resources:
+  Conditions: ${file(./conditions.yml)}
   Resources: ${file(./resources.yml)}
   Outputs: ${file(./outputs.yml)}

@@ -34,14 +34,14 @@ export const getDynamicCorsHeaders = (event: APIGatewayProxyEvent): { [key: stri
 };
 
 /**
- * Crea una respuesta HTTP estándar con los headers CORS apropiados (versión legacy)
- * @deprecated Use createResponseWithDynamicCors instead
+ * Crea una respuesta HTTP estándar con los headers CORS apropiados
  * @param statusCode Código de estado HTTP
  * @param body Cuerpo de la respuesta (se convertirá a JSON)
+ * @param event Evento de API Gateway para determinar CORS dinámicos
  * @returns Respuesta HTTP formateada
  */
-export const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
-  const corsHeaders = getCorsHeaders();
+export const createResponse = (statusCode: number, body: any, event?: APIGatewayProxyEvent): APIGatewayProxyResult => {
+  const corsHeaders = event ? getDynamicCorsHeaders(event) : getCorsHeaders();
   
   return {
     statusCode,
@@ -73,8 +73,8 @@ export const createResponseWithDynamicCors = (statusCode: number, body: any, eve
  * @param statusCode Código de estado HTTP
  * @returns Respuesta HTTP de error formateada
  */
-export const errorResponse = (message: string, statusCode: number = 500): APIGatewayProxyResult => {
-  return createResponse(statusCode, { message });
+export const errorResponse = (message: string, statusCode: number = 500, event?: APIGatewayProxyEvent): APIGatewayProxyResult => {
+  return createResponse(statusCode, { message }, event);
 };
 
 /**

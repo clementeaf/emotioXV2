@@ -194,23 +194,25 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
  * Hook for getting a single research by ID
  */
 export function useResearchById(researchId: string): UseResearchByIdReturn {
-  if (!researchId) {
-    throw new Error('Research ID is required');
-  }
-
+  // Si no hay researchId válido, no hacer la petición
+  const shouldFetch = Boolean(researchId && researchId.trim());
+  
   const query = useRequest(
     () => researchMethods.getById(researchId),
     {
       initialData: undefined,
-      immediate: true,
+      immediate: shouldFetch,
     }
   );
 
   return {
-    data: query.data?.data || null,
-    isLoading: query.loading,
-    error: query.error || null,
+    data: shouldFetch ? (query.data?.data || null) : null,
+    isLoading: shouldFetch ? query.loading : false,
+    error: shouldFetch ? (query.error || null) : null,
     refetch: async () => {
+      if (!shouldFetch) {
+        return { data: null, success: false };
+      }
       const response = await query.send();
       return { data: response.data, success: true };
     },

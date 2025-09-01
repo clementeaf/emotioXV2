@@ -31,32 +31,33 @@
 #       RestrictPublicBuckets: false
 
 # Tabla de usuarios (creada condicionalmente)
-# UsersTable:
-#   Type: AWS::DynamoDB::Table
-#   Properties:
-#     TableName: ${self:provider.environment.USER_TABLE}
-#     BillingMode: PAY_PER_REQUEST
-#     AttributeDefinitions:
-#       - AttributeName: id
-#         AttributeType: S
-#       - AttributeName: email
-#         AttributeType: S
-#     KeySchema:
-#       - AttributeName: id
-#         KeyType: HASH
-#     GlobalSecondaryIndexes:
-#       - IndexName: EmailIndex
-#         KeySchema:
-#           - AttributeName: email
-#             KeyType: HASH
-#         Projection:
-#           ProjectionType: ALL
-#     PointInTimeRecoverySpecification:
-#       PointInTimeRecoveryEnabled: true
-#     SSESpecification:
-#       SSEEnabled: true
-#       SSEType: KMS
-#       KMSMasterKeyId: alias/aws/dynamodb
+UsersTable:
+  Type: AWS::DynamoDB::Table
+  Condition: CreateUsersTable
+  Properties:
+    TableName: ${self:provider.environment.USER_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: email
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: EmailIndex
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
 # 
 # Tabla principal DynamoDB (comentada porque ya existe)
 # # DynamoDBTable:

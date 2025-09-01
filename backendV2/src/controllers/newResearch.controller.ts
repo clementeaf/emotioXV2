@@ -29,14 +29,14 @@ export class NewResearchController {
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
         structuredLog('error', 'NewResearchController.createResearch', 'No hay cuerpo en la petición');
-        return errorResponse('Se requieren datos para crear la investigación', 400);
+        return errorResponse('Se requieren datos para crear la investigación', 400, event);
       }
 
       structuredLog('info', 'NewResearchController.createResearch', 'ID de usuario extraído', { userId });
 
       if (!userId) {
         structuredLog('error', 'NewResearchController.createResearch', 'Usuario no autenticado');
-        return errorResponse('Usuario no autenticado', 401);
+        return errorResponse('Usuario no autenticado', 401, event);
       }
 
       // Parsear el cuerpo de la petición
@@ -57,10 +57,10 @@ export class NewResearchController {
       return createResponse(201, {
         message: 'Investigación creada exitosamente',
         data: newResearch
-      });
+      }, event);
     } catch (error) {
       structuredLog('error', 'NewResearchController.createResearch', 'Error completo en createResearch', { error });
-      return this.handleError(error);
+      return this.handleError(error, event);
     }
   }
 
@@ -75,18 +75,18 @@ export class NewResearchController {
       // Obtener ID de la investigación de los parámetros
       const researchId = event.pathParameters?.researchId;
       if (!researchId) {
-        return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
+        return errorResponse('ID de investigación no proporcionado en pathParameters', 400, event);
       }
       if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
+        return errorResponse('Usuario no autenticado', 401, event);
       }
       // Obtener la investigación (sin validación de permisos especiales)
       const research = await newResearchService.getResearchById(researchId, 'user');
       return createResponse(200, {
         data: research
-      });
+      }, event);
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, event);
     }
   }
 
@@ -96,10 +96,10 @@ export class NewResearchController {
    * @param userId ID del usuario autenticado
    * @returns Respuesta HTTP con las investigaciones del usuario
    */
-  async getUserResearches(_event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  async getUserResearches(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
       if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
+        return errorResponse('Usuario no autenticado', 401, event);
       }
 
       // Obtener investigaciones del usuario
@@ -107,9 +107,9 @@ export class NewResearchController {
 
       return createResponse(200, {
         data: researches
-      });
+      }, event);
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, event);
     }
   }
 
@@ -122,14 +122,14 @@ export class NewResearchController {
   async updateResearch(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
       if (!event.body) {
-        return errorResponse('Se requieren datos para actualizar la investigación', 400);
+        return errorResponse('Se requieren datos para actualizar la investigación', 400, event);
       }
       const researchId = event.pathParameters?.researchId;
       if (!researchId) {
-        return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
+        return errorResponse('ID de investigación no proporcionado en pathParameters', 400, event);
       }
       if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
+        return errorResponse('Usuario no autenticado', 401, event);
       }
       const updateData: Partial<NewResearch> = JSON.parse(event.body);
       // Actualizar la investigación (sin validación de permisos especiales)
@@ -141,9 +141,9 @@ export class NewResearchController {
       return createResponse(200, {
         message: 'Investigación actualizada exitosamente',
         data: updatedResearch
-      });
+      }, event);
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, event);
     }
   }
 
@@ -158,11 +158,11 @@ export class NewResearchController {
       // Obtener ID de la investigación de los parámetros
       const researchId = event.pathParameters?.researchId;
       if (!researchId) {
-        return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
+        return errorResponse('ID de investigación no proporcionado en pathParameters', 400, event);
       }
 
       if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
+        return errorResponse('Usuario no autenticado', 401, event);
       }
 
       // Eliminar la investigación
@@ -170,9 +170,9 @@ export class NewResearchController {
 
       return createResponse(200, {
         message: result.message
-      });
+      }, event);
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, event);
     }
   }
 
@@ -185,18 +185,18 @@ export class NewResearchController {
   async changeResearchStatus(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
       if (!event.body) {
-        return errorResponse('Se requiere especificar el nuevo estado', 400);
+        return errorResponse('Se requiere especificar el nuevo estado', 400, event);
       }
       const researchId = event.pathParameters?.researchId;
       if (!researchId) {
-        return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
+        return errorResponse('ID de investigación no proporcionado en pathParameters', 400, event);
       }
       if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
+        return errorResponse('Usuario no autenticado', 401, event);
       }
       const { status } = JSON.parse(event.body);
       if (!status) {
-        return errorResponse('Se requiere especificar el nuevo estado', 400);
+        return errorResponse('Se requiere especificar el nuevo estado', 400, event);
       }
       // Cambiar el estado de la investigación (sin validación de permisos especiales)
       const updatedResearch = await newResearchService.changeResearchStatus(
@@ -207,9 +207,9 @@ export class NewResearchController {
       return createResponse(200, {
         message: `Estado cambiado a '${status}' exitosamente`,
         data: updatedResearch
-      });
+      }, event);
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, event);
     }
   }
 
@@ -219,10 +219,10 @@ export class NewResearchController {
    * @param userId ID del usuario autenticado
    * @returns Respuesta HTTP con todas las investigaciones
    */
-  async getAllResearches(_event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  async getAllResearches(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
       if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
+        return errorResponse('Usuario no autenticado', 401, event);
       }
 
       // Obtener todas las investigaciones
@@ -230,18 +230,19 @@ export class NewResearchController {
 
       return createResponse(200, {
         data: researches
-      });
+      }, event);
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, event);
     }
   }
 
   /**
    * Maneja un error y genera una respuesta HTTP apropiada
    * @param error Error capturado
+   * @param event Evento de API Gateway para CORS dinámicos
    * @returns Respuesta HTTP con detalles del error
    */
-  private handleError(error: any): APIGatewayProxyResult {
+  private handleError(error: any, event?: APIGatewayProxyEvent): APIGatewayProxyResult {
     structuredLog('error', 'NewResearchController.handler', 'Error en controlador de investigaciones', { error });
 
     if (error instanceof ResearchError) {
@@ -254,13 +255,13 @@ export class NewResearchController {
         responseBody.errors = error.validationErrors;
       }
 
-      return createResponse(error.statusCode, responseBody);
+      return createResponse(error.statusCode, responseBody, event);
     }
 
     return createResponse(500, {
       error: 'Error interno del servidor',
       details: error.message || 'Error no especificado',
-    });
+    }, event);
   }
 }
 
@@ -294,7 +295,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
           return await controllerInstance.getResearchById(event, userId);
         } else {
           console.log('Manejando GET /research');
-          return await controllerInstance.getAllResearches(event, userId);
+          return await controllerInstance.getUserResearches(event, userId);
         }
 
       case 'POST':
@@ -313,7 +314,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
         return createResponse(405, {
           error: 'Método no permitido',
           allowedMethods: ['GET', 'POST', 'PUT', 'DELETE']
-        });
+        }, event);
     }
 
   } catch (error: any) {
@@ -321,7 +322,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     return createResponse(500, {
       error: 'Error interno del servidor',
       details: error.message || 'Error no especificado'
-    });
+    }, event);
   }
 };
 
@@ -357,9 +358,4 @@ export const newResearchHandler_original = createController(newResearchRouteMap,
 */
 
 // Export handler for index.ts compatibility
-export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  return {
-    statusCode: 501,
-    body: JSON.stringify({ message: 'NewResearch handler not implemented yet' })
-  };
-};
+export const handler = mainHandler;
