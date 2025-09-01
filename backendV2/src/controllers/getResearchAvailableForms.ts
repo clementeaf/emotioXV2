@@ -2,6 +2,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, QueryCommandInput } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { QuestionType } from '../../../shared/interfaces/question-types.enum';
+import { getCorsHeaders } from '../middlewares/cors';
 
 // --- Configuración ---
 const MAIN_TABLE_NAME = process.env.DYNAMODB_TABLE || 'emotioxv2-backend-table-dev';
@@ -356,10 +357,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     console.warn('[GetResearchAvailableForms] Falta researchId en la ruta.');
     return {
       statusCode: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: getCorsHeaders(event),
       body: JSON.stringify({ message: 'Falta el parámetro researchId en la ruta' }),
     };
   }
@@ -371,10 +369,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     // Devolver la respuesta exitosa
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: getCorsHeaders(event),
       body: JSON.stringify({
         steps,
         stepsConfiguration,
@@ -387,10 +382,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     console.error('[GetResearchAvailableForms] Error al obtener tipos de formularios:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: getCorsHeaders(event),
       body: JSON.stringify({
         message: 'Error interno del servidor al obtener los tipos de formularios.',
         error: error.message,

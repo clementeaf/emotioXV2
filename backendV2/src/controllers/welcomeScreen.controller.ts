@@ -18,7 +18,7 @@ const welcomeScreenHandler = async (
   const researchId = pathParameters?.researchId;
 
   if (!researchId) {
-    return errorResponse('Se requiere researchId en la ruta', 400);
+    return errorResponse('Se requiere researchId en la ruta', 400, event);
   }
 
   // Validar token y obtener userId
@@ -34,18 +34,18 @@ const welcomeScreenHandler = async (
         structuredLog('info', 'WelcomeScreenHandler.GET', 'Iniciando obtención', { researchId });
         const screen = await welcomeScreenService.getByResearchId(researchId);
         structuredLog('info', 'WelcomeScreenHandler.GET', 'Obtención exitosa', { researchId });
-        return createResponse(200, screen);
+        return createResponse(200, screen, event);
 
       case 'POST':
         if (!body) {
-          return errorResponse('Se requiere cuerpo en la solicitud para crear/actualizar', 400);
+          return errorResponse('Se requiere cuerpo en la solicitud para crear/actualizar', 400, event);
         }
 
         const data: WelcomeScreenFormData = JSON.parse(body);
         structuredLog('info', 'WelcomeScreenHandler.POST', 'Iniciando creación/actualización', { researchId, userId });
         const result = await welcomeScreenService.updateByResearchId(researchId, data, userId);
         structuredLog('info', 'WelcomeScreenHandler.POST', 'Creación/actualización exitosa', { researchId, screenId: result.id });
-        return createResponse(200, result);
+        return createResponse(200, result, event);
 
       case 'DELETE':
         structuredLog('info', 'WelcomeScreenHandler.DELETE', 'Iniciando eliminación', { researchId });
@@ -53,10 +53,10 @@ const welcomeScreenHandler = async (
         const screenToDelete = await welcomeScreenService.getByResearchId(researchId);
         await welcomeScreenService.delete(screenToDelete.id, userId);
         structuredLog('info', 'WelcomeScreenHandler.DELETE', 'Eliminación exitosa', { researchId });
-        return createResponse(204, null); // 204 No Content
+        return createResponse(204, null, event); // 204 No Content
 
       default:
-        return errorResponse(`Método ${httpMethod} no soportado`, 405);
+        return errorResponse(`Método ${httpMethod} no soportado`, 405, event);
     }
   } catch (error: any) {
     structuredLog('error', `WelcomeScreenHandler.${httpMethod}`, 'Error en el handler', {
@@ -66,9 +66,9 @@ const welcomeScreenHandler = async (
     });
     // Manejar Not Found de forma elegante
     if (error.name === 'NotFoundError' || error.message.includes('NOT_FOUND')) {
-      return createResponse(404, { message: 'Configuración de Welcome Screen no encontrada para esta investigación.' });
+      return createResponse(404, { message: 'Configuración de Welcome Screen no encontrada para esta investigación.' }, event);
     }
-    return errorResponse(error.message, error.statusCode || 500);
+    return errorResponse(error.message, error.statusCode || 500, event);
   }
 };
 

@@ -20,7 +20,7 @@ export class S3Controller {
       
       // Verificar que haya un cuerpo en la petición
       if (!event.body) {
-        return createResponse(400, { error: 'Se requiere un cuerpo en la petición' });
+        return createResponse(400, { error: 'Se requiere un cuerpo en la petición' }, event);
       }
       
       // Parsear el cuerpo de la petición
@@ -42,7 +42,7 @@ export class S3Controller {
         return createResponse(400, {
           error: 'Parámetros incompletos',
           details: 'Se requieren fileType, fileName, mimeType, fileSize y researchId'
-        });
+        }, event);
       }
       
       // Verificar que fileType sea un valor válido de FileType
@@ -50,7 +50,7 @@ export class S3Controller {
         return createResponse(400, {
           error: 'Tipo de archivo inválido',
           details: `El tipo ${fileType} no es válido. Debe ser uno de: ${Object.values(FileType).join(', ')}`
-        });
+        }, event);
       }
       
       // Construir parámetros para generar URL
@@ -73,7 +73,7 @@ export class S3Controller {
       return createResponse(200, {
         success: true,
         data: presignedUrlData
-      });
+      }, event);
       
     } catch (error: any) {
       structuredLog('error', 'S3Controller.generateUploadUrl', 'Error', { error });
@@ -88,14 +88,14 @@ export class S3Controller {
         return createResponse(400, {
           error: 'Validación fallida',
           details: error.message
-        });
+        }, event);
       }
       
       // Error general
       return createResponse(500, {
         error: 'Error al generar URL prefirmada',
         details: error.message || 'Error interno del servidor'
-      });
+      }, event);
     }
   }
 
@@ -114,7 +114,7 @@ export class S3Controller {
       
       // Verificar que se proporcionó una clave
       if (!key) {
-        return createResponse(400, { error: 'Se requiere el parámetro "key" en la query string' });
+        return createResponse(400, { error: 'Se requiere el parámetro "key" en la query string' }, event);
       }
       
       // Decodificar la clave si viene codificada en la URL
@@ -145,18 +145,18 @@ export class S3Controller {
           key: decodedKey,
           expiresAt: Math.floor(Date.now() / 1000) + (expiresIn || 3600)
         }
-      });
+      }, event);
       
     } catch (error: any) {
       structuredLog('error', 'S3Controller.generateDownloadUrl', 'Error', { error });
       // Manejar caso específico si s3Service lanza error por clave no encontrada
       if (error.name === 'NoSuchKey') { 
-          return createResponse(404, { error: `No se encontró el archivo con la clave proporcionada.` });
+          return createResponse(404, { error: `No se encontró el archivo con la clave proporcionada.` }, event);
       }
       return createResponse(500, {
         error: 'Error al generar URL prefirmada para descarga',
         details: error.message || 'Error interno del servidor'
-      });
+      }, event);
     }
   }
 
@@ -182,7 +182,7 @@ export class S3Controller {
 
       if (!key) {
         structuredLog('warn', 'S3Controller.deleteObject', 'Falta el parámetro key en el body de la solicitud');
-        return createResponse(400, { error: 'Falta el parámetro "key" en el body' });
+        return createResponse(400, { error: 'Falta el parámetro "key" en el body' }, event);
       }
 
       // Decodificar la clave si está codificada como URL (aunque viene del body, podría estarlo)
@@ -191,17 +191,17 @@ export class S3Controller {
 
       await s3Service.deleteObject(decodedKey);
       structuredLog('info', 'S3Controller.deleteObject', 'Archivo eliminado exitosamente de S3', { decodedKey });
-      return createResponse(200, { message: 'Archivo eliminado exitosamente' });
+      return createResponse(200, { message: 'Archivo eliminado exitosamente' }, event);
 
     } catch (error: any) {
       structuredLog('error', 'S3Controller.deleteObject', 'Error al eliminar objeto de S3', { key, error });
       if (error.name === 'NoSuchKey') {
-        return createResponse(404, { error: 'El archivo no existe en S3' });
+        return createResponse(404, { error: 'El archivo no existe en S3' }, event);
       }
       return createResponse(500, {
         error: 'Error interno del servidor al eliminar el archivo',
         details: error.message,
-      });
+      }, event);
     }
   }
 }

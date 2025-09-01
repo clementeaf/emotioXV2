@@ -18,7 +18,7 @@ const thankYouScreenHandler = async (
   const researchId = pathParameters?.researchId;
 
   if (!researchId) {
-    return errorResponse('Se requiere researchId en la ruta', 400);
+    return errorResponse('Se requiere researchId en la ruta', 400, event);
   }
 
   // Validar token y obtener userId
@@ -34,18 +34,18 @@ const thankYouScreenHandler = async (
         structuredLog('info', 'ThankYouScreenHandler.GET', 'Iniciando obtención', { researchId });
         const screen = await thankYouScreenService.getByResearchId(researchId);
         structuredLog('info', 'ThankYouScreenHandler.GET', 'Obtención exitosa', { researchId });
-        return createResponse(200, screen); // screen can be null if not found
+        return createResponse(200, screen, event); // screen can be null if not found
 
       case 'POST':
         if (!body) {
-          return errorResponse('Se requiere cuerpo en la solicitud para crear/actualizar', 400);
+          return errorResponse('Se requiere cuerpo en la solicitud para crear/actualizar', 400, event);
         }
 
         const data: ThankYouScreenFormData = JSON.parse(body);
         structuredLog('info', 'ThankYouScreenHandler.POST', 'Iniciando creación/actualización', { researchId, userId });
         const result = await thankYouScreenService.updateByResearchId(researchId, data, userId);
         structuredLog('info', 'ThankYouScreenHandler.POST', 'Creación/actualización exitosa', { researchId, screenId: result.id });
-        return createResponse(200, result);
+        return createResponse(200, result, event);
 
       case 'DELETE':
         structuredLog('info', 'ThankYouScreenHandler.DELETE', 'Iniciando eliminación', { researchId });
@@ -56,10 +56,10 @@ const thankYouScreenHandler = async (
         } else {
           structuredLog('info', 'ThankYouScreenHandler.DELETE', 'No se encontró pantalla para eliminar', { researchId });
         }
-        return createResponse(204, null);
+        return createResponse(204, null, event);
 
       default:
-        return errorResponse(`Método ${httpMethod} no soportado`, 405);
+        return errorResponse(`Método ${httpMethod} no soportado`, 405, event);
     }
   } catch (error: any) {
     structuredLog('error', `ThankYouScreenHandler.${httpMethod}`, 'Error en el handler', {
@@ -68,9 +68,9 @@ const thankYouScreenHandler = async (
       stack: error.stack
     });
     if (error.name === 'NotFoundError' || error.message.includes('NOT_FOUND')) {
-      return createResponse(404, { message: 'Configuración de Thank You Screen no encontrada.' });
+      return createResponse(404, { message: 'Configuración de Thank You Screen no encontrada.' }, event);
     }
-    return errorResponse(error.message, error.statusCode || 500);
+    return errorResponse(error.message, error.statusCode || 500, event);
   }
 };
 

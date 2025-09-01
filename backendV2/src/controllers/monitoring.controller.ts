@@ -5,6 +5,7 @@ import { MonitoringEvent, ParticipantLoginEvent, ParticipantStepEvent, Participa
 import { structuredLog } from '../utils/logging.util';
 import { webSocketService } from '../services/websocket.service';
 import { uuidv4 } from '../utils/id-generator';
+import { getCorsHeaders } from '../middlewares/cors';
 
 /**
  * Controlador para manejar eventos de monitoreo en tiempo real
@@ -77,6 +78,7 @@ export class MonitoringController {
 
       return {
         statusCode: 200,
+        headers: getCorsHeaders(event),
         body: JSON.stringify({
           success: true,
           message: 'Evento procesado correctamente'
@@ -87,6 +89,7 @@ export class MonitoringController {
       structuredLog('error', `${this.controllerName}.${contextName}`, 'Error procesando evento de monitoreo', { error });
       return {
         statusCode: 500,
+        headers: getCorsHeaders(event),
         body: JSON.stringify({
           success: false,
           error: 'Error interno del servidor'
@@ -408,6 +411,7 @@ export class MonitoringController {
       if (!researchId) {
         return {
           statusCode: 400,
+          headers: getCorsHeaders(event),
           body: JSON.stringify({
             success: false,
             error: 'researchId es requerido'
@@ -452,6 +456,7 @@ export class MonitoringController {
 
       return {
         statusCode: 200,
+        headers: getCorsHeaders(event),
         body: JSON.stringify({
           success: true,
           message: 'Suscrito correctamente'
@@ -462,6 +467,7 @@ export class MonitoringController {
       structuredLog('error', `${this.controllerName}.${contextName}`, 'Error en suscripción', { error });
       return {
         statusCode: 500,
+        headers: getCorsHeaders(event),
         body: JSON.stringify({
           success: false,
           error: 'Error interno del servidor'
@@ -490,12 +496,14 @@ export const mainHandler = async (event: APIGatewayProxyEvent, context: Context)
     // Ruta no encontrada
     return {
       statusCode: 404,
+      headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Recurso no encontrado' })
     };
   } catch (error: any) {
     structuredLog('error', 'MonitoringHandler', 'Error en monitoringHandler', { error });
     return {
       statusCode: 500,
+      headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Error interno del servidor' })
     };
   }

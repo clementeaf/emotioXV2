@@ -9,7 +9,11 @@ import { getCorsHeaders as getCorsHeadersFromMiddleware } from '../middlewares/c
 export const getCorsHeaders = (): { [key: string]: string } => {
   // Lee el origen permitido desde una variable de entorno
   // Usa 'http://localhost:4700' como fallback si no está definida (para desarrollo)
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:4700';
+  const allowedOrigins = process.env.ALLOWED_ORIGIN || 'http://localhost:4700';
+  
+  // Si hay múltiples orígenes separados por comas, usar solo el primero
+  // DEPRECATED: Esta función no maneja múltiples orígenes correctamente
+  const allowedOrigin = allowedOrigins.split(',')[0].trim();
 
   return {
     // Configuración de CORS para permitir el origen configurado

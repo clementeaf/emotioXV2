@@ -21,10 +21,10 @@ const locationTrackingHandler = async (
       case 'POST':
         // Guardar ubicación
         if (!body) {
-          return errorResponse('Se requiere cuerpo en la solicitud', 400);
+          return errorResponse('Se requiere cuerpo en la solicitud', 400, event);
         }
         if (!participantId || !researchId) {
-          return errorResponse('Se requiere participantId y researchId', 400);
+          return errorResponse('Se requiere participantId y researchId', 400, event);
         }
 
         const locationData = JSON.parse(body);
@@ -32,7 +32,7 @@ const locationTrackingHandler = async (
         // Validar datos de entrada
         const validationResult = validateLocationData(locationData);
         if (!validationResult.isValid) {
-          return errorResponse('Datos de ubicación inválidos', 400);
+          return errorResponse('Datos de ubicación inválidos', 400, event);
         }
 
         structuredLog('info', 'LocationTrackingHandler.POST', 'Guardando ubicación', { participantId, researchId });
@@ -45,12 +45,12 @@ const locationTrackingHandler = async (
         });
 
         structuredLog('info', 'LocationTrackingHandler.POST', 'Ubicación guardada exitosamente', { participantId, researchId });
-        return createResponse(200, { success: true, message: 'Ubicación guardada exitosamente' });
+        return createResponse(200, { success: true, message: 'Ubicación guardada exitosamente' }, event);
 
       case 'GET':
         // Obtener ubicaciones
         if (!participantId || !researchId) {
-          return errorResponse('Se requiere participantId y researchId', 400);
+          return errorResponse('Se requiere participantId y researchId', 400, event);
         }
 
         structuredLog('info', 'LocationTrackingHandler.GET', 'Obteniendo ubicaciones', { participantId, researchId });
@@ -63,12 +63,12 @@ const locationTrackingHandler = async (
           count: locations.length 
         });
         
-        return createResponse(200, locations);
+        return createResponse(200, locations, event);
 
       case 'DELETE':
         // Eliminar ubicaciones
         if (!participantId || !researchId) {
-          return errorResponse('Se requiere participantId y researchId', 400);
+          return errorResponse('Se requiere participantId y researchId', 400, event);
         }
 
         structuredLog('info', 'LocationTrackingHandler.DELETE', 'Eliminando ubicaciones', { participantId, researchId });
@@ -77,10 +77,10 @@ const locationTrackingHandler = async (
         
         structuredLog('info', 'LocationTrackingHandler.DELETE', 'Ubicaciones eliminadas', { participantId, researchId });
         
-        return createResponse(204, null);
+        return createResponse(204, null, event);
 
       default:
-        return errorResponse(`Método ${httpMethod} no soportado`, 405);
+        return errorResponse(`Método ${httpMethod} no soportado`, 405, event);
     }
   } catch (error: any) {
     structuredLog('error', `LocationTrackingHandler.${httpMethod}`, 'Error en el handler', {
@@ -89,7 +89,7 @@ const locationTrackingHandler = async (
       error: error.message,
       stack: error.stack
     });
-    return errorResponse(error.message, error.statusCode || 500);
+    return errorResponse(error.message, error.statusCode || 500, event);
   }
 };
 

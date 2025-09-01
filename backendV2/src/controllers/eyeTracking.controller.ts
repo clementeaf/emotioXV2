@@ -22,28 +22,28 @@ export class EyeTrackingController {
   /**
    * Maneja errores en las operaciones del controlador (simplificado)
    */
-  private handleError(error: any, context: string, extraData?: Record<string, any>): APIGatewayProxyResult {
+  private handleError(error: any, context: string, event: APIGatewayProxyEvent, extraData?: Record<string, any>): APIGatewayProxyResult {
     structuredLog('error', `EyeTrackingController.${context}`, 'Error procesando la solicitud', {
       error: error instanceof Error ? { name: error.name, message: error.message } : error,
       ...extraData
     });
 
     if (error instanceof ApiError) {
-      return errorResponse(error.message, error.statusCode);
+      return errorResponse(error.message, error.statusCode, event);
     }
 
     if (error.message?.includes(EyeTrackingError.NOT_FOUND)) {
-      return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de eye tracking'), 404);
+      return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de eye tracking'), 404, event);
     }
     if (error.message?.includes(EyeTrackingError.INVALID_DATA) ||
       error.message?.includes(EyeTrackingError.RESEARCH_REQUIRED)) {
-      return errorResponse(error.message, 400);
+      return errorResponse(error.message, 400, event);
     }
     if (error.message?.includes(EyeTrackingError.PERMISSION_DENIED)) {
-      return errorResponse(ERROR_MESSAGES.AUTH.FORBIDDEN, 403);
+      return errorResponse(ERROR_MESSAGES.AUTH.FORBIDDEN, 403, event);
     }
 
-    return errorResponse('Error interno del servidor', 500);
+    return errorResponse('Error interno del servidor', 500, event);
   }
 
   /**
@@ -63,13 +63,13 @@ export class EyeTrackingController {
 
       if (!eyeTracking) {
         structuredLog('warn', `EyeTrackingController.${context}`, 'No se encontró configuración (explicit check)', { researchId });
-        return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Configuración de Eye Tracking'), 404);
+        return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Configuración de Eye Tracking'), 404, event);
       }
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Configuración encontrada/creada', { researchId, id: eyeTracking.id });
-      return createResponse(200, eyeTracking);
+      return createResponse(200, eyeTracking, event);
     } catch (error) {
-      return this.handleError(error, context, { researchId });
+      return this.handleError(error, context, event, { researchId });
     }
   }
 
@@ -97,9 +97,9 @@ export class EyeTrackingController {
       return createResponse(201, {
         message: "Configuración de eye tracking creada exitosamente",
         data: result
-      });
+      }, event);
     } catch (error) {
-      return this.handleError(error, context, { researchId });
+      return this.handleError(error, context, event, { researchId });
     }
   }
 
@@ -128,9 +128,9 @@ export class EyeTrackingController {
       return createResponse(200, {
         message: "Configuración de eye tracking actualizada exitosamente",
         data: result
-      });
+      }, event);
     } catch (error) {
-      return this.handleError(error, context, { researchId });
+      return this.handleError(error, context, event, { researchId });
     }
   }
 
@@ -150,15 +150,15 @@ export class EyeTrackingController {
       const existingConfig = await eyeTrackingService.getByResearchId(researchId);
       if (!existingConfig || !existingConfig.id) {
         structuredLog('error', `EyeTrackingController.${context}`, 'No se pudo obtener ID para eliminar', { researchId });
-        return errorResponse('No se encontró la configuración para eliminar.', 404);
+        return errorResponse('No se encontró la configuración para eliminar.', 404, event);
       }
 
       await eyeTrackingService.delete(existingConfig.id, userId);
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Configuración eliminada', { researchId, id: existingConfig.id });
-      return createResponse(204, null);
+      return createResponse(204, null, event);
     } catch (error) {
-      return this.handleError(error, context, { researchId });
+      return this.handleError(error, context, event, { researchId });
     }
   }
 }

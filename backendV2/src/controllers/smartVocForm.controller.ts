@@ -17,7 +17,7 @@ const smartVocFormHandler = async (
   const researchId = pathParameters?.researchId;
 
   if (!researchId) {
-    return errorResponse('Se requiere researchId en la ruta', 400);
+    return errorResponse('Se requiere researchId en la ruta', 400, event);
   }
 
   // Validar token y obtener userId
@@ -33,11 +33,11 @@ const smartVocFormHandler = async (
         structuredLog('info', 'SmartVocFormHandler.GET', 'Iniciando obtención', { researchId });
         const form = await smartVocService.getByResearchId(researchId);
         structuredLog('info', 'SmartVocFormHandler.GET', 'Obtención exitosa', { researchId });
-        return createResponse(200, form);
+        return createResponse(200, form, event);
 
       case 'POST':
         if (!body) {
-          return errorResponse('Se requiere cuerpo en la solicitud', 400);
+          return errorResponse('Se requiere cuerpo en la solicitud', 400, event);
         }
 
         const data: SmartVOCFormData = JSON.parse(body);
@@ -52,16 +52,16 @@ const smartVocFormHandler = async (
           result = await smartVocService.create(data, researchId, userId);
           structuredLog('info', 'SmartVocFormHandler.POST', 'Creación exitosa', { researchId, formId: result.id });
         }
-        return createResponse(200, result);
+        return createResponse(200, result, event);
 
       case 'DELETE':
         structuredLog('info', 'SmartVocFormHandler.DELETE', 'Iniciando eliminación por researchId', { researchId });
         await smartVocService.deleteByResearchId(researchId, userId);
         structuredLog('info', 'SmartVocFormHandler.DELETE', 'Eliminación por researchId exitosa', { researchId });
-        return createResponse(204, null);
+        return createResponse(204, null, event);
 
       default:
-        return errorResponse(`Método ${httpMethod} no soportado`, 405);
+        return errorResponse(`Método ${httpMethod} no soportado`, 405, event);
     }
   } catch (error: any) {
     structuredLog('error', `SmartVocFormHandler.${httpMethod}`, 'Error en el handler', {
@@ -70,9 +70,9 @@ const smartVocFormHandler = async (
       stack: error.stack
     });
     if (error.name === 'NotFoundError' || error.message.includes('NOT_FOUND')) {
-      return createResponse(404, { message: 'Configuración de SmartVOC no encontrada.' });
+      return createResponse(404, { message: 'Configuración de SmartVOC no encontrada.' }, event);
     }
-    return errorResponse(error.message, error.statusCode || 500);
+    return errorResponse(error.message, error.statusCode || 500, event);
   }
 };
 

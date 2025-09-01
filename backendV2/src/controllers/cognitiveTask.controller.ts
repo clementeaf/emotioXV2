@@ -22,7 +22,7 @@ const cognitiveTaskHandler = async (
   const researchId = pathParameters?.researchId;
 
   if (!researchId) {
-    return errorResponse('Se requiere researchId en la ruta', 400);
+    return errorResponse('Se requiere researchId en la ruta', 400, event);
   }
 
   // Validar token y obtener userId
@@ -37,7 +37,7 @@ const cognitiveTaskHandler = async (
     structuredLog('info', 'CognitiveTaskHandler.UPLOAD_URL', 'Iniciando generación de URL de upload', { researchId });
 
     if (!body) {
-      return errorResponse('Se requiere cuerpo en la solicitud para generar URL de upload', 400);
+      return errorResponse('Se requiere cuerpo en la solicitud para generar URL de upload', 400, event);
     }
 
     try {
@@ -94,7 +94,7 @@ const cognitiveTaskHandler = async (
         s3Key: presignedResponse.key,
         uploadUrl: presignedResponse.uploadUrl
       });
-      return createResponse(200, response);
+      return createResponse(200, response, event);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       structuredLog('error', 'CognitiveTaskHandler.UPLOAD_URL', 'Error generando URL de upload', {
@@ -103,7 +103,7 @@ const cognitiveTaskHandler = async (
         stack: error instanceof Error ? error.stack : undefined,
         uploadData: body ? JSON.parse(body) : null
       });
-      return errorResponse(`Error generando URL de upload: ${errorMessage}`, 500);
+      return errorResponse(`Error generando URL de upload: ${errorMessage}`, 500, event);
     }
   }
 
@@ -113,23 +113,23 @@ const cognitiveTaskHandler = async (
         structuredLog('info', 'CognitiveTaskHandler.GET', 'Iniciando obtención', { researchId });
         const task = await cognitiveTaskService.getByResearchId(researchId);
         structuredLog('info', 'CognitiveTaskHandler.GET', 'Obtención exitosa', { researchId });
-        return createResponse(200, task);
+        return createResponse(200, task, event);
 
       case 'POST':
         if (!body) {
-          return errorResponse('Se requiere cuerpo en la solicitud para guardar', 400);
+          return errorResponse('Se requiere cuerpo en la solicitud para guardar', 400, event);
         }
 
         const data: CognitiveTaskFormData = JSON.parse(body);
         structuredLog('info', 'CognitiveTaskHandler.POST', 'Iniciando guardado (upsert)', { researchId, userId });
         const result = await cognitiveTaskService.updateByResearchId(researchId, data, userId);
         structuredLog('info', 'CognitiveTaskHandler.POST', 'Guardado (upsert) exitoso', { researchId, taskId: result.id });
-        return createResponse(200, result);
+        return createResponse(200, result, event);
 
       case 'PUT':
         const taskId = pathParameters?.taskId;
         if (!body) {
-          return errorResponse('Se requiere cuerpo en la solicitud para actualizar', 400);
+          return errorResponse('Se requiere cuerpo en la solicitud para actualizar', 400, event);
         }
 
         const updateData: Partial<CognitiveTaskFormData> = JSON.parse(body);
@@ -139,13 +139,13 @@ const cognitiveTaskHandler = async (
           structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por ID', { researchId, taskId, userId });
           const updatedResult = await cognitiveTaskService.update(taskId, updateData);
           structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización por ID exitosa', { researchId, taskId });
-          return createResponse(200, updatedResult);
+          return createResponse(200, updatedResult, event);
         } else {
           // Actualizar por researchId (upsert)
           structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por researchId (upsert)', { researchId, userId });
           const result = await cognitiveTaskService.updateByResearchId(researchId, updateData as CognitiveTaskFormData, userId);
           structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización por researchId exitosa', { researchId, taskId: result.id });
-          return createResponse(200, result);
+          return createResponse(200, result, event);
         }
 
       case 'DELETE':
@@ -163,10 +163,10 @@ const cognitiveTaskHandler = async (
           await cognitiveTaskService.deleteByResearchId(researchId);
           structuredLog('info', 'CognitiveTaskHandler.DELETE', 'Eliminación por researchId exitosa', { researchId });
         }
-        return createResponse(204, null);
+        return createResponse(204, null, event);
 
       default:
-        return errorResponse(`Método ${httpMethod} no soportado`, 405);
+        return errorResponse(`Método ${httpMethod} no soportado`, 405, event);
     }
   } catch (error: any) {
     structuredLog('error', `CognitiveTaskHandler.${httpMethod}`, 'Error en el handler', {
@@ -175,9 +175,9 @@ const cognitiveTaskHandler = async (
       stack: error.stack
     });
     if (error.name === 'NotFoundError' || error.message.includes('NOT_FOUND')) {
-      return createResponse(404, { message: 'Configuración de Cognitive Task no encontrada.' });
+      return createResponse(404, { message: 'Configuración de Cognitive Task no encontrada.' }, event);
     }
-    return errorResponse(error.message, error.statusCode || 500);
+    return errorResponse(error.message, error.statusCode || 500, event);
   }
 };
 export const handler = cognitiveTaskHandler;
