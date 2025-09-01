@@ -1,5 +1,5 @@
 import { apiRequest } from './alova';
-import { AvailableFormsResponse, CreateModuleResponseDto, ModuleResponse, ParticipantResponsesDocument, UpdateModuleResponseDto } from './types';
+import { AvailableFormsResponse, CreateModuleResponseDto, ParticipantResponsesDocument, UpdateModuleResponseDto } from './types';
 
 export const getAvailableForms = async (researchId: string): Promise<AvailableFormsResponse> => {
 
@@ -29,19 +29,21 @@ export const getAvailableForms = async (researchId: string): Promise<AvailableFo
   }
 };
 
-export const saveModuleResponse = async (data: CreateModuleResponseDto): Promise<ModuleResponse> => {
-  return apiRequest<ModuleResponse>('/module-responses', {
+// 🎯 ALINEADO CON BACKEND: saveModuleResponse retorna ParticipantResponsesDocument
+export const saveModuleResponse = async (data: CreateModuleResponseDto): Promise<ParticipantResponsesDocument> => {
+  return apiRequest<ParticipantResponsesDocument>('/module-responses', {
     method: 'POST',
     body: JSON.stringify(data)
   });
 };
 
-export const updateModuleResponse = async (responseId: string, data: UpdateModuleResponseDto): Promise<ModuleResponse> => {
+// 🎯 ALINEADO CON BACKEND: updateModuleResponse retorna ParticipantResponsesDocument
+export const updateModuleResponse = async (responseId: string, data: UpdateModuleResponseDto): Promise<ParticipantResponsesDocument> => {
   const params = new URLSearchParams({
     researchId: data.researchId,
     participantId: data.participantId
   });
-  return apiRequest<ModuleResponse>(`/module-responses/${responseId}?${params}`, {
+  return apiRequest<ParticipantResponsesDocument>(`/module-responses/${responseId}?${params}`, {
     method: 'PUT',
     body: JSON.stringify(data)
   });

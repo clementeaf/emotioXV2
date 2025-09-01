@@ -44,6 +44,9 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     participantId || ''
   );
 
+  // 🎯 ESTADO OPTIMISTA LOCAL PARA RESPUESTAS GUARDADAS
+  const [optimisticSavedQuestions, setOptimisticSavedQuestions] = useState<Set<string>>(new Set());
+
   // Obtener los steps del backend
   const { data: formsData } = useAvailableFormsQuery(researchId || '');
 
@@ -119,6 +122,9 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         { questionKey: currentQuestionKey, response: formData || {} }
       ]);
 
+      // 🎯 ACTUALIZAR ESTADO OPTIMISTA - YA CONFIRMADO POR BACKEND
+      setOptimisticSavedQuestions(prev => new Set(prev).add(currentQuestionKey));
+
       // 🎯 ENVIAR EVENTO WEBSOCKET DE RESPUESTA GUARDADA
       if (participantId) {
         const currentStepIndex = steps.findIndex(step => step.questionKey === currentQuestionKey);
@@ -149,7 +155,12 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     },
     onError: () => {
       setIsSaving(false);
-      // Manejo de error
+      // 🎯 REVERTIR ESTADO OPTIMISTA EN CASO DE ERROR
+      setOptimisticSavedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(currentQuestionKey);
+        return newSet;
+      });
     }
   });
 
@@ -191,6 +202,12 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     onError: (error) => {
       console.error('Error al actualizar:', error);
       setIsSaving(false);
+      // 🎯 REVERTIR ESTADO OPTIMISTA EN CASO DE ERROR (aunque este es update)
+      setOptimisticSavedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(currentQuestionKey);
+        return newSet;
+      });
     }
   });
 
@@ -203,8 +220,8 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const localData = getFormData(currentQuestionKey);
   const hasLocalData = localData && Object.keys(localData).length > 0;
 
-  // 🎯 DETERMINAR SI EXISTE RESPUESTA (SOLO BACKEND)
-  const hasExistingResponse = !!existingResponse;
+  // 🎯 DETERMINAR SI EXISTE RESPUESTA (OPTIMISTA: BACKEND + LOCAL)
+  const hasExistingResponse = !!existingResponse || optimisticSavedQuestions.has(currentQuestionKey);
 
   // 🎯 LOG PARA DEBUG
   console.log('[ButtonSteps] 🔍 DETECCIÓN DE RESPUESTAS:', {
@@ -273,6 +290,12 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         setIsNavigating(false);
       }, 1000);
       return;
+    }
+
+    // 🎯 UI OPTIMISTA: MARCAR INMEDIATAMENTE COMO GUARDADO PARA CAMBIAR BOTÓN
+    // Usar existingResponse del backend solamente, NO el estado optimista
+    if (!existingResponse) {
+      setOptimisticSavedQuestions(prev => new Set(prev).add(currentQuestionKey));
     }
 
     // 🎯 VERIFICAR DESCALIFICACIÓN PARA DEMOGRAPHICS
@@ -483,6 +506,12 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     } catch (error) {
       console.error('Error en la operación:', error);
       setIsSaving(false);
+      // 🎯 REVERTIR ESTADO OPTIMISTA EN CASO DE ERROR GENERAL
+      setOptimisticSavedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(currentQuestionKey);
+        return newSet;
+      });
     }
   };
 

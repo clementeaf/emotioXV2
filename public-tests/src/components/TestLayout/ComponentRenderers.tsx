@@ -300,6 +300,17 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   ),
 
   cognitive_navigation_flow: ({ contentConfiguration, currentQuestionKey }) => {
+    // 🎯 AGREGAR URLs A LAS IMÁGENES (IGUAL QUE EN PREFERENCE TEST)
+    const filesWithUrls = Array.isArray(contentConfiguration?.files)
+      ? contentConfiguration.files.map((file: any) => ({
+        ...file,
+        url: file.url || file.fileUrl || `https://emotioxv2-uploads-dev.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`,
+        fileUrl: file.fileUrl || file.url || `https://emotioxv2-uploads-dev.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`
+      }))
+      : [];
+
+    console.log('🎯 NavigationFlow files with URLs:', filesWithUrls);
+
     return (
       <NavigationFlowTask
         stepConfig={{
@@ -307,7 +318,7 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
           type: 'cognitive_navigation_flow',
           title: String(contentConfiguration?.title || 'Flujo de Navegación'),
           description: String(contentConfiguration?.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?'),
-          files: Array.isArray(contentConfiguration?.files) ? contentConfiguration.files : []
+          files: filesWithUrls
         }}
         currentQuestionKey={currentQuestionKey}
       />
@@ -320,8 +331,8 @@ export const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     const filesWithUrls = Array.isArray(contentConfiguration?.files)
       ? contentConfiguration.files.map((file: any) => ({
         ...file,
-        url: file.url || file.fileUrl || `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`,
-        fileUrl: file.fileUrl || file.url || `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`
+        url: file.url || file.fileUrl || `https://emotioxv2-uploads-dev.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`,
+        fileUrl: file.fileUrl || file.url || `https://emotioxv2-uploads-dev.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`
       }))
       : [];
 

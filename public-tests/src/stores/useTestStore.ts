@@ -215,7 +215,7 @@ export const useTestStore = create<TestState>()(
     }),
     {
       name: 'test-store',
-      partialize: (state) => ({
+      partialize: (state: TestState) => ({
         researchId: state.researchId,
         participantId: state.participantId,
         participantName: state.participantName,
@@ -223,45 +223,6 @@ export const useTestStore = create<TestState>()(
         responses: state.responses,
         sessionStartTime: state.sessionStartTime,
       }),
-      // 🎯 GENERAR CLAVE ÚNICA POR PARTICIPANTE PARA EVITAR ESTADOS COMPARTIDOS
-      storage: {
-        getItem: (key: string) => {
-          const existingData = localStorage.getItem(key);
-          if (!existingData) return null;
-          
-          try {
-            const parsed = JSON.parse(existingData);
-            const participantId = parsed.state?.participantId || 'unknown';
-            const uniqueKey = `${key}_${participantId}`;
-            return localStorage.getItem(uniqueKey);
-          } catch {
-            return existingData;
-          }
-        },
-        setItem: (key: string, value: string) => {
-          try {
-            const parsed = JSON.parse(value);
-            const participantId = parsed.state?.participantId || 'unknown';
-            const uniqueKey = `${key}_${participantId}`;
-            localStorage.setItem(uniqueKey, value);
-          } catch {
-            localStorage.setItem(key, value);
-          }
-        },
-        removeItem: (key: string) => {
-          const existingData = localStorage.getItem(key);
-          if (!existingData) return;
-          
-          try {
-            const parsed = JSON.parse(existingData);
-            const participantId = parsed.state?.participantId || 'unknown';
-            const uniqueKey = `${key}_${participantId}`;
-            localStorage.removeItem(uniqueKey);
-          } catch {
-            localStorage.removeItem(key);
-          }
-        },
-      },
     }
   )
 );

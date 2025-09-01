@@ -9,7 +9,6 @@ import {
 import {
   AvailableFormsResponse,
   CreateModuleResponseDto,
-  ModuleResponse,
   ParticipantResponsesDocument,
   UpdateModuleResponseDto,
 } from '../lib/types';
@@ -83,9 +82,9 @@ export function useModuleResponsesQuery(researchId: string, participantId: strin
   });
 }
 
-export function useSaveModuleResponseMutation(options?: UseMutationOptions<ModuleResponse, Error, CreateModuleResponseDto>) {
+export function useSaveModuleResponseMutation(options?: UseMutationOptions<ParticipantResponsesDocument, Error, CreateModuleResponseDto>) {
   const queryClient = useQueryClient();
-  return useMutation<ModuleResponse, Error, CreateModuleResponseDto>({
+  return useMutation<ParticipantResponsesDocument, Error, CreateModuleResponseDto>({
     mutationFn: (data) => saveModuleResponse(data),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
@@ -103,9 +102,9 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Modul
   });
 }
 
-export function useUpdateModuleResponseMutation(options?: UseMutationOptions<ModuleResponse, Error, { responseId: string; data: UpdateModuleResponseDto }>) {
+export function useUpdateModuleResponseMutation(options?: UseMutationOptions<ParticipantResponsesDocument, Error, { responseId: string; data: UpdateModuleResponseDto }>) {
   const queryClient = useQueryClient();
-  return useMutation<ModuleResponse, Error, { responseId: string; data: UpdateModuleResponseDto }>({
+  return useMutation<ParticipantResponsesDocument, Error, { responseId: string; data: UpdateModuleResponseDto }>({
     mutationFn: ({ responseId, data }) => updateModuleResponse(responseId, data),
     onSuccess: (data, variables) => {
       // Invalidar queries relacionadas con las respuestas del módulo
