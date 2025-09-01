@@ -1,10 +1,11 @@
 /**
- * Hook API Simple para EmotioXV2
+ * Hook API Simple migrado a AlovaJS
  * Versión simplificada que evita problemas de tipos TypeScript
  */
 
 import { useCallback, useState } from 'react';
-import { API_BASE_URL } from '../config/api';
+import { useFetcher } from 'alova/client';
+import { alovaInstance } from '../config/alova.config';
 import { useAuth } from './useAuth';
 
 interface ApiResponse<T> {
@@ -51,40 +52,47 @@ interface S3UploadData {
 }
 
 /**
- * Hook simple para llamadas a la API
- * Usa fetch directamente para evitar problemas de tipos
+ * Hook simple para llamadas a la API usando AlovaJS
+ * Mantiene la misma interfaz que useApiSimple pero usa Alova internamente
  */
 export function useApiSimple() {
   const [loading, setLoading] = useState(false);
   const { token } = useAuth();
+  const { fetch } = useFetcher();
 
   const makeRequest = useCallback(
     async <T>(
       url: string,
-      options: RequestInit = {}
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+      data?: any
     ): Promise<ApiResponse<T>> => {
       setLoading(true);
 
       try {
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...options.headers,
-        };
-
-        const response = await fetch(`${API_BASE_URL}${url}`, {
-          ...options,
-          headers,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        let alovaMethod;
+        
+        // Crear el método de Alova apropiado
+        switch (method.toUpperCase()) {
+          case 'GET':
+            alovaMethod = alovaInstance.Get<T>(url);
+            break;
+          case 'POST':
+            alovaMethod = alovaInstance.Post<T>(url, data);
+            break;
+          case 'PUT':
+            alovaMethod = alovaInstance.Put<T>(url, data);
+            break;
+          case 'DELETE':
+            alovaMethod = alovaInstance.Delete<T>(url);
+            break;
+          default:
+            throw new Error(`Método HTTP no soportado: ${method}`);
         }
 
-        const data = await response.json();
-        return { data, error: null, loading: false };
+        // Ejecutar la petición usando el fetcher de Alova
+        const result = await fetch(alovaMethod);
+        
+        return { data: result, error: null, loading: false };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         return {
@@ -96,30 +104,16 @@ export function useApiSimple() {
         setLoading(false);
       }
     },
-    [token]
+    [fetch, token]
   );
 
   // Métodos HTTP simplificados
   const api = {
-    // GET
-    get: <T>(url: string) => makeRequest<T>(url, { method: 'GET' }),
-
-    // POST
-    post: <T>(url: string, data?: unknown) =>
-      makeRequest<T>(url, {
-        method: 'POST',
-        body: data ? JSON.stringify(data) : undefined
-      }),
-
-    // PUT
-    put: <T>(url: string, data?: unknown) =>
-      makeRequest<T>(url, {
-        method: 'PUT',
-        body: data ? JSON.stringify(data) : undefined
-      }),
-
-    // DELETE
-    delete: <T>(url: string) => makeRequest<T>(url, { method: 'DELETE' }),
+    // Métodos básicos
+    get: <T>(url: string) => makeRequest<T>(url, 'GET'),
+    post: <T>(url: string, data?: unknown) => makeRequest<T>(url, 'POST', data),
+    put: <T>(url: string, data?: unknown) => makeRequest<T>(url, 'PUT', data),
+    delete: <T>(url: string) => makeRequest<T>(url, 'DELETE'),
 
     // Endpoints específicos
     auth: {
@@ -235,15 +229,59 @@ export function useApiSimple() {
     },
 
     s3: {
-      upload: (data: S3UploadData) => api.post('/s3/upload', data),
+      upload: (data: S3UploadData) => {
+        // Para FormData, Alova manejará automáticamente los headers
+        if (data.file instanceof File) {
+          const formData = new FormData();
+          formData.append('file', data.file);
+          if (data.key) {
+            formData.append('key', data.key as string);
+          }
+          return api.post('/s3/upload', formData);
+        }
+        return api.post('/s3/upload', data);
+      },
       download: (key: string) => api.get(`/s3/download?key=${encodeURIComponent(key)}`),
       deleteObject: (key: string) => api.delete(`/s3/delete-object?key=${key}`),
     },
   };
 
+  // Funciones adicionales de Alova
+  const utils = {
+    // Invalidar caché
+    invalidateCache: (pattern?: string | RegExp) => {
+      if (pattern) {
+        alovaInstance.snapshots.match(pattern).forEach(method => method.abort());
+      } else {
+        alovaInstance.snapshots.match(/.*/g).forEach(method => method.abort());
+      }
+    },
+    
+    // Obtener datos del caché sin hacer petición
+    getCachedData: <T>(url: string): T | null => {
+      try {
+        // Usar el URL como filtro en lugar del objeto method
+        const matchedMethods = alovaInstance.snapshots.match(new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+        return matchedMethods.length > 0 ? (matchedMethods[0] as any).data : null;
+      } catch {
+        return null;
+      }
+    },
+    
+    // Pre-cargar datos en caché
+    prefetch: async <T>(url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any) => {
+      try {
+        await makeRequest<T>(url, method, data);
+      } catch (error) {
+        console.warn('Error prefetching data:', error);
+      }
+    }
+  };
+
   return {
     loading,
     api,
+    utils,
   };
 }
 

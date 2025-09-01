@@ -496,3 +496,166 @@ export function validateApiConfiguration(): boolean {
 if (typeof window !== 'undefined') {
   validateApiConfiguration();
 }
+import { alovaInstance } from './alova.config';
+
+/**
+ * Cliente API usando AlovaJS
+ */
+export class AlovaApiClient {
+  /**
+   * Construye una URL completa reemplazando parámetros
+   */
+  private buildUrl(endpoint: string, params?: Record<string, string>): string {
+    let url = endpoint;
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url = url.replace(`{${key}}`, value);
+      });
+    }
+    
+    if (/\{[^\/]+\}/.test(url)) {
+      throw new Error(`Parámetros no reemplazados en URL: ${url}`);
+    }
+    
+    return url;
+  }
+
+  /**
+   * Obtiene el endpoint completo
+   */
+  getEndpoint(
+    category: string,
+    operation: string,
+    params?: Record<string, string>
+  ): string {
+    const categoryEndpoints = (API_ENDPOINTS as any)[category];
+    if (!categoryEndpoints) {
+      throw new Error(`Categoría de API no encontrada: ${category}`);
+    }
+
+    const endpoint = categoryEndpoints[operation] as string;
+    if (!endpoint) {
+      throw new Error(`Operación '${operation}' no encontrada en categoría '${category}'`);
+    }
+
+    return this.buildUrl(endpoint, params);
+  }
+
+  /**
+   * Realiza una petición GET usando Alova
+   */
+  async get<T = any>(
+    category: string,
+    operation: string,
+    params?: Record<string, string>,
+    queryParams?: Record<string, string>
+  ): Promise<T> {
+    const url = this.getEndpoint(category, operation, params);
+    const finalUrl = queryParams
+      ? `${url}?${new URLSearchParams(queryParams)}`
+      : url;
+    
+    const method = alovaInstance.Get<T>(finalUrl, {
+      cacheFor: 300000, // 5 minutos de caché
+    });
+    
+    return method.send();
+  }
+  
+  /**
+   * Realiza una petición POST usando Alova
+   */
+  async post<T = any>(
+    category: string,
+    operation: string,
+    data?: any,
+    params?: Record<string, string>
+  ): Promise<T> {
+    const url = this.getEndpoint(category, operation, params);
+    
+    const method = alovaInstance.Post<T>(url, data, {
+      cacheFor: 0, // No cachear POST
+    });
+    
+    return method.send();
+  }
+  
+  /**
+   * Realiza una petición PUT usando Alova
+   */
+  async put<T = any>(
+    category: string,
+    operation: string,
+    data?: any,
+    params?: Record<string, string>
+  ): Promise<T> {
+    const url = this.getEndpoint(category, operation, params);
+    
+    const method = alovaInstance.Put<T>(url, data, {
+      cacheFor: 0, // No cachear PUT
+    });
+    
+    return method.send();
+  }
+  
+  /**
+   * Realiza una petición DELETE usando Alova
+   */
+  async delete<T = any>(
+    category: string,
+    operation: string,
+    params?: Record<string, string>
+  ): Promise<T> {
+    const url = this.getEndpoint(category, operation, params);
+    
+    const method = alovaInstance.Delete<T>(url, undefined, {
+      cacheFor: 0, // No cachear DELETE
+    });
+    
+    return method.send();
+  }
+  
+  /**
+   * Establece el token de autenticación
+   */
+  setAuthToken(token: string): void {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', token);
+    }
+  }
+  
+  /**
+   * Limpia el token de autenticación
+   */
+  clearAuthToken(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+  }
+}
+
+/**
+ * Instancia global del cliente API con Alova
+ */
+export const alovaApiClient = new AlovaApiClient();
+
+/**
+ * Función helper para invalidar caché de endpoints específicos
+ */
+export const invalidateApiCache = (category?: string, operation?: string) => {
+  if (category && operation) {
+    const endpoints = (API_ENDPOINTS as any)[category];
+    if (endpoints && endpoints[operation]) {
+      const endpoint = endpoints[operation];
+      alovaInstance.snapshots.match(new RegExp(endpoint.replace(/\{[^}]+\}/g, '.*'))).forEach(method => {
+        method.abort();
+      });
+    }
+  } else {
+    // Invalidar todo el caché si no se especifica endpoint
+    alovaInstance.snapshots.match(/.*/g).forEach(method => {
+      method.abort();
+    });
+  }
+};

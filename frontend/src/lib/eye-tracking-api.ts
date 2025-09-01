@@ -1,137 +1,81 @@
-import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
+/**
+ * Eye Tracking API migrada a AlovaJS
+ * Simplifica el código usando las capacidades de Alova
+ */
 
-const getToken = () => {
-  if (typeof window !== 'undefined') {
-    const storageType = localStorage.getItem('auth_storage_type') || 'local';
+import { useRequest, useFetcher } from 'alova/client';
+import { alovaInstance } from '../config/alova.config';
 
-    // Obtener token del almacenamiento correspondiente
-    const token = storageType === 'local'
-      ? localStorage.getItem('token') || ''
-      : sessionStorage.getItem('token') || '';
+// Tipos para Eye Tracking
+interface EyeTrackingConfig {
+  id?: string;
+  researchId: string;
+  [key: string]: unknown;
+}
 
-    return token;
-  }
-  return '';
+interface EyeTrackingResponse {
+  success: boolean;
+  data: EyeTrackingConfig;
+  message?: string;
+}
+
+/**
+ * Hook para obtener configuración de Eye Tracking por research
+ */
+export const useEyeTrackingByResearch = (researchId: string | null) => {
+  return useRequest(
+    alovaInstance.Get<EyeTrackingResponse>(`/research/${researchId || 'null'}/eye-tracking`),
+    {
+      initialData: undefined,
+      immediate: !!researchId,
+    }
+  );
 };
 
 /**
- * Manejador de respuesta personalizado para EyeTracking
- * @param response Respuesta fetch
- * @returns Datos procesados o error
+ * Hook para observar cambios en Eye Tracking en tiempo real
  */
-const handleEyeTrackingResponse = async (response: Response) => {
-
-  // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
-  // Intentar obtener el cuerpo como JSON
-  try {
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || data.error || `Error ${response.status}: ${response.statusText}`);
+export const useWatchEyeTracking = (researchId: string | null) => {
+  const { data, loading, error } = useRequest(
+    alovaInstance.Get<EyeTrackingResponse>(`/research/${researchId || 'null'}/eye-tracking`),
+    {
+      initialData: undefined,
+      immediate: !!researchId,
+      // Refresco automático cada 30 segundos para datos en tiempo real
+      pollingTime: 30000,
     }
-    return data;
-  } catch (error) {
-    // Si no es JSON o hay otro error
-    const text = await response.text().catch(() => 'No se pudo obtener el cuerpo de la respuesta');
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${text}`);
-    }
-    return text;
-  }
-};
-
-// Preparar los encabezados con el token de autenticación
-const getAuthHeaders = () => {
-  const token = getToken();
-  // Log del token parcial para depuración (seguridad)
-  const tokenSummary = token
-    ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
-    : 'no hay token';
-
+  );
 
   return {
-    'Content-Type': 'application/json',
-    'Authorization': token ? `Bearer ${token}` : ''
+    eyeTracking: data?.data || null,
+    loading,
+    error: error as Error | null,
   };
 };
 
 /**
- * API mejorada para EyeTracking
- * Utiliza endpoints actualizados y manejo de errores mejorado
+ * API estática para Eye Tracking usando AlovaJS
  */
-export const eyeTrackingFixedAPI = {
+export const eyeTrackingAPI = {
   /**
-   * Obtiene un EyeTracking por su ID
-   * @param id ID del EyeTracking
-   * @returns Objeto con método send
-   */
-  getById: (id: string) => {
-    if (!id) {
-      throw new Error('Se requiere un ID para obtener el EyeTracking');
-    }
-
-    const url = API_ENDPOINTS.eyeTracking?.getByResearch?.replace('{id}', id) || `/eye-tracking/${id}`;
-
-    return {
-      send: async () => {
-        const headers = getAuthHeaders();
-        const response = await fetch(`${API_BASE_URL}${url}`, {
-          method: 'GET',
-          headers
-        });
-
-        return handleEyeTrackingResponse(response);
-      }
-    };
-  },
-
-  /**
-   * Obtiene la configuración de EyeTracking actual
-   * @param researchId ID de la investigación
-   * @returns Objeto con método send
+   * Obtiene configuración por research ID
    */
   getByResearchId: (researchId: string) => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para obtener la configuración de EyeTracking');
     }
 
-    const url = API_ENDPOINTS.eyeTracking?.getByResearch?.replace('{researchId}', researchId) || `/eye-tracking/research/${researchId}`;
-
-
     return {
-      send: async () => {
+      send: async (): Promise<EyeTrackingResponse | null> => {
         try {
-          const headers = getAuthHeaders();
-          const response = await fetch(`${API_BASE_URL}${url}`, {
-            method: 'GET',
-            headers
-          });
-
-          if (!response.ok) {
-
-            // Si no hay datos simplemente devolvemos objeto vacío
-            if (response.status === 404) {
-              throw { statusCode: 404, message: 'No se encontró configuración de EyeTracking' };
-            }
-
-            const errorText = await response.text();
-
-            let error;
-            try {
-              error = JSON.parse(errorText);
-            } catch (e) {
-              error = { message: errorText };
-            }
-
-            throw {
-              statusCode: response.status,
-              message: error.message || 'Error desconocido',
-              data: error
-            };
-          }
-
-          const data = await response.json();
-          return data;
+          const method = alovaInstance.Get<EyeTrackingResponse>(`/research/${researchId}/eye-tracking`);
+          const response = await method.send();
+          return response;
         } catch (error) {
+          // Si es 404, devolver null (no hay configuración)
+          if ((error as any)?.statusCode === 404 || (error as any)?.status === 404) {
+            return null;
+          }
           throw error;
         }
       }
@@ -139,398 +83,337 @@ export const eyeTrackingFixedAPI = {
   },
 
   /**
-   * Crea un nuevo EyeTracking
-   * @param data Datos del EyeTracking
-   * @returns Objeto con método send
+   * Crea nueva configuración
    */
-  create: (data: any) => {
+  create: (data: EyeTrackingConfig) => {
     if (!data || !data.researchId) {
       throw new Error('Se requieren datos y un ID de investigación para crear el EyeTracking');
     }
 
-    const url = API_ENDPOINTS.eyeTracking?.create || '/eye-tracking';
-
     return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          const response = await fetch(`${API_BASE_URL}${url}`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              ...data,
-              researchId: data.researchId.trim()
-            })
-          });
-
-          // Verificar si la respuesta es exitosa
-          if (!response.ok) {
-            // Intentar obtener el mensaje de error
-            let errorMessage = '';
-            try {
-              const errorData = await response.json();
-              errorMessage = errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`;
-            } catch (e) {
-              errorMessage = `Error ${response.status}: ${response.statusText}`;
-            }
-
-            // Clasificar y manejar los errores
-            if (response.status === 404) {
-              // URL inexistente - mostrar error
-              throw new Error(`La URL de la API no existe: ${errorMessage}`);
-            } else if (response.status === 400 || response.status === 422) {
-              // Datos incompatibles - mostrar error
-              throw new Error(`Datos incompatibles: ${errorMessage}`);
-            } else {
-              // Otros errores - registrar pero no mostrar detalles al usuario
-              throw new Error('No se pudo crear el EyeTracking. Por favor, inténtelo de nuevo.');
-            }
-          }
-
-          // Procesar respuesta exitosa
-          return handleEyeTrackingResponse(response);
-        } catch (error) {
-          throw error;
-        }
+      send: async (): Promise<EyeTrackingResponse> => {
+        const method = alovaInstance.Post<EyeTrackingResponse>(
+          `/research/${data.researchId}/eye-tracking`,
+          data
+        );
+        const response = await method.send();
+        
+        // Invalidar caché relacionado
+        alovaInstance.snapshots.match(`/research/${data.researchId}/eye-tracking`).forEach(m => m.abort());
+        
+        return response;
       }
     };
   },
 
   /**
-   * Actualiza un EyeTracking existente
-   * @param id ID del EyeTracking
-   * @param data Datos actualizados
-   * @returns Objeto con método send
+   * Actualiza configuración existente
    */
-  update: (id: string, data: any) => {
-    if (!id) {
-      throw new Error('Se requiere un ID para actualizar el EyeTracking');
+  update: (researchId: string, data: Partial<EyeTrackingConfig>) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para actualizar el EyeTracking');
     }
 
     if (!data) {
       throw new Error('Se requieren datos para actualizar el EyeTracking');
     }
 
-    const url = (API_ENDPOINTS.eyeTracking?.update || '/eye-tracking/{id}').replace('{id}', id);
-
     return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          const response = await fetch(`${API_BASE_URL}${url}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify(data)
-          });
-
-          // Verificar si la respuesta es exitosa
-          if (!response.ok) {
-            // Intentar obtener el mensaje de error
-            let errorMessage = '';
-            try {
-              const errorData = await response.json();
-              errorMessage = errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`;
-            } catch (e) {
-              errorMessage = `Error ${response.status}: ${response.statusText}`;
-            }
-
-            // Clasificar y manejar los errores
-            if (response.status === 404) {
-              // URL inexistente o recurso no encontrado - mostrar error
-              throw new Error(`No se encontró el EyeTracking con ID ${id}: ${errorMessage}`);
-            } else if (response.status === 400 || response.status === 422) {
-              // Datos incompatibles - mostrar error
-              throw new Error(`Datos incompatibles: ${errorMessage}`);
-            } else {
-              // Otros errores - registrar pero no mostrar detalles al usuario
-              throw new Error('No se pudo actualizar el EyeTracking. Por favor, inténtelo de nuevo.');
-            }
-          }
-
-          // Procesar respuesta exitosa
-          return handleEyeTrackingResponse(response);
-        } catch (error) {
-          throw error;
-        }
+      send: async (): Promise<EyeTrackingResponse> => {
+        const method = alovaInstance.Put<EyeTrackingResponse>(
+          `/research/${researchId}/eye-tracking`,
+          data
+        );
+        const response = await method.send();
+        
+        // Invalidar caché relacionado
+        alovaInstance.snapshots.match(`/research/${researchId}/eye-tracking`).forEach(m => m.abort());
+        
+        return response;
       }
     };
   },
 
   /**
-   * Elimina la configuración de EyeTracking por researchId
-   * @param researchId ID de la investigación
-   * @returns Objeto con método send
+   * Elimina configuración
    */
   delete: (researchId: string) => {
     if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para eliminar la configuración de EyeTracking');
+      throw new Error('Se requiere un ID de investigación para eliminar el EyeTracking');
     }
-    const url = API_ENDPOINTS.eyeTracking?.delete?.replace('{researchId}', researchId) || `/research/${researchId}/eye-tracking`;
+
     return {
-      send: async () => {
-        const headers = getAuthHeaders();
-        const response = await fetch(`${API_BASE_URL}${url}`, {
-          method: 'DELETE',
-          headers
-        });
-        if (!response.ok && response.status !== 204) {
-          throw new Error(`Error al eliminar configuración: ${response.statusText}`);
-        }
-        return;
+      send: async (): Promise<{ success: boolean; message: string }> => {
+        const method = alovaInstance.Delete<{ success: boolean; message: string }>(
+          `/research/${researchId}/eye-tracking`
+        );
+        const response = await method.send();
+        
+        // Limpiar caché relacionado
+        alovaInstance.snapshots.match(`/research/${researchId}/eye-tracking`).forEach(m => m.abort());
+        
+        return response;
       }
     };
   },
-
-  /**
-   * Obtiene la configuración de reclutamiento para EyeTracking
-   * @param researchId ID de la investigación
-   * @returns Objeto con método send
-   */
-  getRecruitConfig: (researchId: string) => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para obtener la configuración de reclutamiento');
-    }
-
-    // Usar el controlador de eye-tracking normal
-    const url = `/research/${researchId}/eye-tracking`;
-
-    return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          const response = await fetch(`${API_BASE_URL}${url}`, {
-            method: 'GET',
-            headers
-          });
-
-          if (!response.ok) {
-
-            // Si no hay datos simplemente devolvemos null
-            if (response.status === 404) {
-              return null;
-            }
-
-            // Manejar caso donde no hay contenido (204)
-            if (response.status === 204) {
-              return null;
-            }
-
-            const errorText = await response.text();
-
-            let error;
-            try {
-              error = JSON.parse(errorText);
-            } catch (e) {
-              error = { message: errorText };
-            }
-
-            throw {
-              statusCode: response.status,
-              message: error.message || 'Error desconocido',
-              data: error
-            };
-          }
-
-          // Manejar caso donde la respuesta está vacía
-          if (response.headers.get('content-length') === '0') {
-            return null;
-          }
-
-          // Intentar parsear la respuesta JSON
-          try {
-            const data = await response.json();
-            return data; // Devolvemos directamente los datos, sin envolverlos en un objeto config
-          } catch (e) {
-            return null;
-          }
-        } catch (error) {
-          throw error;
-        }
-      }
-    };
-  },
-
-  /**
-   * Guarda la configuración de reclutamiento para EyeTracking
-   * @param data Datos de la configuración de reclutamiento
-   * @returns Objeto con método send
-   */
-  saveRecruitConfig: (data: any) => {
-    if (!data || !data.researchId) {
-      throw new Error('Se requieren datos y un ID de investigación para guardar la configuración de reclutamiento');
-    }
-
-    // Usar el controlador de eye-tracking normal
-    const url = `/research/${data.researchId}/eye-tracking`;
-
-    return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          const response = await fetch(`${API_BASE_URL}${url}`, {
-            method: 'PUT', // Cambiamos a PUT siguiendo el patrón de otros endpoints
-            headers,
-            body: JSON.stringify(data)
-          });
-
-          if (!response.ok) {
-            // Intentar obtener mensaje de error
-            let errorMessage = '';
-
-            // Manejar caso específico de 404
-            if (response.status === 404) {
-              errorMessage = `Ruta no encontrada: ${url}`;
-              throw new Error(errorMessage);
-            }
-
-            // Manejar caso de 204 No Content (aunque es técnicamente un éxito)
-            if (response.status === 204) {
-              return { success: true };
-            }
-
-            // Para otros errores, intentar obtener detalles
-            try {
-              const errorData = await response.json();
-              errorMessage = errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`;
-            } catch (e) {
-              errorMessage = `Error ${response.status}: ${response.statusText}`;
-            }
-
-            throw new Error(`No se pudo guardar la configuración: ${errorMessage}`);
-          }
-
-          // Manejar respuesta exitosa pero vacía
-          if (response.headers.get('content-length') === '0') {
-            return { success: true };
-          }
-
-          // Intentar procesar respuesta JSON
-          try {
-            const result = await response.json();
-            return result;
-          } catch (e) {
-            // Si no hay JSON pero la respuesta fue exitosa
-            return { success: true };
-          }
-        } catch (error) {
-          throw error;
-        }
-      }
-    };
-  }
 };
 
+/**
+ * Hook para mutaciones de Eye Tracking (crear, actualizar, eliminar)
+ */
+export const useEyeTrackingMutations = (researchId: string | null) => {
+  const { fetch } = useFetcher();
+
+  const createConfig = async (data: EyeTrackingConfig) => {
+    if (!researchId) throw new Error('Research ID requerido');
+    
+    const response = await fetch(
+      alovaInstance.Post<EyeTrackingResponse>(`/research/${researchId}/eye-tracking`, {
+        ...data,
+        researchId
+      })
+    );
+    
+    // Invalidar caché
+    alovaInstance.snapshots.match(`/research/${researchId}/eye-tracking`).forEach(m => m.abort());
+    
+    return response;
+  };
+
+  const updateConfig = async (data: Partial<EyeTrackingConfig>) => {
+    if (!researchId) throw new Error('Research ID requerido');
+    
+    const response = await fetch(
+      alovaInstance.Put<EyeTrackingResponse>(`/research/${researchId}/eye-tracking`, data)
+    );
+    
+    // Invalidar caché
+    alovaInstance.snapshots.match(`/research/${researchId}/eye-tracking`).forEach(m => m.abort());
+    
+    return response;
+  };
+
+  const deleteConfig = async () => {
+    if (!researchId) throw new Error('Research ID requerido');
+    
+    const response = await fetch(
+      alovaInstance.Delete<{ success: boolean; message: string }>(
+        `/research/${researchId}/eye-tracking`
+      )
+    );
+    
+    // Limpiar caché
+    alovaInstance.snapshots.match(`/research/${researchId}/eye-tracking`).forEach(m => m.abort());
+    
+    return response;
+  };
+
+  return {
+    createConfig,
+    updateConfig,
+    deleteConfig,
+  };
+};
+
+/**
+ * Eye Tracking Recruit API - Funcionalidades de reclutamiento
+ */
 export const eyeTrackingRecruitAPI = {
-  async getConfigByResearchId(researchId: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.getConfigByResearch.replace('{researchId}', researchId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
-    if (!response.ok) return null;
-    return response.json();
+  /**
+   * Obtiene configuración de reclutamiento
+   */
+  getConfigByResearch: (researchId: string) => {
+    return {
+      send: async () => {
+        const method = alovaInstance.Get(`/eye-tracking-recruit/research/${researchId}/config`);
+        return method.send();
+      }
+    };
   },
-  async createConfig(researchId: string, data: any) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.createConfig.replace('{researchId}', researchId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers, body: JSON.stringify(data) });
-    if (!response.ok) throw new Error('Error al crear configuración');
-    return response.json();
+
+  /**
+   * Crea configuración de reclutamiento
+   */
+  createConfig: (researchId: string, data: any) => {
+    return {
+      send: async () => {
+        const method = alovaInstance.Post(
+          `/eye-tracking-recruit/research/${researchId}/config`,
+          data
+        );
+        const response = await method.send();
+        
+        // Invalidar caché relacionado
+        alovaInstance.snapshots.match(`/eye-tracking-recruit/research/${researchId}`).forEach(m => m.abort());
+        
+        return response;
+      }
+    };
   },
-  async updateConfig(researchId: string, data: any) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.updateConfig.replace('{researchId}', researchId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers, body: JSON.stringify(data) });
-    if (!response.ok) throw new Error('Error al actualizar configuración');
-    return response.json();
+
+  /**
+   * Actualiza configuración de reclutamiento
+   */
+  updateConfig: (researchId: string, data: any) => {
+    return {
+      send: async () => {
+        const method = alovaInstance.Put(
+          `/eye-tracking-recruit/research/${researchId}/config`,
+          data
+        );
+        const response = await method.send();
+        
+        // Invalidar caché relacionado
+        alovaInstance.snapshots.match(`/eye-tracking-recruit/research/${researchId}`).forEach(m => m.abort());
+        
+        return response;
+      }
+    };
   },
-  async completeConfig(researchId: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.updateConfig.replace('{researchId}', researchId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers, body: JSON.stringify({ status: 'completed' }) });
-    if (!response.ok) throw new Error('Error al completar configuración');
-    return response.json();
+
+  /**
+   * Genera link de reclutamiento
+   */
+  generateLink: (configId: string) => {
+    return {
+      send: async () => {
+        const method = alovaInstance.Post(
+          `/eye-tracking-recruit/config/${configId}/link`,
+          {}
+        );
+        return method.send();
+      }
+    };
   },
-  async deleteConfig(researchId: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.updateConfig.replace('{researchId}', researchId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'DELETE', headers });
-    if (!response.ok) throw new Error('Error al eliminar configuración');
-    return;
+
+  /**
+   * Obtiene participantes
+   */
+  getParticipants: (configId: string) => {
+    return {
+      send: async () => {
+        const method = alovaInstance.Get(
+          `/eye-tracking-recruit/config/${configId}/participants`
+        );
+        return method.send();
+      }
+    };
   },
-  async createParticipant(configId: string, data: any) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.createParticipant.replace('{configId}', configId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers, body: JSON.stringify(data) });
-    if (!response.ok) throw new Error('Error al crear participante');
-    return response.json();
+
+  /**
+   * Obtiene estadísticas
+   */
+  getStats: (configId: string) => {
+    return {
+      send: async () => {
+        const method = alovaInstance.Get(
+          `/eye-tracking-recruit/config/${configId}/stats`
+        );
+        return method.send();
+      }
+    };
   },
-  async updateParticipantStatus(participantId: string, status: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.updateParticipantStatus.replace('{participantId}', participantId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers, body: JSON.stringify({ status }) });
-    if (!response.ok) throw new Error('Error al actualizar estado del participante');
-    return response.json();
+
+  /**
+   * Obtiene links activos
+   */
+  getActiveLinks: (configId: string) => {
+    return {
+      send: async () => {
+        const method = alovaInstance.Get(
+          `/eye-tracking-recruit/config/${configId}/links`
+        );
+        return method.send();
+      }
+    };
   },
-  async getParticipantsByConfigId(configId: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.getParticipants.replace('{configId}', configId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Error al obtener participantes');
-    return response.json();
+
+  /**
+   * Desactiva un link
+   */
+  deactivateLink: (token: string) => {
+    return {
+      send: async () => {
+        const method = alovaInstance.Put(
+          `/eye-tracking-recruit/link/${token}/deactivate`,
+          {}
+        );
+        return method.send();
+      }
+    };
   },
-  async getStatsByConfigId(configId: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.getStats.replace('{configId}', configId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Error al obtener estadísticas');
-    return response.json();
-  },
-  async generateRecruitmentLink(configId: string, type: string, expirationDays?: number) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.generateLink.replace('{configId}', configId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers, body: JSON.stringify({ type, expirationDays }) });
-    if (!response.ok) throw new Error('Error al generar enlace de reclutamiento');
-    return response.json();
-  },
-  async getActiveLinks(configId: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.getActiveLinks.replace('{configId}', configId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Error al obtener enlaces activos');
-    return response.json();
-  },
-  async deactivateLink(token: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.deactivateLink.replace('{token}', token);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers });
-    if (!response.ok) throw new Error('Error al desactivar enlace');
-    return response.json();
-  },
-  async validateRecruitmentLink(token: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.validateLink.replace('{token}', token);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Error al validar enlace');
-    return response.json();
-  },
-  async getResearchSummary(researchId: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.getResearchSummary.replace('{researchId}', researchId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Error al obtener resumen de investigación');
-    return response.json();
-  },
-  async registerPublicParticipant(data: any) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.registerPublicParticipant;
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers, body: JSON.stringify(data) });
-    if (!response.ok) throw new Error('Error al registrar participante público');
-    return response.json();
-  },
-  async updatePublicParticipantStatus(participantId: string, status: string) {
-    const url = API_ENDPOINTS.eyeTrackingRecruit.updatePublicParticipantStatus.replace('{participantId}', participantId);
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers, body: JSON.stringify({ status }) });
-    if (!response.ok) throw new Error('Error al actualizar estado del participante público');
-    return response.json();
-  }
 };
+
+/**
+ * Hook para reclutamiento de Eye Tracking
+ */
+export const useEyeTrackingRecruit = (researchId: string | null) => {
+  // Configuración de reclutamiento
+  const configQuery = useRequest(
+    alovaInstance.Get(`/eye-tracking-recruit/research/${researchId || 'null'}/config`),
+    {
+      initialData: undefined,
+      immediate: !!researchId,
+    }
+  );
+
+  const { fetch } = useFetcher();
+
+  // Mutaciones para reclutamiento
+  const mutations = {
+    createConfig: async (data: any) => {
+      if (!researchId) throw new Error('Research ID requerido');
+      
+      const response = await fetch(
+        alovaInstance.Post(`/eye-tracking-recruit/research/${researchId}/config`, data)
+      );
+      
+      // Refrescar configuración
+      configQuery.send();
+      
+      return response;
+    },
+
+    updateConfig: async (data: any) => {
+      if (!researchId) throw new Error('Research ID requerido');
+      
+      const response = await fetch(
+        alovaInstance.Put(`/eye-tracking-recruit/research/${researchId}/config`, data)
+      );
+      
+      // Refrescar configuración
+      configQuery.send();
+      
+      return response;
+    },
+
+    generateLink: async (configId: string) => {
+      const response = await fetch(
+        alovaInstance.Post(`/eye-tracking-recruit/config/${configId}/link`, {})
+      );
+      
+      return response;
+    },
+
+    deactivateLink: async (token: string) => {
+      const response = await fetch(
+        alovaInstance.Put(`/eye-tracking-recruit/link/${token}/deactivate`, {})
+      );
+      
+      return response;
+    },
+  };
+
+  return {
+    config: configQuery.data,
+    loading: configQuery.loading,
+    error: configQuery.error,
+    refetchConfig: configQuery.send,
+    ...mutations,
+  };
+};
+
+// Mantener compatibilidad con el API anterior
+export const eyeTrackingFixedAPI = eyeTrackingAPI;
+
+export default eyeTrackingAPI;

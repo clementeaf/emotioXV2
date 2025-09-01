@@ -1,7 +1,12 @@
+/**
+ * Hook useApi migrado a AlovaJS
+ * Mantiene la misma interfaz pero usa Alova internamente
+ */
+
 import { useCallback, useState } from 'react';
-
+import { useFetcher } from 'alova/client';
+import { alovaInstance } from '../config/alova.config';
 import { API_ENDPOINTS } from '../config/api';
-
 import { useAuth } from './useAuth';
 
 interface ApiResponse<T> {
@@ -18,6 +23,16 @@ interface UseApiOptions {
 export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
   const [loading, setLoading] = useState(false);
   const { token } = useAuth();
+  const { fetch } = useFetcher();
+
+  // Helper para construir URLs con parámetros
+  const buildUrl = useCallback((url: string, params: Record<string, string> = {}) => {
+    let finalUrl = url;
+    Object.entries(params).forEach(([key, value]) => {
+      finalUrl = finalUrl.replace(`{${key}}`, value);
+    });
+    return finalUrl;
+  }, []);
 
   const fetchApi = useCallback(
     async (
@@ -29,46 +44,49 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
       setLoading(true);
 
       try {
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...options.headers,
-        };
-
-        // Para solicitudes a través del proxy local, no necesitamos mode: 'cors'
-        // Para solicitudes directas a AWS, necesitamos mode: 'cors'
-        const isProxyUrl = url.startsWith('/');
-
-        const fetchOptions: RequestInit = {
-          method,
-          headers,
-          // Importante: No enviar credenciales para evitar problemas de CORS
-          credentials: 'omit',
-          ...(body ? { body: JSON.stringify(body) } : {}),
-          mode: 'cors',
-        };
-
-
-        const response = await fetch(url, fetchOptions);
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        let alovaMethod;
+        
+        // Crear el método de Alova apropiado
+        switch (method.toUpperCase()) {
+          case 'GET':
+            alovaMethod = alovaInstance.Get<T>(url);
+            break;
+          case 'POST':
+            alovaMethod = alovaInstance.Post<T>(url, body);
+            break;
+          case 'PUT':
+            alovaMethod = alovaInstance.Put<T>(url, body);
+            break;
+          case 'DELETE':
+            alovaMethod = alovaInstance.Delete<T>(url);
+            break;
+          default:
+            throw new Error(`Método HTTP no soportado: ${method}`);
         }
 
-        const data = await response.json();
+        // Agregar headers personalizados si existen
+        if (options.headers) {
+          alovaMethod.config.headers = {
+            ...alovaMethod.config.headers,
+            ...options.headers
+          };
+        }
+
+        // Ejecutar la petición
+        const data = await fetch(alovaMethod);
+        
         return { data, error: null, loading: false };
       } catch (error) {
         return {
           data: null,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : 'Error desconocido',
           loading: false,
         };
       } finally {
         setLoading(false);
       }
     },
-    [token]
+    [fetch, token]
   );
 
   const get = useCallback(
@@ -93,6 +111,7 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
     [fetchApi]
   );
 
+  // API endpoints organizados (mantiene compatibilidad con useApi original)
   const api = {
     // Autenticación
     auth: {
@@ -104,32 +123,104 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
     // Investigaciones
     research: {
       create: (data: any) => post(API_ENDPOINTS.research.create, data),
-      getById: (id: string) => get(API_ENDPOINTS.research.getById.replace('{id}', id)),
+      getById: (id: string) => get(buildUrl(API_ENDPOINTS.research.getById, { id })),
       getAll: () => get(API_ENDPOINTS.research.getAll),
-      update: (id: string, data: any) => put(API_ENDPOINTS.research.update.replace('{id}', id), data),
-      delete: (id: string) => del(API_ENDPOINTS.research.delete.replace('{id}', id)),
-      updateStatus: (id: string, status: string) => put(API_ENDPOINTS.research.updateStatus.replace('{id}', id), { status }),
-      updateStage: (id: string, stage: string) => put(API_ENDPOINTS.research.updateStage.replace('{id}', id), { stage }),
+      update: (id: string, data: any) => put(buildUrl(API_ENDPOINTS.research.update, { id }), data),
+      delete: (id: string) => del(buildUrl(API_ENDPOINTS.research.delete, { id })),
+      updateStatus: (id: string, status: string) => 
+        put(buildUrl(API_ENDPOINTS.research.updateStatus, { id }), { status }),
+      updateStage: (id: string, stage: string) => 
+        put(buildUrl(API_ENDPOINTS.research.updateStage, { id }), { stage }),
     },
 
     // Welcome Screens
     'welcome-screen': {
-      getByResearchId: (researchId: string) => get(API_ENDPOINTS['welcome-screen'].getByResearch.replace('{researchId}', researchId)),
-      save: (researchId: string, data: any) => post(API_ENDPOINTS['welcome-screen'].save.replace('{researchId}', researchId), data),
-      delete: (researchId: string) => del(API_ENDPOINTS['welcome-screen'].delete.replace('{researchId}', researchId)),
+      getByResearchId: (researchId: string) => 
+        get(buildUrl(API_ENDPOINTS['welcome-screen'].getByResearch, { researchId })),
+      save: (researchId: string, data: any) => 
+        post(buildUrl(API_ENDPOINTS['welcome-screen'].save, { researchId }), data),
+      delete: (researchId: string) => 
+        del(buildUrl(API_ENDPOINTS['welcome-screen'].delete, { researchId })),
     },
 
-    // Archivos
+    // Thank You Screens
+    'thank-you-screen': {
+      getByResearchId: (researchId: string) => 
+        get(buildUrl(API_ENDPOINTS.thankYouScreen.getByResearch, { researchId })),
+      save: (researchId: string, data: any) => 
+        post(buildUrl(API_ENDPOINTS.thankYouScreen.save, { researchId }), data),
+      delete: (researchId: string) => 
+        del(buildUrl(API_ENDPOINTS.thankYouScreen.delete, { researchId })),
+    },
+
+    // SmartVOC
+    smartVoc: {
+      getByResearch: (researchId: string) => 
+        get(buildUrl(API_ENDPOINTS.smartVoc.getByResearch, { researchId })),
+      create: (researchId: string, data: any) => 
+        post(buildUrl(API_ENDPOINTS.smartVoc.create, { researchId }), data),
+      update: (researchId: string, data: any) => 
+        put(buildUrl(API_ENDPOINTS.smartVoc.update, { researchId }), data),
+      delete: (researchId: string) => 
+        del(buildUrl(API_ENDPOINTS.smartVoc.delete, { researchId })),
+    },
+
+    // Eye Tracking
+    eyeTracking: {
+      getByResearch: (researchId: string) => 
+        get(buildUrl(API_ENDPOINTS.eyeTracking.getByResearch, { researchId })),
+      create: (researchId: string, data: any) => 
+        post(buildUrl(API_ENDPOINTS.eyeTracking.create, { researchId }), data),
+      update: (researchId: string, data: any) => 
+        put(buildUrl(API_ENDPOINTS.eyeTracking.update, { researchId }), data),
+      delete: (researchId: string) => 
+        del(buildUrl(API_ENDPOINTS.eyeTracking.delete, { researchId })),
+    },
+
+    // Cognitive Task
+    cognitiveTask: {
+      getByResearch: (researchId: string) => 
+        get(buildUrl(API_ENDPOINTS.cognitiveTask.getByResearch, { researchId })),
+      create: (researchId: string, data: any) => 
+        post(buildUrl(API_ENDPOINTS.cognitiveTask.create, { researchId }), data),
+      update: (researchId: string, data: any) => 
+        put(buildUrl(API_ENDPOINTS.cognitiveTask.update, { researchId }), data),
+      delete: (researchId: string) => 
+        del(buildUrl(API_ENDPOINTS.cognitiveTask.delete, { researchId })),
+    },
+
+    // Participantes
+    participants: {
+      getAll: () => get(API_ENDPOINTS.participants.getAll),
+      getById: (id: string) => get(buildUrl(API_ENDPOINTS.participants.getById, { id })),
+      login: (data: { name: string; email: string; researchId: string }) => 
+        post(API_ENDPOINTS.participants.login, data),
+      create: (data: any) => post(API_ENDPOINTS.participants.create, data),
+      delete: (id: string) => del(buildUrl(API_ENDPOINTS.participants.delete, { id })),
+    },
+
+    // Module Responses
+    moduleResponses: {
+      getResponsesByResearch: (researchId: string) => 
+        get(buildUrl(API_ENDPOINTS.moduleResponses.getResponsesByResearch, { researchId })),
+      getResponsesForParticipant: (researchId: string, participantId: string) => 
+        get(buildUrl(API_ENDPOINTS.moduleResponses.getResponsesForParticipant, { researchId, participantId })),
+      saveResponse: (data: any) => post(API_ENDPOINTS.moduleResponses.saveResponse, data),
+      updateResponse: (responseId: string, data: any) => 
+        put(buildUrl(API_ENDPOINTS.moduleResponses.updateResponse, { responseId }), data),
+    },
+
+    // Archivos S3
     files: {
       upload: (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
-        // Implementar cuando tengamos un endpoint para subir archivos
-        return post(`${API_ENDPOINTS.s3.upload}`, formData, {
-          headers: {}, // Permitir que el navegador establezca el Content-Type correcto
+        return post(API_ENDPOINTS.s3.upload, formData, {
+          headers: {}, // Permitir que Alova establezca el Content-Type correcto para FormData
         });
       },
       getUrl: (key: string) => get(`${API_ENDPOINTS.s3.download}?key=${key}`),
+      delete: (key: string) => del(buildUrl(API_ENDPOINTS.s3.deleteObject, { key })),
     },
   };
 
@@ -140,5 +231,15 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
     post,
     put,
     delete: del,
+    // Funciones adicionales de Alova
+    invalidateCache: (pattern?: string | RegExp) => {
+      if (pattern) {
+        alovaInstance.snapshots.match(pattern).forEach(method => method.abort());
+      } else {
+        alovaInstance.snapshots.match(/.*/g).forEach(method => method.abort());
+      }
+    }
   };
 }
+
+export default useApi;

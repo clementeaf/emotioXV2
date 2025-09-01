@@ -1,6 +1,13 @@
+/**
+ * APIs de EmotioXV2 usando AlovaJS
+ * Migración completa de fetch a AlovaJS con useQuery
+ */
+
 import { Research, ResearchBasicData } from '../../../shared/interfaces/research.model';
 import { Company, GetCompaniesResponse, CompanyResponse, CreateCompanyRequest, UpdateCompanyRequest } from '../../../shared/interfaces/company.interface';
-import { apiClient } from '../config/api';
+import { alovaApiClient } from '../config/api';
+import { alovaInstance } from '../config/alova.config';
+import { useRequest, useWatcher } from 'alova/client';
 
 // Tipos
 interface LoginRequest {
@@ -28,53 +35,180 @@ interface User {
   role: string;
 }
 
-// Función para configurar token de autenticación (se llamará cuando sea necesario)
+// Función para configurar token de autenticación
 export const setupAuthToken = () => {
-  // Importación dinámica para evitar dependencia circular
   import('@/services/tokenService').then(({ default: tokenService }) => {
     const token = tokenService.getToken();
     if (token) {
-      apiClient.setAuthToken(token);
+      alovaApiClient.setAuthToken(token);
     }
   }).catch(error => {
+    console.error('Error setting up auth token:', error);
   });
 };
+
+// ============================================
+// HOOKS DE ALOVA PARA CONSUMO EN COMPONENTES
+// ============================================
+
+// Hook para empresas con Alova
+export const useCompanies = () => {
+  return useRequest(
+    alovaInstance.Get<GetCompaniesResponse>('/companies'),
+    {
+      initialData: { success: false, data: [] },
+    }
+  );
+};
+
+export const useCompanyById = (id: string) => {
+  return useRequest(
+    alovaInstance.Get<CompanyResponse>(`/companies/${id}`),
+    {
+      initialData: undefined,
+    }
+  );
+};
+
+// Hook para investigaciones con Alova
+export const useResearchList = () => {
+  return useRequest(
+    alovaInstance.Get<APIResponse<Research[]>>('/research'),
+    {
+      initialData: { success: false, data: [] },
+    }
+  );
+};
+
+export const useResearchById = (id: string) => {
+  return useRequest(
+    alovaInstance.Get<APIResponse<Research>>(`/research/${id || 'null'}`),
+    {
+      initialData: undefined,
+    }
+  );
+};
+
+// Hook para welcome screen con Alova
+export const useWelcomeScreen = (researchId: string) => {
+  return useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/welcome-screen`),
+    {
+      initialData: undefined,
+    }
+  );
+};
+
+// Hook para thank you screen con Alova
+export const useThankYouScreen = (researchId: string) => {
+  return useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/thank-you-screen`),
+    {
+      initialData: undefined,
+    }
+  );
+};
+
+// Hook para eye tracking con Alova
+export const useEyeTracking = (researchId: string) => {
+  return useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/eye-tracking`),
+    {
+      initialData: undefined,
+    }
+  );
+};
+
+// Hook para SmartVOC con Alova
+export const useSmartVOC = (researchId: string) => {
+  return useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/smart-voc`),
+    {
+      initialData: undefined,
+    }
+  );
+};
+
+// Hook para cognitive task con Alova
+export const useCognitiveTask = (researchId: string) => {
+  return useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/cognitive-task`),
+    {
+      initialData: undefined,
+    }
+  );
+};
+
+// Hook para module responses con Alova
+export const useModuleResponses = (researchId: string) => {
+  return useRequest(
+    alovaInstance.Get(`/module-responses/research/${researchId || 'null'}`),
+    {
+      initialData: [],
+    }
+  );
+};
+
+// Hook para participantes con Alova
+export const useParticipants = () => {
+  return useRequest(
+    alovaInstance.Get('/participants'),
+    {
+      initialData: [],
+    }
+  );
+};
+
+// Hook reactivo que observa cambios (útil para actualizaciones en tiempo real)
+export const useWatchResearch = (researchId: string) => {
+  return useWatcher(
+    () => alovaInstance.Get<APIResponse<Research>>(`/research/${researchId || 'null'}`),
+    [researchId],
+    {
+      initialData: undefined,
+      immediate: true,
+    }
+  );
+};
+
+// ============================================
+// APIs CON MÉTODOS ESTÁTICOS (para acciones)
+// ============================================
 
 // API de empresas
 export const companiesAPI = {
   getAll: async (): Promise<GetCompaniesResponse> => {
-    return apiClient.get('companies', 'getAll');
+    return alovaApiClient.get('companies', 'getAll');
   },
 
   getById: async (id: string): Promise<CompanyResponse> => {
-    return apiClient.get('companies', 'getById', { id });
+    return alovaApiClient.get('companies', 'getById', { id });
   },
 
   create: async (data: CreateCompanyRequest): Promise<CompanyResponse> => {
-    return apiClient.post('companies', 'create', data);
+    return alovaApiClient.post('companies', 'create', data);
   },
 
   update: async (id: string, data: UpdateCompanyRequest): Promise<CompanyResponse> => {
-    return apiClient.put('companies', 'update', data, { id });
+    return alovaApiClient.put('companies', 'update', data, { id });
   },
 
   delete: async (id: string): Promise<APIResponse<{ message: string }>> => {
-    return apiClient.delete('companies', 'delete', { id });
+    return alovaApiClient.delete('companies', 'delete', { id });
   },
 };
 
 // API de autenticación
 export const authAPI = {
   login: async (data: LoginRequest): Promise<APIResponse<AuthResponse>> => {
-    return apiClient.post('auth', 'login', data);
+    return alovaApiClient.post('auth', 'login', data);
   },
 
   logout: async (): Promise<APIResponse> => {
-    return apiClient.post('auth', 'logout', {});
+    return alovaApiClient.post('auth', 'logout', {});
   },
 
   refreshToken: async (): Promise<APIResponse<{ token: string, renewed: boolean, expiresAt: number, user: User }>> => {
-    // Importación dinámica para evitar dependencia circular
     const { default: tokenService } = await import('@/services/tokenService');
     const token = tokenService.getToken();
     if (!token) {
@@ -82,71 +216,66 @@ export const authAPI = {
     }
 
     const cleanToken = token.replace('Bearer ', '');
-    return apiClient.post('auth', 'refreshToken', { token: cleanToken });
+    return alovaApiClient.post('auth', 'refreshToken', { token: cleanToken });
   },
 
   getProfile: async (): Promise<APIResponse<User>> => {
-    return apiClient.get('auth', 'profile');
+    return alovaApiClient.get('auth', 'profile');
   },
 };
 
 // API de investigaciones
 export const researchAPI = {
   create: async (data: ResearchBasicData): Promise<APIResponse<Research>> => {
-    const processedData = {
-      ...data,
-      // Remover propiedades que no existen en ResearchBasicData de shared
-    };
-
-    return apiClient.post('research', 'create', processedData);
+    return alovaApiClient.post('research', 'create', data);
   },
 
   get: async (id: string): Promise<APIResponse<Research>> => {
-    return apiClient.get('research', 'getById', { id });
+    return alovaApiClient.get('research', 'getById', { id });
   },
 
   list: async (): Promise<APIResponse<Research[]>> => {
-    return apiClient.get('research', 'getAll');
+    return alovaApiClient.get('research', 'getAll');
   },
 
   update: async (id: string, data: Partial<ResearchBasicData>): Promise<APIResponse<Research>> => {
-    return apiClient.put('research', 'update', data, { id });
+    return alovaApiClient.put('research', 'update', data, { id });
   },
 
   delete: async (id: string): Promise<APIResponse<boolean>> => {
     if (!id) {
       throw new Error('Se requiere un ID para eliminar la investigación');
     }
-    return apiClient.delete('research', 'delete', { id });
+    return alovaApiClient.delete('research', 'delete', { id });
   },
 
   updateStatus: async (id: string, status: string): Promise<APIResponse<Research>> => {
-    return apiClient.put('research', 'updateStatus', { status }, { id });
+    return alovaApiClient.put('research', 'updateStatus', { status }, { id });
   },
 
   updateStage: async (id: string, stage: string, progress: number): Promise<APIResponse<Research>> => {
-    return apiClient.put('research', 'updateStage', { stage, progress }, { id });
+    return alovaApiClient.put('research', 'updateStage', { stage, progress }, { id });
   },
 };
 
-// API de pantallas de bienvenida (Corregido)
+// API de pantallas de bienvenida
 export const welcomeScreenAPI = {
   getByResearch: (researchId: string) =>
-    apiClient.get('welcome-screen', 'getByResearch', { researchId }),
+    alovaApiClient.get('welcome-screen', 'getByResearch', { researchId }),
   save: (researchId: string, data: Record<string, unknown>) =>
-    apiClient.post('welcome-screen', 'save', data, { researchId }),
+    alovaApiClient.post('welcome-screen', 'save', data, { researchId }),
   delete: (researchId: string) =>
-    apiClient.delete('welcome-screen', 'delete', { researchId }),
+    alovaApiClient.delete('welcome-screen', 'delete', { researchId }),
 };
 
-// API de pantallas de agradecimiento (Corregido)
+// API de pantallas de agradecimiento
 export const thankYouScreenAPI = {
   getByResearch: (researchId: string) =>
-    apiClient.get('thankYouScreen', 'getByResearch', { researchId }),
+    alovaApiClient.get('thankYouScreen', 'getByResearch', { researchId }),
   save: (researchId: string, data: Record<string, unknown>) =>
-    apiClient.post('thankYouScreen', 'save', data, { researchId }),
+    alovaApiClient.post('thankYouScreen', 'save', data, { researchId }),
   delete: (researchId: string) =>
-    apiClient.delete('thankYouScreen', 'delete', { researchId }),
+    alovaApiClient.delete('thankYouScreen', 'delete', { researchId }),
 };
 
 // API de eye tracking
@@ -155,28 +284,28 @@ export const eyeTrackingAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear eye tracking');
     }
-    return apiClient.post('eyeTracking', 'create', data, { researchId });
+    return alovaApiClient.post('eyeTracking', 'create', data, { researchId });
   },
 
   getByResearch: async (researchId: string): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    return apiClient.get('eyeTracking', 'getByResearch', { researchId });
+    return alovaApiClient.get('eyeTracking', 'getByResearch', { researchId });
   },
 
   update: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar eye tracking');
     }
-    return apiClient.put('eyeTracking', 'update', data, { researchId });
+    return alovaApiClient.put('eyeTracking', 'update', data, { researchId });
   },
 
   delete: async (researchId: string): Promise<APIResponse<boolean>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar eye tracking');
     }
-    return apiClient.delete('eyeTracking', 'delete', { researchId });
+    return alovaApiClient.delete('eyeTracking', 'delete', { researchId });
   },
 };
 
@@ -186,28 +315,28 @@ export const eyeTrackingRecruitAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear eye tracking recruit');
     }
-    return apiClient.post('eyeTrackingRecruit', 'createConfig', data, { researchId });
+    return alovaApiClient.post('eyeTrackingRecruit', 'createConfig', data, { researchId });
   },
 
   getConfigByResearch: async (researchId: string): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    return apiClient.get('eyeTrackingRecruit', 'getConfigByResearch', { researchId });
+    return alovaApiClient.get('eyeTrackingRecruit', 'getConfigByResearch', { researchId });
   },
 
   updateConfig: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar eye tracking recruit');
     }
-    return apiClient.put('eyeTrackingRecruit', 'updateConfig', data, { researchId });
+    return alovaApiClient.put('eyeTrackingRecruit', 'updateConfig', data, { researchId });
   },
 
   delete: async (researchId: string): Promise<APIResponse<boolean>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar eye tracking recruit');
     }
-    return apiClient.delete('eyeTrackingRecruit', 'delete', { researchId });
+    return alovaApiClient.delete('eyeTrackingRecruit', 'delete', { researchId });
   },
 };
 
@@ -217,28 +346,28 @@ export const smartVocAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear SmartVOC');
     }
-    return apiClient.post('smartVoc', 'create', data, { researchId });
+    return alovaApiClient.post('smartVoc', 'create', data, { researchId });
   },
 
   getByResearch: async (researchId: string): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    return apiClient.get('smartVoc', 'getByResearch', { researchId });
+    return alovaApiClient.get('smartVoc', 'getByResearch', { researchId });
   },
 
   update: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar SmartVOC');
     }
-    return apiClient.put('smartVoc', 'update', data, { researchId });
+    return alovaApiClient.put('smartVoc', 'update', data, { researchId });
   },
 
   delete: async (researchId: string): Promise<APIResponse<boolean>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar SmartVOC');
     }
-    return apiClient.delete('smartVoc', 'delete', { researchId });
+    return alovaApiClient.delete('smartVoc', 'delete', { researchId });
   },
 };
 
@@ -248,28 +377,28 @@ export const cognitiveTaskAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear la tarea cognitiva');
     }
-    return apiClient.post('cognitiveTask', 'create', data, { researchId });
+    return alovaApiClient.post('cognitiveTask', 'create', data, { researchId });
   },
 
   getByResearch: async (researchId: string): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    return apiClient.get('cognitiveTask', 'getByResearch', { researchId });
+    return alovaApiClient.get('cognitiveTask', 'getByResearch', { researchId });
   },
 
   update: async (researchId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar la tarea cognitiva');
     }
-    return apiClient.put('cognitiveTask', 'update', data, { researchId });
+    return alovaApiClient.put('cognitiveTask', 'update', data, { researchId });
   },
 
   delete: async (researchId: string): Promise<APIResponse<boolean>> => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar la tarea cognitiva');
     }
-    return apiClient.delete('cognitiveTask', 'delete', { researchId });
+    return alovaApiClient.delete('cognitiveTask', 'delete', { researchId });
   },
 };
 
@@ -278,101 +407,86 @@ export const s3API = {
   upload: async (file: File): Promise<APIResponse<{ url: string; key: string }>> => {
     const formData = new FormData();
     formData.append('file', file);
-    return apiClient.post('s3', 'upload', formData);
+    return alovaApiClient.post('s3', 'upload', formData);
   },
 
   download: async (key: string): Promise<APIResponse<{ url: string }>> => {
-    return apiClient.get('s3', 'download', undefined, { key });
+    return alovaApiClient.get('s3', 'download', undefined, { key });
   },
 
   deleteObject: async (key: string): Promise<APIResponse<boolean>> => {
-    return apiClient.delete('s3', 'deleteObject', { key });
+    return alovaApiClient.delete('s3', 'deleteObject', { key });
   },
 };
 
-// API de Module Responses (para datos de public-tests)
+// API de Module Responses
 export const moduleResponsesAPI = {
-  // Obtener todas las respuestas de un research
   getResponsesByResearch: async (researchId: string): Promise<APIResponse<unknown[]>> => {
-    return apiClient.get('moduleResponses', 'getResponsesByResearch', { researchId });
+    return alovaApiClient.get('moduleResponses', 'getResponsesByResearch', { researchId });
   },
 
-  // Obtener respuestas de un participante específico
   getResponsesForParticipant: async (researchId: string, participantId: string): Promise<APIResponse<unknown>> => {
-    return apiClient.get('moduleResponses', 'getResponsesForParticipant', { researchId, participantId });
+    return alovaApiClient.get('moduleResponses', 'getResponsesForParticipant', { researchId, participantId });
   },
 
-  // Guardar respuesta
   saveResponse: async (data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
-    return apiClient.post('moduleResponses', 'saveResponse', data);
+    return alovaApiClient.post('moduleResponses', 'saveResponse', data);
   },
 
-  // Actualizar respuesta
   updateResponse: async (responseId: string, data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
-    return apiClient.put('moduleResponses', 'updateResponse', data, { responseId });
+    return alovaApiClient.put('moduleResponses', 'updateResponse', data, { responseId });
   },
 
-  // Eliminar todas las respuestas de un participante
   deleteAllResponses: async (researchId: string, participantId: string): Promise<APIResponse<boolean>> => {
-    return apiClient.delete('moduleResponses', 'deleteAllResponses', { researchId, participantId });
+    return alovaApiClient.delete('moduleResponses', 'deleteAllResponses', { researchId, participantId });
   },
 };
 
-// API de Participants (para datos de public-tests)
+// API de Participants
 export const participantsAPI = {
-  // Obtener todos los participantes
   getAll: async (): Promise<APIResponse<unknown[]>> => {
-    return apiClient.get('participants', 'getAll');
+    return alovaApiClient.get('participants', 'getAll');
   },
 
-  // Obtener participante por ID
   getById: async (id: string): Promise<APIResponse<unknown>> => {
-    return apiClient.get('participants', 'getById', { id });
+    return alovaApiClient.get('participants', 'getById', { id });
   },
 
-  // Login de participante
   login: async (data: { name: string; email: string; researchId: string }): Promise<APIResponse<unknown>> => {
-    return apiClient.post('participants', 'login', data);
+    return alovaApiClient.post('participants', 'login', data);
   },
 
-  // Crear participante
   create: async (data: Record<string, unknown>): Promise<APIResponse<unknown>> => {
-    return apiClient.post('participants', 'create', data);
+    return alovaApiClient.post('participants', 'create', data);
   },
 
-  // Eliminar participante
   delete: async (id: string): Promise<APIResponse<boolean>> => {
-    return apiClient.delete('participants', 'delete', { id });
+    return alovaApiClient.delete('participants', 'delete', { id });
   },
 };
 
-// API combinada para Research In Progress
+// API de Research In Progress
 export const researchInProgressAPI = {
-  // Obtener participantes con estados para un research
   getParticipantsWithStatus: async (researchId: string): Promise<APIResponse<unknown[]>> => {
-    return apiClient.get('researchInProgress', 'getParticipantsWithStatus', { researchId });
+    return alovaApiClient.get('researchInProgress', 'getParticipantsWithStatus', { researchId });
   },
 
-  // Obtener métricas de overview para un research
   getOverviewMetrics: async (researchId: string): Promise<APIResponse<unknown>> => {
-    return apiClient.get('researchInProgress', 'getOverviewMetrics', { researchId });
+    return alovaApiClient.get('researchInProgress', 'getOverviewMetrics', { researchId });
   },
 
-  // Obtener participantes por research (si existe el endpoint)
   getParticipantsByResearch: async (researchId: string): Promise<APIResponse<unknown[]>> => {
-    return apiClient.get('researchInProgress', 'getParticipantsByResearch', { researchId });
+    return alovaApiClient.get('researchInProgress', 'getParticipantsByResearch', { researchId });
   },
 
-  // Obtener detalles completos de un participante específico
   getParticipantDetails: async (researchId: string, participantId: string): Promise<APIResponse<unknown>> => {
-    return apiClient.get('researchInProgress', 'getParticipantDetails', { researchId, participantId });
+    return alovaApiClient.get('researchInProgress', 'getParticipantDetails', { researchId, participantId });
   },
 
-  // 🎯 ELIMINAR PARTICIPANTE
   deleteParticipant: async (researchId: string, participantId: string): Promise<APIResponse<boolean>> => {
-    return apiClient.delete('researchInProgress', 'deleteParticipant', { researchId, participantId });
+    return alovaApiClient.delete('researchInProgress', 'deleteParticipant', { researchId, participantId });
   },
 };
 
-// Exportar apiClient para uso en otros módulos
-export { apiClient };
+// Exportar todo
+export { alovaApiClient, alovaInstance };

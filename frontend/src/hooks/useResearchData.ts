@@ -1,229 +1,311 @@
 /**
- * 🎯 RESEARCH DATA HOOK - AlovaJS Clean Implementation
- * Follows SOLID, DRY, KISS principles with strict TypeScript
- * Max 200 lines, single responsibility
+ * Hook para gestionar datos de investigación usando AlovaJS
+ * Migrado de React Query a AlovaJS
  */
 
-import { useRequest } from 'alova/client';
-import { researchMethods, researchDataMethods } from '../services/research.methods';
-import { 
-  processSmartVOCData, 
-  processCPVData, 
-  processTrustFlowData 
-} from '../utils/data.processors';
-import type {
-  Research,
-  GroupedResponsesResponse,
-  QuestionWithResponses,
-  SmartVOCFormData,
-  SmartVOCResults,
-  CPVData,
-  TrustFlowData,
-  ApiResponse
-} from '../types/research';
-
-interface UseResearchDataParams {
-  researchId: string;
-}
+import { useRequest, useWatcher, useFetcher } from 'alova/client';
+import { alovaInstance } from '@/config/alova.config';
+import { Research } from '../../../shared/interfaces/research.model';
+import { useState, useEffect } from 'react';
 
 interface UseResearchDataReturn {
-  // Core data
-  researchData: Research | null;
-  smartVOCFormData: SmartVOCFormData | null;
-  groupedResponses: GroupedResponsesResponse | null;
-  
-  // Processed data
-  smartVOCResults: SmartVOCResults | null;
-  cpvData: CPVData | null;
-  trustFlowData: TrustFlowData[];
-  
-  // Loading states
-  isResearchLoading: boolean;
-  isSmartVOCFormLoading: boolean;
-  isGroupedResponsesLoading: boolean;
-  
-  // Error states
-  researchError: Error | null;
-  smartVOCFormError: Error | null;
-  groupedResponsesError: Error | null;
-  
-  // Actions
-  refetchResearch: () => Promise<ApiResponse<Research>>;
-  refetchSmartVOCForm: () => Promise<ApiResponse<SmartVOCFormData>>;
-  refetchGroupedResponses: () => Promise<GroupedResponsesResponse>;
+  research: Research | null;
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+  updateResearch: (data: Partial<Research>) => Promise<void>;
+  deleteResearch: () => Promise<void>;
 }
 
 /**
- * Centralized hook for all research data operations
- * Uses AlovaJS for caching and state management
+ * Hook principal para datos de investigación con Alova
  */
-export function useResearchData({ researchId }: UseResearchDataParams): UseResearchDataReturn {
-  // Validate research ID
-  if (!researchId || typeof researchId !== 'string' || researchId.trim() === '') {
-    throw new Error('Valid research ID is required');
-  }
-
-  // Core research data
-  const researchQuery = useRequest(
-    () => researchMethods.getById(researchId),
+export const useResearchData = (researchId: string | null): UseResearchDataReturn => {
+  const [localData, setLocalData] = useState<Research | null>(null);
+  
+  // useRequest de Alova para cargar los datos iniciales
+  const {
+    loading,
+    data: research,
+    error,
+    send: refetch,
+    update
+  } = useRequest(
+    alovaInstance.Get<{ success: boolean; data: Research }>(`/research/${researchId || 'null'}`),
     {
       initialData: undefined,
-      immediate: true,
+      immediate: !!researchId, // Solo ejecutar si hay researchId
     }
   );
-
-  // SmartVOC form data
-  const smartVOCFormQuery = useRequest(
-    () => researchDataMethods.getSmartVOCForm(researchId),
-    {
-      initialData: undefined,
-      immediate: true,
+  
+  // useFetcher para operaciones de mutación
+  const { fetch: fetchUpdate } = useFetcher();
+  
+  // Actualizar datos locales cuando cambie la respuesta
+  useEffect(() => {
+    if (research?.data) {
+      setLocalData(research.data);
     }
-  );
-
-  // Grouped responses data
-  const groupedResponsesQuery = useRequest(
-    () => researchDataMethods.getGroupedResponses(researchId),
-    {
-      initialData: undefined,
-      immediate: true,
+  }, [research]);
+  
+  // Función para actualizar investigación
+  const updateResearch = async (data: Partial<Research>) => {
+    if (!researchId) throw new Error('No research ID provided');
+    
+    try {
+      const response = await fetchUpdate(
+        alovaInstance.Put<{ success: boolean; data: Research }>(
+          `/research/${researchId}`,
+          data
+        )
+      );
+      
+      if (response.success && response.data) {
+        // Actualizar datos locales optimistamente
+        setLocalData(response.data);
+        // Actualizar caché de Alova
+        update({
+          data: {
+            success: true,
+            data: response.data
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error updating research:', err);
+      throw err;
     }
-  );
-
-  // Process data when available  
-  const processedData = useProcessedData({
-    researchId: researchId || '',
-    questions: (groupedResponsesQuery.data as { questions?: QuestionWithResponses[] })?.questions || [],
-    data: (groupedResponsesQuery.data as { questions?: QuestionWithResponses[] })?.questions || [],
-    total: 0,
-    participantCount: 0
-  });
-
-  return {
-    // Core data
-    researchData: researchQuery.data?.data || null,
-    smartVOCFormData: smartVOCFormQuery.data?.data || null,
-    groupedResponses: {
-      researchId: researchId || '',
-      questions: (groupedResponsesQuery.data as { questions?: QuestionWithResponses[] })?.questions || [] as QuestionWithResponses[],
-      data: (groupedResponsesQuery.data as { questions?: QuestionWithResponses[] })?.questions || [] as QuestionWithResponses[],
-      total: 0,
-      participantCount: 0
-    },
-    
-    // Processed data
-    smartVOCResults: processedData.smartVOCResults,
-    cpvData: processedData.cpvData,
-    trustFlowData: processedData.trustFlowData,
-    
-    // Loading states
-    isResearchLoading: researchQuery.loading,
-    isSmartVOCFormLoading: smartVOCFormQuery.loading,
-    isGroupedResponsesLoading: groupedResponsesQuery.loading,
-    
-    // Error states
-    researchError: researchQuery.error || null,
-    smartVOCFormError: smartVOCFormQuery.error || null,
-    groupedResponsesError: groupedResponsesQuery.error || null,
-    
-    // Actions
-    refetchResearch: async () => {
-      const response = await researchQuery.send();
-      return { data: response.data, success: true };
-    },
-    refetchSmartVOCForm: async () => {
-      const response = await smartVOCFormQuery.send();
-      return { data: response.data, success: true };
-    },
-    refetchGroupedResponses: async () => {
-      const response = await groupedResponsesQuery.send();
-      return {
-        researchId: researchId || '',
-        questions: (response as { questions?: QuestionWithResponses[] })?.questions || [],
-        data: (response as { questions?: QuestionWithResponses[] })?.questions || [],
-        total: 0,
-        participantCount: 0
-      };
-    },
   };
-}
+  
+  // Función para eliminar investigación
+  const deleteResearch = async () => {
+    if (!researchId) throw new Error('No research ID provided');
+    
+    try {
+      await fetchUpdate(
+        alovaInstance.Delete(`/research/${researchId}`)
+      );
+      
+      // Limpiar datos locales
+      setLocalData(null);
+      // Invalidar caché
+      alovaInstance.snapshots.match(`/research/${researchId}`).forEach(method => {
+        method.abort();
+      });
+    } catch (err) {
+      console.error('Error deleting research:', err);
+      throw err;
+    }
+  };
+  
+  return {
+    research: localData,
+    loading,
+    error: error as Error | null,
+    refetch: async () => {
+      await refetch();
+    },
+    updateResearch,
+    deleteResearch,
+  };
+};
 
 /**
- * Process grouped responses into derived data
+ * Hook para lista de investigaciones con Alova
  */
-function useProcessedData(groupedResponses: GroupedResponsesResponse | null) {
-  if (!groupedResponses?.data || !Array.isArray(groupedResponses.data)) {
-    return {
-      smartVOCResults: null,
-      cpvData: null,
-      trustFlowData: []
-    };
-  }
-
-  try {
-    const smartVOCResults = processSmartVOCData(groupedResponses.data);
-    const cpvData = processCPVData(groupedResponses.data);
-    const trustFlowData = processTrustFlowData(groupedResponses.data);
-
-    return {
-      smartVOCResults,
-      cpvData,
-      trustFlowData
-    };
-  } catch (error) {
-    console.error('Error processing research data:', error);
-    return {
-      smartVOCResults: null,
-      cpvData: null,
-      trustFlowData: []
-    };
-  }
-}
-
-/**
- * Simplified hook for basic research data only
- */
-export function useBasicResearchData(researchId: string) {
-  if (!researchId) {
-    throw new Error('Research ID is required');
-  }
-
-  const query = useRequest(
-    () => researchMethods.getById(researchId),
+export const useResearchList = () => {
+  const {
+    loading,
+    data,
+    error,
+    send: refetch,
+  } = useRequest(
+    alovaInstance.Get<{ success: boolean; data: Research[] }>('/research'),
     {
-      initialData: undefined,
-      immediate: true,
+      initialData: { success: false, data: [] },
+      cacheFor: 1000 * 60 * 5, // Cache por 5 minutos
     }
   );
-
+  
   return {
-    data: query.data?.data || null,
-    loading: query.loading,
-    error: query.error || null,
-    refetch: query.send
+    researches: data?.data || [],
+    loading,
+    error: error as Error | null,
+    refetch,
   };
-}
+};
 
 /**
- * Hook for SmartVOC form data only
+ * Hook reactivo para observar cambios en una investigación
+ * Útil para actualizaciones en tiempo real
  */
-export function useSmartVOCFormData(researchId: string) {
-  if (!researchId) {
-    throw new Error('Research ID is required');
-  }
-
-  const query = useRequest(
-    () => researchDataMethods.getSmartVOCForm(researchId),
+export const useWatchResearch = (researchId: string | null) => {
+  const {
+    loading,
+    data,
+    error,
+  } = useWatcher(
+    alovaInstance.Get<{ success: boolean; data: Research }>(`/research/${researchId || 'null'}`),
+    [researchId], // Dependencias que disparan re-fetch
     {
       initialData: undefined,
-      immediate: true,
+      immediate: !!researchId,
+      debounce: 500, // Debounce de 500ms para evitar múltiples llamadas
     }
   );
-
+  
   return {
-    data: query.data?.data || null,
-    loading: query.loading,
-    error: query.error || null,
-    refetch: query.send
+    research: data?.data || null,
+    loading,
+    error: error as Error | null,
   };
-}
+};
+
+/**
+ * Hook para gestionar el estado de la investigación
+ */
+export const useResearchStatus = (researchId: string | null) => {
+  const { fetch } = useFetcher();
+  
+  const updateStatus = async (status: string) => {
+    if (!researchId) throw new Error('No research ID provided');
+    
+    const response = await fetch(
+      alovaInstance.Put<{ success: boolean; data: Research }>(
+        `/research/${researchId}/status`,
+        { status }
+      )
+    );
+    
+    // Invalidar caché para forzar actualización
+    alovaInstance.snapshots.match(`/research/${researchId}`).forEach(method => {
+      method.abort();
+    });
+    
+    return response;
+  };
+  
+  const updateStage = async (stage: string, progress: number) => {
+    if (!researchId) throw new Error('No research ID provided');
+    
+    const response = await fetch(
+      alovaInstance.Put<{ success: boolean; data: Research }>(
+        `/research/${researchId}/stage`,
+        { stage, progress }
+      )
+    );
+    
+    // Invalidar caché
+    alovaInstance.snapshots.match(`/research/${researchId}`).forEach(method => {
+      method.abort();
+    });
+    
+    return response;
+  };
+  
+  return {
+    updateStatus,
+    updateStage,
+  };
+};
+
+/**
+ * Hook para gestionar módulos de investigación con Alova
+ */
+export const useResearchModules = (researchId: string | null) => {
+  // SmartVOC
+  const smartVoc = useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/smart-voc`),
+    {
+      initialData: undefined,
+      immediate: false, // Cargar bajo demanda
+    }
+  );
+  
+  // Eye Tracking
+  const eyeTracking = useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/eye-tracking`),
+    {
+      initialData: undefined,
+      immediate: false,
+    }
+  );
+  
+  // Cognitive Task
+  const cognitiveTask = useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/cognitive-task`),
+    {
+      initialData: undefined,
+      immediate: false,
+    }
+  );
+  
+  // Welcome Screen
+  const welcomeScreen = useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/welcome-screen`),
+    {
+      initialData: undefined,
+      immediate: false,
+    }
+  );
+  
+  // Thank You Screen
+  const thankYouScreen = useRequest(
+    alovaInstance.Get(`/research/${researchId || 'null'}/thank-you-screen`),
+    {
+      initialData: undefined,
+      immediate: false,
+    }
+  );
+  
+  // Función para cargar todos los módulos
+  const loadAllModules = async () => {
+    await Promise.all([
+      smartVoc.send(),
+      eyeTracking.send(),
+      cognitiveTask.send(),
+      welcomeScreen.send(),
+      thankYouScreen.send(),
+    ]);
+  };
+  
+  return {
+    modules: {
+      smartVoc: {
+        data: smartVoc.data,
+        loading: smartVoc.loading,
+        error: smartVoc.error,
+        load: smartVoc.send,
+      },
+      eyeTracking: {
+        data: eyeTracking.data,
+        loading: eyeTracking.loading,
+        error: eyeTracking.error,
+        load: eyeTracking.send,
+      },
+      cognitiveTask: {
+        data: cognitiveTask.data,
+        loading: cognitiveTask.loading,
+        error: cognitiveTask.error,
+        load: cognitiveTask.send,
+      },
+      welcomeScreen: {
+        data: welcomeScreen.data,
+        loading: welcomeScreen.loading,
+        error: welcomeScreen.error,
+        load: welcomeScreen.send,
+      },
+      thankYouScreen: {
+        data: thankYouScreen.data,
+        loading: thankYouScreen.loading,
+        error: thankYouScreen.error,
+        load: thankYouScreen.send,
+      },
+    },
+    loadAllModules,
+    isLoadingAny: smartVoc.loading || eyeTracking.loading || cognitiveTask.loading || 
+                  welcomeScreen.loading || thankYouScreen.loading,
+  };
+};
+
+export default useResearchData;
