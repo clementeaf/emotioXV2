@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import ReactDOM from 'react-dom/client'
+import { createRoot } from 'react-dom/client'
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import App from './App.tsx'
 import './index.css'
@@ -40,7 +40,7 @@ async function checkForUpdates() {
 // Chequear cada 60 segundos
 // --- FIN: Lógica de actualización automática de versión ---
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root')!).render(
   // <React.StrictMode> // Comentado temporalmente para debug
   <QueryClientProvider client={queryClient}>
     <App />

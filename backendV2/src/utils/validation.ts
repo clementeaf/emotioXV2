@@ -68,11 +68,11 @@ export function validateNewResearch(data: Partial<NewResearch>): void {
     }
   }
 
-  if (data.enterprise !== undefined) {
-    if (!data.enterprise.trim()) {
-      errors.enterprise = 'La empresa es obligatoria';
-    } else if (data.enterprise.length > 100) {
-      errors.enterprise = 'El nombre de la empresa no puede exceder los 100 caracteres';
+  if (data.companyId !== undefined) {
+    if (!data.companyId.trim()) {
+      errors.companyId = 'La empresa es obligatoria';
+    } else if (data.companyId.length > 100) {
+      errors.companyId = 'El ID de la empresa no puede exceder los 100 caracteres';
     }
   }
 
@@ -184,7 +184,7 @@ export function validateRequiredFields(data: Partial<NewResearch>): void {
   const errors: Record<string, string> = {};
 
   // Lista de campos obligatorios
-  const requiredFields = ['name', 'enterprise', 'type', 'technique'];
+  const requiredFields = ['name', 'companyId', 'type', 'technique'];
 
   // Verificar cada campo obligatorio
   for (const field of requiredFields) {
