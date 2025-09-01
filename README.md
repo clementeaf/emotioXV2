@@ -1,4 +1,31 @@
-# EmotioX v2
+# EmotioXV2
+
+## ⚠️ Deployment Notice
+
+**This project does NOT deploy to Vercel.**
+
+- **Frontend**: Deploys to S3/CloudFront via GitHub Actions
+- **Public Tests**: Deploys to S3/CloudFront via GitHub Actions  
+- **Backend**: Deploys to AWS Lambda via Serverless Framework
+
+Any Vercel deployments for this repository should be disabled.
+
+## Architecture
+
+```
+├── frontend/        # Next.js app → S3/CloudFront
+├── public-tests/    # Vite React app → S3/CloudFront
+├── backendV2/       # Node.js API → AWS Lambda
+└── shared/          # Shared TypeScript interfaces
+```
+
+## Deployment Targets
+
+- **Frontend**: https://d2s9nr0bm47yl1.cloudfront.net
+- **Public Tests**: https://d2zt8ia21te5mv.cloudfront.net  
+- **Backend API**: https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev
+
+---
 
 EmotioX es una plataforma para la creación y gestión de investigaciones de eye-tracking y otras técnicas de análisis de emociones y comportamiento de usuarios.
 

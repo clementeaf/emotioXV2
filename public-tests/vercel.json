@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "builds": [],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "status": 410,
+      "headers": {
+        "Content-Type": "text/plain"
+      }
+    }
+  ]
+}
