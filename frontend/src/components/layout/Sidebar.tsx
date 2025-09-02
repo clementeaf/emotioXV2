@@ -13,7 +13,7 @@ import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
-import type { Research } from '@/types/research';
+import type { ResearchAPIResponse } from '@/types/research';
 
 import { SidebarBase } from './SidebarBase';
 
@@ -148,12 +148,12 @@ function SidebarContent({ className }: SidebarProps) {
   useEffect(() => {
     if (allResearch.length > 0) {
       const sortedResearch = allResearch
-        .sort((a: Research, b: Research) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .sort((a: ResearchAPIResponse, b: ResearchAPIResponse) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5)
-        .map((item: Research) => ({
+        .map((item: ResearchAPIResponse) => ({
           id: item.id,
           name: item.name || 'Sin nombre',
-          technique: item.basic?.technique || 'Unknown',
+          technique: item.technique || 'Unknown',
           createdAt: new Date(item.createdAt)
         }));
 

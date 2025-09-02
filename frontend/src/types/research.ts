@@ -31,6 +31,22 @@ export type ResearchWithExtensions = ResearchRecord & {
   technique?: string;
 }
 
+// Type for research data as it comes from the API (flat structure)
+export interface ResearchAPIResponse {
+  id: string;
+  name: string;
+  companyId: string;
+  type: string;
+  technique: string;
+  description: string;
+  targetParticipants: number;
+  objectives: string[];
+  tags: string[];
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 // Additional frontend-specific types
 export interface ApiResponse<T = any> {
   data: T;

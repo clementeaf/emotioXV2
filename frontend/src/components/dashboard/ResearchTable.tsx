@@ -16,16 +16,12 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-import type { Research } from '@/types/research';
+import type { ResearchAPIResponse } from '@/types/research';
 
 // Tipo local para la tabla que incluye las propiedades necesarias
-type ResearchTableItem = Research & {
-  name: string;
-  technique: string;
-};
+type ResearchTableItem = ResearchAPIResponse;
 
 interface ResearchTableProps {
   className?: string;
@@ -72,7 +68,6 @@ function TableSkeleton() {
 }
 
 function ResearchTableContent() {
-  const router = useRouter();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ResearchTableItem | null>(null);
 
@@ -86,13 +81,6 @@ function ResearchTableContent() {
     refetch();
   };
 
-  const handleViewResearch = (item: ResearchTableItem) => {
-    if (item.technique === 'eye-tracking' || item.technique === 'aim-framework') {
-      router.push(`/dashboard?research=${item.id}&section=welcome-screen`);
-    } else {
-      router.push(`/dashboard?research=${item.id}`);
-    }
-  };
 
   const handleDeleteResearch = (e: React.MouseEvent, item: ResearchTableItem) => {
     e.stopPropagation();

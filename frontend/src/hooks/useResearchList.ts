@@ -8,14 +8,13 @@ import { useRequest, useWatcher } from 'alova/client';
 import { researchMethods } from '../services/research.methods';
 import type {
   Research,
-  ResearchRecord,
   ResearchListResponse,
   CreateResearchRequest,
   UpdateResearchRequest,
   PaginationParams,
   FilterParams,
-  ApiResponse,
-  ResearchStatus
+  ResearchStatus,
+  ResearchAPIResponse
 } from '../types/research';
 
 interface UseResearchListParams {
@@ -26,7 +25,7 @@ interface UseResearchListParams {
 
 interface UseResearchListReturn {
   // Data
-  researches: Research[];
+  researches: ResearchAPIResponse[];
   total: number;
   currentPage: number;
   totalPages: number;
@@ -36,7 +35,7 @@ interface UseResearchListReturn {
   error: Error | null;
 
   // Actions
-  refetch: () => Promise<ApiResponse<ResearchListResponse>>;
+  refetch: () => Promise<{ data: { researches: ResearchAPIResponse[]; data: ResearchAPIResponse[]; total: number; page: number; limit: number; }; success: boolean; }>;
   createResearch: (data: CreateResearchRequest) => Promise<Research>;
   updateResearch: (id: string, data: UpdateResearchRequest) => Promise<Research>;
   deleteResearch: (id: string) => Promise<void>;
@@ -46,7 +45,7 @@ interface UseResearchByIdReturn {
   data: Research | null;
   isLoading: boolean;
   error: Error | null;
-  refetch: () => Promise<ApiResponse<Research>>;
+  refetch: () => Promise<{ data: Research | null; success: boolean; }>;
 }
 
 /**
@@ -157,14 +156,15 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
     }
   };
 
-  const listData = (listQuery.data as unknown as { data?: ResearchListResponse })?.data || createEmptyListResponse();
+  const apiResponse = listQuery.data as unknown as { data?: ResearchAPIResponse[] };
+  const listData = apiResponse?.data || [];
 
   return {
     // Data
-    researches: (listData.data as unknown as Research[]) || [],
-    total: listData.total || 0,
-    currentPage: listData.page || 1,
-    totalPages: Math.ceil((listData.total || 0) / (listData.limit || 10)),
+    researches: listData,
+    total: listData.length,
+    currentPage: 1,
+    totalPages: 1,
 
     // States
     isLoading: listQuery.loading || createMutation.loading || updateMutation.loading || deleteMutation.loading,
@@ -173,13 +173,14 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
     // Actions
     refetch: async () => {
       const response = await listQuery.send();
+      const responseData = (response as unknown as { data?: ResearchAPIResponse[] })?.data || [];
       return {
         data: {
-          researches: (response as unknown as { data?: ResearchRecord[] })?.data || [],
-          data: (response as unknown as { data?: ResearchRecord[] })?.data || [],
-          total: 0,
+          researches: responseData,
+          data: responseData,
+          total: responseData.length,
           page: 1,
-          limit: 10
+          limit: responseData.length
         },
         success: true
       };
