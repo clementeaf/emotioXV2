@@ -88,7 +88,7 @@ export class QuotaValidationService {
         return { isValid: true }; // Sin configuración, permitir acceso
       }
 
-      const demographicQuestions = config.demographicQuestions;
+      const demographicQuestions = config.demographicQuestions as DemographicQuestions;
 
       // Analizar cada criterio demográfico (SOLO PARA ANÁLISIS)
       const validations = await Promise.all([
@@ -126,13 +126,13 @@ export class QuotaValidationService {
   private async analyzeAgeQuota(
     researchId: string,
     age?: string,
-    ageConfig?: any
+    ageConfig?: Record<string, unknown>
   ): Promise<QuotaValidationResult> {
     if (!age || !ageConfig?.quotasEnabled || !ageConfig?.quotas) {
       return { isValid: true };
     }
 
-    const quota = ageConfig.quotas.find((q: AgeQuota) =>
+    const quota = (ageConfig as any)?.quotas?.find((q: AgeQuota) =>
       q.ageRange === age && q.isActive
     );
 
@@ -164,13 +164,13 @@ export class QuotaValidationService {
   private async analyzeCountryQuota(
     researchId: string,
     country?: string,
-    countryConfig?: any
+    countryConfig?: Record<string, unknown>
   ): Promise<QuotaValidationResult> {
     if (!country || !countryConfig?.quotasEnabled || !countryConfig?.quotas) {
       return { isValid: true };
     }
 
-    const quota = countryConfig.quotas.find((q: CountryQuota) =>
+    const quota = (countryConfig as any)?.quotas?.find((q: CountryQuota) =>
       q.country === country && q.isActive
     );
 
@@ -202,13 +202,13 @@ export class QuotaValidationService {
   private async analyzeGenderQuota(
     researchId: string,
     gender?: string,
-    genderConfig?: any
+    genderConfig?: Record<string, unknown>
   ): Promise<QuotaValidationResult> {
     if (!gender || !genderConfig?.quotasEnabled || !genderConfig?.quotas) {
       return { isValid: true };
     }
 
-    const quota = genderConfig.quotas.find((q: GenderQuota) =>
+    const quota = (genderConfig as any)?.quotas?.find((q: GenderQuota) =>
       q.gender === gender && q.isActive
     );
 
@@ -240,13 +240,13 @@ export class QuotaValidationService {
   private async analyzeEducationLevelQuota(
     researchId: string,
     educationLevel?: string,
-    educationConfig?: any
+    educationConfig?: Record<string, unknown>
   ): Promise<QuotaValidationResult> {
     if (!educationLevel || !educationConfig?.quotasEnabled || !educationConfig?.quotas) {
       return { isValid: true };
     }
 
-    const quota = educationConfig.quotas.find((q: EducationLevelQuota) =>
+    const quota = (educationConfig as any)?.quotas?.find((q: EducationLevelQuota) =>
       q.educationLevel === educationLevel && q.isActive
     );
 
@@ -278,13 +278,13 @@ export class QuotaValidationService {
   private async analyzeHouseholdIncomeQuota(
     researchId: string,
     householdIncome?: string,
-    incomeConfig?: any
+    incomeConfig?: Record<string, unknown>
   ): Promise<QuotaValidationResult> {
     if (!householdIncome || !incomeConfig?.quotasEnabled || !incomeConfig?.quotas) {
       return { isValid: true };
     }
 
-    const quota = incomeConfig.quotas.find((q: HouseholdIncomeQuota) =>
+    const quota = (incomeConfig as any)?.quotas?.find((q: HouseholdIncomeQuota) =>
       q.incomeLevel === householdIncome && q.isActive
     );
 
@@ -316,13 +316,13 @@ export class QuotaValidationService {
   private async analyzeEmploymentStatusQuota(
     researchId: string,
     employmentStatus?: string,
-    employmentConfig?: any
+    employmentConfig?: Record<string, unknown>
   ): Promise<QuotaValidationResult> {
     if (!employmentStatus || !employmentConfig?.quotasEnabled || !employmentConfig?.quotas) {
       return { isValid: true };
     }
 
-    const quota = employmentConfig.quotas.find((q: EmploymentStatusQuota) =>
+    const quota = (employmentConfig as any)?.quotas?.find((q: EmploymentStatusQuota) =>
       q.employmentStatus === employmentStatus && q.isActive
     );
 
@@ -354,13 +354,13 @@ export class QuotaValidationService {
   private async analyzeDailyHoursOnlineQuota(
     researchId: string,
     dailyHoursOnline?: string,
-    hoursConfig?: any
+    hoursConfig?: Record<string, unknown>
   ): Promise<QuotaValidationResult> {
     if (!dailyHoursOnline || !hoursConfig?.quotasEnabled || !hoursConfig?.quotas) {
       return { isValid: true };
     }
 
-    const quota = hoursConfig.quotas.find((q: DailyHoursOnlineQuota) =>
+    const quota = (hoursConfig as any)?.quotas?.find((q: DailyHoursOnlineQuota) =>
       q.hoursRange === dailyHoursOnline && q.isActive
     );
 
@@ -392,13 +392,13 @@ export class QuotaValidationService {
   private async analyzeTechnicalProficiencyQuota(
     researchId: string,
     technicalProficiency?: string,
-    proficiencyConfig?: any
+    proficiencyConfig?: Record<string, unknown>
   ): Promise<QuotaValidationResult> {
     if (!technicalProficiency || !proficiencyConfig?.quotasEnabled || !proficiencyConfig?.quotas) {
       return { isValid: true };
     }
 
-    const quota = proficiencyConfig.quotas.find((q: TechnicalProficiencyQuota) =>
+    const quota = (proficiencyConfig as any)?.quotas?.find((q: TechnicalProficiencyQuota) =>
       q.proficiencyLevel === technicalProficiency && q.isActive
     );
 
@@ -555,7 +555,7 @@ export class QuotaValidationService {
   /**
    * Obtiene configuración de eye tracking
    */
-  private async getEyeTrackingConfig(researchId: string): Promise<any> {
+  private async getEyeTrackingConfig(researchId: string): Promise<Record<string, unknown> | null> {
     try {
       const command = new QueryCommand({
         TableName: this.tableName,

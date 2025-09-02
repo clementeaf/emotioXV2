@@ -88,9 +88,10 @@ export function validateNewResearch(data: Partial<NewResearch>): void {
     };
 
     // Si el tipo está en el mapa, convertirlo al valor correcto
-    if (typeMap[data.type as string]) {
-      // Convertir automáticamente el tipo
-      (data.type as any) = typeMap[data.type as string];
+    if (typeof data.type === 'string' && typeMap[data.type]) {
+      // Crear una copia del tipo convertido en lugar de modificar el objeto original
+      const convertedType = typeMap[data.type];
+      data.type = convertedType;
     }
 
     // Ahora validar contra los tipos válidos
@@ -222,7 +223,7 @@ export type ParsedBody<T> = { success: true; data: T } | { success: false; error
  * @param body Cuerpo de la petición
  * @returns Objeto con resultado del parseo
  */
-export function parseRequestBody<T = any>(body: string | null): ParsedBody<T> {
+export function parseRequestBody<T = unknown>(body: string | null): ParsedBody<T> {
   if (!body) {
     console.log('No se proporcionaron datos en la petición');
     return {
@@ -262,7 +263,7 @@ export function validateUserId(userId: string | undefined): APIGatewayProxyResul
  * @param fieldName Nombre del campo para el mensaje de error
  * @returns Respuesta de error o null si es válido
  */
-export function validateRequiredField(field: any, fieldName: string): APIGatewayProxyResult | null {
+export function validateRequiredField(field: unknown, fieldName: string): APIGatewayProxyResult | null {
   if (field === undefined || field === null || field === '') {
     console.log(`Campo requerido no proporcionado: ${fieldName}`);
     return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD(fieldName), 400);
@@ -406,14 +407,21 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
 
   switch (type) {
     case QuestionType.SMARTVOC_CSAT:
-      if (!config.companyName) {
+      if (!config.companyName || typeof config.companyName !== 'string') {
         return errorResponse(error.REQUIRED_FIELD(`nombre de empresa en ${questionLabel.toLowerCase()}`), 400);
       }
-      if (config.type !== 'stars' && config.type !== 'numbers' && config.type !== 'emojis') {
+      if (!config.type || !['stars', 'numbers', 'emojis'].includes(config.type)) {
         return errorResponse(
           `${questionLabel} de tipo CSAT debe tener un tipo de entrada válido: stars, numbers o emojis`,
           400
         );
+      }
+      // Validar configuración específica según el tipo
+      if (config.type === 'stars' || config.type === 'numbers') {
+        const configWithRange = config as any;
+        if (configWithRange.range && (typeof configWithRange.range.min !== 'number' || typeof configWithRange.range.max !== 'number')) {
+          return errorResponse(`${questionLabel} con tipo ${config.type} requiere un rango válido`, 400);
+        }
       }
       break;
 
@@ -492,13 +500,14 @@ export function validateMultiple(...validations: (APIGatewayProxyResult | null)[
  */
 export function extractResearchId(
   event: APIGatewayProxyEvent,
-  bodyData?: any
+  bodyData?: Record<string, unknown>
 ): { researchId: string } | APIGatewayProxyResult {
   // Intentar obtener el researchId de diferentes fuentes en orden de prioridad
-  let researchId =
-    bodyData?.researchId ||
+  let researchId = (
+    (typeof bodyData?.researchId === 'string' ? bodyData.researchId : undefined) ||
     event.pathParameters?.researchId ||
-    event.queryStringParameters?.researchId;
+    event.queryStringParameters?.researchId
+  ) as string | undefined;
 
   // <<< NUEVO: Fallback si no se encuentra en las fuentes anteriores >>>
   if (!researchId && event.path) {
@@ -507,7 +516,7 @@ export function extractResearchId(
       // Asumir estructura como /.../research/{researchId}/...
       const researchIndex = pathSegments.indexOf('research');
       if (researchIndex !== -1 && pathSegments.length > researchIndex + 1 && pathSegments[researchIndex + 1]) {
-        researchId = pathSegments[researchIndex + 1];
+        researchId = pathSegments[researchIndex + 1] as string;
         console.log(`[extractResearchId] ID extraído del path: ${researchId}`);
       }
     } catch (e) {
@@ -523,7 +532,7 @@ export function extractResearchId(
   }
 
   // Si llegamos aquí, sabemos que researchId está definido
-  return { researchId: researchId! };
+  return { researchId: researchId as string };
 }
 
 /**
@@ -571,31 +580,32 @@ export function parseAndValidateBody<T>(
  * Devuelve null si es válido, o APIGatewayProxyResult con error 400 si no.
  * TODO: Implementar reglas de validación detalladas.
  */
-export const validateCognitiveTaskData = (data: any, partial: boolean = false): APIGatewayProxyResult | null => {
+export const validateCognitiveTaskData = (data: unknown, partial: boolean = false): APIGatewayProxyResult | null => {
   if (typeof data !== 'object' || data === null) {
     // Devolver respuesta de error directamente
     return errorResponse('Formato de datos inválido: se esperaba un objeto.', 400);
   }
 
+  const dataObj = data as Record<string, unknown>;
   const errors: Record<string, string> = {};
 
   // --- Validación de Campos Obligatorios (solo si NO es parcial) ---
   if (!partial) {
-    if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+    if (!dataObj.questions || !Array.isArray(dataObj.questions) || dataObj.questions.length === 0) {
       errors.questions = 'Debe definir al menos una pregunta.';
     }
     // ...
   }
 
   // --- Validación de Tipos y Formatos ---
-  if (data.questions && Array.isArray(data.questions)) {
-    data.questions.forEach((q: any, index: number) => {
+  if (dataObj.questions && Array.isArray(dataObj.questions)) {
+    (dataObj.questions as Record<string, unknown>[]).forEach((q: Record<string, unknown>, index: number) => {
       if (!q.id) errors[`questions[${index}].id`] = 'ID de pregunta es requerido.';
       if (!q.type) errors[`questions[${index}].type`] = 'Tipo de pregunta es requerido.';
       // ...
     });
   }
-  if (data.hasOwnProperty('randomizeQuestions') && typeof data.randomizeQuestions !== 'boolean') {
+  if (dataObj.hasOwnProperty('randomizeQuestions') && typeof dataObj.randomizeQuestions !== 'boolean') {
      errors.randomizeQuestions = 'randomizeQuestions debe ser un valor booleano.';
   }
   // ...
@@ -660,16 +670,17 @@ export function validateScreenId(screenId: string | undefined): APIGatewayProxyR
  * @param data Los datos a validar.
  * @returns null si los datos son válidos, o un objeto APIGatewayProxyResult si hay errores.
  */
-export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null => {
+export const validateEyeTrackingData = (data: unknown): APIGatewayProxyResult | null => {
   if (!data) {
     return errorResponse('Cuerpo de la solicitud vacío o inválido', 400);
   }
 
+  const dataObj = data as Record<string, unknown>;
   const errors: Record<string, string> = {};
 
   // Validar demographics questions si están presentes
-  if (data.demographicQuestions) {
-    const dq = data.demographicQuestions;
+  if (dataObj.demographicQuestions) {
+    const dq = dataObj.demographicQuestions as Record<string, unknown>;
 
     // Verificar estructura básica para cada pregunta demográfica
     const questionKeys = ['age', 'country', 'gender', 'educationLevel', 'householdIncome',
@@ -677,13 +688,14 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
 
     questionKeys.forEach(key => {
       if (dq[key]) {
-        if (typeof dq[key].enabled !== 'boolean') {
+        const keyData = dq[key] as Record<string, unknown>;
+        if (typeof keyData.enabled !== 'boolean') {
           errors[`demographicQuestions.${key}.enabled`] = 'El campo enabled debe ser un valor booleano';
         }
-        if (typeof dq[key].required !== 'boolean') {
+        if (typeof keyData.required !== 'boolean') {
           errors[`demographicQuestions.${key}.required`] = 'El campo required debe ser un valor booleano';
         }
-        if (dq[key].options && !Array.isArray(dq[key].options)) {
+        if (keyData.options && !Array.isArray(keyData.options)) {
           errors[`demographicQuestions.${key}.options`] = 'El campo options debe ser un array';
         }
       }
@@ -691,8 +703,8 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   }
 
   // Validar linkConfig si está presente
-  if (data.linkConfig) {
-    const lc = data.linkConfig;
+  if (dataObj.linkConfig) {
+    const lc = dataObj.linkConfig as Record<string, unknown>;
 
     if (lc.allowMobile !== undefined && typeof lc.allowMobile !== 'boolean') {
       errors['linkConfig.allowMobile'] = 'El campo allowMobile debe ser un valor booleano';
@@ -708,8 +720,8 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   }
 
   // Validar participantLimit si está presente
-  if (data.participantLimit) {
-    const pl = data.participantLimit;
+  if (dataObj.participantLimit) {
+    const pl = dataObj.participantLimit as Record<string, unknown>;
 
     if (pl.enabled !== undefined && typeof pl.enabled !== 'boolean') {
       errors['participantLimit.enabled'] = 'El campo enabled debe ser un valor booleano';
@@ -725,8 +737,8 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   }
 
   // Validar backlinks si está presente
-  if (data.backlinks) {
-    const bl = data.backlinks;
+  if (dataObj.backlinks) {
+    const bl = dataObj.backlinks as Record<string, unknown>;
 
     // Validar que las URLs sean strings
     if (bl.complete !== undefined && typeof bl.complete !== 'string') {
@@ -744,9 +756,9 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
     // Validar URL formato si no están vacías
     const urlFields = ['complete', 'disqualified', 'overquota'];
     urlFields.forEach(field => {
-      if (bl[field] && bl[field].trim() !== '') {
+      if (bl[field] && (bl[field] as string).trim() !== '') {
         try {
-          new URL(bl[field]);
+          new URL(bl[field] as string);
         } catch (e) {
           errors[`backlinks.${field}`] = `El campo ${field} debe ser una URL válida`;
         }
@@ -755,12 +767,12 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   }
 
   // Validar researchUrl si está presente
-  if (data.researchUrl !== undefined) {
-    if (typeof data.researchUrl !== 'string') {
+  if (dataObj.researchUrl !== undefined) {
+    if (typeof dataObj.researchUrl !== 'string') {
       errors['researchUrl'] = 'El campo researchUrl debe ser una cadena de texto';
-    } else if (data.researchUrl.trim() !== '') {
+    } else if (dataObj.researchUrl.trim() !== '') {
       try {
-        new URL(data.researchUrl);
+        new URL(dataObj.researchUrl);
       } catch (e) {
         errors['researchUrl'] = 'El campo researchUrl debe ser una URL válida';
       }
@@ -768,8 +780,8 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   }
 
   // Validar parameterOptions si está presente
-  if (data.parameterOptions) {
-    const po = data.parameterOptions;
+  if (dataObj.parameterOptions) {
+    const po = dataObj.parameterOptions as Record<string, unknown>;
 
     const optionKeys = ['saveDeviceInfo', 'saveLocationInfo', 'saveResponseTimes', 'saveUserJourney'];
     optionKeys.forEach(key => {
@@ -792,7 +804,7 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
  * @param data Los datos a validar (debería ser de tipo CreateEyeTrackingRecruitRequest o similar).
  * @returns null si los datos son válidos, o un objeto APIGatewayProxyResult si hay errores.
  */
-export const validateEyeTrackingRecruitData = (data: any): APIGatewayProxyResult | null => {
+export const validateEyeTrackingRecruitData = (data: unknown): APIGatewayProxyResult | null => {
   // Por ahora, asumimos que los datos son válidos si están presentes.
   // Se pueden añadir validaciones más específicas aquí, por ejemplo, para quotas, criteria, etc.
   if (!data) {
@@ -808,19 +820,29 @@ export const validateEyeTrackingRecruitData = (data: any): APIGatewayProxyResult
 /**
  * Validar datos de ubicación
  */
-export function validateLocationData(data: any): { isValid: boolean; errors: string[] } {
+export function validateLocationData(data: unknown): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
+  
+  // Verificar que data no sea null o undefined
+  if (!data || typeof data !== 'object') {
+    return {
+      isValid: false,
+      errors: ['Los datos de ubicación deben ser un objeto válido']
+    };
+  }
+  
+  const dataObj = data as Record<string, unknown>;
 
   // Validar researchId
-  if (!data.researchId || typeof data.researchId !== 'string') {
+  if (!dataObj.researchId || typeof dataObj.researchId !== 'string') {
     errors.push('researchId es requerido y debe ser una cadena');
   }
 
   // Validar location
-  if (!data.location || typeof data.location !== 'object') {
+  if (!dataObj.location || typeof dataObj.location !== 'object') {
     errors.push('location es requerido y debe ser un objeto');
   } else {
-    const location = data.location;
+    const location = dataObj.location as Record<string, unknown>;
 
     // Validar latitude
     if (typeof location.latitude !== 'number' || location.latitude < -90 || location.latitude > 90) {
@@ -838,13 +860,13 @@ export function validateLocationData(data: any): { isValid: boolean; errors: str
     }
 
     // Validar source
-    if (!location.source || !['gps', 'ip'].includes(location.source)) {
+    if (!location.source || typeof location.source !== 'string' || !['gps', 'ip'].includes(location.source)) {
       errors.push('source debe ser "gps" o "ip"');
     }
   }
 
   // Validar timestamp (opcional)
-  if (data.timestamp && typeof data.timestamp !== 'string') {
+  if (dataObj.timestamp && typeof dataObj.timestamp !== 'string') {
     errors.push('timestamp debe ser una cadena ISO');
   }
 

@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, UpdateCommandInput } from '@aws-sdk/lib-dynamodb';
 import { uuidv4 } from '../utils/id-generator';
 import { structuredLog } from '../utils/logging.util';
 
@@ -149,8 +149,8 @@ export class CompanyModel {
       
       // Si es un error de "resource not found" de DynamoDB, retornar null
       if (error && typeof error === 'object') {
-        const errorName = (error as any).name;
-        const errorMessage = (error as any).message || '';
+        const errorName = (error as Error & { name?: string }).name;
+        const errorMessage = (error as Error).message || '';
         
         if (errorName === 'ResourceNotFoundException' || 
             errorMessage.includes('Requested resource not found') ||
@@ -192,7 +192,7 @@ export class CompanyModel {
       structuredLog('info', contextString, `Query completado. Encontrados: ${Items?.length ?? 0} elementos.`);
       structuredLog('info', contextString, 'Raw items from DynamoDB:', { items: Items });
 
-      const companies = Items?.map(item => this.mapToEntity(item as any)) || [];
+      const companies = Items?.map(item => this.mapToEntity(item as Record<string, unknown>)) || [];
 
       structuredLog('info', contextString, 'Items mapeados justo antes de retornar:', { companies });
 
@@ -202,8 +202,8 @@ export class CompanyModel {
        
        // Si es un error de "resource not found" o índice no existe, retornar array vacío
        if (error && typeof error === 'object') {
-         const errorName = (error as any).name;
-         const errorMessage = (error as any).message || '';
+         const errorName = (error as Error & { name?: string }).name;
+         const errorMessage = (error as Error).message || '';
          
          if (errorName === 'ResourceNotFoundException' || 
              errorMessage.includes('Requested resource not found') ||
@@ -239,7 +239,7 @@ export class CompanyModel {
       
       // Preparar expresiones para actualización
       let updateExpression = 'set updatedAt = :updatedAt';
-      const expressionAttributeValues: Record<string, any> = {
+      const expressionAttributeValues: Record<string, unknown> = {
         ':updatedAt': now
       };
       
@@ -260,7 +260,7 @@ export class CompanyModel {
       }
       
       // Parámetros para la actualización
-      const commandParams: any = {
+      const commandParams = {
         TableName: this.tableName,
         Key: {
           id,
@@ -268,8 +268,8 @@ export class CompanyModel {
         },
         UpdateExpression: updateExpression,
         ExpressionAttributeValues: expressionAttributeValues,
-        ReturnValues: 'ALL_NEW'
-      };
+        ReturnValues: 'ALL_NEW' as const
+      } as UpdateCommandInput;
       
       // Solo incluir ExpressionAttributeNames si hay atributos que necesitan alias
       if (Object.keys(expressionAttributeNames).length > 0) {
@@ -295,7 +295,7 @@ export class CompanyModel {
       
       // Si es un error de "resource not found", re-lanzar como error específico
       if (error && typeof error === 'object') {
-        const errorMessage = (error as any).message || '';
+        const errorMessage = (error as Error).message || '';
         if (errorMessage.includes('Requested resource not found') || 
             errorMessage.includes('resource not found')) {
           throw new Error('Empresa no encontrada');
@@ -327,7 +327,7 @@ export class CompanyModel {
       
       // Si es un error de "resource not found", considerar como exitoso (ya estaba eliminado)
       if (error && typeof error === 'object') {
-        const errorMessage = (error as any).message || '';
+        const errorMessage = (error as Error).message || '';
         if (errorMessage.includes('Requested resource not found') || 
             errorMessage.includes('resource not found')) {
           console.warn(`[CompanyModel] Company ${id} not found for deletion, assuming already deleted`);
@@ -339,13 +339,13 @@ export class CompanyModel {
     }
   }
 
-  private mapToEntity(item: any): Company {
+  private mapToEntity(item: Record<string, unknown>): Company {
     return {
-      id: item.id,
-      name: item.name,
+      id: item.id as string,
+      name: item.name as string,
       status: item.status as 'active' | 'inactive',
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt
+      createdAt: item.createdAt as string,
+      updatedAt: item.updatedAt as string
     };
   }
 }

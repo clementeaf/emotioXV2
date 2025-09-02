@@ -168,9 +168,9 @@ class AuthService implements IAuthService {
       try {
         await this.getUserByEmail(data.email);
         throw new Error(`El email ${data.email} ya está registrado`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Si el error es que no se encontró el usuario, continuamos con la creación
-        if (!error.message.includes('no encontrado')) {
+        if (!(error as Error).message?.includes('no encontrado')) {
           throw error;
         }
       }
@@ -233,8 +233,7 @@ class AuthService implements IAuthService {
       // Actualizar los campos proporcionados
       Object.entries(data).forEach(([key, value]) => {
         if (key !== 'password' && value !== undefined) {
-          // @ts-ignore - Ignorar error de tipo en asignación dinámica
-          updatedUser[key] = value;
+          (updatedUser as Record<string, unknown>)[key] = value;
         }
       });
       
@@ -243,7 +242,7 @@ class AuthService implements IAuthService {
       
       // Construir la expresión de actualización
       let updateExpression = 'SET updatedAt = :updatedAt';
-      const expressionAttributeValues: Record<string, any> = {
+      const expressionAttributeValues: Record<string, unknown> = {
         ':updatedAt': updatedUser.updatedAt
       };
       
@@ -410,17 +409,18 @@ class AuthService implements IAuthService {
           throw jwtError; // Lanzar el error original
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Mejorar los mensajes de error para depuración
-      if (error.name === 'TokenExpiredError') {
+      const errorObj = error as Error & { name?: string };
+      if (errorObj.name === 'TokenExpiredError') {
         console.error('Token expirado:', error);
         throw new Error('Token expirado');
-      } else if (error.name === 'JsonWebTokenError') {
+      } else if (errorObj.name === 'JsonWebTokenError') {
         console.error('Token inválido:', error);
-        throw new Error('Token inválido: ' + error.message);
+        throw new Error('Token inválido: ' + errorObj.message);
       } else {
         console.error('Error desconocido al validar token:', error);
-        throw new Error('Error al validar token: ' + error.message);
+        throw new Error('Error al validar token: ' + errorObj.message);
       }
     }
   }
@@ -429,7 +429,7 @@ class AuthService implements IAuthService {
    * Decodifica un token JWT manualmente sin verificar la firma
    * Utilizado para debugging y como fallback
    */
-  private decodeTokenManually(token: string): any {
+  private decodeTokenManually(token: string): Record<string, unknown> | null {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
@@ -571,9 +571,9 @@ class AuthService implements IAuthService {
    */
   private sanitizeUser(user: User): User {
     const sanitized = { ...user };
-    delete (sanitized as any).password;
-    delete (sanitized as any).passwordHash;
-    delete (sanitized as any).verificationCode;
+    delete (sanitized as Record<string, unknown>).password;
+    delete (sanitized as Record<string, unknown>).passwordHash;
+    delete (sanitized as Record<string, unknown>).verificationCode;
     return sanitized;
   }
   
@@ -590,10 +590,10 @@ class AuthService implements IAuthService {
         if (existingUser) {
           throw new Error('El email ya está registrado');
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Si el error contiene "no encontrado", significa que el usuario no existe
         // y podemos continuar con el registro
-        if (!error.message.includes('no encontrado')) {
+        if (!(error as Error).message?.includes('no encontrado')) {
           throw error;
         }
         console.log('Email no registrado, se procederá a crear el usuario');

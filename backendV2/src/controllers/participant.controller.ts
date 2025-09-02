@@ -73,8 +73,8 @@ export class ParticipantController {
           status: 201
         })
       };
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.create', 'Error creating participant', { error: error.message || error, stack: error.stack });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.create', 'Error creating participant', { error: (error as Error)?.message || error, stack: (error as Error)?.stack });
       if (error instanceof z.ZodError) {
         return {
           statusCode: 400,
@@ -86,7 +86,7 @@ export class ParticipantController {
         statusCode: 400,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al crear participante',
+          error: (error as Error)?.message || 'Error al crear participante',
           status: 400
         })
       };
@@ -132,8 +132,8 @@ export class ParticipantController {
           status: 200
         })
       };
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.getById', 'Error retrieving participant by ID', { participantId: event.pathParameters?.id, error: error.message || error, stack: error.stack });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.getById', 'Error retrieving participant by ID', { participantId: event.pathParameters?.id, error: (error as Error)?.message || error, stack: (error as Error)?.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -209,8 +209,8 @@ export class ParticipantController {
           status: 200
         })
       };
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.verifyParticipant', 'Error verifying participant', { participantId: event.pathParameters?.participantId, researchId: event.queryStringParameters?.researchId, error: error.message || error, stack: error.stack });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.verifyParticipant', 'Error verifying participant', { participantId: event.pathParameters?.participantId, researchId: event.queryStringParameters?.researchId, error: (error as Error)?.message || error, stack: (error as Error)?.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -237,8 +237,8 @@ export class ParticipantController {
           status: 200
         })
       };
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.getAll', 'Error retrieving all participants', { error: error.message || error, stack: error.stack });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.getAll', 'Error retrieving all participants', { error: (error as Error)?.message || error, stack: (error as Error)?.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(_event),
@@ -292,8 +292,8 @@ export class ParticipantController {
           status: 200
         })
       };
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.delete', 'Error deleting participant', { participantId: event.pathParameters?.id, error: error.message || error, stack: error.stack });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.delete', 'Error deleting participant', { participantId: event.pathParameters?.id, error: (error as Error)?.message || error, stack: (error as Error)?.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -384,8 +384,8 @@ export class ParticipantController {
           status: 200
         })
       };
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.login', 'Error in participant login', { error: error.message || error, stack: error.stack, statusCode: error.statusCode });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.login', 'Error in participant login', { error: (error as Error)?.message || error, stack: (error as Error)?.stack, statusCode: (error as any)?.statusCode });
       if (error instanceof z.ZodError) {
         return {
           statusCode: 400,
@@ -393,19 +393,19 @@ export class ParticipantController {
           body: JSON.stringify({ error: error.errors, status: 400 })
         };
       }
-      if (error?.statusCode === 403) {
+      if ((error as any)?.statusCode === 403) {
         return {
           statusCode: 403,
           headers: getCorsHeaders(event),
-          body: JSON.stringify({ error: error.message || 'No tienes permiso para esta acción', status: 403 })
+          body: JSON.stringify({ error: (error as Error)?.message || 'No tienes permiso para esta acción', status: 403 })
         };
       }
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as any)?.statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error interno en el login',
-          status: error.statusCode || 500
+          error: (error as Error)?.message || 'Error interno en el login',
+          status: (error as any)?.statusCode || 500
         })
       };
     }
@@ -444,10 +444,10 @@ export class ParticipantController {
       // Validar que la investigación existe
       try {
         await this.researchServiceInstance.getResearchById(researchId, 'user');
-      } catch (error: any) {
-        structuredLog('error', 'ParticipantController.generateDummyParticipants', 'Error validating research', { researchId, error: error.message || error, statusCode: error.statusCode });
+      } catch (error: unknown) {
+        structuredLog('error', 'ParticipantController.generateDummyParticipants', 'Error validating research', { researchId, error: (error as Error)?.message || error, statusCode: (error as any)?.statusCode });
         // Si es un ResearchError, devolver el código de estado específico
-        if (error.statusCode === 404) {
+        if ((error as any)?.statusCode === 404) {
           return {
             statusCode: 404,
             headers: getCorsHeaders(event),
@@ -456,7 +456,7 @@ export class ParticipantController {
               status: 404
             })
           };
-        } else if (error.statusCode === 403) {
+        } else if ((error as any)?.statusCode === 403) {
           return {
             statusCode: 403,
             headers: getCorsHeaders(event),
@@ -528,13 +528,13 @@ export class ParticipantController {
           status: 200
         })
       };
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.generateDummyParticipants', 'Error generating dummy participants', { researchId: JSON.parse(event.body || '{}').researchId, error: error.message || error, stack: error.stack });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.generateDummyParticipants', 'Error generating dummy participants', { researchId: JSON.parse(event.body || '{}').researchId, error: (error as Error)?.message || error, stack: (error as Error)?.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al generar participantes dummy',
+          error: (error as Error)?.message || 'Error al generar participantes dummy',
           status: 500
         })
       };
@@ -596,13 +596,13 @@ export class ParticipantController {
           status: 200
         })
       };
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.getParticipantsByResearch', 'Error retrieving participants by research', { researchId: event.pathParameters?.researchId, error: error.message || error, stack: error.stack });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.getParticipantsByResearch', 'Error retrieving participants by research', { researchId: event.pathParameters?.researchId, error: (error as Error)?.message || error, stack: (error as Error)?.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener participantes',
+          error: (error as Error)?.message || 'Error al obtener participantes',
           status: 500
         })
       };
@@ -654,8 +654,8 @@ export class ParticipantController {
         })
       };
 
-    } catch (error: any) {
-      structuredLog('error', 'ParticipantController.deleteParticipant', 'Error deleting participant', { researchId: event.pathParameters?.researchId, participantId: event.pathParameters?.participantId, error: error.message || error, stack: error.stack });
+    } catch (error: unknown) {
+      structuredLog('error', 'ParticipantController.deleteParticipant', 'Error deleting participant', { researchId: event.pathParameters?.researchId, participantId: event.pathParameters?.participantId, error: (error as Error)?.message || error, stack: (error as Error)?.stack });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -721,7 +721,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
     };
   } catch (error: any) {
-    structuredLog('error', 'ParticipantController.mainHandler', 'Error in participant handler', { error: error.message || error, stack: error.stack });
+    structuredLog('error', 'ParticipantController.mainHandler', 'Error in participant handler', { error: (error as Error)?.message || error, stack: (error as Error)?.stack });
     return {
       statusCode: 500,
       headers: getCorsHeaders(event),
