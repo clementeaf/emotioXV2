@@ -36,7 +36,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Connected successfully',
         connectionId,
@@ -66,7 +66,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Disconnected successfully',
         connectionId,
@@ -112,7 +112,7 @@ export class WebSocketController {
         console.log('[WebSocketController] ⚠️ Tipo de mensaje no reconocido:', body.type);
         return {
           statusCode: 200,
-          headers: getCorsHeaders(event as any),
+          headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
           body: JSON.stringify({
             message: 'Message received',
             connectionId,
@@ -125,14 +125,14 @@ export class WebSocketController {
   /**
    * Maneja evento de conexión de monitoreo
    */
-  private async handleMonitoringConnect(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
+  private async handleMonitoringConnect(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
-    const researchId = data.data?.researchId;
+    const researchId = (data.data as Record<string, unknown>)?.researchId as string;
 
     console.log('[WebSocketController] 🎯 MONITORING_CONNECT:', {
       connectionId,
       researchId,
-      timestamp: data.data?.timestamp
+      timestamp: (data.data as Record<string, unknown>)?.timestamp
     });
 
     // Registrar conexión para monitoreo
@@ -150,7 +150,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Monitoring connection established',
         connectionId,
@@ -163,19 +163,19 @@ export class WebSocketController {
   /**
    * Maneja evento de login de participante
    */
-  private async handleParticipantLogin(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
+  private async handleParticipantLogin(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
 
     console.log('[WebSocketController] 👤 PARTICIPANT_LOGIN:', {
       connectionId,
-      researchId: data.data?.researchId,
-      participantId: data.data?.participantId,
-      email: data.data?.email
+      researchId: (data.data as Record<string, unknown>)?.researchId,
+      participantId: (data.data as Record<string, unknown>)?.participantId,
+      email: (data.data as Record<string, unknown>)?.email
     });
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Participant login recorded',
         connectionId,
@@ -187,20 +187,20 @@ export class WebSocketController {
   /**
    * Maneja evento de paso de participante
    */
-  private async handleParticipantStep(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
+  private async handleParticipantStep(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
 
     console.log('[WebSocketController] 📊 PARTICIPANT_STEP:', {
       connectionId,
-      researchId: data.data?.researchId,
-      participantId: data.data?.participantId,
-      stepName: data.data?.stepName,
-      progress: data.data?.progress
+      researchId: (data.data as Record<string, unknown>)?.researchId,
+      participantId: (data.data as Record<string, unknown>)?.participantId,
+      stepName: (data.data as Record<string, unknown>)?.stepName,
+      progress: (data.data as Record<string, unknown>)?.progress
     });
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Participant step recorded',
         connectionId,
@@ -212,20 +212,20 @@ export class WebSocketController {
   /**
    * Maneja evento de descalificación de participante
    */
-  private async handleParticipantDisqualified(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
+  private async handleParticipantDisqualified(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
 
     console.log('[WebSocketController] 🚫 PARTICIPANT_DISQUALIFIED:', {
       connectionId,
-      researchId: data.data?.researchId,
-      participantId: data.data?.participantId,
-      reason: data.data?.reason,
-      disqualificationType: data.data?.disqualificationType
+      researchId: (data.data as Record<string, unknown>)?.researchId,
+      participantId: (data.data as Record<string, unknown>)?.participantId,
+      reason: (data.data as Record<string, unknown>)?.reason,
+      disqualificationType: (data.data as Record<string, unknown>)?.disqualificationType
     });
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Participant disqualification recorded',
         connectionId,
@@ -237,20 +237,20 @@ export class WebSocketController {
   /**
    * Maneja evento de cuota excedida
    */
-  private async handleParticipantQuotaExceeded(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
+  private async handleParticipantQuotaExceeded(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
 
     console.log('[WebSocketController] 📈 PARTICIPANT_QUOTA_EXCEEDED:', {
       connectionId,
-      researchId: data.data?.researchId,
-      participantId: data.data?.participantId,
-      quotaType: data.data?.quotaType,
-      quotaValue: data.data?.quotaValue
+      researchId: (data.data as Record<string, unknown>)?.researchId,
+      participantId: (data.data as Record<string, unknown>)?.participantId,
+      quotaType: (data.data as Record<string, unknown>)?.quotaType,
+      quotaValue: (data.data as Record<string, unknown>)?.quotaValue
     });
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Participant quota exceeded recorded',
         connectionId,
@@ -262,18 +262,19 @@ export class WebSocketController {
   /**
    * Maneja evento de respuesta guardada
    */
-  private async handleParticipantResponseSaved(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
+  private async handleParticipantResponseSaved(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
-    const researchId = data.data?.researchId;
+    const dataPayload = data.data as Record<string, unknown>;
+    const researchId = dataPayload?.researchId as string;
 
     console.log('[WebSocketController] 💾 PARTICIPANT_RESPONSE_SAVED:', {
       connectionId,
       researchId: researchId,
-      participantId: data.data?.participantId,
-      questionKey: data.data?.questionKey,
-      stepNumber: data.data?.stepNumber,
-      totalSteps: data.data?.totalSteps,
-      progress: data.data?.progress
+      participantId: dataPayload?.participantId,
+      questionKey: dataPayload?.questionKey,
+      stepNumber: dataPayload?.stepNumber,
+      totalSteps: dataPayload?.totalSteps,
+      progress: dataPayload?.progress
     });
 
     // 🎯 BROADCAST AL DASHBOARD - PROGRESO EN TIEMPO REAL
@@ -283,11 +284,11 @@ export class WebSocketController {
           type: 'PARTICIPANT_STEP' as const,
           data: {
             researchId,
-            participantId: data.data?.participantId,
-            stepName: data.data?.questionKey,
-            stepNumber: data.data?.stepNumber,
-            totalSteps: data.data?.totalSteps,
-            progress: data.data?.progress,
+            participantId: dataPayload?.participantId as string,
+            stepName: dataPayload?.questionKey as string,
+            stepNumber: dataPayload?.stepNumber as number,
+            totalSteps: dataPayload?.totalSteps as number,
+            progress: dataPayload?.progress as number,
             timestamp: new Date().toISOString()
           }
         };
@@ -296,8 +297,8 @@ export class WebSocketController {
         
         console.log('[WebSocketController] ✅ Progreso broadcast al dashboard:', {
           researchId,
-          participantId: data.data?.participantId,
-          progress: data.data?.progress,
+          participantId: dataPayload?.participantId,
+          progress: dataPayload?.progress,
           successfulBroadcasts
         });
       } catch (error) {
@@ -307,7 +308,7 @@ export class WebSocketController {
 
     return {
       statusCode: 200,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Participant response saved recorded',
         connectionId,
@@ -347,7 +348,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         console.log('[WebSocketHandler] ⚠️ Ruta no manejada:', routeKey);
         return {
           statusCode: 200,
-          headers: getCorsHeaders(event as any),
+          headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
           body: JSON.stringify({
             message: 'Route not handled',
             routeKey,
@@ -359,7 +360,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
     console.error('[WebSocketHandler] ❌ Error procesando WebSocket:', error);
     return {
       statusCode: 500,
-      headers: getCorsHeaders(event as any),
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error',

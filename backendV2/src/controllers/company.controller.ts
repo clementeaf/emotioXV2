@@ -3,7 +3,6 @@ import { BadRequestError, NotFoundError } from '../errors';
 // import { InternalServerError } from '../errors';
 import { getCorsHeaders } from '../middlewares/cors';
 import { CompanyError, companyService } from '../services/company.service';
-import { createController } from '../utils/controller.utils';
 import { extractAuthDataFromEvent } from '../utils/controller.utils';
 
 /**
@@ -344,41 +343,63 @@ const companyController = new CompanyController();
 /**
  * Handler principal que maneja todas las rutas de empresas
  */
-export const handler = createController(async (event: APIGatewayProxyEvent) => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const httpMethod = event.httpMethod;
-  const resource = event.resource;
+  const path = event.path;
 
-  console.log(`[CompanyController] ${httpMethod} ${resource}`);
+  console.log(`[CompanyController] ${httpMethod} ${path}`);
 
-  // Routing basado en método HTTP y resource
-  switch (httpMethod) {
-    case 'GET':
-      if (resource === '/companies') {
-        return companyController.getAllCompanies(event);
-      } else if (resource === '/companies/{id}') {
-        return companyController.getCompanyById(event);
-      }
-      break;
+  try {
+    // Routing basado en método HTTP y path
+    switch (httpMethod) {
+      case 'GET':
+        if (path === '/companies') {
+          return await companyController.getAllCompanies(event);
+        } else if (path.startsWith('/companies/')) {
+          return await companyController.getCompanyById(event);
+        }
+        break;
 
-    case 'POST':
-      if (resource === '/companies') {
-        return companyController.createCompany(event);
-      }
-      break;
+      case 'POST':
+        if (path === '/companies') {
+          return await companyController.createCompany(event);
+        }
+        break;
 
-    case 'PUT':
-      if (resource === '/companies/{id}') {
-        return companyController.updateCompany(event);
-      }
-      break;
+      case 'PUT':
+        if (path.startsWith('/companies/')) {
+          return await companyController.updateCompany(event);
+        }
+        break;
 
-    case 'DELETE':
-      if (resource === '/companies/{id}') {
-        return companyController.deleteCompany(event);
-      }
-      break;
+      case 'DELETE':
+        if (path.startsWith('/companies/')) {
+          return await companyController.deleteCompany(event);
+        }
+        break;
+    }
+
+    // Si no se encuentra la ruta
+    throw new NotFoundError(`Ruta no encontrada: ${httpMethod} ${path}`);
+  } catch (error) {
+    console.error('[CompanyController] Error:', error);
+    if (error instanceof NotFoundError) {
+      return {
+        statusCode: 404,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          success: false,
+          message: error.message
+        })
+      };
+    }
+    return {
+      statusCode: 500,
+      headers: getCorsHeaders(event),
+      body: JSON.stringify({
+        success: false,
+        message: 'Error interno del servidor'
+      })
+    };
   }
-
-  // Si no se encuentra la ruta
-  throw new NotFoundError(`Ruta no encontrada: ${httpMethod} ${resource}`);
-});
+};

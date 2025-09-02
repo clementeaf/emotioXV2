@@ -449,7 +449,7 @@ export class CognitiveTaskService {
       const researchId = currentRecord.researchId;
       structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando formulario CognitiveTask', { taskId, researchId });
 
-      const { id, researchId: dataResearchId, ...updatePayload } = data;
+      const { id: _id, researchId: _dataResearchId, ...updatePayload } = data;
       const result = await this.model.update(researchId, updatePayload);
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask actualizado exitosamente', { taskId, researchId });

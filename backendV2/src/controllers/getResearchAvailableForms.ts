@@ -20,12 +20,12 @@ interface DynamoDBItem {
   researchId?: string;
   stepOrder?: number;
   order?: number;
-  questions?: any;
-  metadata?: any;
-  config?: any;
-  parameterOptions?: any;
-  backlinks?: any;
-  [key: string]: any;
+  questions?: unknown;
+  metadata?: unknown;
+  config?: unknown;
+  parameterOptions?: unknown;
+  backlinks?: unknown;
+  [key: string]: unknown;
 }
 
 // Interfaz para una pregunta
@@ -37,22 +37,22 @@ interface Question {
   description?: string;
   instructions?: string;
   required?: boolean;
-  choices?: any[];
-  scaleConfig?: any;
-  files?: any[];
-  [key: string]: any;
+  choices?: unknown[];
+  scaleConfig?: unknown;
+  files?: unknown[];
+  [key: string]: unknown;
 }
 
 // Interfaz para la configuración de un paso
 interface StepConfiguration {
   questionKey: string;
-  contentConfiguration: any;
+  contentConfiguration: Record<string, unknown>;
 }
 
 /**
  * Función para parsear JSON si es string
  */
-function parseJsonField(field: any): any {
+function parseJsonField(field: unknown): unknown {
   if (typeof field === 'string') {
     try {
       return JSON.parse(field);
@@ -108,10 +108,10 @@ function extractEyeTrackingConfig(item: DynamoDBItem): StepConfiguration | null 
   const allDemographicQuestions = parseJsonField(item.demographicQuestions) || {};
 
   // Filtrar solo las preguntas que están habilitadas (enabled: true)
-  const enabledDemographicQuestions: Record<string, any> = {};
+  const enabledDemographicQuestions: Record<string, unknown> = {};
 
-  Object.entries(allDemographicQuestions).forEach(([key, questionData]: [string, any]) => {
-    if (questionData && typeof questionData === 'object' && questionData.enabled === true) {
+  Object.entries(allDemographicQuestions).forEach(([key, questionData]: [string, unknown]) => {
+    if (questionData && typeof questionData === 'object' && questionData !== null && 'enabled' in questionData && (questionData as Record<string, unknown>).enabled === true) {
       enabledDemographicQuestions[key] = questionData;
     }
   });
@@ -138,27 +138,29 @@ function extractSmartVOCConfig(item: DynamoDBItem): StepConfiguration[] {
   const questions = parseJsonField(item.questions) || [];
   const configurations: StepConfiguration[] = [];
 
-  questions.forEach((question: Question) => {
-    if (question.questionKey) {
-      const config = {
-        title: question.title || '',
-        description: question.description || '',
-        instructions: question.instructions || '',
-        type: question.type || '',
-        companyName: question.companyName || '',
-        required: question.required !== false,
-        choices: question.choices || [],
-        metadata: parseJsonField(question.metadata) || {},
-        // ✅ INCLUIR LA CONFIGURACIÓN ORIGINAL DE LA PREGUNTA
-        ...(question.config && { ...question.config })
-      };
+  if (Array.isArray(questions)) {
+    questions.forEach((question: Question) => {
+      if (question.questionKey) {
+        const config = {
+          title: question.title || '',
+          description: question.description || '',
+          instructions: question.instructions || '',
+          type: question.type || '',
+          companyName: question.companyName || '',
+          required: question.required !== false,
+          choices: question.choices || [],
+          metadata: parseJsonField(question.metadata) || {},
+          // ✅ INCLUIR LA CONFIGURACIÓN ORIGINAL DE LA PREGUNTA
+          ...(question.config && typeof question.config === 'object' && question.config !== null ? question.config as Record<string, unknown> : {})
+        };
 
-      configurations.push({
-        questionKey: question.questionKey,
-        contentConfiguration: config
-      });
-    }
-  });
+        configurations.push({
+          questionKey: question.questionKey,
+          contentConfiguration: config
+        });
+      }
+    });
+  }
 
   return configurations;
 }
@@ -208,25 +210,27 @@ function extractCognitiveTaskConfig(item: DynamoDBItem): StepConfiguration[] {
   const questions = parseJsonField(item.questions) || [];
   const configurations: StepConfiguration[] = [];
 
-  questions.forEach((question: Question) => {
-    if (question.questionKey) {
-      const config = {
-        title: question.title || '',
-        description: question.description || '',
-        type: question.type || '',
-        required: question.required !== false,
-        choices: question.choices || [],
-        scaleConfig: question.scaleConfig || {},
-        files: question.files || [],
-        metadata: parseJsonField(question.metadata) || {}
-      };
+  if (Array.isArray(questions)) {
+    questions.forEach((question: Question) => {
+      if (question.questionKey) {
+        const config = {
+          title: question.title || '',
+          description: question.description || '',
+          type: question.type || '',
+          required: question.required !== false,
+          choices: question.choices || [],
+          scaleConfig: question.scaleConfig || {},
+          files: question.files || [],
+          metadata: parseJsonField(question.metadata) || {}
+        };
 
-      configurations.push({
-        questionKey: question.questionKey,
-        contentConfiguration: config
-      });
-    }
-  });
+        configurations.push({
+          questionKey: question.questionKey,
+          contentConfiguration: config
+        });
+      }
+    });
+  }
 
   return configurations;
 }
@@ -335,9 +339,9 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
       stepsConfiguration: configurations
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[getAvailableFormTypesAndConfigurations] Error al consultar DynamoDB:', error);
-    throw new Error(`Error al consultar DynamoDB: ${error.message}`);
+    throw new Error(`Error al consultar DynamoDB: ${((error as Error)?.message || 'Error desconocido')}`);
   }
 }
 
@@ -378,14 +382,14 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       }),
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[GetResearchAvailableForms] Error al obtener tipos de formularios:', error);
     return {
       statusCode: 500,
       headers: getCorsHeaders(event),
       body: JSON.stringify({
         message: 'Error interno del servidor al obtener los tipos de formularios.',
-        error: error.message,
+        error: ((error as Error)?.message || 'Error desconocido'),
       }),
     };
   }

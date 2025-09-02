@@ -142,9 +142,9 @@ export class CognitiveTaskModel {
       const createdRecord = this.mapToRecord(item);
       structuredLog('info', 'CognitiveTaskModel.create', 'Formulario creado exitosamente', { questionKey, id: createdRecord.id });
       return createdRecord;
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'CognitiveTaskModel.create', 'Error detallado de DynamoDB PutCommand', { error });
-      structuredLog('error', 'CognitiveTaskModel.create', 'Error al crear formulario CognitiveTask', { error: error.message });
+      structuredLog('error', 'CognitiveTaskModel.create', 'Error al crear formulario CognitiveTask', { error: ((error as Error)?.message || 'Error desconocido') });
       throw new Error(`DATABASE_ERROR: Error al crear el formulario para researchId ${researchId}`);
     }
   }
@@ -173,11 +173,11 @@ export class CognitiveTaskModel {
       }
       // Mapear el primer (y único esperado) item encontrado
       return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'CognitiveTaskModel.getById', 'Error detallado de DynamoDB QueryCommand GSI', { indexName: CognitiveTaskModel.ID_INDEX_NAME, error });
-      structuredLog('error', 'CognitiveTaskModel.getById', 'Error al obtener CognitiveTask por id', { id, error: error.message });
+      structuredLog('error', 'CognitiveTaskModel.getById', 'Error al obtener CognitiveTask por id', { id, error: ((error as Error)?.message || 'Error desconocido') });
       // Podríamos lanzar un error más específico si el índice no existe
-      if (error.name === 'ResourceNotFoundException') {
+      if ((error as Error).name === 'ResourceNotFoundException') {
         structuredLog('error', 'CognitiveTaskModel.getById', 'FATAL: GSI no encontrado en la tabla', { indexName: CognitiveTaskModel.ID_INDEX_NAME, tableName: this.tableName });
         throw new Error(`DATABASE_ERROR: Índice GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado.`);
       }
@@ -218,14 +218,14 @@ export class CognitiveTaskModel {
       const record = this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
       structuredLog('debug', `${this.modelName}.${context}`, 'CognitiveTask encontrado por ResearchID', { researchId, id: record.id });
       return record;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error; // Re-lanzar NotFoundError
       }
 
       structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener CognitiveTask por researchId (Query GSI)', { error: error, researchId });
 
-      if ((error as Error).message?.includes('index')) {
+      if (((error as Error)?.message || '').includes('index')) {
         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
         throw new Error(`DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda por researchId.`);
       }
@@ -249,7 +249,7 @@ export class CognitiveTaskModel {
 
       const now = new Date().toISOString();
       let updateExpression = 'SET updatedAt = :updatedAt';
-      const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
+      const expressionAttributeValues: Record<string, unknown> = { ':updatedAt': now };
 
       if (data.questions) {
         try {
@@ -285,7 +285,7 @@ export class CognitiveTaskModel {
                       if (!f.s3Key) console.warn(`[MODEL:update] Campo faltante: s3Key en pregunta ${q.id}`);
                     }
                     return isValid;
-                  } catch (fileError: any) {
+                  } catch (fileError: unknown) {
                     console.error(`[MODEL:update] Error procesando archivo en pregunta ${q.id}:`, fileError);
                     return false;
                   }
@@ -304,16 +304,16 @@ export class CognitiveTaskModel {
                       console.log(`[MODEL:update] URL generada para archivo ${f.id}: ${f.url}`);
                     }
                     return f;
-                  } catch (urlError: any) {
+                  } catch (urlError: unknown) {
                     console.error(`[MODEL:update] Error generando URL para archivo ${f.id}:`, urlError);
                     return f; // Devolver el archivo sin modificar si hay error
                   }
                 });
 
                 console.log(`[MODEL:update] Pregunta ${q.id} tiene ${q.files.length} archivos válidos después de la validación`);
-              } catch (questionError: any) {
+              } catch (questionError: unknown) {
                 console.error(`[MODEL:update] Error grave procesando archivos de pregunta ${q.id}:`, questionError);
-                throw new Error(`Error procesando archivos de pregunta ${q.id}: ${questionError.message}`);
+                throw new Error(`Error procesando archivos de pregunta ${q.id}: ${((questionError as Error)?.message || 'Error desconocido')}`);
               }
             }
           });
@@ -322,21 +322,22 @@ export class CognitiveTaskModel {
           expressionAttributeValues[':questions'] = JSON.stringify(data.questions);
 
           // Solo loguear un fragmento para no saturar los logs
+          const questionsJson = expressionAttributeValues[':questions'] as string;
           console.log('[MODEL:update] JSON de preguntas que se actualizará (primeros 300 caracteres):',
-            expressionAttributeValues[':questions'].substring(0, 300) +
-            (expressionAttributeValues[':questions'].length > 300 ? '...' : '')
+            questionsJson.substring(0, 300) +
+            (questionsJson.length > 300 ? '...' : '')
           );
 
           // AGREGADO: Log específico para verificar hitZones en el JSON
           // const jsonData = JSON.parse(expressionAttributeValues[':questions']) as Question[];
           // Log específico comentado para evitar variable no usada
           // const questionsWithHitZones = jsonData.filter((q: Question) =>
-          //   q.files && q.files.some((f: any) => f.hitZones && f.hitZones.length > 0)
+          //   q.files && q.files.some((f: unknown) => (f as Record<string, unknown>).hitZones && ((f as Record<string, unknown>).hitZones as unknown[]).length > 0)
           // );
 
-        } catch (questionsError: any) {
+        } catch (questionsError: unknown) {
           console.error('[MODEL:update] Error preparando preguntas para actualización:', questionsError);
-          throw new Error(`Error preparando preguntas para actualización: ${questionsError.message}`);
+          throw new Error(`Error preparando preguntas para actualización: ${((questionsError as Error)?.message || 'Error desconocido')}`);
         }
       }
 
@@ -354,9 +355,9 @@ export class CognitiveTaskModel {
           };
           updateExpression += ', metadata = :metadata';
           expressionAttributeValues[':metadata'] = JSON.stringify(newMetadata);
-        } catch (metadataError: any) {
+        } catch (metadataError: unknown) {
           console.error('[MODEL:update] Error preparando metadata para actualización:', metadataError);
-          throw new Error(`Error preparando metadata para actualización: ${metadataError.message}`);
+          throw new Error(`Error preparando metadata para actualización: ${((metadataError as Error)?.message || 'Error desconocido')}`);
         }
       }
 
@@ -381,20 +382,20 @@ export class CognitiveTaskModel {
         }
         console.log(`[MODEL:update] Actualización exitosa para researchId=${researchId}`);
         return this.mapToRecord(result.Attributes as CognitiveTaskDynamoItem);
-      } catch (dbError: any) {
-        if (dbError.message?.startsWith('COGNITIVE_TASK_NOT_FOUND')) {
+      } catch (dbError: unknown) {
+        if (((dbError as Error)?.message || '').startsWith('COGNITIVE_TASK_NOT_FOUND')) {
           throw dbError;
         }
         console.error('[MODEL:update] ERROR DETALLADO de DynamoDB UpdateCommand:', JSON.stringify(dbError, null, 2));
-        console.error(`[MODEL:update] Error al actualizar CognitiveTask para researchId ${researchId}:`, dbError.message);
-        throw new Error(`DATABASE_ERROR: Error al actualizar el formulario para researchId ${researchId}. Detalles: ${dbError.message}`);
+        console.error(`[MODEL:update] Error al actualizar CognitiveTask para researchId ${researchId}:`, ((dbError as Error)?.message || 'Error desconocido'));
+        throw new Error(`DATABASE_ERROR: Error al actualizar el formulario para researchId ${researchId}. Detalles: ${((dbError as Error)?.message || 'Error desconocido')}`);
       }
-    } catch (outerError: any) {
+    } catch (outerError: unknown) {
       if (outerError instanceof NotFoundError) {
         throw outerError; // Re-lanzar NotFoundError
       }
       console.error('[MODEL:update] Error en el procesamiento general del método update:', outerError);
-      throw new Error(`DATABASE_ERROR: Error en el procesamiento del método update: ${outerError.message}`);
+      throw new Error(`DATABASE_ERROR: Error en el procesamiento del método update: ${((outerError as Error)?.message || 'Error desconocido')}`);
     }
   }
 
@@ -421,13 +422,13 @@ export class CognitiveTaskModel {
     try {
       await this.dynamoClient.send(command);
       return true;
-    } catch (error: any) {
-      if (error.name === 'ConditionalCheckFailedException') {
+    } catch (error: unknown) {
+      if ((error as Error).name === 'ConditionalCheckFailedException') {
         console.warn(`DeleteCommand falló chequeo condicional para researchId ${researchId}. El item no existe.`);
         throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
       }
       console.error('ERROR DETALLADO de DynamoDB DeleteCommand (CognitiveTask):', JSON.stringify(error, null, 2));
-      console.error(`Error al eliminar CognitiveTask para researchId ${researchId}:`, error.message);
+      console.error(`Error al eliminar CognitiveTask para researchId ${researchId}:`, ((error as Error)?.message || 'Error desconocido'));
       throw new Error(`DATABASE_ERROR: Error al eliminar el formulario para researchId ${researchId}`);
     }
   }
@@ -448,9 +449,9 @@ export class CognitiveTaskModel {
       const result = await this.dynamoClient.send(command);
       const items = result.Items || [];
       return items.map(item => this.mapToRecord(item as CognitiveTaskDynamoItem));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('ERROR DETALLADO de DynamoDB ScanCommand (CognitiveTask - getAll):', JSON.stringify(error, null, 2));
-      console.error('Error en CognitiveTaskModel.getAll:', error.message);
+      console.error('Error en CognitiveTaskModel.getAll:', ((error as Error)?.message || 'Error desconocido'));
       throw new Error('DATABASE_ERROR: Error al obtener todos los formularios de tareas cognitivas');
     }
   }

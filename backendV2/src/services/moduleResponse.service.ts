@@ -9,10 +9,11 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import {
   CreateModuleResponseDto,
-  // ModuleResponse,
   ParticipantResponsesDocument,
+  ResponseMetadataSchema,
   UpdateModuleResponseDto
 } from '../models/moduleResponse.model';
+import { z } from 'zod';
 import { ApiError } from '../utils/errors';
 import { quotaManager } from '../utils/quotaManager';
 
@@ -20,7 +21,9 @@ const RESEARCH_INDEX = 'ResearchIndex';
 const RESEARCH_PARTICIPANT_INDEX = 'ResearchParticipantIndex';
 
 // Utilidad para serializar metadata antes de guardar en DynamoDB
-function serializeMetadata(metadata: any): string | undefined {
+type ResponseMetadata = z.infer<typeof ResponseMetadataSchema>;
+
+function serializeMetadata(metadata: ResponseMetadata | undefined): string | undefined {
   if (!metadata) return undefined;
   try {
     return JSON.stringify(metadata);
@@ -30,14 +33,17 @@ function serializeMetadata(metadata: any): string | undefined {
 }
 
 // Utilidad para deserializar metadata al leer de DynamoDB
-function deserializeMetadata(metadata: any): any {
+function deserializeMetadata(metadata: unknown): ResponseMetadata | undefined {
   if (!metadata) return undefined;
-  if (typeof metadata === 'object') return metadata;
-  try {
-    return JSON.parse(metadata);
-  } catch {
-    return undefined;
+  if (typeof metadata === 'object' && metadata !== null) return metadata as ResponseMetadata;
+  if (typeof metadata === 'string') {
+    try {
+      return JSON.parse(metadata) as ResponseMetadata;
+    } catch {
+      return undefined;
+    }
   }
+  return undefined;
 }
 
 export class ModuleResponseService {
@@ -116,25 +122,25 @@ export class ModuleResponseService {
       console.log(`[ModuleResponseService.findByResearchAndParticipant] Processed responses count:`, processedDocument.responses.length);
 
       return processedDocument;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ModuleResponseService.findByResearchAndParticipant] Full DDB Error object:', JSON.stringify(error, null, 2));
-      console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Name:', error.name);
-      console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Message:', error.message);
+      console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Name:', (error as Error).name);
+      console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Message:', ((error as Error)?.message || 'Error desconocido'));
 
       // NUEVO: Manejar errores específicos de DynamoDB de manera más granular
-      if (error.name === 'ResourceNotFoundException') {
+      if ((error as Error).name === 'ResourceNotFoundException') {
         console.error('[ModuleResponseService.findByResearchAndParticipant] Table or index not found');
         throw new ApiError('Database configuration error: Table or index not found', 500);
       }
 
-      if (error.name === 'ValidationException') {
+      if ((error as Error).name === 'ValidationException') {
         console.error('[ModuleResponseService.findByResearchAndParticipant] Invalid query parameters');
         throw new ApiError('Database query error: Invalid parameters', 500);
       }
 
       // Para otros errores, propagar un error más detallado
       throw new ApiError(
-        `Database Query Failed in findByResearchAndParticipant: ${error.name} - ${error.message}`,
+        `Database Query Failed in findByResearchAndParticipant: ${(error as Error).name} - ${((error as Error)?.message || 'Error desconocido')}`,
         500
       );
     }
@@ -209,8 +215,8 @@ export class ModuleResponseService {
   private async createNewDocumentWithResponses(
     researchId: string,
     participantId: string,
-    responses: Array<{ questionKey: string; response: any; timestamp: string }>,
-    metadata: any
+    responses: Array<{ questionKey: string; response: string | number | boolean | string[] | Record<string, unknown> | null; timestamp: string }>,
+    metadata: ResponseMetadata | undefined
   ): Promise<ParticipantResponsesDocument> {
     const documentId = uuidv4();
     const now = new Date().toISOString();
@@ -247,9 +253,9 @@ export class ModuleResponseService {
       await this.dynamoClient.send(command);
       console.log(`[ModuleResponseService.createNewDocumentWithResponses] ✅ Documento creado: ${documentId}`);
       return newDocument;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ModuleResponseService.createNewDocumentWithResponses] Error:', error);
-      throw new ApiError(`Database Error: Could not create new document - ${error.message}`, 500);
+      throw new ApiError(`Database Error: Could not create new document - ${((error as Error)?.message || 'Error desconocido')}`, 500);
     }
   }
 
@@ -258,8 +264,8 @@ export class ModuleResponseService {
    */
   private async updateDocumentWithResponses(
     existingDocument: ParticipantResponsesDocument,
-    newResponses: Array<{ questionKey: string; response: any; timestamp: string }>,
-    metadata: any
+    newResponses: Array<{ questionKey: string; response: string | number | boolean | string[] | Record<string, unknown> | null; timestamp: string }>,
+    metadata: ResponseMetadata | undefined
   ): Promise<ParticipantResponsesDocument> {
     const now = new Date().toISOString();
 
@@ -322,9 +328,9 @@ export class ModuleResponseService {
           metadata: deserializeMetadata(r.metadata)
         }))
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ModuleResponseService.updateDocumentWithResponses] Error:', error);
-      throw new ApiError(`Database Error: Could not update document - ${error.message}`, 500);
+      throw new ApiError(`Database Error: Could not update document - ${((error as Error)?.message || 'Error desconocido')}`, 500);
     }
   }
 
@@ -380,9 +386,9 @@ export class ModuleResponseService {
     try {
       const result = await this.dynamoClient.send(command);
       return result.Attributes as ParticipantResponsesDocument;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ModuleResponseService.markAsCompleted] Error:', error);
-      throw new ApiError(`Database Error: Could not mark document as completed - ${error.message}`, 500);
+      throw new ApiError(`Database Error: Could not mark document as completed - ${((error as Error)?.message || 'Error desconocido')}`, 500);
     }
   }
 
@@ -402,9 +408,9 @@ export class ModuleResponseService {
       try {
         const result = await this.dynamoClient.send(command);
         return (result.Items as ParticipantResponsesDocument[]) || [];
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[ModuleResponseService.getResponsesByResearch] Error:', error);
-        throw new ApiError(`Database Error: Could not retrieve responses by research - ${error.message}`, 500);
+        throw new ApiError(`Database Error: Could not retrieve responses by research - ${((error as Error)?.message || 'Error desconocido')}`, 500);
       }
     })();
     return docs.map(doc => ({
@@ -442,9 +448,9 @@ export class ModuleResponseService {
       await this.dynamoClient.send(command);
       console.log(`[ModuleResponseService.deleteAllResponses] Successfully deleted document for researchId=${researchId}, participantId=${participantId}, documentId=${existingDocument.id}`);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ModuleResponseService.deleteAllResponses] Error:', error);
-      throw new ApiError(`Database Error: Could not delete responses - ${error.message}`, 500);
+      throw new ApiError(`Database Error: Could not delete responses - ${((error as Error)?.message || 'Error desconocido')}`, 500);
     }
   }
 
@@ -491,9 +497,9 @@ export class ModuleResponseService {
       console.log(`[ModuleResponseService.getParticipantsByResearch] ✅ Encontrados ${participants.length} participantes únicos`);
 
       return participants;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ModuleResponseService.getParticipantsByResearch] Error:', error);
-      throw new ApiError(`Database Error: Could not get participants - ${error.message}`, 500);
+      throw new ApiError(`Database Error: Could not get participants - ${((error as Error)?.message || 'Error desconocido')}`, 500);
     }
   }
 }

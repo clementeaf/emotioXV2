@@ -65,7 +65,7 @@ export class ModuleResponseController {
           status: 201
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al guardar respuesta:', error);
 
       if (error instanceof z.ZodError) {
@@ -80,11 +80,11 @@ export class ModuleResponseController {
       }
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al guardar respuesta',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al guardar respuesta',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -142,7 +142,7 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al actualizar respuesta:', error);
 
       if (error instanceof z.ZodError) {
@@ -157,11 +157,11 @@ export class ModuleResponseController {
       }
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al actualizar respuesta',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al actualizar respuesta',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -225,15 +225,15 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al obtener respuestas:', error);
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener respuestas',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al obtener respuestas',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -280,15 +280,15 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al marcar como completado:', error);
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al marcar como completado',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al marcar como completado',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -324,15 +324,15 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al eliminar respuestas:', error);
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al eliminar respuestas',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al eliminar respuestas',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -370,15 +370,15 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al obtener respuestas por research:', error);
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener respuestas por research',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al obtener respuestas por research',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -428,10 +428,11 @@ export class ModuleResponseController {
         };
       }
       // Función para parsear valores de respuesta
-      const parseResponseValue = (response: any): number => {
+      const parseResponseValue = (response: unknown): number => {
         if (typeof response === 'number') return response;
-        if (typeof response === 'object' && response.value !== undefined) {
-          return typeof response.value === 'number' ? response.value : parseFloat(response.value) || 0;
+        if (typeof response === 'object' && response !== null && 'value' in response) {
+          const responseObj = response as { value: unknown };
+          return typeof responseObj.value === 'number' ? responseObj.value : parseFloat(String(responseObj.value)) || 0;
         }
         if (typeof response === 'string') {
           const parsed = parseFloat(response);
@@ -441,10 +442,11 @@ export class ModuleResponseController {
       };
 
       // Función para parsear texto de respuesta
-      const parseResponseText = (response: any): string => {
+      const parseResponseText = (response: unknown): string => {
         if (typeof response === 'string') return response;
-        if (typeof response === 'object' && response.value !== undefined) {
-          return String(response.value);
+        if (typeof response === 'object' && response !== null && 'value' in response) {
+          const responseObj = response as { value: unknown };
+          return String(responseObj.value);
         }
         if (typeof response === 'object') {
           return JSON.stringify(response);
@@ -453,16 +455,16 @@ export class ModuleResponseController {
       };
 
       // Procesar respuestas SmartVOC de todos los participantes
-      const allSmartVOCResponses: any[] = [];
+      const allSmartVOCResponses: Record<string, unknown>[] = [];
       const npsScores: number[] = [];
       const csatScores: number[] = [];
       const cesScores: number[] = [];
       const nevScores: number[] = [];
       const cvScores: number[] = [];
-      const vocResponses: any[] = [];
+      const vocResponses: Record<string, unknown>[] = [];
 
       // Agrupar respuestas por fecha para time series
-      const responsesByDate: { [key: string]: any[] } = {};
+      const responsesByDate: { [key: string]: Record<string, unknown>[] } = {};
 
       for (const participant of participants) {
         const participantResponses = await moduleResponseService.getResponsesForParticipant(researchId, participant.id);
@@ -576,12 +578,12 @@ export class ModuleResponseController {
       const timeSeriesData = Object.keys(responsesByDate).map(date => {
         const dateResponses = responsesByDate[date];
         const dateNpsScores = dateResponses
-          .filter(r => r.questionKey.toLowerCase().includes('nps'))
+          .filter(r => (r as Record<string, unknown>).questionKey && String((r as Record<string, unknown>).questionKey).toLowerCase().includes('nps'))
           .map(r => parseResponseValue(r.response))
           .filter(score => typeof score === 'number' && score > 0);
 
         const dateNevScores = dateResponses
-          .filter(r => r.questionKey.toLowerCase().includes('nev'))
+          .filter(r => (r as Record<string, unknown>).questionKey && String((r as Record<string, unknown>).questionKey).toLowerCase().includes('nev'))
           .map(r => parseResponseValue(r.response))
           .filter(score => typeof score === 'number' && score > 0);
 
@@ -656,15 +658,15 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al obtener resultados SmartVOC:', error);
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener resultados SmartVOC',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al obtener resultados SmartVOC',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -710,10 +712,11 @@ export class ModuleResponseController {
       }
 
       // Función para parsear valores de respuesta
-      const parseResponseValue = (response: any): number => {
+      const parseResponseValue = (response: unknown): number => {
         if (typeof response === 'number') return response;
-        if (typeof response === 'object' && response.value !== undefined) {
-          return typeof response.value === 'number' ? response.value : parseFloat(response.value) || 0;
+        if (typeof response === 'object' && response !== null && 'value' in response) {
+          const responseObj = response as { value: unknown };
+          return typeof responseObj.value === 'number' ? responseObj.value : parseFloat(String(responseObj.value)) || 0;
         }
         if (typeof response === 'string') {
           const parsed = parseFloat(response);
@@ -795,15 +798,15 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al obtener resultados CPV:', error);
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener resultados CPV',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al obtener resultados CPV',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -847,10 +850,11 @@ export class ModuleResponseController {
       }
 
       // Función para parsear valores de respuesta
-      const parseResponseValue = (response: any): number => {
+      const parseResponseValue = (response: unknown): number => {
         if (typeof response === 'number') return response;
-        if (typeof response === 'object' && response.value !== undefined) {
-          return typeof response.value === 'number' ? response.value : parseFloat(response.value) || 0;
+        if (typeof response === 'object' && response !== null && 'value' in response) {
+          const responseObj = response as { value: unknown };
+          return typeof responseObj.value === 'number' ? responseObj.value : parseFloat(String(responseObj.value)) || 0;
         }
         if (typeof response === 'string') {
           const parsed = parseFloat(response);
@@ -860,7 +864,7 @@ export class ModuleResponseController {
       };
 
       // Procesar respuestas SmartVOC de todos los participantes
-      const allResponses: any[] = [];
+      const allResponses: Record<string, unknown>[] = [];
 
       for (const participant of participants) {
         const participantResponses = await moduleResponseService.getResponsesForParticipant(researchId, participant.id);
@@ -886,10 +890,11 @@ export class ModuleResponseController {
       }
 
       // Agrupar respuestas por fecha para time series
-      const responsesByDate: { [key: string]: any[] } = {};
+      const responsesByDate: { [key: string]: Record<string, unknown>[] } = {};
 
       allResponses.forEach(response => {
-        const dateKey = new Date(response.timestamp || new Date()).toISOString().split('T')[0];
+        const timestamp = (response as Record<string, unknown>).timestamp as string || new Date().toISOString();
+        const dateKey = new Date(timestamp).toISOString().split('T')[0];
         if (!responsesByDate[dateKey]) {
           responsesByDate[dateKey] = [];
         }
@@ -901,12 +906,12 @@ export class ModuleResponseController {
         const dateResponses = responsesByDate[date];
 
         const dateNpsScores = dateResponses
-          .filter(r => r.questionKey.toLowerCase().includes('nps'))
+          .filter(r => (r as Record<string, unknown>).questionKey && String((r as Record<string, unknown>).questionKey).toLowerCase().includes('nps'))
           .map(r => parseResponseValue(r.response))
           .filter(score => score > 0);
 
         const dateNevScores = dateResponses
-          .filter(r => r.questionKey.toLowerCase().includes('nev'))
+          .filter(r => (r as Record<string, unknown>).questionKey && String((r as Record<string, unknown>).questionKey).toLowerCase().includes('nev'))
           .map(r => parseResponseValue(r.response))
           .filter(score => score > 0);
 
@@ -924,13 +929,13 @@ export class ModuleResponseController {
 
       // Extraer scores individuales para análisis
       const npsScores = allResponses
-        .filter(r => r.questionKey.toLowerCase().includes('nps'))
-        .map(r => parseResponseValue(r.response))
+        .filter(r => typeof r === 'object' && r !== null && 'questionKey' in r && typeof r.questionKey === 'string' && r.questionKey.toLowerCase().includes('nps'))
+        .map(r => parseResponseValue((r as Record<string, unknown>).response))
         .filter(score => score > 0);
 
       const nevScores = allResponses
-        .filter(r => r.questionKey.toLowerCase().includes('nev'))
-        .map(r => parseResponseValue(r.response))
+        .filter(r => typeof r === 'object' && r !== null && 'questionKey' in r && typeof r.questionKey === 'string' && r.questionKey.toLowerCase().includes('nev'))
+        .map(r => parseResponseValue((r as Record<string, unknown>).response))
         .filter(score => score > 0);
 
       const result = {
@@ -949,15 +954,15 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al obtener resultados Trust Flow:', error);
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener resultados Trust Flow',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al obtener resultados Trust Flow',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -983,16 +988,16 @@ export class ModuleResponseController {
       }
 
       // Obtener todas las respuestas del research
-      let allResponses: any[] = [];
+      let allResponses: Record<string, unknown>[] = [];
       
       try {
         allResponses = await moduleResponseService.getResponsesByResearch(researchId);
         console.log(`[ModuleResponseController] ✅ Obtenidas ${allResponses.length} respuestas para research: ${researchId}`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Si es una investigación nueva sin datos, devolver estructura vacía en lugar de error
-        console.log(`[ModuleResponseController] 📭 Research nuevo sin datos (${researchId}), devolviendo estructura vacía:`, error.message);
+        console.log(`[ModuleResponseController] 📭 Research nuevo sin datos (${researchId}), devolviendo estructura vacía:`, ((error as Error)?.message || "Error desconocido"));
         
-        if (error.message?.includes('not found') || error.message?.includes('Requested resource not found')) {
+        if (((error as Error)?.message || "")?.includes('not found') || ((error as Error)?.message || "")?.includes('Requested resource not found')) {
           allResponses = [];
         } else {
           // Si es un error real (no relacionado con datos faltantes), propagarlo
@@ -1001,7 +1006,7 @@ export class ModuleResponseController {
       }
 
       // Transformar la estructura: de participantes con respuestas a preguntas con respuestas
-      const groupedByQuestion = this.transformToQuestionBasedStructure(allResponses);
+      const groupedByQuestion = this.transformToQuestionBasedStructure(allResponses as ParticipantResponsesDocument[]);
 
       return {
         statusCode: 200,
@@ -1011,15 +1016,15 @@ export class ModuleResponseController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al obtener respuestas agrupadas por pregunta:', error);
 
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error as { statusCode?: number }).statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener respuestas agrupadas por pregunta',
-          status: error.statusCode || 500
+          error: ((error as Error)?.message || "Error desconocido") || 'Error al obtener respuestas agrupadas por pregunta',
+          status: (error as { statusCode?: number }).statusCode || 500
         })
       };
     }
@@ -1036,9 +1041,9 @@ export class ModuleResponseController {
     questionKey: string;
     responses: Array<{
       participantId: string;
-      value: any;
+      value: unknown;
       timestamp: string;
-      metadata: any;
+      metadata: unknown;
       createdAt: string;
       updatedAt?: string;
     }>;
@@ -1046,9 +1051,9 @@ export class ModuleResponseController {
     // Mapa para agrupar respuestas por questionKey
     const questionMap = new Map<string, Array<{
       participantId: string;
-      value: any;
+      value: unknown;
       timestamp: string;
-      metadata: any;
+      metadata: unknown;
       createdAt: string;
       updatedAt?: string;
     }>>();
@@ -1101,17 +1106,17 @@ export class ModuleResponseController {
     participantResponses: ParticipantResponsesDocument[]
   ): Record<string, Array<{
     participantId: string;
-    value: any;
+    value: unknown;
     responseTime?: string;
     timestamp: string;
-    metadata?: any;
+    metadata?: unknown;
   }>> {
     const groupedResponses: Record<string, Array<{
       participantId: string;
-      value: any;
+      value: unknown;
       responseTime?: string;
       timestamp: string;
-      metadata?: any;
+      metadata?: unknown;
     }>> = {};
 
     participantResponses.forEach((participant) => {
@@ -1123,9 +1128,9 @@ export class ModuleResponseController {
         }
 
         // Extraer el valor de la respuesta con type guards
-        let responseValue: any;
+        let responseValue: unknown;
         if (response.response && typeof response.response === 'object') {
-          const responseObj = response.response as Record<string, any>;
+          const responseObj = response.response as Record<string, unknown>;
           // Para respuestas complejas como ranking
           if ('selectedValue' in responseObj && responseObj.selectedValue) {
             // Intentar parsear JSON si es un string
@@ -1265,9 +1270,4 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
 };
 
 // Export handler for index.ts compatibility
-export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  return {
-    statusCode: 501,
-    body: JSON.stringify({ message: 'ModuleResponse handler not implemented yet' })
-  };
-};
+export const handler = mainHandler;
