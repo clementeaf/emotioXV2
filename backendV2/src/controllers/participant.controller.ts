@@ -505,7 +505,7 @@ export class ParticipantController {
           id: participant.id,
           name: participant.name,
           email: participant.email,
-          publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'}?researchId=${researchId}&userId=${participant.id}`
+          publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net'}?researchId=${researchId}&userId=${participant.id}`
         });
 
         structuredLog('info', 'ParticipantController.generateDummyParticipants', 'Participant created successfully', {
@@ -581,7 +581,7 @@ export class ParticipantController {
         name: participant.name,
         email: participant.email,
         createdAt: participant.createdAt,
-        publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://emotio-xv-2-public-tests.vercel.app'}?researchId=${researchId}&participantId=${participant.id}`
+        publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net'}?researchId=${researchId}&participantId=${participant.id}`
       }));
 
       return {
