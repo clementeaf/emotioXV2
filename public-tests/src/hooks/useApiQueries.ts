@@ -1,11 +1,14 @@
 import { useMutation, UseMutationOptions, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
+// ✅ NUEVO: Import AlovaJS para migración gradual
+import { useRequest } from 'alova';
 import { getApiUrl } from '../config/endpoints';
 import {
-  getAvailableForms,
   getModuleResponses,
   saveModuleResponse,
   updateModuleResponse
 } from '../lib/routes';
+// ✅ NUEVO: Import función AlovaJS
+import { getAvailableFormsAlova } from '../lib/routes-alova';
 import {
   AvailableFormsResponse,
   CreateModuleResponseDto,
@@ -15,45 +18,56 @@ import {
 import { useFormDataStore } from '../stores/useFormDataStore';
 
 export function useAvailableFormsQuery(researchId: string, options?: UseQueryOptions<AvailableFormsResponse, Error>) {
-
-  return useQuery<AvailableFormsResponse, Error>({
-    queryKey: ['availableForms', researchId],
-    queryFn: async () => {
-
-      try {
-        const result = await getAvailableForms(researchId);
-
-        // 🔍 LOG DETALLADO DE LA RESPUESTA DE FORMS
-        console.log('[useAvailableFormsQuery] 📊 Datos completos de forms:', {
-          researchId,
-          steps: result.steps,
-          stepsConfiguration: result.stepsConfiguration,
-          count: result.count,
-          // Verificar si hay campos adicionales no tipados
-          allKeys: Object.keys(result),
-          fullResponse: result
-        });
-
-        return result;
-      } catch (error) {
-        console.error('[useAvailableFormsQuery] ❌ Request falló:', {
-          researchId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: new Date().toISOString()
-        });
-        throw error;
+  // ✅ MIGRADO A ALOVAJS - Manteniendo interfaz TanStack Query
+  const { data, loading, error } = useRequest(
+    () => getAvailableFormsAlova(researchId),
+    {
+      immediate: !!researchId && (options?.enabled !== false),
+      initialData: null,
+      // Mapeo de configuración TanStack Query -> AlovaJS
+      force: ({ data: cachedData }: { data: any }) => {
+        const staleTimeMs = typeof options?.staleTime === 'number' ? options.staleTime : (1000 * 60 * 5); // 5 min default
+        if (cachedData && cachedData._timestamp) {
+          return Date.now() - cachedData._timestamp > staleTimeMs;
+        }
+        return true;
       }
-    },
-    enabled: !!researchId,
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    gcTime: 1000 * 60 * 10, // 10 minutos (antes cacheTime)
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    retry: 1,
-    retryDelay: 1000,
-    ...options,
-  });
+    }
+  );
+
+  // 🔍 LOG DETALLADO DE LA RESPUESTA DE FORMS (manteniendo logging original)
+  if (data && !loading) {
+    console.log('[useAvailableFormsQuery] 📊 Datos completos de forms (AlovaJS):', {
+      researchId,
+      steps: data.steps,
+      stepsConfiguration: data.stepsConfiguration,
+      count: data.count,
+      allKeys: Object.keys(data),
+      fullResponse: data
+    });
+  }
+
+  if (error) {
+    console.error('[useAvailableFormsQuery] ❌ Request falló (AlovaJS):', {
+      researchId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // 🔄 INTERFAZ COMPATIBLE: Mapear AlovaJS -> TanStack Query
+  return {
+    data,
+    error,
+    isLoading: loading,
+    isSuccess: !!data && !loading && !error,
+    isError: !!error,
+    isPending: loading,
+    // Funciones legacy para compatibilidad
+    refetch: () => Promise.resolve({ data, error }),
+    isFetching: loading,
+    status: loading ? 'pending' : error ? 'error' : 'success'
+  };
 }
 
 export function useModuleResponsesQuery(researchId: string, participantId: string, options?: UseQueryOptions<ParticipantResponsesDocument, Error>) {

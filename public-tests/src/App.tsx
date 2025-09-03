@@ -9,6 +9,8 @@ import { useEyeTrackingConfigQuery } from './hooks/useEyeTrackingConfigQuery';
 import { useLocationTracking } from './hooks/useLocationTracking';
 import './index.css';
 import NoResearchIdError from './pages/NoResearchIdError';
+// ✅ TEMPORAL - Solo para testing AlovaJS (invisible)
+import { TestAlova } from './components/TestAlova';
 
 // Crear el cliente de Query
 const queryClient = new QueryClient({
@@ -140,6 +142,9 @@ function App() {
             {/* 🎯 NUEVA RUTA: Acceso directo con path params */}
             <Route path="/:researchId/:participantId" element={<LoginRedirect />} />
           </Routes>
+
+          {/* ✅ TESTING ALOVA - INVISIBLE, solo si hay researchId */}
+          {researchId && <TestAlova researchId={researchId} />}
         </div>
       </Router>
       {/* <ReactQueryDevtools initialIsOpen={false} /> */}
