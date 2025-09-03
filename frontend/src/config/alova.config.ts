@@ -4,6 +4,7 @@
  */
 
 import { createAlova } from 'alova';
+import adapterFetch from 'alova/fetch';
 import ReactHook from 'alova/react';
 import { DYNAMIC_API_ENDPOINTS, isEndpointsSynced } from '../api/dynamic-endpoints';
 
@@ -35,106 +36,8 @@ export const alovaInstance = createAlova({
   // Configurar para React
   statesHook: ReactHook,
   
-  // Request adapter usando fetch nativo con formato correcto de Alova
-  requestAdapter: (elements, method) => {
-    const { url, data, headers } = elements;
-    const params = (elements as any).params;
-    
-    // Construir URL con query params si existen
-    let finalUrl = url;
-    if (params && Object.keys(params).length > 0) {
-      const searchParams = new URLSearchParams(params as Record<string, string>);
-      finalUrl = `${url}?${searchParams.toString()}`;
-    }
-    
-    // Configurar opciones de fetch
-    const fetchOptions: RequestInit = {
-      method: method.type,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...headers,
-      },
-    };
-    
-    // Agregar body si existe
-    if (data) {
-      if (data instanceof FormData) {
-        // Para FormData (uploads), remover Content-Type para que el browser lo configure
-        delete (fetchOptions.headers as any)['Content-Type'];
-        fetchOptions.body = data;
-      } else {
-        fetchOptions.body = JSON.stringify(data);
-      }
-    }
-    
-    // Crear AbortController para permitir cancelación
-    const controller = new AbortController();
-    fetchOptions.signal = controller.signal;
-    
-    // Realizar la petición y devolver objeto con formato requerido por Alova
-    const fetchPromise = fetch(finalUrl, fetchOptions).then(async response => {
-      // Manejar errores HTTP
-      if (!response.ok) {
-        let errorData: any;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { message: 'Error desconocido' };
-        }
-        
-        // Lista de endpoints que pueden devolver 404 de forma normal
-        const expectedNotFoundEndpoints = [
-          '/cognitive-task',
-          '/welcome-screen', 
-          '/smart-voc',
-          '/thank-you-screen'
-        ];
-        
-        // Si es un 404 esperado, devolver null
-        if (response.status === 404) {
-          const isExpectedNotFound = expectedNotFoundEndpoints.some(endpoint =>
-            response.url.includes(endpoint)
-          );
-          
-          if (isExpectedNotFound) {
-            return null;
-          }
-        }
-        
-        // Para otros errores, lanzar error con mensaje específico
-        const errorMessage = errorData.message || `Error ${response.status}: ${response.statusText}`;
-        throw new Error(errorMessage);
-      }
-      
-      // Parsear respuesta exitosa
-      try {
-        const data = await response.json();
-        
-        // Adaptar respuesta del backend al formato esperado
-        if (data && typeof data === 'object' && 'data' in data && 'status' in data) {
-          return {
-            success: data.status >= 200 && data.status < 300,
-            data: data.data,
-            message: data.message,
-            error: data.error
-          };
-        }
-        
-        return data;
-      } catch {
-        // Si no es JSON, devolver respuesta como texto
-        return response.text();
-      }
-    });
-    
-    // Devolver objeto con formato requerido por Alova
-    return {
-      response: () => fetchPromise,
-      headers: () => fetchPromise.then(() => ({})),
-      abort: () => controller.abort()
-    };
-  },
+  // Usar el adaptador nativo de Alova para fetch
+  requestAdapter: adapterFetch(),
   
   // Interceptor de request para agregar token
   beforeRequest: (method) => {
@@ -149,10 +52,10 @@ export const alovaInstance = createAlova({
   
   // Interceptor de response para manejar errores globales
   responded: {
-    onSuccess: async (response, method) => {
+    onSuccess: async (response) => {
       return response;
     },
-    onError: async (error, method) => {
+    onError: async (error) => {
       // Manejar error de autenticación (401)
       if (error.message?.includes('401') || error.message?.toLowerCase().includes('unauthorized')) {
         // Token expirado o inválido
