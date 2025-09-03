@@ -13,6 +13,9 @@ export interface RouteDefinition {
 }
 
 export const ROUTE_DEFINITIONS: RouteDefinition[] = [
+  // Admin (administración de usuarios)
+  { pathPattern: /^\/admin/, controllerType: 'admin' },
+
   // Auth
   { pathPattern: /^\/auth/, controllerType: 'auth' },
 

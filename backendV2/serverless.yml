@@ -15,7 +15,7 @@ custom:
   tableName: ${opt:existing-table, '${self:service}-researches-${self:provider.stage}'} # Tabla para Investigaciones
   usersTableName: ${opt:existing-users-table, '${self:service}-users-${self:provider.stage}'} # Tabla para Usuarios
   s3BucketName: ${opt:existing-bucket, 'emotioxv2-uploads-${self:provider.stage}'} # Bucket S3 dinámico (usa el que ya existe)
-  
+
   # Condiciones para crear recursos solo si no se especifican existentes
   createNewBucket: ${env:CREATE_NEW_BUCKET, 'true'}
   createNewTables: ${env:CREATE_NEW_TABLES, 'true'}
@@ -58,7 +58,6 @@ custom:
     bundle: true
     minify: false
     sourcemap: true
-    exclude: ['aws-sdk']
     target: 'node18'
     platform: 'node'
     concurrency: 10

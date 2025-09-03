@@ -156,6 +156,13 @@ export const API_ENDPOINTS = {
     getParticipantDetails: '/research/{researchId}/participants/{participantId}',
     deleteParticipant: '/research/{researchId}/participants/{participantId}',
   },
+
+  // Admin (administración de usuarios)
+  admin: {
+    users: '/admin/users',
+    user: '/admin/users/{id}',
+    stats: '/admin/users/stats',
+  },
 } as const;
 
 /**

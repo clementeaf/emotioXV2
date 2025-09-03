@@ -291,6 +291,38 @@ export const cognitiveTaskAPI = {
 };
 
 /**
+ * API de Administración
+ */
+export const adminAPI = {
+  getAllUsers: async () => {
+    return alovaApiClient.get('admin', 'users');
+  },
+  
+  getUserById: async (id: string) => {
+    if (!id) throw new Error('Se requiere un ID de usuario');
+    return alovaApiClient.get('admin', 'user', { id });
+  },
+  
+  createUser: async (data: { email: string; password: string; role?: 'user' | 'admin' }) => {
+    return alovaApiClient.post('admin', 'users', data);
+  },
+  
+  updateUser: async (id: string, data: { email?: string; password?: string; role?: 'user' | 'admin'; status?: 'active' | 'inactive' }) => {
+    if (!id) throw new Error('Se requiere un ID de usuario');
+    return alovaApiClient.put('admin', 'user', data, { id });
+  },
+  
+  deleteUser: async (id: string) => {
+    if (!id) throw new Error('Se requiere un ID de usuario');
+    return alovaApiClient.delete('admin', 'user', { id });
+  },
+  
+  getUserStats: async () => {
+    return alovaApiClient.get('admin', 'stats');
+  }
+};
+
+/**
  * Función para configurar token de autenticación
  */
 export const setupAuthToken = () => {

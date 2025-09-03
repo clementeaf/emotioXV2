@@ -312,6 +312,36 @@ api:
         method: DELETE
         cors: true
 
+    # --- RUTAS DE ADMINISTRACIÓN ---
+    - http:
+        path: /admin/users
+        method: GET
+        cors: true
+    - http:
+        path: /admin/users
+        method: POST
+        cors: true
+    - http:
+        path: /admin/users/{id}
+        method: GET
+        cors: true
+    - http:
+        path: /admin/users/{id}
+        method: PUT
+        cors: true
+    - http:
+        path: /admin/users/{id}
+        method: DELETE
+        cors: true
+    - http:
+        path: /admin/users/stats
+        method: GET
+        cors: true
+    - http:
+        path: /admin/{proxy+}
+        method: OPTIONS
+        cors: true
+
     # Ruta genérica para el resto
     - http:
         path: /{proxy+}
@@ -426,3 +456,62 @@ monitoringSubscribe:
         cors: true
   environment:
     DYNAMODB_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+# --- FUNCIONES PARA ADMINISTRACIÓN DE USUARIOS (Usando handler principal) ---
+# Las rutas admin ahora se manejan a través del handler principal con routing
+# Esta sección se mantiene comentada como referencia
+# adminGetUsers:
+#   handler: src/index.handler
+#   events:
+#     - http:
+#         path: admin/users
+#         method: GET
+#         cors: true
+
+# adminGetUser:
+#   handler: src/index.handler
+#   events:
+#     - http:
+#         path: admin/users/{id}
+#         method: GET
+#         cors: true
+
+# adminCreateUser:
+#   handler: src/index.handler
+#   events:
+#     - http:
+#         path: admin/users
+#         method: POST
+#         cors: true
+
+# adminUpdateUser:
+#   handler: src/index.handler
+#   events:
+#     - http:
+#         path: admin/users/{id}
+#         method: PUT
+#         cors: true
+
+# adminDeleteUser:
+#   handler: src/index.handler
+#   events:
+#     - http:
+#         path: admin/users/{id}
+#         method: DELETE
+#         cors: true
+
+# adminUserStats:
+#   handler: src/index.handler
+#   events:
+#     - http:
+#         path: admin/users/stats
+#         method: GET
+#         cors: true
+
+# adminOptions:
+#   handler: src/index.handler
+#   events:
+#     - http:
+#         path: admin/{proxy+}
+#         method: OPTIONS
+#         cors: true
