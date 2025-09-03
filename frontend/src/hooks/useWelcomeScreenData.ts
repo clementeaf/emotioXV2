@@ -22,7 +22,7 @@ export function useWelcomeScreenData(researchId: string): UseWelcomeScreenDataRe
   const shouldFetch = researchId && researchId !== 'current';
 
   const query = useRequest(
-    () => alovaInstance.Get<ApiResponse<WelcomeScreenRecord>>(`/welcome-screen/research/${researchId}`),
+    () => alovaInstance.Get<ApiResponse<WelcomeScreenRecord>>(`/welcome-screens/research/${researchId}`),
     {
       initialData: undefined,
       immediate: !!shouldFetch,
@@ -64,7 +64,7 @@ export function useWelcomeScreenData(researchId: string): UseWelcomeScreenDataRe
 export function useCreateWelcomeScreen() {
   const mutation = useRequest(
     (data: Partial<WelcomeScreenRecord>) =>
-      alovaInstance.Post<ApiResponse<WelcomeScreenRecord>>('/welcome-screen', data),
+      alovaInstance.Post<ApiResponse<WelcomeScreenRecord>>('/welcome-screens', data),
     {
       immediate: false,
     }
@@ -98,7 +98,7 @@ export function useCreateWelcomeScreen() {
 export function useUpdateWelcomeScreen() {
   const mutation = useRequest(
     ({ researchId, data }: { researchId: string; data: Partial<WelcomeScreenRecord> }) =>
-      alovaInstance.Put<ApiResponse<WelcomeScreenRecord>>(`/welcome-screen/research/${researchId}`, data),
+      alovaInstance.Put<ApiResponse<WelcomeScreenRecord>>(`/welcome-screens/research/${researchId}`, data),
     {
       immediate: false,
     }
@@ -142,7 +142,7 @@ export function useUpdateWelcomeScreen() {
 export function useDeleteWelcomeScreen() {
   const mutation = useRequest(
     (researchId: string) =>
-      alovaInstance.Delete<ApiResponse<{ message: string }>>(`/welcome-screen/research/${researchId}`),
+      alovaInstance.Delete<ApiResponse<{ message: string }>>(`/welcome-screens/research/${researchId}`),
     {
       immediate: false,
     }

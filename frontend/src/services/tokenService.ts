@@ -211,7 +211,7 @@ const refreshTokenIfNeeded = async (): Promise<boolean> => {
 
     try {
       // Importación dinámica para evitar dependencia circular
-      const { authAPI } = await import('@/lib/api');
+      const { authAPI } = await import('@/config/api-client');
       const response = await authAPI.refreshToken();
       if (!response?.data?.token) {
         throw new Error('No se recibió token en la respuesta');
@@ -254,7 +254,7 @@ const forceTokenRefresh = async (): Promise<boolean> => {
 
     logService.info('Forzando renovación de token...');
     // Importación dinámica para evitar dependencia circular
-    const { authAPI } = await import('@/lib/api');
+    const { authAPI } = await import('@/config/api-client');
     const response = await authAPI.refreshToken();
 
     if (response.data && response.data.token) {

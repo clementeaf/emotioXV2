@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { researchAPI } from '@/lib/api';
+import { researchAPI } from '@/config/api-client';
 
 interface DeleteResearchButtonProps {
   researchId: string;

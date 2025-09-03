@@ -76,7 +76,7 @@ export const useSmartVOCForm = (researchId: string) => {
       // Actualizar formData con los datos cargados, preservando configuraciones por defecto
       setFormData({
         researchId: smartVocData.researchId || researchId,
-        questions: smartVocData.questions.map(q => {
+        questions: smartVocData.questions.map((q: any) => {
           // Preservar configuración por defecto para CSAT si no está definida
           if (q.type === QuestionType.SMARTVOC_CSAT && (!q.config || !q.config.type)) {
             return {

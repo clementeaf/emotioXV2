@@ -1,7 +1,12 @@
-import { useWelcomeScreenData } from '@/hooks/useWelcomeScreenData';
+import { 
+  useWelcomeScreenData,
+  useCreateWelcomeScreen,
+  useUpdateWelcomeScreen,
+  useDeleteWelcomeScreen
+} from '@/hooks/useWelcomeScreenData';
 import { useCallback, useEffect, useState } from 'react';
 
-import { welcomeScreenService } from '@/services/welcomeScreen.service';
+// ❌ ELIMINADO: No usar welcomeScreenService - todo debe venir del hook centralizado
 import { WelcomeScreenRecord, WelcomeScreenFormData as WelcomeScreenServiceData } from '../../../../../../shared/interfaces/welcome-screen.interface';
 import {
   ErrorModalData,
@@ -26,6 +31,11 @@ const INITIAL_FORM_DATA: WelcomeScreenServiceData = {
 export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormResult => {
 
   const actualResearchId = researchId === 'current' ? '' : researchId;
+  
+  // Hooks centralizados para mutaciones
+  const { create: createWelcomeScreen } = useCreateWelcomeScreen();
+  const { update: updateWelcomeScreen } = useUpdateWelcomeScreen();
+  const { delete: deleteWelcomeScreen } = useDeleteWelcomeScreen();
   const [formData, setFormData] = useState<WelcomeScreenServiceData>(INITIAL_FORM_DATA);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -131,22 +141,20 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       let resultRecord: WelcomeScreenRecord;
 
       if (existingScreen?.id && actualResearchId) {
-        resultRecord = await welcomeScreenService.save({
+        // Actualizar existente usando hook centralizado
+        resultRecord = await updateWelcomeScreen(actualResearchId, {
           ...dataToSubmit,
           researchId: actualResearchId,
           id: existingScreen.id
         });
       } else if (actualResearchId) {
-        if (!actualResearchId) throw new Error('No hay researchId válido para guardar.');
-        // Combinar los datos para crear
+        // Crear nuevo usando hook centralizado
         const payload = {
           ...INITIAL_FORM_DATA,
-          ...dataToSubmit
+          ...dataToSubmit,
+          researchId: actualResearchId
         };
-        resultRecord = await welcomeScreenService.createForResearch(
-          actualResearchId,
-          payload
-        );
+        resultRecord = await createWelcomeScreen(payload);
       } else {
         throw new Error('No hay researchId válido para guardar.');
       }
@@ -242,7 +250,8 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     if (!existingScreen?.id || !actualResearchId) return;
     setIsDeleting(true);
     try {
-      await welcomeScreenService.delete(actualResearchId, existingScreen.id);
+      // Usar hook centralizado para eliminar
+      await deleteWelcomeScreen(actualResearchId);
       setFormData({ ...INITIAL_FORM_DATA }); // No agregues researchId ni questionKey
       setModalError({
         title: 'Eliminado',
@@ -262,7 +271,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     } finally {
       setIsDeleting(false);
     }
-  }, [existingScreen, actualResearchId, setFormData, setModalError, setModalVisible]);
+  }, [existingScreen, actualResearchId, deleteWelcomeScreen, setFormData, setModalError, setModalVisible]);
 
   const closeModal = () => {
     setModalVisible(false);

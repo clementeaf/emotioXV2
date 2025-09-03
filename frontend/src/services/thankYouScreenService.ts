@@ -1,4 +1,4 @@
-import { thankYouScreenAPI } from '@/lib/api';
+import { thankYouScreenAPI } from '@/config/api-client';
 import {
   ThankYouScreenFormData,
   ThankYouScreenModel

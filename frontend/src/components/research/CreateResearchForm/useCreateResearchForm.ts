@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { researchAPI, setupAuthToken } from '@/lib/api';
+import { researchAPI, setupAuthToken } from '@/config/api-client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
 import { ResearchBasicData, ResearchType } from '../../../../../shared/interfaces/research.model';

@@ -1,4 +1,4 @@
-import { companiesAPI } from '@/lib/api';
+import { companiesAPI } from '@/config/api-client';
 import { Company } from '../../../shared/interfaces/company.interface';
 
 /**
@@ -14,7 +14,7 @@ export class CompanyService {
       
       if (response.success && response.data) {
         // Filtrar solo empresas activas
-        return response.data.filter(company => company.status === 'active');
+        return response.data.filter((company: Company) => company.status === 'active');
       }
       
       return [];

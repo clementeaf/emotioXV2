@@ -1,4 +1,4 @@
-import { authAPI } from '@/lib/api';
+import { authAPI } from '@/config/api-client';
 import { useAuth } from '@/providers/AuthProvider';
 import { DASHBOARD_ROUTES } from '@/routes';
 import { validateEmail, validatePassword } from '@/utils/auth-validation';

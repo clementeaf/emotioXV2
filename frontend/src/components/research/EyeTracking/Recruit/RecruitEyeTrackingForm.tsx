@@ -11,7 +11,7 @@ import { DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interface
 // Definir BacklinkKeys localmente ya que no está exportado
 type BacklinkKeys = 'complete' | 'disqualified' | 'overquota';
 
-import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
+import { eyeTrackingAPI } from '@/config/api-client';
 import { Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ErrorModal } from './components';
@@ -189,7 +189,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
-      await eyeTrackingFixedAPI.delete(researchId).send();
+      await eyeTrackingAPI.delete(researchId);
       toast.success('Datos de reclutamiento ocular eliminados correctamente.');
 
       // Resetear el estado del formulario después de eliminar

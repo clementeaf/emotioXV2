@@ -48,7 +48,7 @@ export function useCachedApi<T>(
       setError(errorMessage);
       
       // Intentar obtener del cache en caso de error
-      const cachedResult = apiCache.get<T>(options.cacheKey);
+      const cachedResult = apiCache.get(options.cacheKey) as T | null;
       if (cachedResult !== null) {
         setData(cachedResult);
         return cachedResult;
@@ -90,7 +90,7 @@ export function useCachedList<T>(
  */
 export function useCacheInvalidation() {
   const invalidatePattern = useCallback((pattern: RegExp) => {
-    const deleted = apiCache.invalidatePattern(pattern);
+    const deleted = apiCache.invalidatePattern(pattern.source);
     return deleted;
   }, []);
 

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { apiClient } from '@/config/api';
-import { setupAuthToken } from '@/lib/api';
+import { setupAuthToken } from '@/config/api-client';
 import { Copy, ExternalLink, Plus, Users } from 'lucide-react';
 import { useState } from 'react';
 

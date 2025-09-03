@@ -3,14 +3,14 @@
 import { useResearchList } from '@/hooks/useResearchList';
 import { ResearchTypesProps } from '@/interfaces/research';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-import type { Research } from '@/types/research';
+import type { ResearchAPIResponse } from '@/types/research';
 
 function ResearchTypesContent() {
   // Usar el hook centralizado para obtener research data
   const { researches: researchData = [], isLoading, error } = useResearchList();
 
   // Extraer tipos únicos de investigación
-  const researchTypes = Array.from(new Set(researchData.map((research: Research) => research.basic?.technique || 'unknown')));
+  const researchTypes = Array.from(new Set(researchData.map((research: ResearchAPIResponse) => research.technique || 'unknown')));
 
   const getTypeDisplayName = (type: string | undefined) => {
     if (!type) return 'Unknown';
@@ -24,7 +24,7 @@ function ResearchTypesContent() {
   };
 
   const getTypeCount = (type: string) => {
-    return researchData.filter((research: Research) => research.basic?.technique === type).length;
+    return researchData.filter((research: ResearchAPIResponse) => research.technique === type).length;
   };
 
   if (isLoading) {

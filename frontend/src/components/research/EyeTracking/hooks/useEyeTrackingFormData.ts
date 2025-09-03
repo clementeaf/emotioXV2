@@ -10,7 +10,7 @@ import {
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useEyeTrackingData } from '@/hooks/useEyeTrackingData';
-import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
+import { eyeTrackingAPI } from '@/config/api-client';
 
 // Interfaz para los datos de la API
 interface ApiResponse {
@@ -26,14 +26,16 @@ interface ApiResponse {
 const api = {
   get: async (url: string): Promise<ApiResponse> => {
     try {
-      return await eyeTrackingFixedAPI.getByResearchId(url.split('/').pop() || '').send();
+      const researchId = url.split('/').pop() || '';
+      return await eyeTrackingAPI.getByResearch(researchId);
     } catch (error) {
       throw error;
     }
   },
   post: async (url: string, data: any): Promise<ApiResponse> => {
     try {
-      return await eyeTrackingFixedAPI.create(data).send();
+      // Need researchId for create - this is a limitation
+      throw new Error('Create operation requires researchId parameter');
     } catch (error) {
       throw error;
     }
@@ -41,7 +43,7 @@ const api = {
   put: async (url: string, data: any): Promise<ApiResponse> => {
     try {
       const id = url.split('/').pop() || '';
-      return await eyeTrackingFixedAPI.update(id, data).send();
+      return await eyeTrackingAPI.update(id, data);
     } catch (error) {
       throw error;
     }

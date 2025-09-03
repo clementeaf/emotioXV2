@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { researchAPI, setupAuthToken } from '@/lib/api';
+import { researchAPI, setupAuthToken } from '@/config/api-client';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';

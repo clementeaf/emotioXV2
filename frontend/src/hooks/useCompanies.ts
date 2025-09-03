@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Company } from '../../../shared/interfaces/company.interface';
 import { companyService } from '@/services/companyService';
-import { setupAuthToken } from '@/lib/api';
+import { setupAuthToken } from '@/config/api-client';
 
 interface UseCompaniesResult {
   companies: Company[];

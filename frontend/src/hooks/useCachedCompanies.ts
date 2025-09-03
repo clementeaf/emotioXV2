@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Company } from '../../../shared/interfaces/company.interface';
 import { companyService } from '@/services/companyService';
 import { companiesCache } from '@/lib/cache/CacheManager';
-import { setupAuthToken } from '@/lib/api';
+import { setupAuthToken } from '@/config/api-client';
 
 interface UseCachedCompaniesResult {
   companies: Company[];
@@ -56,7 +56,7 @@ export const useCachedCompanies = (autoLoad: boolean = true): UseCachedCompanies
       setError(err instanceof Error ? err.message : 'Error loading companies');
       
       // En caso de error, intentar cargar del cache o usar fallback
-      const cachedCompanies = companiesCache.get<Company[]>(CACHE_KEY);
+      const cachedCompanies = companiesCache.get(CACHE_KEY) as Company[] | null;
       if (cachedCompanies) {
         setCompanies(cachedCompanies);
       } else {

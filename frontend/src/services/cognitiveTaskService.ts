@@ -1,4 +1,4 @@
-import { cognitiveTaskAPI } from '@/lib/cognitive-task-api';
+import { cognitiveTaskAPI } from '@/config/api-client';
 import type { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
 
 /**
@@ -11,7 +11,7 @@ export const cognitiveTaskService = {
    * @returns Configuración solicitada
    */
   async getByResearchId(researchId: string): Promise<CognitiveTaskFormData | null> {
-    return cognitiveTaskAPI.getByResearchId(researchId);
+    return cognitiveTaskAPI.getByResearch(researchId);
   },
 
   /**
@@ -41,7 +41,13 @@ export const cognitiveTaskService = {
    * @returns Configuración actualizada o creada
    */
   async save(researchId: string, data: CognitiveTaskFormData): Promise<CognitiveTaskFormData> {
-    return cognitiveTaskAPI.save(researchId, data);
+    // Check if task exists to determine create or update
+    const existing = await cognitiveTaskAPI.getByResearch(researchId).catch(() => null);
+    if (existing) {
+      return cognitiveTaskAPI.update(researchId, data);
+    } else {
+      return cognitiveTaskAPI.create(researchId, data);
+    }
   },
 
   /**
@@ -50,7 +56,7 @@ export const cognitiveTaskService = {
    * @returns Confirmación de eliminación
    */
   async deleteByResearchId(researchId: string): Promise<void> {
-    return cognitiveTaskAPI.deleteByResearchId(researchId);
+    return cognitiveTaskAPI.delete(researchId);
   }
 };
 

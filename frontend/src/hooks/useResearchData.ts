@@ -240,14 +240,13 @@ export const useResearchModules = (researchId: string | null) => {
     }
   );
   
-  // Welcome Screen
-  const welcomeScreen = useRequest(
-    alovaInstance.Get(`/research/${researchId || 'null'}/welcome-screen`),
-    {
-      initialData: undefined,
-      immediate: false,
-    }
-  );
+  // ❌ ELIMINADO: Welcome Screen duplicado - usar useWelcomeScreenData() desde /hooks/useWelcomeScreenData.ts
+  const welcomeScreen = { 
+    data: null, 
+    loading: false, 
+    error: null, 
+    send: async () => Promise.resolve(null) 
+  }; // Placeholder para mantener compatibilidad
   
   // Thank You Screen
   const thankYouScreen = useRequest(

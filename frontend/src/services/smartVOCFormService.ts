@@ -1,4 +1,4 @@
-import { smartVocFixedAPI } from '@/lib/smart-voc-api';
+import { smartVocAPI } from '@/config/api-client';
 import type {
     SmartVOCFormData,
     SmartVOCQuestion
@@ -17,7 +17,7 @@ export const smartVOCFormService = {
    * @returns Formulario SmartVOC (o array si el backend lo devuelve así)
    */
   async getByResearchId(researchId: string): Promise<SmartVOCFormData | null> {
-    return smartVocFixedAPI.getByResearchId(researchId);
+    return smartVocAPI.getByResearch(researchId);
   },
 
   /**
@@ -28,7 +28,7 @@ export const smartVOCFormService = {
    * @returns Formulario creado
    */
   async create(researchId: string, data: SmartVOCFormData): Promise<SmartVOCFormData> {
-    return smartVocFixedAPI.create({ ...data, researchId });
+    return smartVocAPI.create(researchId, data);
   },
 
   /**
@@ -39,8 +39,7 @@ export const smartVOCFormService = {
    * @returns Formulario actualizado
    */
   async update(researchId: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
-    // Para SmartVOC, el researchId actúa como formId
-    return smartVocFixedAPI.update(researchId, researchId, data);
+    return smartVocAPI.update(researchId, data);
   },
 
   /**
@@ -50,7 +49,8 @@ export const smartVOCFormService = {
    * @returns true si se eliminó correctamente, false en caso contrario
    */
   async deleteByResearchId(researchId: string): Promise<boolean> {
-    return smartVocFixedAPI.deleteByResearchId(researchId);
+    await smartVocAPI.delete(researchId);
+    return true;
   },
 
   // --- Métodos auxiliares que dependen de los anteriores ---

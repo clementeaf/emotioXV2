@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
-import { smartVocFixedAPI } from '@/lib/smart-voc-api';
+import { smartVocAPI } from '@/config/api-client';
 import { useAuth } from '@/providers/AuthProvider';
 
 import { QUERY_KEYS, SUCCESS_MESSAGES, UI_TEXTS } from '../constants';
@@ -51,7 +51,7 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
         throw new Error('No se pudo recuperar un token válido');
       }
 
-      const response = await smartVocFixedAPI.getByResearchId(researchId);
+      const response = await smartVocAPI.getByResearch(researchId);
       return response;
     },
     enabled: !!researchId && isAuthenticated && !authLoading,
@@ -97,9 +97,9 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
       };
       // Lógica condicional: Si tenemos un smartVocId, actualizamos (PUT). Si no, creamos (POST).
       if (data.smartVocId) {
-        return smartVocFixedAPI.update(researchId, data.smartVocId, cleanedData);
+        return smartVocAPI.update(researchId, cleanedData);
       } else {
-        return smartVocFixedAPI.create(cleanedData);
+        return smartVocAPI.create(researchId, cleanedData);
       }
     },
     onSuccess: (savedData) => {
@@ -155,7 +155,8 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
   const deleteMutation = useMutation({
     mutationFn: async () => {
       // Usar deleteByResearchId que solo requiere researchId, no un formId específico
-      const success = await smartVocFixedAPI.deleteByResearchId(researchId);
+      await smartVocAPI.delete(researchId);
+      const success = true;
 
       if (!success) {
         throw new Error('El recurso a eliminar no fue encontrado en el servidor (404).');

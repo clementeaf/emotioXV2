@@ -1,4 +1,4 @@
-import { eyeTrackingRecruitAPI } from '@/lib/eye-tracking-api';
+import { eyeTrackingRecruitAPI } from '@/config/api-client';
 import {
   CreateEyeTrackingRecruitRequest,
   EyeTrackingRecruitConfig,
@@ -36,7 +36,7 @@ export const eyeTrackingRecruitService = {
    * @returns Configuración de reclutamiento
    */
   async getConfigByResearchId(researchId: string): Promise<EyeTrackingRecruitConfig | null> {
-    return eyeTrackingRecruitAPI.getConfigByResearchId(researchId);
+    return eyeTrackingRecruitAPI.getConfigByResearch(researchId);
   },
 
   /**
@@ -55,8 +55,8 @@ export const eyeTrackingRecruitService = {
    * @param data Datos a actualizar
    * @returns Configuración actualizada
    */
-  async updateConfig(configId: string, data: UpdateEyeTrackingRecruitRequest): Promise<EyeTrackingRecruitConfig> {
-    return eyeTrackingRecruitAPI.updateConfig(configId, data);
+  async updateConfig(researchId: string, data: UpdateEyeTrackingRecruitRequest): Promise<EyeTrackingRecruitConfig> {
+    return eyeTrackingRecruitAPI.updateConfig(researchId, data);
   },
 
   /**
@@ -64,8 +64,9 @@ export const eyeTrackingRecruitService = {
    * @param configId ID de la configuración
    * @returns Configuración actualizada
    */
-  async completeConfig(configId: string): Promise<EyeTrackingRecruitConfig> {
-    return eyeTrackingRecruitAPI.completeConfig(configId);
+  async completeConfig(researchId: string): Promise<EyeTrackingRecruitConfig> {
+    // This method doesn't exist in the centralized API, update status instead
+    return eyeTrackingRecruitAPI.updateConfig(researchId, { status: 'completed' } as any);
   },
 
   /**
@@ -73,8 +74,8 @@ export const eyeTrackingRecruitService = {
    * @param configId ID de la configuración
    * @returns Confirmación de eliminación
    */
-  async deleteConfig(configId: string): Promise<void> {
-    return eyeTrackingRecruitAPI.deleteConfig(configId);
+  async deleteConfig(researchId: string): Promise<void> {
+    return eyeTrackingRecruitAPI.delete(researchId);
   },
 
   /* ===== Operaciones de Participantes ===== */
@@ -105,7 +106,7 @@ export const eyeTrackingRecruitService = {
    * @returns Lista de participantes
    */
   async getParticipantsByConfigId(configId: string): Promise<EyeTrackingRecruitParticipant[]> {
-    return eyeTrackingRecruitAPI.getParticipantsByConfigId(configId);
+    return eyeTrackingRecruitAPI.getParticipants(configId);
   },
 
   /**
@@ -114,7 +115,7 @@ export const eyeTrackingRecruitService = {
    * @returns Estadísticas de participantes
    */
   async getStatsByConfigId(configId: string): Promise<EyeTrackingRecruitStats> {
-    return eyeTrackingRecruitAPI.getStatsByConfigId(configId);
+    return eyeTrackingRecruitAPI.getStats(configId);
   },
 
   /* ===== Operaciones de Enlaces de Reclutamiento ===== */
@@ -131,7 +132,7 @@ export const eyeTrackingRecruitService = {
     type: RecruitLinkType = RecruitLinkType.STANDARD,
     expirationDays?: number
   ): Promise<GenerateRecruitmentLinkResponse> {
-    return eyeTrackingRecruitAPI.generateRecruitmentLink(configId, type, expirationDays);
+    return eyeTrackingRecruitAPI.generateLink(configId, type, expirationDays);
   },
 
   /**
@@ -158,7 +159,7 @@ export const eyeTrackingRecruitService = {
    * @returns Respuesta de validación
    */
   async validateRecruitmentLink(token: string): Promise<{ valid: boolean, link?: RecruitmentLink }> {
-    return eyeTrackingRecruitAPI.validateRecruitmentLink(token);
+    return eyeTrackingRecruitAPI.validateLink(token);
   },
 
   /* ===== Operaciones de Resumen ===== */

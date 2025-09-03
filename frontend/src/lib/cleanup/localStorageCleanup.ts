@@ -1,4 +1,4 @@
-import { researchAPI } from '@/lib/api';
+import { researchAPI } from '@/config/api-client';
 
 /**
  * Limpia todas las entradas de localStorage relacionadas con una investigación
@@ -7,113 +7,73 @@ import { researchAPI } from '@/lib/api';
  */
 export function cleanResearchFromLocalStorage(researchId: string): void {
   try {
-    // Eliminar la entrada principal
+    // Limpia entradas específicas de research
     localStorage.removeItem(`research_${researchId}`);
+    localStorage.removeItem(`research_data_${researchId}`);
+    localStorage.removeItem(`research_status_${researchId}`);
+    localStorage.removeItem(`research_modules_${researchId}`);
     
-    // Eliminar entradas asociadas para componentes específicos
-    localStorage.removeItem(`welcome-screen_nonexistent_${researchId}`);
-    localStorage.removeItem(`thank-you-screen_nonexistent_${researchId}`);
-    localStorage.removeItem(`eye-tracking_nonexistent_${researchId}`);
-    localStorage.removeItem(`smart-voc_nonexistent_${researchId}`);
+    // Limpia entradas de welcome screen
+    localStorage.removeItem(`welcome_screen_${researchId}`);
+    localStorage.removeItem(`welcome_screen_resource_${researchId}`);
+    localStorage.removeItem(`welcome_screen_nonexistent_${researchId}`);
     
-    // Actualizar la lista de investigaciones recientes
-    try {
-      const storedList = localStorage.getItem('research_list');
-      if (storedList) {
-        const researchList = JSON.parse(storedList);
-        const updatedList = researchList.filter((r: any) => r.id !== researchId);
-        localStorage.setItem('research_list', JSON.stringify(updatedList));
-      }
-    } catch (e) {
-    }
+    // Limpia entradas de otros módulos
+    localStorage.removeItem(`smart_voc_${researchId}`);
+    localStorage.removeItem(`eye_tracking_${researchId}`);
+    localStorage.removeItem(`cognitive_task_${researchId}`);
+    localStorage.removeItem(`thank_you_screen_${researchId}`);
     
+    // Limpia entradas de participantes
+    localStorage.removeItem(`participants_${researchId}`);
+    localStorage.removeItem(`module_responses_${researchId}`);
+    
+    console.log(`[LocalStorage] Cleaned entries for research: ${researchId}`);
   } catch (error) {
+    console.warn(`[LocalStorage] Error cleaning entries for research ${researchId}:`, error);
   }
 }
 
 /**
- * Verifica si una investigación existe en el backend y limpia localStorage si no existe
- * 
- * @param researchId ID de la investigación a verificar
- * @returns Promise<boolean> true si la investigación existe, false si no
- */
-export async function validateAndCleanResearch(researchId: string): Promise<boolean> {
-  try {
-    // Verificar si la investigación existe en el backend
-    await researchAPI.get(researchId);
-    
-    // Si llegamos aquí, la investigación existe
-    return true;
-  } catch (error: any) {
-    // Si es un error 404, la investigación no existe
-    if (error?.response?.status === 404 || 
-        (error?.message && error.message.includes('404'))) {
-      
-      // Limpiar localStorage
-      cleanResearchFromLocalStorage(researchId);
-      
-      return false;
-    }
-    
-    // Para otros tipos de error, asumimos que la investigación existe
-    // pero hubo un problema temporal de conexión
-    return true;
-  }
-}
-
-/**
- * Limpia todas las investigaciones obsoletas del localStorage
- * verificando si existen en el backend
- */
-export async function cleanAllObsoleteResearch(): Promise<void> {
-  try {
-    // Obtener la lista de investigaciones
-    const storedList = localStorage.getItem('research_list');
-    if (!storedList) return;
-    
-    const researchList = JSON.parse(storedList);
-    const updatedList = [];
-    
-    // Verificar cada investigación
-    for (const research of researchList) {
-      const exists = await validateAndCleanResearch(research.id);
-      if (exists) {
-        updatedList.push(research);
-      }
-    }
-    
-    // Actualizar la lista
-    localStorage.setItem('research_list', JSON.stringify(updatedList));
-    
-  } catch (error) {
-  }
-}
-
-/**
- * Limpia TODAS las investigaciones del localStorage, incluyendo la lista y datos relacionados
+ * Limpia todas las entradas relacionadas con research del localStorage
  */
 export function cleanAllResearchFromLocalStorage(): void {
   try {
-    // Obtener la lista de investigaciones
-    const storedList = localStorage.getItem('research_list');
-    if (storedList) {
-      const researchList = JSON.parse(storedList);
-      
-      // Limpiar cada investigación
-      researchList.forEach((research: any) => {
-        cleanResearchFromLocalStorage(research.id);
-      });
-      
-      // Limpiar la lista principal
-      localStorage.removeItem('research_list');
-    }
+    const keys = Object.keys(localStorage);
+    const researchKeys = keys.filter(key => 
+      key.includes('research_') || 
+      key.includes('welcome_screen_') ||
+      key.includes('smart_voc_') ||
+      key.includes('eye_tracking_') ||
+      key.includes('cognitive_task_') ||
+      key.includes('thank_you_screen_') ||
+      key.includes('participants_') ||
+      key.includes('module_responses_')
+    );
     
-    // Limpiar otros datos relacionados con investigaciones
-    localStorage.removeItem('research_updated');
-    localStorage.removeItem('cached_research_data');
-    localStorage.removeItem('cached_research_timestamp');
-    localStorage.removeItem('last_path');
+    researchKeys.forEach(key => {
+      localStorage.removeItem(key);
+    });
     
+    console.log(`[LocalStorage] Cleaned ${researchKeys.length} research-related entries`);
   } catch (error) {
+    console.warn('[LocalStorage] Error cleaning all research entries:', error);
   }
-} 
+}
+
+/**
+ * Valida si una investigación existe antes de limpiar
+ * 
+ * @param researchId ID de la investigación a validar
+ * @returns Promise<boolean> true si existe, false si no
+ */
+export async function validateResearchBeforeCleanup(researchId: string): Promise<boolean> {
+  try {
+    await researchAPI.get(researchId);
+    return true;
+  } catch (error) {
+    // Si falla la petición, la investigación no existe
+    cleanResearchFromLocalStorage(researchId);
+    return false;
+  }
+}

@@ -1,4 +1,4 @@
-import { smartVocFixedAPI } from '@/lib/smart-voc-api';
+import { smartVocAPI } from '@/config/api-client';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import cognitiveTaskAPI from '../services/cognitiveTaskService';
@@ -48,7 +48,7 @@ class GlobalAPISingleton {
       return await this.promises.get(key);
     }
 
-    const promise = smartVocFixedAPI.getByResearchId(researchId);
+    const promise = smartVocAPI.getByResearch(researchId);
     this.promises.set(key, promise);
     this.isInitialized.set(key, true);
 

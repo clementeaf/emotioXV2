@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useMonitoringReceiver } from '@/hooks/useMonitoringReceiver';
-import { researchInProgressAPI, setupAuthToken } from '@/lib/api';
+import { researchInProgressAPI, setupAuthToken } from '@/config/api-client';
 import { useAuth } from '@/providers/AuthProvider';
 import { Activity, CheckCircle, Clock, ExternalLink, Info, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';

@@ -20,7 +20,7 @@ import {
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useEyeTrackingSharedData } from '@/hooks/useEyeTrackingSharedData';
-import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
+import { eyeTrackingAPI } from '@/config/api-client';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 
 
@@ -581,7 +581,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Configuración de la mutación para guardar
   const saveConfigMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await eyeTrackingFixedAPI.saveRecruitConfig(data).send();
+      return await eyeTrackingAPI.create(researchId, data);
     },
     onSuccess: () => {
       // Eliminamos el toast de aquí para evitar duplicados
