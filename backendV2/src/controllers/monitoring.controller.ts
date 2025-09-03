@@ -1,11 +1,99 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { MonitoringEvent, ParticipantLoginEvent, ParticipantStepEvent, ParticipantDisqualifiedEvent, ParticipantQuotaExceededEvent, ParticipantCompletedEvent, ParticipantErrorEvent, ParticipantResponseSavedEvent } from '../../../shared/interfaces/websocket-events.interface';
 import { structuredLog } from '../utils/logging.util';
 import { webSocketService } from '../services/websocket.service';
 import { uuidv4 } from '../utils/id-generator';
 import { getCorsHeaders } from '../middlewares/cors';
+
+// Event interfaces defined locally to avoid import issues
+interface MonitoringEvent {
+  type: string;
+  data: any;
+}
+
+interface ParticipantLoginEvent {
+  type: 'PARTICIPANT_LOGIN';
+  data: {
+    researchId: string;
+    participantId: string;
+    email: string;
+    userAgent?: string;
+    ipAddress?: string;
+    timestamp: string;
+  };
+}
+
+interface ParticipantStepEvent {
+  type: 'PARTICIPANT_STEP';
+  data: {
+    researchId: string;
+    participantId: string;
+    stepName: string;
+    stepNumber: number;
+    totalSteps: number;
+    progress: number;
+    duration: number;
+    timestamp: string;
+  };
+}
+
+interface ParticipantDisqualifiedEvent {
+  type: 'PARTICIPANT_DISQUALIFIED';
+  data: {
+    researchId: string;
+    participantId: string;
+    reason: string;
+    disqualificationType: string;
+    demographicData?: any;
+    timestamp: string;
+  };
+}
+
+interface ParticipantQuotaExceededEvent {
+  type: 'PARTICIPANT_QUOTA_EXCEEDED';
+  data: {
+    researchId: string;
+    participantId: string;
+    quotaType: string;
+    quotaValue: string;
+    currentCount: number;
+    maxQuota: number;
+    demographicData?: any;
+    timestamp: string;
+  };
+}
+
+interface ParticipantCompletedEvent {
+  type: 'PARTICIPANT_COMPLETED';
+  data: {
+    researchId: string;
+    participantId: string;
+    totalDuration: number;
+    responsesCount: number;
+    timestamp: string;
+  };
+}
+
+interface ParticipantErrorEvent {
+  type: 'PARTICIPANT_ERROR';
+  data: {
+    researchId: string;
+    participantId: string;
+    error: string;
+    stepName?: string;
+    timestamp: string;
+  };
+}
+
+interface ParticipantResponseSavedEvent {
+  type: 'PARTICIPANT_RESPONSE_SAVED';
+  data: {
+    researchId: string;
+    participantId: string;
+    timestamp: string;
+  };
+}
 
 /**
  * Controlador para manejar eventos de monitoreo en tiempo real

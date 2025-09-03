@@ -18,8 +18,11 @@ const s3Service = new S3Service();
 const cognitiveTaskHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  const { httpMethod, pathParameters, body, path } = event;
-  const researchId = pathParameters?.researchId;
+  const { httpMethod, body, path } = event;
+  
+  // Extract researchId from path manually: /research/{researchId}/cognitive-task
+  const pathMatch = path.match(/^\/research\/([^\/]+)\/cognitive-task/);
+  const researchId = pathMatch?.[1];
 
   if (!researchId) {
     return errorResponse('Se requiere researchId en la ruta', 400, event);
@@ -127,7 +130,9 @@ const cognitiveTaskHandler = async (
         return createResponse(200, result, event);
 
       case 'PUT':
-        const taskId = pathParameters?.taskId;
+        // Extract taskId from path if present: /research/{researchId}/cognitive-task/{taskId}
+        const putTaskMatch = path.match(/^\/research\/([^\/]+)\/cognitive-task\/([^\/]+)/);
+        const taskId = putTaskMatch?.[2];
         if (!body) {
           return errorResponse('Se requiere cuerpo en la solicitud para actualizar', 400, event);
         }
@@ -149,7 +154,9 @@ const cognitiveTaskHandler = async (
         }
 
       case 'DELETE':
-        const taskIdToDelete = pathParameters?.taskId;
+        // Extract taskId from path if present: /research/{researchId}/cognitive-task/{taskId}
+        const deleteTaskMatch = path.match(/^\/research\/([^\/]+)\/cognitive-task\/([^\/]+)/);
+        const taskIdToDelete = deleteTaskMatch?.[2];
 
         if (taskIdToDelete) {
           // Eliminar por taskId específico

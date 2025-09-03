@@ -25,10 +25,39 @@ role:
         # si sigue el patrón ${self:service}-<algo>-${self:provider.stage},
         # que es el caso con ${self:service}-module-responses-${self:provider.stage}.
 
-        # Tabla principal dinámica (construida manualmente para funcionar con recursos existentes)
+        # Tablas específicas (construidas manualmente para funcionar con recursos existentes)
         - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-researches-dev"
         - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-researches-dev/index/researchId-index"
         - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-researches-dev/index/EntityTypeSkIndex"
+        
+        # Tabla de usuarios con EmailIndex
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-users-dev"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-users-dev/index/EmailIndex"
+        
+        # Tabla de participantes con EmailIndex
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-participants-dev"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-participants-dev/index/EmailIndex"
+        
+        # Tabla de module responses con índices
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-module-responses-dev"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-module-responses-dev/index/ResearchParticipantIndex"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-module-responses-dev/index/ResearchIndex"
+        
+        # Tabla de quota records
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-quota-records-dev"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-quota-records-dev/index/ResearchIdIndex"
+        
+        # Tablas de eye tracking
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-eye-tracking-recruit-config-dev"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-eye-tracking-recruit-config-dev/index/GSI1"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-eye-tracking-recruit-participant-dev"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-eye-tracking-recruit-participant-dev/index/GSI1"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-eye-tracking-recruit-participant-dev/index/GSI2"
+        
+        # Tabla de recruitment links
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-recruitment-link-dev"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-recruitment-link-dev/index/GSI1"
+        - "arn:aws:dynamodb:us-east-1:041238861016:table/emotioxv2-backend-recruitment-link-dev/index/TokenIndex"
 
     # Permisos para el bucket S3
     - Effect: Allow

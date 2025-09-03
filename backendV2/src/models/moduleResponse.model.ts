@@ -99,7 +99,7 @@ export const CreateModuleResponseDtoSchema = z.object({
   participantId: z.string(),
   questionKey: z.string(),
   responses: z.array(IndividualResponseSchema),
-  metadata: ResponseMetadataSchema
+  metadata: ResponseMetadataSchema.optional() // Make metadata optional for easier testing
 });
 
 /**

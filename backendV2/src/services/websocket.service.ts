@@ -1,8 +1,13 @@
 import { ApiGatewayManagementApiClient, PostToConnectionCommand } from '@aws-sdk/client-apigatewaymanagementapi';
 import { DeleteCommand, DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { MonitoringEvent } from '../../../shared/interfaces/websocket-events.interface';
 import { structuredLog } from '../utils/logging.util';
+
+// Local MonitoringEvent interface to avoid import issues
+interface MonitoringEvent {
+  type: string;
+  data: any;
+}
 
 /**
  * Interfaz para conexión WebSocket activa

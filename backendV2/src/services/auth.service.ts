@@ -436,9 +436,16 @@ class AuthService implements IAuthService {
         throw new Error('Formato de token inválido');
       }
       
-      // Decodificar el payload (segunda parte)
-      const payload = parts[1];
-      const decodedPayload = Buffer.from(payload, 'base64').toString();
+      // Decodificar el payload (segunda parte) con padding apropiado
+      let payload = parts[1];
+      // Agregar padding si es necesario
+      while (payload.length % 4) {
+        payload += '=';
+      }
+      
+      // Usar base64url decode (reemplazar caracteres URL-safe)
+      payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const decodedPayload = Buffer.from(payload, 'base64').toString('utf8');
       return JSON.parse(decodedPayload);
     } catch (error) {
       console.error('Error al decodificar token manualmente:', error);

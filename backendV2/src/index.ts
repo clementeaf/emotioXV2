@@ -133,7 +133,7 @@ async function getHandler(type: string): Promise<Function | null> {
       handlers.websocket = websocketHandler;
       return websocketHandler;
     } catch (error) {
-      logger.error('Error loading WebSocket handler:', error);
+      logger.error({ error }, 'Error loading WebSocket handler');
       return null;
     }
   }

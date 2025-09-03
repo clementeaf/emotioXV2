@@ -14,8 +14,11 @@ import { structuredLog } from '../utils/logging.util';
 const welcomeScreenHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  const { httpMethod, pathParameters, body } = event;
-  const researchId = pathParameters?.researchId;
+  const { httpMethod, body, path } = event;
+  
+  // Extract researchId from path manually: /research/{researchId}/welcome-screen
+  const pathMatch = path.match(/^\/research\/([^\/]+)\/welcome-screen/);
+  const researchId = pathMatch?.[1];
 
   if (!researchId) {
     return errorResponse('Se requiere researchId en la ruta', 400, event);
