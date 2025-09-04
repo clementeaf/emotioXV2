@@ -11,8 +11,7 @@ import { ROUTE_DEFINITIONS } from './routeDefinitions';
 import { initializationService } from './services/initialization.service';
 import { APIGatewayEventWebsocketRequestContext } from './types/websocket';
 // Import estático del controlador admin para forzar su inclusión en el bundle
-// TEMPORARILY COMMENTED OUT DUE TO AWS-SDK V2 DEPENDENCY
-// import { handler as adminHandler } from './controllers/admin.simple.controller';
+// (This import ensures admin controller is included in bundle)
 
 type ConnectionType = 'http' | 'websocket';
 
@@ -28,7 +27,7 @@ const handlers: Record<string, any> = {};
 
 // Mapa de importadores dinámicos para los controladores
 const controllerImports = {
-  // 'admin': () => import('./controllers/admin.simple.controller'), // TEMPORARILY DISABLED
+  'admin': () => import('./controllers/admin.controller'),
   'auth': () => import('./controllers/auth.controller'),
   'companies': () => import('./controllers/company.controller'),
   'research': () => import('./controllers/newResearch.controller'),
@@ -50,18 +49,30 @@ async function getHandler(type: string): Promise<Function | null> {
   if (handlers[type]) return handlers[type];
 
   // Manejo especial para el controlador admin (import estático)
-  // TEMPORARILY COMMENTED OUT DUE TO AWS-SDK V2 DEPENDENCY
-  /*
   if (type === 'admin') {
-    if (typeof adminHandler === 'function') {
-      handlers[type] = adminHandler;
-      return adminHandler;
-    } else {
-      logger.error('Admin controller handler is missing or not a function');
+    // Admin controller is now enabled - handle via dynamic import like other controllers
+    const importFn = controllerImports[type];
+    if (!importFn) {
+      logger.error(`Controller importer for '${type}' not found`);
+      return null;
+    }
+    
+    try {
+      const controllerModule = await importFn();
+      const handler = controllerModule.handler;
+      
+      if (typeof handler === 'function') {
+        handlers[type] = handler;
+        return handler;
+      } else {
+        logger.error(`Admin controller handler is missing or not a function`);
+        return null;
+      }
+    } catch (error: any) {
+      logger.error('Error importing admin controller:', error);
       return null;
     }
   }
-  */
 
   if (type === 'websocket') {
     // 🎯 IMPLEMENTAR WEBSOCKET HANDLER REAL

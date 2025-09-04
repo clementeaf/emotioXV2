@@ -15,14 +15,15 @@ export const WS_BASE_URL = isEndpointsSynced()
   ? DYNAMIC_API_ENDPOINTS.ws
   : (process.env.NEXT_PUBLIC_WS_URL || DYNAMIC_API_ENDPOINTS.ws);
 
-// Validación de seguridad - BLOQUEAR localhost completamente
-if (typeof window !== 'undefined' && (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1'))) {
+// Validación de seguridad - BLOQUEAR localhost solo en producción
+const isDevelopment = process.env.NODE_ENV !== 'production';
+if (typeof window !== 'undefined' && !isDevelopment && (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1'))) {
   throw new Error('Configuración de API inválida: No se permite localhost en producción');
 }
 
 // URL de fallback segura - Solo si no hay configuración
 const FALLBACK_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-export const SECURE_API_BASE_URL = API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1')
+export const SECURE_API_BASE_URL = (!isDevelopment && (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1')))
   ? FALLBACK_API_URL
   : API_BASE_URL;
 
@@ -185,7 +186,7 @@ export class ApiClient {
       'Accept': 'application/json',
     };
 
-    if (this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1')) {
+    if (!isDevelopment && (this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1'))) {
       this.baseUrl = FALLBACK_API_URL;
     }
   }
@@ -222,7 +223,7 @@ export class ApiClient {
 
     const fullUrl = url.startsWith('/') ? `${this.baseUrl}${url}` : `${this.baseUrl}/${url}`;
 
-    if (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1')) {
+    if (!isDevelopment && (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1'))) {
       throw new Error('URL de API no puede ser localhost - Solo AWS Lambda permitido');
     }
 
@@ -468,7 +469,7 @@ export function getApiUrl(path: string): string {
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   const fullUrl = `${SECURE_API_BASE_URL}/${cleanPath}`;
 
-  if (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1')) {
+  if (!isDevelopment && (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1'))) {
     return `${FALLBACK_API_URL}/${cleanPath}`;
   }
 
@@ -479,7 +480,7 @@ export function getApiUrl(path: string): string {
  * Función helper para obtener URL de WebSocket
  */
 export function getWebsocketUrl(): string {
-  if (WS_BASE_URL.includes('localhost') || WS_BASE_URL.includes('127.0.0.1')) {
+  if (!isDevelopment && (WS_BASE_URL.includes('localhost') || WS_BASE_URL.includes('127.0.0.1'))) {
     return '';
   }
 

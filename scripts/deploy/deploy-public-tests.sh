@@ -5,10 +5,10 @@
 
 set -e
 
-# Configuración
-BUCKET="emotioxv2-public-tests"
-DISTRIBUTION_ID="E1J2YXOVM8QFOG"
-REGION="us-east-1"
+# Configuración - usar variables de entorno o valores por defecto
+BUCKET="${BUCKET:-emotioxv2-public-tests}"
+DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ID:-E1J2YXOVM8QFOG}"
+REGION="${REGION:-us-east-1}"
 BUILD_DIR="dist"
 
 RED='\033[0;31m'

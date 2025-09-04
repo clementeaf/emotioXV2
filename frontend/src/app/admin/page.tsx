@@ -1,22 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shield, Users, Settings, Database, AlertTriangle } from 'lucide-react';
+import { Shield, Users, Settings, Database, AlertTriangle, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-hot-toast';
+import { useAdmin } from '@/contexts/AdminContext';
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [secretKey, setSecretKey] = useState('');
   const router = useRouter();
+  const { isAuthenticated, login, logout } = useAdmin();
 
   // Verificar acceso con clave secreta
   const handleSecretKeySubmit = () => {
-    if (secretKey === 'admin2025!') {
-      setIsAuthenticated(true);
-      toast.success('Acceso autorizado');
-    } else {
-      toast.error('Clave secreta incorrecta');
+    if (login(secretKey)) {
+      setSecretKey('');
     }
   };
 
@@ -65,16 +62,26 @@ export default function AdminPage() {
         {/* Header */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center">
-              <Shield className="h-8 w-8 text-indigo-600 mr-3" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Panel de Administración
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Sistema de administración EmotioXV2
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Shield className="h-8 w-8 text-indigo-600 mr-3" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    Panel de Administración
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    Sistema de administración EmotioXV2
+                  </p>
+                </div>
               </div>
+              <button
+                onClick={logout}
+                className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                title="Cerrar sesión"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Cerrar Sesión
+              </button>
             </div>
           </div>
         </div>

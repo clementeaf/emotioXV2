@@ -20,6 +20,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { adminAPI } from '@/config/api-client';
+import { useAdmin } from '@/contexts/AdminContext';
 
 interface UserData {
   id: string;
@@ -39,15 +40,16 @@ interface CreateUserData {
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAdmin();
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [showPasswords, setShowPasswords] = useState<Set<string>>(new Set());
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [secretKey, setSecretKey] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
 
   // Formulario para crear usuario
   const [newUser, setNewUser] = useState<CreateUserData>({
@@ -56,32 +58,44 @@ export default function AdminUsersPage() {
     role: 'user'
   });
 
-  // Verificar acceso con clave secreta
-  const handleSecretKeySubmit = () => {
-    if (secretKey === 'admin2025!') {
-      setIsAuthenticated(true);
+  // Load users on authentication
+  useEffect(() => {
+    if (isAuthenticated) {
       loadUsers();
-      toast.success('Acceso autorizado');
-    } else {
-      toast.error('Clave secreta incorrecta');
     }
-  };
+  }, [isAuthenticated]);
 
   // Cargar todos los usuarios desde el backend
   const loadUsers = async () => {
     try {
       setLoading(true);
       
+      console.log('🔄 Loading users from API...');
       const response = await adminAPI.getAllUsers();
+      console.log('📡 API Response:', response);
       
-      if (response && response.data) {
-        setUsers(response.data);
-        setFilteredUsers(response.data);
+      // Parsear la respuesta si es un Response object
+      let data;
+      if (response instanceof Response) {
+        data = await response.json();
+        console.log('📡 Parsed JSON data:', data);
+      } else {
+        data = response;
+      }
+      
+      if (data && data.success && data.data) {
+        console.log(`✅ Loaded ${data.data.length} users:`, data.data);
+        setUsers(data.data);
+        setFilteredUsers(data.data);
+        toast.success(`Cargados ${data.data.length} usuarios`);
+      } else {
+        console.log('⚠️ No data in response:', data);
+        toast.error('No se encontraron usuarios');
       }
       
     } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Error cargando usuarios');
+      console.error('❌ Error loading users:', error);
+      toast.error(`Error cargando usuarios: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }
@@ -164,14 +178,19 @@ export default function AdminUsersPage() {
 
   // Eliminar usuario
   const handleDeleteUser = async (userId: string) => {
-    const userToDelete = users.find(user => user.id === userId);
-    
-    if (!confirm(`¿Estás seguro de que quieres eliminar el usuario "${userToDelete?.email}"?`)) {
-      return;
+    const user = users.find(user => user.id === userId);
+    if (user) {
+      setUserToDelete(user);
+      setShowDeleteModal(true);
     }
+  };
+
+  // Confirmar eliminación de usuario
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
 
     try {
-      const response = await adminAPI.deleteUser(userId);
+      const response = await adminAPI.deleteUser(userToDelete.id);
       
       if (response) {
         // Recargar la lista de usuarios
@@ -184,6 +203,9 @@ export default function AdminUsersPage() {
       console.error('Error deleting user:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error eliminando usuario';
       toast.error(errorMessage);
+    } finally {
+      setShowDeleteModal(false);
+      setUserToDelete(null);
     }
   };
 
@@ -208,48 +230,10 @@ export default function AdminUsersPage() {
     return password;
   };
 
-  // Pantalla de autenticación
+  // Redirect to admin if not authenticated
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
-            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-              Administración de Usuarios
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Ingresa la clave secreta para acceder
-            </p>
-          </div>
-          <div className="mt-8 space-y-6">
-            <div>
-              <input
-                type="password"
-                placeholder="Clave secreta"
-                value={secretKey}
-                onChange={(e) => setSecretKey(e.target.value)}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                onKeyDown={(e) => e.key === 'Enter' && handleSecretKeySubmit()}
-              />
-            </div>
-            <button
-              onClick={handleSecretKeySubmit}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Acceder
-            </button>
-            <button
-              onClick={() => router.push('/admin')}
-              className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al Admin
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    router.push('/admin');
+    return null;
   }
 
   return (
@@ -413,9 +397,12 @@ export default function AdminUsersPage() {
               <p className="mt-2 text-gray-500">Cargando usuarios...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-96" style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#d1d5db #f3f4f6'
+            }}>
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Usuario
@@ -465,6 +452,47 @@ export default function AdminUsersPage() {
             </div>
           )}
         </div>
+
+        {/* Modal de confirmación de eliminación */}
+        {showDeleteModal && userToDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-red-100 rounded-full p-3">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                Confirmar eliminación
+              </h3>
+              
+              <p className="text-gray-600 text-center mb-6">
+                ¿Estás seguro de que quieres eliminar el usuario{' '}
+                <strong>"{userToDelete.email}"</strong>?{' '}
+                Esta acción no se puede deshacer.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setUserToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDeleteUser}
+                  className="flex-1 px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

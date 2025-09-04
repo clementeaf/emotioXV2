@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand, GetCommand, PutCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand, GetCommand, PutCommand, UpdateCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -21,11 +21,11 @@ export class AdminService {
    */
   static async getAllUsers(): Promise<AdminServiceResponse<AdminUser[]>> {
     try {
-      const params: DynamoDB.DocumentClient.ScanInput = {
+      const command = new ScanCommand({
         TableName: USER_TABLE,
-      };
+      });
 
-      const result = await dynamodb.scan(params).promise();
+      const result = await dynamodb.send(command);
       
       if (!result.Items) {
         return {
@@ -73,12 +73,12 @@ export class AdminService {
         };
       }
 
-      const params: DynamoDB.DocumentClient.GetItemInput = {
+      const command = new GetCommand({
         TableName: USER_TABLE,
         Key: { id: userId }
-      };
+      });
 
-      const result = await dynamodb.get(params).promise();
+      const result = await dynamodb.send(command);
       
       if (!result.Item) {
         return {
@@ -166,13 +166,13 @@ export class AdminService {
         updatedAt: now
       };
 
-      const params: DynamoDB.DocumentClient.PutItemInput = {
+      const command = new PutCommand({
         TableName: USER_TABLE,
         Item: newUserItem,
         ConditionExpression: 'attribute_not_exists(id)'
-      };
+      });
 
-      await dynamodb.put(params).promise();
+      await dynamodb.send(command);
 
       console.log(`✅ Usuario creado: ${userData.email}`);
 
@@ -287,16 +287,16 @@ export class AdminService {
         };
       }
 
-      const params: DynamoDB.DocumentClient.UpdateItemInput = {
+      const command = new UpdateCommand({
         TableName: USER_TABLE,
         Key: { id: userId },
         UpdateExpression: `SET ${updateExpression.join(', ')}`,
         ExpressionAttributeValues: expressionAttributeValues,
         ExpressionAttributeNames: expressionAttributeNames,
         ReturnValues: 'ALL_NEW'
-      };
+      });
 
-      const result = await dynamodb.update(params).promise();
+      const result = await dynamodb.send(command);
 
       if (!result.Attributes) {
         return {
@@ -352,13 +352,13 @@ export class AdminService {
         };
       }
 
-      const params: DynamoDB.DocumentClient.DeleteItemInput = {
+      const command = new DeleteCommand({
         TableName: USER_TABLE,
         Key: { id: userId },
         ConditionExpression: 'attribute_exists(id)'
-      };
+      });
 
-      await dynamodb.delete(params).promise();
+      await dynamodb.send(command);
 
       console.log(`✅ Usuario eliminado: ${existingUserResponse.data.email}`);
 
@@ -388,16 +388,16 @@ export class AdminService {
         };
       }
 
-      const params: DynamoDB.DocumentClient.QueryInput = {
+      const command = new QueryCommand({
         TableName: USER_TABLE,
         IndexName: 'EmailIndex',
         KeyConditionExpression: 'email = :email',
         ExpressionAttributeValues: {
           ':email': email.toLowerCase().trim()
         }
-      };
+      });
 
-      const result = await dynamodb.query(params).promise();
+      const result = await dynamodb.send(command);
       
       if (!result.Items || result.Items.length === 0) {
         return {
@@ -476,7 +476,7 @@ export class AdminService {
    */
   static async hasAdminUsers(): Promise<AdminServiceResponse<boolean>> {
     try {
-      const params: DynamoDB.DocumentClient.ScanInput = {
+      const command = new ScanCommand({
         TableName: USER_TABLE,
         FilterExpression: '#role = :role AND #status = :status',
         ExpressionAttributeNames: {
@@ -487,9 +487,9 @@ export class AdminService {
           ':role': 'admin',
           ':status': 'active'
         }
-      };
+      });
 
-      const result = await dynamodb.scan(params).promise();
+      const result = await dynamodb.send(command);
       const hasAdmins = result.Items ? result.Items.length > 0 : false;
 
       return {

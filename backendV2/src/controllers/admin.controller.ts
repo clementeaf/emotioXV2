@@ -343,3 +343,56 @@ export const handleOptions = async (): Promise<APIGatewayProxyResult> => {
     body: ''
   };
 };
+
+/**
+ * Handler principal que enruta las peticiones admin
+ */
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    const { httpMethod, path } = event;
+    
+    console.log(`🔧 Admin handler - Method: ${httpMethod}, Path: ${path}`);
+
+    // Manejar OPTIONS para CORS
+    if (httpMethod === 'OPTIONS') {
+      return handleOptions();
+    }
+
+    // Extraer la ruta específica después de /admin
+    const adminPathMatch = path.match(/^\/admin(.*)$/);
+    if (!adminPathMatch) {
+      return createErrorResponse(404, 'Ruta admin no encontrada', event);
+    }
+
+    const adminPath = adminPathMatch[1];
+
+    // Enrutar las peticiones
+    switch (true) {
+      // Stats route must come before the generic ID route
+      case httpMethod === 'GET' && adminPath === '/users/stats':
+        return getUserStats(event);
+        
+      case httpMethod === 'GET' && adminPath === '/users':
+        return getAllUsers(event);
+      
+      case httpMethod === 'POST' && adminPath === '/users':
+        return createUser(event);
+      
+      case httpMethod === 'GET' && Boolean(adminPath.match(/^\/users\/[^/]+$/)):
+        return getUserById(event);
+      
+      case httpMethod === 'PUT' && Boolean(adminPath.match(/^\/users\/[^/]+$/)):
+        return updateUser(event);
+      
+      case httpMethod === 'DELETE' && Boolean(adminPath.match(/^\/users\/[^/]+$/)):
+        return deleteUser(event);
+      
+      default:
+        return createErrorResponse(404, `Ruta admin no encontrada: ${httpMethod} ${adminPath}`, event);
+    }
+
+  } catch (error) {
+    console.error('❌ Error en admin handler:', error);
+    return createErrorResponse(500, 'Error interno del servidor', event);
+  }
+};
