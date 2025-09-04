@@ -62,8 +62,9 @@ jobs:
     if: |
       github.event_name == 'push' &&
       (needs.detect-changes.outputs.backend-changed == 'true' ||
-       needs.detect-changes.outputs.shared-changed == 'true') &&
-      (github.event.inputs.deploy_backend == 'true' || github.event.inputs.deploy_backend == '')
+       needs.detect-changes.outputs.shared-changed == 'true') ||
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.deploy_backend == 'true' || github.event.inputs.deploy_backend == ''))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -150,7 +151,11 @@ jobs:
           npm ci --legacy-peer-deps
 
       - name: Deploy to Amplify (if configured)
-        if: secrets.AMPLIFY_FRONTEND_APP_ID != ''
+        if: ${{ secrets.AMPLIFY_FRONTEND_APP_ID != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
         run: |
           echo "🚀 Desplegando Frontend a AWS Amplify..."
 

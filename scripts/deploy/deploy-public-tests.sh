@@ -31,12 +31,11 @@ rm -rf public-tests/$BUILD_DIR
 log_success "Directorio dist/ eliminado."
 
 # 🆕 SINCRONIZAR ENDPOINTS DINÁMICOS ANTES DEL BUILD
-log_info "🔄 Sincronizando endpoints dinámicos desde backendV2..."
-if [ -f "config/endpoints/sync-script.sh" ]; then
-    ./config/endpoints/sync-script.sh --stage prod --verbose
-    log_success "✅ Endpoints dinámicos sincronizados"
+log_info "🔄 Verificando endpoints dinámicos..."
+if [ -f "public-tests/src/config/endpoints.js" ]; then
+    log_success "✅ Endpoints dinámicos encontrados"
 else
-    log_warning "⚠️ Script de sincronización no encontrado, usando endpoints por defecto"
+    log_warning "⚠️ Endpoints dinámicos no encontrados, usando configuración por defecto"
 fi
 
 log_info "Construyendo public-tests (Vite)..."
