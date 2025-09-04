@@ -9,7 +9,7 @@ export const useEyeTrackingSharedData = (researchId: string, options?: {
   enabled?: boolean;
   type?: 'build' | 'recruit' | 'both';
 }) => {
-  const type = options?.type || 'both';
+  const type = options?.type || 'recruit'; // Optimized: default to recruit only for performance
 
   // Query para configuración de build con caching optimizado
   const buildQuery = useQuery({

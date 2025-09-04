@@ -93,9 +93,10 @@ export const API_ENDPOINTS = {
 
   // Eye Tracking Recruit
   eyeTrackingRecruit: {
-    getConfigByResearch: '/eye-tracking-recruit/research/{researchId}/config',
-    createConfig: '/eye-tracking-recruit/research/{researchId}/config',
-    updateConfig: '/eye-tracking-recruit/research/{researchId}/config',
+    getConfigByResearch: '/eye-tracking-recruit/research/{researchId}',
+    createConfig: '/eye-tracking-recruit/research/{researchId}',
+    updateConfig: '/eye-tracking-recruit/research/{researchId}',
+    delete: '/eye-tracking-recruit/research/{researchId}',
     createParticipant: '/eye-tracking-recruit/config/{configId}/participant',
     updateParticipantStatus: '/eye-tracking-recruit/participant/{participantId}/status',
     getParticipants: '/eye-tracking-recruit/config/{configId}/participants',

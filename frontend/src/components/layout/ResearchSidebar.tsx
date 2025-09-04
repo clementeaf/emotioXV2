@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { useEyeTrackingSharedData } from '@/hooks/useEyeTrackingSharedData';
-import { useResearchById } from '@/hooks/useResearchList';
+// Removed useEyeTrackingSharedData to avoid duplicate API calls
+import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -54,15 +54,11 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
 
-  // Usar solo research data básico (sin grouped responses)
-  const { data: researchData, isLoading: isLoadingResearch, error: researchError } = useResearchById(researchId || '');
+  // OPTIMIZED: Use shared global research data to avoid duplicate API calls
+  const { researchData, isLoading: isLoadingResearch, researchError } = useGlobalResearchData(researchId || '');
 
-  // Usar el hook compartido para obtener eye-tracking data solo cuando sea necesario
-  // Optimización: Solo cargar datos cuando realmente se necesiten para verificación
-  const { data: eyeTrackingData, isLoading: isLoadingEyeTracking } = useEyeTrackingSharedData(researchId || '', {
-    enabled: (currentSection === 'eye-tracking' || currentSection === 'eye-tracking-recruit') && !!researchId,
-    type: currentSection === 'eye-tracking' ? 'build' : currentSection === 'eye-tracking-recruit' ? 'recruit' : 'both'
-  });
+  // REMOVED: Eliminada llamada duplicada a useEyeTrackingSharedData para evitar requests duplicados
+  // El sidebar no necesita cargar los datos de configuración, solo navegar entre secciones
 
   // Bloque de usuario/avatar
   function UserInfo() {
@@ -185,48 +181,17 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
       return;
     }
 
-    // Solo verificar si tenemos datos y no estamos cargando
-    if (!isLoadingEyeTracking && eyeTrackingData !== undefined) {
-      setIsCheckingContent(true);
-
-      try {
-        // Verificar si hay contenido configurado
-        const hasContent = checkIfResearchHasContent();
-        setIsPublishEnabled(hasContent);
-      } catch (error) {
-        setIsPublishEnabled(false);
-      } finally {
-        setIsCheckingContent(false);
-      }
+    // Simplified: Enable publish for recruit section by default
+    // Content validation happens in the actual components
+    if (currentSection === 'eye-tracking-recruit') {
+      setIsPublishEnabled(true);
+    } else {
+      setIsPublishEnabled(false);
     }
-  }, [researchId, currentSection, eyeTrackingData, isLoadingEyeTracking]);
+  }, [researchId, currentSection]);
 
-  // Función para verificar si hay contenido configurado (síncrona)
-  const checkIfResearchHasContent = (): boolean => {
-    if (!researchId || !eyeTrackingData) return false;
-
-    try {
-      // Usar los datos del hook centralizado
-      const response = eyeTrackingData;
-
-      if (response) {
-        // Verificar si hay preguntas demográficas habilitadas
-        const hasDemographics = Object.values(response.demographicQuestions || {}).some((q: any) => q?.enabled);
-
-        // Verificar si hay configuración de enlaces habilitada
-        const hasLinkConfig = Object.values(response.linkConfig || {}).some(value => value);
-
-        // Verificar si hay parámetros habilitados
-        const hasParameters = Object.values(response.parameterOptions || {}).some(value => value);
-
-        return hasDemographics || hasLinkConfig || hasParameters;
-      }
-
-      return false;
-    } catch (error) {
-      return false;
-    }
-  };
+  // REMOVED: Content checking logic to avoid unnecessary API calls
+  // The actual form components handle content validation
 
   // Función para publicar investigación
   const handlePublishResearch = () => {

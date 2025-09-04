@@ -20,7 +20,7 @@ import {
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useEyeTrackingSharedData } from '@/hooks/useEyeTrackingSharedData';
-import { eyeTrackingAPI } from '@/config/api-client';
+import { eyeTrackingRecruitAPI } from '@/config/api-client';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 
 
@@ -384,11 +384,52 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
       // Procesar cada categoría demográfica
       demographicKeys.forEach(key => {
         if (response.demographicQuestions[key]) {
+          const questionData = response.demographicQuestions[key];
           safeResponse.demographicQuestions[key] = {
-            enabled: response.demographicQuestions[key].enabled || false,
-            required: response.demographicQuestions[key].required || false,
-            // Usar ensureOptionsArray para garantizar que options sea un array
-            options: ensureOptionsArray(response.demographicQuestions[key].options) || []
+            enabled: questionData.enabled || false,
+            required: questionData.required || false,
+            options: ensureOptionsArray(questionData.options) || [],
+            // Procesar propiedades específicas según el tipo
+            ...(key === 'age' && {
+              disqualifyingAges: ensureOptionsArray(questionData.disqualifyingAges),
+              quotas: questionData.quotas || [],
+              quotasEnabled: questionData.quotasEnabled || false
+            }),
+            ...(key === 'country' && {
+              disqualifyingCountries: ensureOptionsArray(questionData.disqualifyingCountries),
+              quotas: questionData.quotas || [],
+              quotasEnabled: questionData.quotasEnabled || false
+            }),
+            ...(key === 'gender' && {
+              disqualifyingGenders: ensureOptionsArray(questionData.disqualifyingGenders),
+              quotas: questionData.quotas || [],
+              quotasEnabled: questionData.quotasEnabled || false
+            }),
+            ...(key === 'educationLevel' && {
+              disqualifyingEducation: ensureOptionsArray(questionData.disqualifyingEducation),
+              quotas: questionData.quotas || [],
+              quotasEnabled: questionData.quotasEnabled || false
+            }),
+            ...(key === 'householdIncome' && {
+              disqualifyingIncomes: ensureOptionsArray(questionData.disqualifyingIncomes),
+              quotas: questionData.quotas || [],
+              quotasEnabled: questionData.quotasEnabled || false
+            }),
+            ...(key === 'employmentStatus' && {
+              disqualifyingEmploymentStatuses: ensureOptionsArray(questionData.disqualifyingEmploymentStatuses),
+              quotas: questionData.quotas || [],
+              quotasEnabled: questionData.quotasEnabled || false
+            }),
+            ...(key === 'dailyHoursOnline' && {
+              disqualifyingHours: ensureOptionsArray(questionData.disqualifyingHours),
+              quotas: questionData.quotas || [],
+              quotasEnabled: questionData.quotasEnabled || false
+            }),
+            ...(key === 'technicalProficiency' && {
+              disqualifyingProficiencies: ensureOptionsArray(questionData.disqualifyingProficiencies),
+              quotas: questionData.quotas || [],
+              quotasEnabled: questionData.quotasEnabled || false
+            })
           };
         }
       });
@@ -581,7 +622,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Configuración de la mutación para guardar
   const saveConfigMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await eyeTrackingAPI.create(researchId, data);
+      return await eyeTrackingRecruitAPI.createConfig(researchId, data);
     },
     onSuccess: () => {
       // Eliminamos el toast de aquí para evitar duplicados

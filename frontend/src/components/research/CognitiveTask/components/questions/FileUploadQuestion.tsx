@@ -127,6 +127,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
     // Usar SIEMPRE el campo 'hitZones' para las áreas iniciales
     const hitZones = (file as any).hitZones || [];
+    console.log('openHitzoneEditor - file:', file);
+    console.log('openHitzoneEditor - hitZones:', hitZones);
 
     setHitzoneFile({ ...file, url, hitZones } as any);
     setHitzoneModalOpen(true);
@@ -368,13 +370,21 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             <h2 className="text-lg font-semibold mb-4 text-center">Editar hitzones para: {hitzoneFile.name}</h2>
             <LocalHitzoneEditor
               imageUrl={(hitzoneFile as any).fileUrl || hitzoneFile.url}
-              initialAreas={((hitzoneFile as any).hitZones || []).map((hitZone: any) => ({
-                id: hitZone.id,
-                x: hitZone.region?.x || 0,
-                y: hitZone.region?.y || 0,
-                width: hitZone.region?.width || 0,
-                height: hitZone.region?.height || 0,
-              }))}
+              initialAreas={((hitzoneFile as any).hitZones || []).map((hitZone: any) => {
+                // Intentar diferentes estructuras de datos posibles
+                const region = hitZone.region || hitZone;
+                console.log('FileUploadQuestion - Processing hitZone:', hitZone);
+                console.log('FileUploadQuestion - Resolved region:', region);
+                const processedArea = {
+                  id: hitZone.id || `hitzone_${Date.now()}_${Math.random()}`,
+                  x: region.x || 0,
+                  y: region.y || 0,
+                  width: region.width || 0,
+                  height: region.height || 0,
+                };
+                console.log('FileUploadQuestion - processedArea:', processedArea);
+                return processedArea;
+              })}
               onSave={(newAreas) => {
                 const updatedFiles = question.files?.map(f => {
                   if (f.id === hitzoneFile.id) {

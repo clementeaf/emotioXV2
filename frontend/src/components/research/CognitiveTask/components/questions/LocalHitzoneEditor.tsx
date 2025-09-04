@@ -18,7 +18,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
   onSave,
   onClose,
 }) => {
-  const [areas, setAreas] = useState<HitzoneArea[]>(() => JSON.parse(JSON.stringify(initialAreas)));
+  const [areas, setAreas] = useState<HitzoneArea[]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
@@ -31,11 +31,36 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
   const [showActiveModal, setShowActiveModal] = useState(false);
   const [activeTestIdx, setActiveTestIdx] = useState<number | null>(null);
 
-  // Seleccionar automáticamente la primera zona si existen áreas iniciales
+  // Sincronizar con initialAreas y seleccionar automáticamente la primera zona
   useEffect(() => {
+    console.log('LocalHitzoneEditor - initialAreas received:', initialAreas);
+    
     if (initialAreas && initialAreas.length > 0) {
-      setSelectedIdx(0);
+      // Validar que las áreas tienen las propiedades necesarias
+      const validAreas = initialAreas.filter(area => 
+        area && 
+        typeof area.x === 'number' && 
+        typeof area.y === 'number' && 
+        typeof area.width === 'number' && 
+        typeof area.height === 'number' &&
+        area.width > 0 && 
+        area.height > 0
+      );
+      
+      console.log('LocalHitzoneEditor - Valid areas:', validAreas);
+      
+      if (validAreas.length > 0) {
+        setAreas(JSON.parse(JSON.stringify(validAreas)));
+        setSelectedIdx(0);
+        console.log('LocalHitzoneEditor - Set areas and selectedIdx to 0');
+      } else {
+        console.log('LocalHitzoneEditor - No valid areas found');
+        setAreas([]);
+        setSelectedIdx(null);
+      }
     } else {
+      console.log('LocalHitzoneEditor - No initial areas, resetting');
+      setAreas([]);
       setSelectedIdx(null);
     }
   }, [initialAreas]);
@@ -129,28 +154,39 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
             onMouseMove={!testMode ? handleMouseMove : undefined}
             onMouseUp={!testMode ? handleMouseUp : undefined}
           >
-            {areas.map((area, idx) => (
-              <rect
-                key={area.id}
-                x={area.x * (imgSize.width / (imgNatural.width || imgSize.width))}
-                y={area.y * (imgSize.height / (imgNatural.height || imgSize.height))}
-                width={area.width * (imgSize.width / (imgNatural.width || imgSize.width))}
-                height={area.height * (imgSize.height / (imgNatural.height || imgSize.height))}
-                fill={idx === selectedIdx ? 'rgba(0,123,255,0.3)' : 'rgba(0,123,255,0.15)'}
-                stroke="#007bff"
-                strokeWidth={idx === selectedIdx ? 2 : 1}
-                onClick={
-                  testMode
-                    ? () => setActiveTestIdx(idx)
-                    : (e) => handleRectClick(idx, e)
-                }
-                style={{
-                  cursor: 'pointer',
-                  opacity: 1,
-                  pointerEvents: 'auto',
-                }}
-              />
-            ))}
+            {areas.map((area, idx) => {
+              console.log(`Rendering area ${idx}:`, area);
+              const scaledRect = {
+                x: area.x * (imgSize.width / (imgNatural.width || imgSize.width)),
+                y: area.y * (imgSize.height / (imgNatural.height || imgSize.height)),
+                width: area.width * (imgSize.width / (imgNatural.width || imgSize.width)),
+                height: area.height * (imgSize.height / (imgNatural.height || imgSize.height))
+              };
+              console.log(`Scaled rect ${idx}:`, scaledRect);
+              
+              return (
+                <rect
+                  key={area.id}
+                  x={scaledRect.x}
+                  y={scaledRect.y}
+                  width={scaledRect.width}
+                  height={scaledRect.height}
+                  fill={idx === selectedIdx ? 'rgba(0,123,255,0.3)' : 'rgba(0,123,255,0.15)'}
+                  stroke="#007bff"
+                  strokeWidth={idx === selectedIdx ? 2 : 1}
+                  onClick={
+                    testMode
+                      ? () => setActiveTestIdx(idx)
+                      : (e) => handleRectClick(idx, e)
+                  }
+                  style={{
+                    cursor: 'pointer',
+                    opacity: 1,
+                    pointerEvents: 'auto',
+                  }}
+                />
+              );
+            })}
             {currentRect && !testMode && (
               <rect
                 x={currentRect.x * (imgSize.width / (imgNatural.width || imgSize.width))}
