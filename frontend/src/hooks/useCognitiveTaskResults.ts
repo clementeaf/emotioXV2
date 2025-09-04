@@ -203,6 +203,12 @@ export function useCognitiveTaskResults(researchId: string) {
   const processOptimizedData = (groupedResponses: GroupedResponsesData, configData: { questions?: Array<{ id: string; type: string; [key: string]: unknown }> }): ProcessedCognitiveData[] => {
     const processed: ProcessedCognitiveData[] = [];
 
+    // Validar que groupedResponses existe y es un objeto
+    if (!groupedResponses || typeof groupedResponses !== 'object') {
+      console.warn('processOptimizedData: groupedResponses is invalid', groupedResponses);
+      return processed;
+    }
+
     // Obtener todas las preguntas cognitivas de la configuración
     const cognitiveQuestions = configData?.questions?.filter((q) =>
       typeof q.questionKey === 'string' && q.questionKey.startsWith('cognitive_')
@@ -210,7 +216,10 @@ export function useCognitiveTaskResults(researchId: string) {
 
     cognitiveQuestions.forEach((questionConfig) => {
       const questionKey = questionConfig.questionKey as string;
-      const responses = groupedResponses[questionKey] || [];
+      const rawResponses = groupedResponses[questionKey];
+      
+      // Validar que responses es un array
+      const responses = Array.isArray(rawResponses) ? rawResponses : [];
 
       if (responses.length === 0) return;
 
@@ -345,6 +354,12 @@ export function useCognitiveTaskResults(researchId: string) {
   };
 
   const processLinearScaleData = (responses: GroupedResponse[], questionConfig: { id: string; question?: string; [key: string]: unknown }) => {
+    // Validar que responses sea un array
+    if (!Array.isArray(responses)) {
+      console.warn('processLinearScaleData: responses is not an array', responses);
+      return null;
+    }
+    
     const values = responses.map(r => r.value).filter(v => typeof v === 'number');
     if (values.length === 0) return null;
 
@@ -407,6 +422,12 @@ export function useCognitiveTaskResults(researchId: string) {
   };
 
   const processChoiceData = (responses: GroupedResponse[], questionConfig: { id: string; question?: string; choices?: Array<{ id: string; text: string }>; [key: string]: unknown }) => {
+    // Validar que responses sea un array
+    if (!Array.isArray(responses)) {
+      console.warn('processChoiceData: responses is not an array', responses);
+      return null;
+    }
+    
     const choices = questionConfig.choices || [];
     if (choices.length === 0) return null;
 
@@ -466,6 +487,12 @@ export function useCognitiveTaskResults(researchId: string) {
   };
 
   const processNavigationFlowData = (responses: GroupedResponse[], questionConfig: { id: string; [key: string]: unknown }) => {
+    // Validar que responses sea un array
+    if (!Array.isArray(responses)) {
+      console.warn('processNavigationFlowData: responses is not an array', responses);
+      return null;
+    }
+    
     if (!responses || responses.length === 0) return null;
 
     // 🎯 DEBUG: Log de datos de entrada
@@ -544,6 +571,12 @@ export function useCognitiveTaskResults(researchId: string) {
   };
 
   const processPreferenceTestData = (responses: GroupedResponse[], questionConfig: { id: string; files?: Array<{ id: string; url: string; name?: string; s3Key?: string }>; [key: string]: unknown }) => {
+    // Validar que responses sea un array
+    if (!Array.isArray(responses)) {
+      console.warn('processPreferenceTestData: responses is not an array', responses);
+      return null;
+    }
+
     const files = questionConfig.files || [];
     const totalSelections = responses.length;
 
@@ -681,7 +714,10 @@ export function useCognitiveTaskResults(researchId: string) {
 
         // Convertir a formato legacy para mantener compatibilidad
         const legacyResponses: ParticipantResponse[] = [];
-        Object.entries(groupedResponses).forEach(([questionKey, responses]) => {
+        Object.entries(groupedResponses).forEach(([questionKey, rawResponses]) => {
+          // Validar que responses es un array antes de usar forEach
+          const responses = Array.isArray(rawResponses) ? rawResponses : [];
+          
           responses.forEach(response => {
             const existingParticipant = legacyResponses.find(p => p.participantId === response.participantId);
             if (existingParticipant) {

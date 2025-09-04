@@ -6,8 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-// Removed useEyeTrackingSharedData to avoid duplicate API calls
-import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
+// REMOVED: import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -54,11 +53,46 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
 
-  // OPTIMIZED: Use shared global research data to avoid duplicate API calls
-  const { researchData, isLoading: isLoadingResearch, researchError } = useGlobalResearchData(researchId || '');
+  // TEMPORARY: Direct API call to debug the loading issue
+  const [researchData, setResearchData] = useState<any>(null);
+  const [isLoadingResearch, setIsLoadingResearch] = useState(true);
+  const [researchError, setResearchError] = useState<any>(null);
 
-  // REMOVED: Eliminada llamada duplicada a useEyeTrackingSharedData para evitar requests duplicados
-  // El sidebar no necesita cargar los datos de configuración, solo navegar entre secciones
+  useEffect(() => {
+    const fetchResearchData = async () => {
+      if (!researchId) return;
+      
+      try {
+        setIsLoadingResearch(true);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev/research/${researchId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Research data loaded:', result);
+        // Backend devuelve un array, tomamos el primer elemento
+        const researchInfo = Array.isArray(result.data) ? result.data[0] : result.data;
+        setResearchData(researchInfo);
+        setResearchError(null);
+      } catch (error) {
+        console.error('Error loading research:', error);
+        setResearchError(error);
+        setResearchData(null);
+      } finally {
+        setIsLoadingResearch(false);
+      }
+    };
+
+    fetchResearchData();
+  }, [researchId]);
 
   // Bloque de usuario/avatar
   function UserInfo() {
@@ -113,9 +147,8 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   }
 
   // Estados para el nombre y la carga
-  // Obtener el nombre del research desde el hook centralizado
-  const researchName = researchData?.name || 'Cargando...';
-  const isLoading = isLoadingResearch;
+  // Obtener el nombre del research desde la llamada directa
+  const researchName = researchData?.name || (isLoadingResearch ? 'Cargando...' : 'Research no encontrado');
   const error = researchError?.message || null;
 
   const handleBackToDashboard = () => { router.push('/dashboard'); };
