@@ -53,7 +53,8 @@ export const alovaInstance = createAlova({
   // Interceptor de response para manejar errores globales
   responded: {
     onSuccess: async (response) => {
-      return response;
+      // Parse the response as JSON
+      return await response.json();
     },
     onError: async (error) => {
       // Manejar error de autenticación (401)

@@ -94,7 +94,7 @@ export class AdminService {
         status: result.Item.status || 'active',
         createdAt: result.Item.createdAt,
         updatedAt: result.Item.updatedAt,
-        hashedPassword: result.Item.password
+        hashedPassword: result.Item.passwordHash || result.Item.password
       };
 
       return {
@@ -150,8 +150,9 @@ export class AdminService {
         };
       }
 
-      // Hash de la contraseña
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
+      // Hash de la contraseña (compatible con auth.service.ts)
+      const salt = "EmotioX-salt-fixed-839254";
+      const hashedPassword = `${salt}:${userData.password}`;
       
       const userId = uuidv4();
       const now = new Date().toISOString();
@@ -159,11 +160,19 @@ export class AdminService {
       const newUserItem = {
         id: userId,
         email: userData.email.toLowerCase().trim(),
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role: userData.role || 'user',
         status: 'active',
+        isActive: true,
+        isVerified: false,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        loginCount: 0,
+        preferences: {
+          language: 'es',
+          notifications: true,
+          theme: 'light'
+        }
       };
 
       const command = new PutCommand({

@@ -71,7 +71,7 @@ class AuthService implements IAuthService {
     
     this.dynamoDb = DynamoDBDocumentClient.from(this.dynamoClient);
     
-    this.tableName = process.env.USER_TABLE || 'emotioXV2-users-dev';
+    this.tableName = process.env.USER_TABLE || 'emotioxv2-backend-users-dev';
     this.jwtSecret = process.env.JWT_SECRET || 'mi-clave-secreta-para-firmar-tokens';
     this.tokenExpiration = parseInt(process.env.TOKEN_EXPIRATION || '604800', 10); // Aumentado a 7 días (604800 segundos)
     

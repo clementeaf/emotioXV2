@@ -50,6 +50,8 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
   // Formulario para crear usuario
   const [newUser, setNewUser] = useState<CreateUserData>({
@@ -72,31 +74,58 @@ export default function AdminUsersPage() {
     try {
       setLoading(true);
       
-      console.log('🔄 Loading users from API...');
       const response = await adminAPI.getAllUsers();
-      console.log('📡 API Response:', response);
       
-      // Parsear la respuesta si es un Response object
-      let data;
-      if (response instanceof Response) {
-        data = await response.json();
-        console.log('📡 Parsed JSON data:', data);
-      } else {
-        data = response;
+      // Check if response is a Response object that needs to be parsed
+      let data = response;
+      
+      // If it's a Response object with a json method, parse it
+      if (response && typeof response.json === 'function') {
+        try {
+          // Clone the response before reading to avoid stream already read error
+          const clonedResponse = response.clone ? response.clone() : response;
+          data = await clonedResponse.json();
+        } catch (parseError) {
+          // Try to get text if JSON parsing fails
+          await response.text();
+        }
       }
       
-      if (data && data.success && data.data) {
-        console.log(`✅ Loaded ${data.data.length} users:`, data.data);
-        setUsers(data.data);
-        setFilteredUsers(data.data);
-        toast.success(`Cargados ${data.data.length} usuarios`);
+      // Handle different response formats
+      if (data) {
+        
+        // Format 1: { success: true, data: [...] }
+        if (data.success && Array.isArray(data.data)) {
+          setUsers(data.data);
+          setFilteredUsers(data.data);
+          toast.success(`Cargados ${data.data.length} usuarios`);
+        }
+        // Format 2: { data: [...] }
+        else if (Array.isArray(data.data)) {
+          setUsers(data.data);
+          setFilteredUsers(data.data);
+          toast.success(`Cargados ${data.data.length} usuarios`);
+        }
+        // Format 3: Direct array
+        else if (Array.isArray(data)) {
+          setUsers(data);
+          setFilteredUsers(data);
+          toast.success(`Cargados ${data.length} usuarios`);
+        }
+        // Format 4: { users: [...] }
+        else if (Array.isArray(data.users)) {
+          setUsers(data.users);
+          setFilteredUsers(data.users);
+          toast.success(`Cargados ${data.users.length} usuarios`);
+        }
+        else {
+          toast.error('Formato de respuesta inesperado');
+        }
       } else {
-        console.log('⚠️ No data in response:', data);
-        toast.error('No se encontraron usuarios');
+        toast.error('No se recibieron datos del servidor');
       }
       
     } catch (error) {
-      console.error('❌ Error loading users:', error);
       toast.error(`Error cargando usuarios: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setLoading(false);
@@ -137,13 +166,17 @@ export default function AdminUsersPage() {
         role: newUser.role
       });
       
-      if (response && response.data) {
-        // Recargar la lista de usuarios
+      
+      // Check if response indicates success
+      if (response) {
+        // Always reload the users list after creation
         await loadUsers();
         
         setNewUser({ email: '', password: '', role: 'user' });
         setShowCreateForm(false);
         toast.success('Usuario creado exitosamente');
+      } else {
+        toast.error('No se pudo crear el usuario');
       }
       
     } catch (error) {
@@ -232,6 +265,62 @@ export default function AdminUsersPage() {
     return password;
   };
 
+  // Toggle single user selection
+  const toggleUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedUsers);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedUsers(newSelection);
+  };
+
+  // Toggle all users selection
+  const toggleAllUsersSelection = () => {
+    if (selectedUsers.size === filteredUsers.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(filteredUsers.map(user => user.id)));
+    }
+  };
+
+  // Bulk delete users
+  const handleBulkDelete = () => {
+    if (selectedUsers.size === 0) {
+      toast.error('No has seleccionado ningún usuario');
+      return;
+    }
+    setShowBulkDeleteModal(true);
+  };
+
+  // Confirm bulk delete
+  const confirmBulkDelete = async () => {
+    const usersToDelete = Array.from(selectedUsers);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const userId of usersToDelete) {
+      try {
+        await adminAPI.deleteUser(userId);
+        successCount++;
+      } catch (error) {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      await loadUsers();
+      toast.success(`${successCount} usuario(s) eliminado(s) exitosamente`);
+    }
+    if (failCount > 0) {
+      toast.error(`${failCount} usuario(s) no pudieron ser eliminados`);
+    }
+
+    setSelectedUsers(new Set());
+    setShowBulkDeleteModal(false);
+  };
+
   // Show loading while redirecting if not authenticated
   if (!isAuthenticated) {
     return (
@@ -276,6 +365,15 @@ export default function AdminUsersPage() {
                 >
                   <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
+                {selectedUsers.size > 0 && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar ({selectedUsers.size})
+                  </button>
+                )}
                 <button
                   onClick={() => setShowCreateForm(true)}
                   className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition-colors"
@@ -412,6 +510,14 @@ export default function AdminUsersPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
+                    <th className="px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
+                        onChange={toggleAllUsersSelection}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Usuario
                     </th>
@@ -439,6 +545,8 @@ export default function AdminUsersPage() {
                       user={user}
                       editingUser={editingUser}
                       showPassword={showPasswords.has(user.id)}
+                      isSelected={selectedUsers.has(user.id)}
+                      onToggleSelect={() => toggleUserSelection(user.id)}
                       onEdit={setEditingUser}
                       onUpdate={handleUpdateUser}
                       onDelete={handleDeleteUser}
@@ -461,7 +569,47 @@ export default function AdminUsersPage() {
           )}
         </div>
 
-        {/* Modal de confirmación de eliminación */}
+        {/* Modal de confirmación de eliminación masiva */}
+        {showBulkDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-red-100 rounded-full p-3">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                Confirmar eliminación masiva
+              </h3>
+              
+              <p className="text-gray-600 text-center mb-6">
+                ¿Estás seguro de que quieres eliminar{' '}
+                <strong>{selectedUsers.size} usuario(s)</strong>?{' '}
+                Esta acción no se puede deshacer.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowBulkDeleteModal(false);
+                  }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmBulkDelete}
+                  className="flex-1 px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+                >
+                  Eliminar Todos
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de confirmación de eliminación individual */}
         {showDeleteModal && userToDelete && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -511,6 +659,8 @@ interface UserRowProps {
   user: UserData;
   editingUser: UserData | null;
   showPassword: boolean;
+  isSelected: boolean;
+  onToggleSelect: () => void;
   onEdit: (user: UserData | null) => void;
   onUpdate: (userId: string, updates: Partial<UserData>) => void;
   onDelete: (userId: string) => void;
@@ -521,7 +671,9 @@ interface UserRowProps {
 function UserRow({ 
   user, 
   editingUser, 
-  showPassword, 
+  showPassword,
+  isSelected,
+  onToggleSelect,
   onEdit, 
   onUpdate, 
   onDelete, 
@@ -584,7 +736,15 @@ function UserRow({
   };
 
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelect}
+          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+        />
+      </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {isEditing ? (
           <input
@@ -629,7 +789,7 @@ function UserRow({
         ) : (
           <div className="flex items-center">
             <span className="text-sm text-gray-500 mr-2 font-mono">
-              {showPassword ? '**OCULTA**' : '••••••••'}
+              {showPassword ? (user.password || '••••••••') : '••••••••'}
             </span>
             <button
               onClick={onTogglePassword}
