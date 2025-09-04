@@ -371,39 +371,40 @@ websocket:
   environment:
     CONNECTION_TYPE: websocket
 
-# Location Tracking Functions
-saveLocation:
-  handler: src/controllers/locationTracking.controller.saveLocation
-  events:
-    - http:
-        path: location-tracking
-        method: post
-        cors: true
-        authorizer: aws_iam
-  environment:
-    LOCATION_TRACKING_TABLE: ${self:provider.environment.LOCATION_TRACKING_TABLE}
+# Location Tracking Functions - TEMPORARILY DISABLED
+# All location tracking functions are commented out due to aws-sdk v2 dependency issues
+# saveLocation:
+#   handler: src/controllers/locationTracking.controller.saveLocation
+#   events:
+#     - http:
+#         path: location-tracking
+#         method: post
+#         cors: true
+#         authorizer: aws_iam
+#   environment:
+#     LOCATION_TRACKING_TABLE: ${self:provider.environment.LOCATION_TRACKING_TABLE}
 
-getLocationsByResearchId:
-  handler: src/controllers/locationTracking.controller.getLocationsByResearchId
-  events:
-    - http:
-        path: location-tracking/{researchId}
-        method: get
-        cors: true
-        authorizer: aws_iam
-  environment:
-    LOCATION_TRACKING_TABLE: ${self:provider.environment.LOCATION_TRACKING_TABLE}
+# getLocationsByResearchId:
+#   handler: src/controllers/locationTracking.controller.getLocationsByResearchId
+#   events:
+#     - http:
+#         path: location-tracking/{researchId}
+#         method: get
+#         cors: true
+#         authorizer: aws_iam
+#   environment:
+#     LOCATION_TRACKING_TABLE: ${self:provider.environment.LOCATION_TRACKING_TABLE}
 
-getLocationStats:
-  handler: src/controllers/locationTracking.controller.getLocationStats
-  events:
-    - http:
-        path: location-tracking/{researchId}/stats
-        method: get
-        cors: true
-        authorizer: aws_iam
-  environment:
-    LOCATION_TRACKING_TABLE: ${self:provider.environment.LOCATION_TRACKING_TABLE}
+# getLocationStats:
+#   handler: src/controllers/locationTracking.controller.getLocationStats
+#   events:
+#     - http:
+#         path: location-tracking/{researchId}/stats
+#         method: get
+#         cors: true
+#         authorizer: aws_iam
+#   environment:
+#     LOCATION_TRACKING_TABLE: ${self:provider.environment.LOCATION_TRACKING_TABLE}
 
 # --- FUNCIONES PARA ANÁLISIS DE CUOTAS (NO LIMITA ENVÍO DE DATOS) ---
 analyzeParticipantQuotas:

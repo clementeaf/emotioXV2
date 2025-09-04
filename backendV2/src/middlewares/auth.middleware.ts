@@ -114,9 +114,6 @@ export class AuthMiddleware {
    * Permitir bypass desde localhost y en entorno de desarrollo
    */
   static developmentBypass(event: APIGatewayProxyEvent): AuthResult {
-    const origin = event.headers?.['Origin'] || event.headers?.['origin'];
-    const userAgent = event.headers?.['User-Agent'] || event.headers?.['user-agent'] || '';
-
     // Permitir bypass en desarrollo desde cualquier origen
     if (process.env.NODE_ENV !== 'production') {
       console.log('🔓 Development bypass activated for development environment');

@@ -11,7 +11,8 @@ import { ROUTE_DEFINITIONS } from './routeDefinitions';
 import { initializationService } from './services/initialization.service';
 import { APIGatewayEventWebsocketRequestContext } from './types/websocket';
 // Import estático del controlador admin para forzar su inclusión en el bundle
-import { handler as adminHandler } from './controllers/admin.simple.controller';
+// TEMPORARILY COMMENTED OUT DUE TO AWS-SDK V2 DEPENDENCY
+// import { handler as adminHandler } from './controllers/admin.simple.controller';
 
 type ConnectionType = 'http' | 'websocket';
 
@@ -27,7 +28,7 @@ const handlers: Record<string, any> = {};
 
 // Mapa de importadores dinámicos para los controladores
 const controllerImports = {
-  'admin': () => import('./controllers/admin.simple.controller'),
+  // 'admin': () => import('./controllers/admin.simple.controller'), // TEMPORARILY DISABLED
   'auth': () => import('./controllers/auth.controller'),
   'companies': () => import('./controllers/company.controller'),
   'research': () => import('./controllers/newResearch.controller'),
@@ -49,6 +50,8 @@ async function getHandler(type: string): Promise<Function | null> {
   if (handlers[type]) return handlers[type];
 
   // Manejo especial para el controlador admin (import estático)
+  // TEMPORARILY COMMENTED OUT DUE TO AWS-SDK V2 DEPENDENCY
+  /*
   if (type === 'admin') {
     if (typeof adminHandler === 'function') {
       handlers[type] = adminHandler;
@@ -58,6 +61,7 @@ async function getHandler(type: string): Promise<Function | null> {
       return null;
     }
   }
+  */
 
   if (type === 'websocket') {
     // 🎯 IMPLEMENTAR WEBSOCKET HANDLER REAL

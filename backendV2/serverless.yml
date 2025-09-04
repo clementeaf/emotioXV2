@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 plugins:
   - serverless-esbuild
-  - serverless-offline
+  # - serverless-offline  # Commented out due to Node.js 22 compatibility issues
   - serverless-dotenv-plugin
   - serverless-export-outputs
   - serverless-plugin-export-endpoints
