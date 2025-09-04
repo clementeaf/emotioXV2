@@ -22,7 +22,7 @@ export function useWelcomeScreenData(researchId: string): UseWelcomeScreenDataRe
   const shouldFetch = researchId && researchId !== 'current';
 
   const query = useRequest(
-    () => alovaInstance.Get<ApiResponse<WelcomeScreenRecord>>(`/welcome-screens/research/${researchId}`),
+    () => alovaInstance.Get<ApiResponse<WelcomeScreenRecord>>(`/research/${researchId}/welcome-screen`),
     {
       initialData: undefined,
       immediate: !!shouldFetch,
@@ -51,7 +51,7 @@ export function useWelcomeScreenData(researchId: string): UseWelcomeScreenDataRe
   };
 
   return {
-    data: query.data?.data || null,
+    data: query.data || null,
     isLoading: query.loading,
     error: query.error || null,
     refetch: handleRefetch,
@@ -64,7 +64,7 @@ export function useWelcomeScreenData(researchId: string): UseWelcomeScreenDataRe
 export function useCreateWelcomeScreen() {
   const mutation = useRequest(
     (data: Partial<WelcomeScreenRecord>) =>
-      alovaInstance.Post<ApiResponse<WelcomeScreenRecord>>('/welcome-screens', data),
+      alovaInstance.Post<ApiResponse<WelcomeScreenRecord>>(`/research/${data.researchId}/welcome-screen`, data),
     {
       immediate: false,
     }
@@ -74,11 +74,11 @@ export function useCreateWelcomeScreen() {
     try {
       const response = await mutation.send(data);
       
-      if (!response.data) {
+      if (!response) {
         throw new Error('Invalid create response');
       }
 
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to create welcome screen:', error);
       throw error;
@@ -98,7 +98,7 @@ export function useCreateWelcomeScreen() {
 export function useUpdateWelcomeScreen() {
   const mutation = useRequest(
     ({ researchId, data }: { researchId: string; data: Partial<WelcomeScreenRecord> }) =>
-      alovaInstance.Put<ApiResponse<WelcomeScreenRecord>>(`/welcome-screens/research/${researchId}`, data),
+      alovaInstance.Put<ApiResponse<WelcomeScreenRecord>>(`/research/${researchId}/welcome-screen`, data),
     {
       immediate: false,
     }
@@ -115,14 +115,14 @@ export function useUpdateWelcomeScreen() {
     try {
       const response = await mutation.send({ researchId, data });
       
-      if (!response.data) {
+      if (!response) {
         throw new Error('Invalid update response');
       }
 
       // Clear cache after update
       clearWelcomeScreenCache(researchId);
 
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to update welcome screen:', error);
       throw error;
@@ -142,7 +142,7 @@ export function useUpdateWelcomeScreen() {
 export function useDeleteWelcomeScreen() {
   const mutation = useRequest(
     (researchId: string) =>
-      alovaInstance.Delete<ApiResponse<{ message: string }>>(`/welcome-screens/research/${researchId}`),
+      alovaInstance.Delete<ApiResponse<{ message: string }>>(`/research/${researchId}/welcome-screen`),
     {
       immediate: false,
     }

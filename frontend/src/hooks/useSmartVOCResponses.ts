@@ -64,10 +64,10 @@ export const useSmartVOCResponses = (researchId: string) => {
         // Usar el nuevo endpoint agrupado por pregunta (más eficiente)
         const response = await moduleResponsesAPI.getResponsesGroupedByQuestion(researchId);
 
-        if (response.data) {
+        if (response) {
 
           // Procesar datos SmartVOC desde las respuestas
-          const smartVOCData = processSmartVOCData(response.data);
+          const smartVOCData = processSmartVOCData(response);
 
           setData(smartVOCData);
         } else {

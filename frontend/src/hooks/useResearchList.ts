@@ -102,14 +102,14 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
     try {
       const response = await createMutation.send(data);
       
-      if (!response.data) {
+      if (!response) {
         throw new Error('Invalid create response');
       }
 
       // Refresh list after creation
       await listQuery.send();
       
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to create research:', error);
       throw error;
@@ -125,14 +125,14 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
     try {
       const response = await updateMutation.send({ id, data });
       
-      if (!response.data) {
+      if (!response) {
         throw new Error('Invalid update response');
       }
 
       // Refresh list after update
       await listQuery.send();
       
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to update research:', error);
       throw error;
@@ -207,7 +207,7 @@ export function useResearchById(researchId: string): UseResearchByIdReturn {
   );
 
   return {
-    data: shouldFetch ? (query.data?.data || null) : null,
+    data: shouldFetch ? (query.data || null) : null,
     isLoading: shouldFetch ? query.loading : false,
     error: shouldFetch ? (query.error || null) : null,
     refetch: async () => {

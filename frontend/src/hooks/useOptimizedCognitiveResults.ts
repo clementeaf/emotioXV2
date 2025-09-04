@@ -88,7 +88,7 @@ export function useOptimizedCognitiveResults(researchId: string) {
     queryKey: ['optimized-cognitive-results', researchId],
     queryFn: async () => {
       const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
-      return response.data as GroupedResponsesData;
+      return response as GroupedResponsesData;
     },
     enabled: !!researchId,
   });

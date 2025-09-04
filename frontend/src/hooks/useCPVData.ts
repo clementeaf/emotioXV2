@@ -32,9 +32,9 @@ export const useCPVData = (researchId: string) => {
         // Usar el endpoint de SmartVOC que ya tenemos funcionando
         const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
 
-        if (response.data) {
+        if (response) {
           // Procesar los datos de SmartVOC para obtener métricas CPV
-          const smartVOCResponses = response.data;
+          const smartVOCResponses = response;
 
           // Extraer scores de CSAT, CES, NPS, NEV, CV
           const csatScores: number[] = [];

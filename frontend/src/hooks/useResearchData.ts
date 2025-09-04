@@ -43,8 +43,8 @@ export const useResearchData = (researchId: string | null): UseResearchDataRetur
   
   // Actualizar datos locales cuando cambie la respuesta
   useEffect(() => {
-    if (research?.data) {
-      setLocalData(research.data);
+    if (research) {
+      setLocalData(research);
     }
   }, [research]);
   

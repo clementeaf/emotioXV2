@@ -38,8 +38,8 @@ export const useDemographicsData = (researchId: string) => {
       try {
         const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
 
-        if (response.data) {
-          const demographicsData = processDemographicsData(response.data);
+        if (response) {
+          const demographicsData = processDemographicsData(response);
           setData(demographicsData);
         } else {
           setError('No se recibieron datos del servidor');

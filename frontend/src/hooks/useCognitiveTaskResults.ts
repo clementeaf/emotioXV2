@@ -673,9 +673,9 @@ export function useCognitiveTaskResults(researchId: string) {
       setResearchConfig(configData);
 
       // 🎯 NUEVA LÓGICA: Verificar si es la estructura optimizada
-      if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+      if (response && typeof response === 'object' && !Array.isArray(response)) {
         // Estructura optimizada agrupada por questionKey
-        const groupedResponses = response.data as GroupedResponsesData;
+        const groupedResponses = response as GroupedResponsesData;
         const processed = processOptimizedData(groupedResponses, configData);
         setProcessedData(processed);
 
@@ -708,11 +708,11 @@ export function useCognitiveTaskResults(researchId: string) {
         setParticipantResponses(legacyResponses);
       } else {
         // Estructura legacy (array de participantes)
-        if (!response.data || !Array.isArray(response.data)) {
+        if (!response || !Array.isArray(response)) {
           throw new Error('Formato de respuesta inválido');
         }
 
-        const cognitiveResponses = response.data.filter((participant: any) => {
+        const cognitiveResponses = response.filter((participant: any) => {
           const hasCognitiveResponses = participant.responses?.some((response: any) => {
             const isCognitive = response.questionKey?.startsWith('cognitive_');
             return isCognitive;

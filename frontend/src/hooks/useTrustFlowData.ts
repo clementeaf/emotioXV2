@@ -25,9 +25,9 @@ export const useTrustFlowData = (researchId: string) => {
         // Usar el endpoint de SmartVOC que ya tenemos funcionando
         const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
 
-        if (response.data) {
+        if (response) {
           // Procesar los datos de SmartVOC para obtener datos de Trust Flow
-          const smartVOCResponses = response.data;
+          const smartVOCResponses = response;
 
           // Agrupar respuestas por fecha
           const responsesByDate: { [key: string]: any[] } = {};

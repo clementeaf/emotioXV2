@@ -62,10 +62,10 @@ export const API_ENDPOINTS = {
 
   // Pantallas de bienvenida (Rutas CORRECTAS según backend)
   'welcome-screen': {
-    getByResearch: '/welcome-screens/research/{researchId}',
-    save: '/welcome-screens',
-    update: '/welcome-screens/research/{researchId}',
-    delete: '/welcome-screens/research/{researchId}',
+    getByResearch: '/research/{researchId}/welcome-screen',
+    save: '/research/{researchId}/welcome-screen',
+    update: '/research/{researchId}/welcome-screen',
+    delete: '/research/{researchId}/welcome-screen',
   },
 
   // Pantallas de agradecimiento (Rutas corregidas y unificadas)
