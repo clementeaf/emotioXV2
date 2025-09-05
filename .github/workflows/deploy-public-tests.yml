@@ -45,15 +45,6 @@ jobs:
           cd public-tests
           npm run test:ci
 
-      - name: 🔄 Exportar endpoints reales del backend
-        run: |
-          cd backendV2
-          npm install --ignore-scripts --prefer-offline --no-audit
-          cd ..
-          API_ENDPOINT=${{ secrets.VITE_API_BASE_URL }} \
-          WEBSOCKET_ENDPOINT=${{ secrets.VITE_WEBSOCKET_URL }} \
-          STAGE=production \
-          npx ts-node backendV2/src/utils/endpoints-exporter.ts public-tests/src/config/endpoints.js
 
       - name: 🏗️ Build application
         run: |
