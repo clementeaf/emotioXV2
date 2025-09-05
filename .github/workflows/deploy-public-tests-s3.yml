@@ -18,7 +18,7 @@ on:
         - production
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   BUCKET: ${{ secrets.PUBLIC_TESTS_S3_BUCKET }}
   REGION: ${{ secrets.AWS_DEFAULT_REGION || 'us-east-1' }}
   CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }}
@@ -43,7 +43,7 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           cd public-tests
-          npm install --prefer-offline --no-audit
+          npm install --ignore-scripts --prefer-offline --no-audit
         env:
           NODE_ENV: production
 

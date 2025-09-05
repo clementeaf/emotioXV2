@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
 
 jobs:
   deploy:
@@ -30,7 +30,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --ignore-scripts
 
       - name: Build frontend
         run: npm run build
