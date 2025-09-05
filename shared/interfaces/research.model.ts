@@ -3,8 +3,9 @@
  * Este archivo define las interfaces que se utilizan tanto en el frontend como en el backend
  */
 
-// Importar tipos centralizados desde backend-core.types
+// Importar y re-exportar tipos centralizados desde backend-core.types
 import { ResearchType, ResearchStatus } from '../types/backend-core.types';
+export { ResearchType, ResearchStatus };
 
 /**
  * Técnicas de investigación disponibles
