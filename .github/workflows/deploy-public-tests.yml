@@ -15,7 +15,7 @@ on:
         type: boolean
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   AWS_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
 jobs:
@@ -34,12 +34,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: public-tests/package-lock.json
 
       - name: 📦 Install dependencies
         run: |
           cd public-tests
-          npm ci --prefer-offline --no-audit
+          npm install --ignore-scripts --prefer-offline --no-audit
 
       - name: 🧪 Run tests
         run: |
@@ -56,7 +55,7 @@ jobs:
       - name: 🏗️ Build application
         run: |
           cd public-tests
-          npm run build
+          npm run build:ci
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_PUBLIC_TESTS_URL: ${{ secrets.VITE_PUBLIC_TESTS_URL }}
