@@ -62,7 +62,7 @@ export const authService = {
     try {
       const response = await alovaApiClient.post('auth', 'register', data) as APIResponse<AuthResponse>;
       
-      const authData = response.data || response as any;
+      const authData = response.data || (response as unknown as AuthResponse);
 
       // Almacenar el token en localStorage para uso en futuras peticiones
       if (authData.token) {
@@ -90,7 +90,7 @@ export const authService = {
     try {
       const response = await alovaApiClient.post('auth', 'login', data) as APIResponse<AuthResponse>;
       
-      const authData = response.data || response as any;
+      const authData = response.data || (response as unknown as AuthResponse);
 
       // Almacenar el token en localStorage para uso en futuras peticiones
       if (authData.token) {
@@ -124,7 +124,7 @@ export const authService = {
         token: refreshToken 
       }) as APIResponse<AuthResponse>;
       
-      const authData = response.data || response as any;
+      const authData = response.data || (response as unknown as AuthResponse);
 
       // Actualizar tokens almacenados
       if (authData.token) {
@@ -153,7 +153,7 @@ export const authService = {
     try {
       const response = await alovaApiClient.get('auth', 'profile') as APIResponse<AuthResponse['user']>;
       
-      const userData = response.data || response as any;
+      const userData = response.data || (response as unknown as AuthResponse['user']);
       
       // Actualizar datos del usuario en localStorage
       localStorage.setItem('user', JSON.stringify(userData));

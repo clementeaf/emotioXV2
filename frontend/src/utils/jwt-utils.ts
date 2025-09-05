@@ -1,11 +1,21 @@
+interface JwtPayload {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'researcher' | 'user' | 'participant';
+  iat?: number;
+  exp?: number;
+  sub?: string;
+}
+
 interface TokenInfo {
   isValid: boolean;
   expiresAt?: Date;
   timeRemaining?: string;
-  payload?: any;
+  payload?: JwtPayload;
 }
 
-export const parseJwt = (token: string): any | null => {
+export const parseJwt = (token: string): JwtPayload | null => {
   try {
     const base64Url = token.split('.')[1];
     if (!base64Url) return null;
@@ -19,7 +29,12 @@ export const parseJwt = (token: string): any | null => {
         .join('')
     );
 
-    return JSON.parse(jsonPayload);
+    const parsed = JSON.parse(jsonPayload);
+    // Validar que tenga la estructura esperada
+    if (parsed && typeof parsed === 'object' && parsed.id && parsed.email) {
+      return parsed as JwtPayload;
+    }
+    return null;
   } catch (e) {
     return null;
   }

@@ -5,7 +5,11 @@ import { User } from './user.types';
 export interface AuthResponse {
   token: string;
   refreshToken: string;
-  user: User;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
 }
 
 export interface RequestOTPDto {

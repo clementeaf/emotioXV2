@@ -4,10 +4,13 @@ import { getApiUrl } from '@/api/dynamic-endpoints';
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'next/navigation';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { JwtPayload } from '@/types/auth';
 
 interface User {
+  id: string;
   email: string;
-  sub?: string;
+  name: string;
+  role: 'admin' | 'researcher' | 'user' | 'participant';
 }
 
 interface AuthContextType {
@@ -36,12 +39,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (storedToken) {
       try {
         // Verificar si el token es válido
-        const decoded = jwtDecode<User>(storedToken);
-        const expiryTime = (decoded as any).exp * 1000;
+        const decoded = jwtDecode<JwtPayload>(storedToken);
+        const expiryTime = decoded.exp ? decoded.exp * 1000 : 0;
 
         if (expiryTime > Date.now()) {
-            setToken(storedToken);
-          setUser(decoded);
+          setToken(storedToken);
+          setUser({
+            id: decoded.id,
+            email: decoded.email,
+            name: decoded.name,
+            role: decoded.role
+          });
         } else {
             localStorage.removeItem('token');
         }
@@ -57,8 +65,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!token) { return; }
 
     try {
-      const decoded = jwtDecode<any>(token);
-      const expiryTime = decoded.exp * 1000;
+      const decoded = jwtDecode<JwtPayload>(token);
+      const expiryTime = decoded.exp ? decoded.exp * 1000 : 0;
       const timeUntilExpiry = expiryTime - Date.now();
 
       if (timeUntilExpiry <= 0) {
@@ -77,10 +85,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const handleLogin = (newToken: string) => {
     try {
-      const decoded = jwtDecode<User>(newToken);
+      const decoded = jwtDecode<JwtPayload>(newToken);
       localStorage.setItem('token', newToken);
       setToken(newToken);
-      setUser(decoded);
+      setUser({
+        id: decoded.id,
+        email: decoded.email,
+        name: decoded.name,
+        role: decoded.role
+      });
 
       // Forzar la redirección al dashboard usando replace y asegurando que la navegación sea inmediata
       router.replace('/dashboard');
@@ -118,10 +131,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const handleUpdateToken = (newToken: string) => {
     try {
-      const decoded = jwtDecode<User>(newToken);
+      const decoded = jwtDecode<JwtPayload>(newToken);
       localStorage.setItem('token', newToken);
       setToken(newToken);
-      setUser(decoded);
+      setUser({
+        id: decoded.id,
+        email: decoded.email,
+        name: decoded.name,
+        role: decoded.role
+      });
 
     } catch (error) {
       console.error('Error al actualizar el token:', error);

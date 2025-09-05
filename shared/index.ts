@@ -2,6 +2,9 @@
 export * from './src/types/auth.types';
 export * from './src/types/emotion.types';
 export * from './src/types/websocket.types';
+
+// Tipos centralizados del backend
+export * from './types/backend-core.types';
 export { isUserBySchema, userSchema };
 export type { User };
 

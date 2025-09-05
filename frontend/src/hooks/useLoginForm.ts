@@ -82,7 +82,7 @@ export const useLoginForm = () => {
         throw error;
       });
 
-      const token = (response as any).token;
+      const token = (response as { token?: string }).token;
 
       if (token) {
         await login(token, state.rememberMe);

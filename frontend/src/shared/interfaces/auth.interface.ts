@@ -34,7 +34,14 @@ export interface TokenInfo {
   isValid: boolean;
   expiresAt?: Date;
   timeRemaining?: string;
-  payload?: any;
+  payload?: {
+    id: string;
+    email: string;
+    name: string;
+    role: 'admin' | 'researcher' | 'user' | 'participant';
+    iat?: number;
+    exp?: number;
+  };
 }
 
 export type LoginStatus = 'idle' | 'validating' | 'connecting' | 'authenticating' | 'success' | 'error';
