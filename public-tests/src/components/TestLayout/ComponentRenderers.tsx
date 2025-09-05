@@ -4,6 +4,7 @@ import React from 'react';
 import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useTestStore } from '../../stores/useTestStore';
+import { processFilesWithUrls } from '../../utils/s3-url.utils';
 import { DemographicForm } from './DemographicForm';
 import { NavigationFlowTask } from './NavigationFlowTask';
 import PreferenceTestTask from './PreferenceTestTask';
@@ -311,18 +312,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
   ),
 
   cognitive_navigation_flow: ({ contentConfiguration, currentQuestionKey }) => {
-    // 🎯 AGREGAR URLs A LAS IMÁGENES (IGUAL QUE EN PREFERENCE TEST)
+    // 🎯 PROCESAR ARCHIVOS CON URLs DINÁMICAS (SIN HARDCODEAR STAGE)
     const filesWithUrls = Array.isArray(contentConfiguration?.files)
-      ? contentConfiguration.files.map((file: Record<string, unknown>) => ({
-        ...file,
-        url: String(file.url || file.fileUrl || `https://emotioxv2-uploads-dev.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`),
-        fileUrl: String(file.fileUrl || file.url || `https://emotioxv2-uploads-dev.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`),
-        id: String(file.id || ''),
-        name: String(file.name || '')
-      }))
+      ? processFilesWithUrls(contentConfiguration.files as Record<string, unknown>[])
       : [];
 
-    console.log('🎯 NavigationFlow files with URLs:', filesWithUrls);
+    console.log('🎯 NavigationFlow files with dynamic URLs:', filesWithUrls);
 
     return (
       <NavigationFlowTask
@@ -339,16 +334,9 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
   },
 
   cognitive_preference_test: ({ contentConfiguration, currentQuestionKey }) => {
-
-    // 🎯 AGREGAR URLs A LAS IMÁGENES
+    // 🎯 PROCESAR ARCHIVOS CON URLs DINÁMICAS (SIN HARDCODEAR STAGE)
     const filesWithUrls = Array.isArray(contentConfiguration?.files)
-      ? contentConfiguration.files.map((file: Record<string, unknown>) => ({
-        ...file,
-        url: String(file.url || file.fileUrl || `https://emotioxv2-uploads-dev.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`),
-        fileUrl: String(file.fileUrl || file.url || `https://emotioxv2-uploads-dev.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`),
-        id: String(file.id || ''),
-        name: String(file.name || '')
-      }))
+      ? processFilesWithUrls(contentConfiguration.files as Record<string, unknown>[])
       : [];
 
 
