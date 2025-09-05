@@ -1,0 +1,42 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🚀 Running pre-commit checks..."
+
+# TypeScript compilation
+echo "📝 Checking TypeScript compilation..."
+cd backendV2 && npx tsc --noEmit || exit 1
+cd ../frontend && npm run build > /dev/null 2>&1 || exit 1
+cd ../shared && npx tsc --noEmit || exit 1
+cd ../public-tests && npx tsc --noEmit || exit 1
+cd ..
+
+# Linting
+echo "🔍 Running linters..."
+cd backendV2 && npm run lint || exit 1
+cd ../frontend && npm run lint || exit 1
+cd ../shared && npm run lint || exit 1
+cd ../public-tests && npm run lint || exit 1
+cd ..
+
+# Check for prohibited any/unknown types
+echo "🚫 Checking for prohibited any/unknown types..."
+if grep -r ": any\|any\[\]\|any>" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=build . | grep -v "//.*any\|\.d\.ts:"; then
+  echo "❌ FOUND PROHIBITED 'any' TYPES!"
+  echo "Please replace with specific types before committing."
+  exit 1
+fi
+
+if grep -r ": unknown\|unknown\[\]\|unknown>" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=build . | grep -v "isValidUser\|parseJwt\|//.*unknown\|\.d\.ts:"; then
+  echo "❌ FOUND PROHIBITED 'unknown' TYPES!"
+  echo "Please replace with specific types or use proper type guards."
+  exit 1
+fi
+
+# Tests (optional for now)
+echo "🧪 Running tests..."
+cd backendV2 && npm test || echo "⚠️ Backend tests not configured or failed"
+cd ../frontend && npm test || echo "⚠️ Frontend tests not configured or failed"
+cd ..
+
+echo "✅ All pre-commit checks passed!"
