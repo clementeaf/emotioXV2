@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-// REMOVED: import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
+import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -53,46 +54,8 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
 
-  // TEMPORARY: Direct API call to debug the loading issue
-  const [researchData, setResearchData] = useState<any>(null);
-  const [isLoadingResearch, setIsLoadingResearch] = useState(true);
-  const [researchError, setResearchError] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchResearchData = async () => {
-      if (!researchId) return;
-      
-      try {
-        setIsLoadingResearch(true);
-        const token = localStorage.getItem('token');
-        const response = await fetch(`https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev/research/${researchId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('Research data loaded:', result);
-        // Backend devuelve un array, tomamos el primer elemento
-        const researchInfo = Array.isArray(result.data) ? result.data[0] : result.data;
-        setResearchData(researchInfo);
-        setResearchError(null);
-      } catch (error) {
-        console.error('Error loading research:', error);
-        setResearchError(error);
-        setResearchData(null);
-      } finally {
-        setIsLoadingResearch(false);
-      }
-    };
-
-    fetchResearchData();
-  }, [researchId]);
+  // FIXED: Use global research data with corrected response handling
+  const { researchData, isLoading: isLoadingResearch, researchError } = useGlobalResearchData(researchId || '');
 
   // Bloque de usuario/avatar
   function UserInfo() {
@@ -147,8 +110,9 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   }
 
   // Estados para el nombre y la carga
-  // Obtener el nombre del research desde la llamada directa
+  // Obtener el nombre del research desde el hook global (ahora arreglado)
   const researchName = researchData?.name || (isLoadingResearch ? 'Cargando...' : 'Research no encontrado');
+  const isLoadingName = isLoadingResearch && !researchData?.name;
   const error = researchError?.message || null;
 
   const handleBackToDashboard = () => { router.push('/dashboard'); };
@@ -169,8 +133,12 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const TopBlock = (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>
-          {researchName}
+        <h2 className="text-lg font-semibold text-neutral-900 truncate" title={typeof researchName === 'string' ? researchName : ''}>
+          {isLoadingName ? (
+            <div className="animate-pulse bg-gray-200 rounded h-6 w-32"></div>
+          ) : (
+            researchName
+          )}
         </h2>
       </div>
 
@@ -309,7 +277,9 @@ const ResearchSidebarContentWithSuspense = withSearchParams(ResearchSidebarConte
 export function ResearchSidebar({ researchId, activeStage }: ResearchSidebarProps) {
   return (
     <Suspense fallback={<div className="w-60 flex flex-col">
-      <div className="p-4 text-center text-neutral-600">Cargando...</div>
+      <div className="p-4">
+        <LoadingSkeleton type="steps" count={6} />
+      </div>
     </div>}>
       <ResearchSidebarContentWithSuspense researchId={researchId} activeStage={activeStage} />
     </Suspense>

@@ -1,6 +1,7 @@
 'use client';
 
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { useDashboardResearch } from '@/hooks/useDashboardResearch';
 import { memo } from 'react';
 import { DashboardMainContent } from './DashboardMainContent';
@@ -14,7 +15,13 @@ export const DashboardContent = memo(() => {
 
   // Nuevo: loading explícito si el estado aún no está listo
   if (isLoading) {
-    return <div className="p-4 text-center">Cargando investigación...</div>;
+    return (
+      <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)]">
+        <div className="mx-auto px-6 py-8 w-full">
+          <LoadingSkeleton type="dashboard" />
+        </div>
+      </div>
+    );
   }
 
   // Si hay una investigación activa con AIM framework o sección específica

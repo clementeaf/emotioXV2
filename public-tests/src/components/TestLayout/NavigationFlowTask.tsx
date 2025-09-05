@@ -94,8 +94,8 @@ interface NavigationFlowTaskProps {
 }
 
 const convertHitZonesToPercentageCoordinates = (
-  hitZones: HitZone[] | undefined,
-  imageNaturalSize?: { width: number; height: number }
+  hitZones: HitZone[] | undefined
+  // imageNaturalSize?: { width: number; height: number } // Not used
 ): ConvertedHitZone[] => {
   if (!hitZones || !Array.isArray(hitZones) || hitZones.length === 0) {
     return [];
@@ -119,16 +119,16 @@ const convertHitZonesToPercentageCoordinates = (
   });
 };
 
-export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConfig, formData, currentQuestionKey }) => {
+export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConfig, currentQuestionKey }) => {
   const navigationQuestion = stepConfig;
-  const id = String(navigationQuestion.id || '').trim();
-  const type = String(navigationQuestion.type || 'cognitive_navigation_flow').trim();
+  // const id = String(navigationQuestion.id || '').trim(); // Not used
+  // const type = String(navigationQuestion.type || 'cognitive_navigation_flow').trim(); // Not used
   const title = navigationQuestion.title || 'Flujo de Navegación';
   const description = navigationQuestion.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?';
   const imageFiles: ImageFile[] = navigationQuestion.files || [];
 
   const [localSelectedImageIndex, setLocalSelectedImageIndex] = useState<number>(0);
-  const [localSelectedHitzone, setLocalSelectedHitzone] = useState<string | null>(null);
+  const [, setLocalSelectedHitzone] = useState<string | null>(null); // Used but never read
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
   const [imageSelections, setImageSelections] = useState<Record<string, { hitzoneId: string, click: ClickPosition }>>({});
@@ -349,7 +349,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
 
   const selectedImage: ImageFile = images[localSelectedImageIndex];
   const availableHitzones: ConvertedHitZone[] = selectedImage?.hitZones
-    ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones, imageNaturalSize || undefined)
+    ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones)
     : [];
 
   function getImageDrawRect(

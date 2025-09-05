@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 interface ValidationResult {
   isDisqualified: boolean;
   reason?: string;

@@ -76,7 +76,7 @@ export function useAuth(): UseAuthReturn {
   const handleLogin = async (credentials: LoginRequest): Promise<void> => {
     try {
       const response = await loginMutation.send(credentials);
-      const authData = response;
+      const authData = response.data || response;
 
       if (!authData?.token || !authData?.user) {
         throw new Error('Invalid authentication response');

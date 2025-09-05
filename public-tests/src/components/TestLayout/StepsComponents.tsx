@@ -57,7 +57,7 @@ const getLocationInfo = async (): Promise<{ country: string, city: string, ip: s
       city: geoData.city || 'Valparaíso',
       ip: ip
     };
-  } catch (error) {
+  } catch {
     return {
       country: 'Chile',
       city: 'Valparaíso',
@@ -67,7 +67,8 @@ const getLocationInfo = async (): Promise<{ country: string, city: string, ip: s
 };
 
 // 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
-interface BackendResponse {
+/*
+interface BackendResponse { // Not used
   questionKey: string;
   response: {
     selectedValue?: string;
@@ -75,6 +76,7 @@ interface BackendResponse {
     [key: string]: unknown;
   };
 }
+*/
 
 export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   question,
@@ -268,7 +270,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
               <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
               <p className="text-gray-600 mb-6">{question.description}</p>
               <div className="flex flex-col gap-4 w-full max-w-md">
-                {question.choices?.map((choice, index) => (
+                {question.choices?.map((choice) => (
                   <button
                     key={choice.id}
                     onClick={() => handleValueChange(choice.id)}
@@ -306,7 +308,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
                 />
               ) : question.config?.type === 'choice' ? (
                 <div className="flex flex-col gap-3 w-full max-w-md">
-                  {question.choices?.map((choice, index) => (
+                  {question.choices?.map((choice) => (
                     <button
                       key={choice.id}
                       onClick={() => handleValueChange(choice.id)}
@@ -484,7 +486,8 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
         };
 
         await saveModuleResponseMutation.mutateAsync(createData);
-      } catch (error) {
+      } catch {
+        // Error handled silently
       }
     }
 

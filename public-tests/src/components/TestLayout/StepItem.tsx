@@ -9,7 +9,7 @@ interface StepItemPropsWithState extends StepItemProps {
 
 const StepItem: React.FC<StepItemPropsWithState> = ({
   step,
-  isActive,
+  // isActive, // Not used
   onClick,
   isDisabled,
   stepState,

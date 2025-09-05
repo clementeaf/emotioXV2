@@ -6,7 +6,7 @@ import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery
 import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
 import { useResponseTiming } from '../../hooks/useResponseTiming';
 import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
-import { CreateModuleResponseDto, UpdateModuleResponseDto } from '../../lib/types';
+import { CreateModuleResponseDto, UpdateModuleResponseDto, StepConfiguration } from '../../lib/types';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
@@ -20,12 +20,12 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   isWelcomeScreen = false
 }) => {
   const { researchId, participantId } = useTestStore();
-  const { setCurrentQuestionKey, goToNextStep } = useStepStore();
-  const { clearFormData } = useFormDataStore();
+  const { goToNextStep } = useStepStore();
   const { getNextStep } = useStepStore();
   const nextStep = getNextStep();
   const [isSaving, setIsSaving] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [showOptimisticSuccess, setShowOptimisticSuccess] = useState(false);
 
   // 🎯 HOOKS PARA DESCALIFICACIÓN
   const { validateDemographics } = useDemographicValidation();
@@ -45,7 +45,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   );
 
   // 🎯 ESTADO OPTIMISTA LOCAL PARA RESPUESTAS GUARDADAS
-  const [optimisticSavedQuestions, setOptimisticSavedQuestions] = useState<Set<string>>(new Set());
+  const [, setOptimisticSavedQuestions] = useState<Set<string>>(new Set());
 
   // Obtener los steps del backend
   const { data: formsData } = useAvailableFormsQuery(researchId || '');
@@ -55,13 +55,13 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     if (formsData?.steps && formsData.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
       const configMap = new Map();
 
-      formsData.stepsConfiguration.forEach((stepConfig: any) => {
+      formsData.stepsConfiguration.forEach((stepConfig: StepConfiguration) => {
         configMap.set(stepConfig.questionKey, stepConfig);
       });
 
       // Usar el orden que viene del backend
       return formsData.steps
-        .map(questionKey => {
+        .map((questionKey: string) => {
           const stepConfig = configMap.get(questionKey);
           if (!stepConfig) {
             console.warn('[ButtonSteps] ⚠️ Step no encontrado en configuración:', questionKey);
@@ -94,14 +94,14 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             questionKey: stepConfig.questionKey
           };
         })
-        .filter(step => step !== null);
+        .filter((step: { title: string; questionKey: string } | null): step is NonNullable<typeof step> => step !== null);
     }
     return [];
   }, [formsData?.steps, formsData?.stepsConfiguration]);
 
   // Obtener el estado de los steps para navegación
-  const { getNextStep: getStoreNextStep } = useStepStore();
-  const storeNextStep = getStoreNextStep();
+  // const { getNextStep: getStoreNextStep } = useStepStore();
+  // const storeNextStep = getStoreNextStep();
 
 
 
@@ -114,7 +114,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   });
 
   const saveMutation = useSaveModuleResponseMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
       // 🚨 ACTUALIZAR EL STORE INMEDIATAMENTE PARA AVANZAR EL STEP
       const store = useStepStore.getState();
       store.updateBackendResponses([
@@ -127,7 +127,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
       // 🎯 ENVIAR EVENTO WEBSOCKET DE RESPUESTA GUARDADA
       if (participantId) {
-        const currentStepIndex = steps.findIndex(step => step.questionKey === currentQuestionKey);
+        const currentStepIndex = steps.findIndex((step: { questionKey: string }) => step.questionKey === currentQuestionKey);
         const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
 
         sendParticipantResponseSaved(
@@ -168,7 +168,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     onSuccess: () => {
       // 🎯 ENVIAR EVENTO WEBSOCKET DE RESPUESTA ACTUALIZADA
       if (participantId) {
-        const currentStepIndex = steps.findIndex(step => step.questionKey === currentQuestionKey);
+        const currentStepIndex = steps.findIndex((step: { questionKey: string }) => step.questionKey === currentQuestionKey);
         const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
 
         sendParticipantResponseSaved(
@@ -212,7 +212,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   });
 
   const existingResponse = moduleResponses?.responses?.find(
-    (moduleResponse: any) => moduleResponse.questionKey === currentQuestionKey
+    (moduleResponse: { questionKey: string }) => moduleResponse.questionKey === currentQuestionKey
   );
 
   // 🎯 VERIFICAR SI HAY DATOS PERSISTIDOS LOCALMENTE
@@ -220,8 +220,8 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const localData = getFormData(currentQuestionKey);
   const hasLocalData = localData && Object.keys(localData).length > 0;
 
-  // 🎯 DETERMINAR SI EXISTE RESPUESTA (OPTIMISTA: BACKEND + LOCAL)
-  const hasExistingResponse = !!existingResponse || optimisticSavedQuestions.has(currentQuestionKey);
+  // 🎯 DETERMINAR SI EXISTE RESPUESTA (SOLO BACKEND - NO ESTADO OPTIMISTA PARA DETECCIÓN)
+  const hasExistingResponse = !!existingResponse;
 
   // 🎯 LOG PARA DEBUG
   console.log('[ButtonSteps] 🔍 DETECCIÓN DE RESPUESTAS:', {
@@ -244,6 +244,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       isSaving,
       isNavigating,
       hasExistingResponse,
+      showOptimisticSuccess,
       currentQuestionKey
     });
 
@@ -253,6 +254,10 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
     if (isSaving) {
       return 'Guardando...';
+    }
+
+    if (showOptimisticSuccess) {
+      return '✓ Guardado';
     }
 
     if (isNavigating) {
@@ -269,13 +274,13 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const isDisabled = isSaving || isNavigating;
 
   // 🎯 CRONOMETRAJE NO INTRUSIVO
-  const { startTiming, endTiming, getTimingData, isTracking } = useResponseTiming({
+  const { startTiming, endTiming, getTimingData } = useResponseTiming({
     questionKey: currentQuestionKey,
     enabled: shouldTrackTiming // 🎯 USAR CONFIGURACIÓN REAL
   });
 
   // 🎯 TRACKING DE RECORRIDO NO INTRUSIVO
-  const { trackStepVisit, getJourneyData, isTracking: isJourneyTracking } = useUserJourneyTracking({
+  const { trackStepVisit, getJourneyData } = useUserJourneyTracking({
     enabled: shouldTrackUserJourney, // 🎯 USAR CONFIGURACIÓN REAL
     researchId
   });
@@ -292,8 +297,11 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       return;
     }
 
-    // 🎯 UI OPTIMISTA: MARCAR INMEDIATAMENTE COMO GUARDADO PARA CAMBIAR BOTÓN
-    // Usar existingResponse del backend solamente, NO el estado optimista
+    // 🎯 UI OPTIMISTA: FEEDBACK INMEDIATO
+    setShowOptimisticSuccess(true);
+    setTimeout(() => setShowOptimisticSuccess(false), 1500);
+    
+    // Solo agregar a optimista si realmente no existe en backend
     if (!existingResponse) {
       setOptimisticSavedQuestions(prev => new Set(prev).add(currentQuestionKey));
     }
@@ -477,7 +485,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
       // 🎯 ENVIAR EVENTO WEBSOCKET PARA MONITOREO EN TIEMPO REAL
       if (participantId) {
-        const stepNumber = steps.findIndex(step => step.questionKey === currentQuestionKey) + 1;
+        const stepNumber = steps.findIndex((step: { questionKey: string }) => step.questionKey === currentQuestionKey) + 1;
         const totalSteps = steps.length;
         const progress = Math.round((stepNumber / totalSteps) * 100);
 

@@ -1,14 +1,10 @@
 import { useMutation, UseMutationOptions, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
-// ✅ NUEVO: Import AlovaJS para migración gradual
-import { useRequest } from 'alova';
 import { getApiUrl } from '../config/endpoints';
 import {
   getModuleResponses,
   saveModuleResponse,
   updateModuleResponse
 } from '../lib/routes';
-// ✅ NUEVO: Import función AlovaJS
-import { getAvailableFormsAlova } from '../lib/routes-alova';
 import {
   AvailableFormsResponse,
   CreateModuleResponseDto,
@@ -18,56 +14,42 @@ import {
 import { useFormDataStore } from '../stores/useFormDataStore';
 
 export function useAvailableFormsQuery(researchId: string, options?: UseQueryOptions<AvailableFormsResponse, Error>) {
-  // ✅ MIGRADO A ALOVAJS - Manteniendo interfaz TanStack Query
-  const { data, loading, error } = useRequest(
-    () => getAvailableFormsAlova(researchId),
-    {
-      immediate: !!researchId && (options?.enabled !== false),
-      initialData: null,
-      // Mapeo de configuración TanStack Query -> AlovaJS
-      force: ({ data: cachedData }: { data: any }) => {
-        const staleTimeMs = typeof options?.staleTime === 'number' ? options.staleTime : (1000 * 60 * 5); // 5 min default
-        if (cachedData && cachedData._timestamp) {
-          return Date.now() - cachedData._timestamp > staleTimeMs;
-        }
-        return true;
+  return useQuery<AvailableFormsResponse, Error>({
+    queryKey: ['availableForms', researchId],
+    queryFn: async () => {
+      const response = await fetch(`${getApiUrl('research')}/${researchId}/forms`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-    }
-  );
 
-  // 🔍 LOG DETALLADO DE LA RESPUESTA DE FORMS (manteniendo logging original)
-  if (data && !loading) {
-    console.log('[useAvailableFormsQuery] 📊 Datos completos de forms (AlovaJS):', {
-      researchId,
-      steps: data.steps,
-      stepsConfiguration: data.stepsConfiguration,
-      count: data.count,
-      allKeys: Object.keys(data),
-      fullResponse: data
-    });
-  }
+      const data = await response.json();
 
-  if (error) {
-    console.error('[useAvailableFormsQuery] ❌ Request falló (AlovaJS):', {
-      researchId,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
-  }
+      // 🔍 LOG DETALLADO DE LA RESPUESTA DE FORMS
+      console.log('[useAvailableFormsQuery] 📊 Datos completos de forms:', {
+        researchId,
+        steps: data.steps,
+        stepsConfiguration: data.stepsConfiguration,
+        count: data.count,
+        allKeys: Object.keys(data),
+        fullResponse: data
+      });
 
-  // 🔄 INTERFAZ COMPATIBLE: Mapear AlovaJS -> TanStack Query
-  return {
-    data,
-    error,
-    isLoading: loading,
-    isSuccess: !!data && !loading && !error,
-    isError: !!error,
-    isPending: loading,
-    // Funciones legacy para compatibilidad
-    refetch: () => Promise.resolve({ data, error }),
-    isFetching: loading,
-    status: loading ? 'pending' : error ? 'error' : 'success'
-  };
+      return data;
+    },
+    enabled: !!researchId,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 10, // 10 minutos
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnReconnect: false,
+    retry: 2,
+    ...options,
+  });
 }
 
 export function useModuleResponsesQuery(researchId: string, participantId: string, options?: UseQueryOptions<ParticipantResponsesDocument, Error>) {
@@ -125,7 +107,7 @@ export function useUpdateModuleResponseMutation(options?: UseMutationOptions<Par
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses'],
       });
-      options?.onSuccess?.(data, variables, undefined as any);
+      options?.onSuccess?.(data, variables, undefined as unknown);
     },
     ...options,
   });
@@ -153,7 +135,7 @@ export function useDeleteAllResponsesMutation(options?: UseMutationOptions<{ mes
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses', variables.researchId, variables.participantId],
       });
-      options?.onSuccess?.(data, variables, undefined as any);
+      options?.onSuccess?.(data, variables, undefined as unknown);
     },
     onError: (error, variables, context) => {
       console.error('[useDeleteAllResponsesMutation] ❌ Error:', error);

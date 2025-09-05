@@ -20,7 +20,7 @@ export interface EyeTrackingConfig {
     enabled: boolean;
     value: number;
   };
-  demographicQuestions: Record<string, any>;
+  demographicQuestions: Record<string, unknown>;
   backlinks: {
     complete: string;
     disqualified: string;
@@ -56,7 +56,7 @@ export function useEyeTrackingConfigQuery(researchId: string) {
 
         const data = await response.json();
         return data;
-      } catch (error) {
+      } catch {
         return null;
       }
     },

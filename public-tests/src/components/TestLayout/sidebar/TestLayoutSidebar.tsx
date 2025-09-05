@@ -66,8 +66,11 @@ const TestLayoutSidebar: React.FC<Props> = ({
       <MobileOverlay isOpen={isOpen} onClose={closeSidebar} />
       <SidebarContainer isOpen={isOpen} onClose={closeSidebar}>
         {isLoading ? (
-          <div className="text-gray-400 text-sm">
-            {researchId ? 'Cargando formularios desde API...' : 'Cargando pasos...'}
+          <div className="flex flex-col items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+            <div className="text-gray-600 text-sm text-center">
+              {researchId ? 'Cargando formularios desde API...' : 'Cargando pasos...'}
+            </div>
           </div>
         ) : error ? (
           <div className="text-red-500 text-sm">

@@ -10,13 +10,17 @@ export const CognitiveMultipleChoiceTest: React.FC = () => {
     { id: "3", text: "marron" }
   ];
 
-  const handleChange = (newValue: any) => {
+  const handleChange = (newValue: unknown) => {
     console.log('[CognitiveMultipleChoiceTest] 🔄 Cambio de valor:', {
       newValue,
       newValueType: typeof newValue,
       isArray: Array.isArray(newValue)
     });
-    setValue(newValue);
+    if (Array.isArray(newValue) && newValue.every((item): item is string => typeof item === 'string')) {
+      setValue(newValue);
+    } else {
+      console.warn('[CognitiveMultipleChoiceTest] Valor recibido no es un array de strings:', newValue);
+    }
   };
 
   return (

@@ -98,11 +98,11 @@ export const useDisqualificationRedirect = () => {
         // 🎯 FALLBACK: INTENTAR CON assign
         window.location.assign(disqualificationUrl);
       }
-    } catch (error) {
+    } catch {
       // 🎯 FALLBACK: INTENTAR CON href
       try {
         window.location.href = disqualificationUrl;
-      } catch (fallbackError) {
+      } catch {
         // 🎯 ÚLTIMO FALLBACK: MOSTRAR MENSAJE EN PÁGINA (SIN CERRAR)
         const messageContainer = document.createElement('div');
         messageContainer.style.cssText = `

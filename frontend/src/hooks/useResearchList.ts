@@ -109,7 +109,7 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
       // Refresh list after creation
       await listQuery.send();
       
-      return response;
+      return response.data || response;
     } catch (error) {
       console.error('Failed to create research:', error);
       throw error;
@@ -132,7 +132,7 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
       // Refresh list after update
       await listQuery.send();
       
-      return response;
+      return response.data || response;
     } catch (error) {
       console.error('Failed to update research:', error);
       throw error;
@@ -206,8 +206,12 @@ export function useResearchById(researchId: string): UseResearchByIdReturn {
     }
   );
 
+  // Transformar los datos - el backend devuelve un array, extraer el primer elemento
+  const transformedData = shouldFetch && query.data?.data ? 
+    (Array.isArray(query.data.data) ? query.data.data[0] : query.data.data) : null;
+
   return {
-    data: shouldFetch ? (query.data || null) : null,
+    data: shouldFetch ? transformedData : null,
     isLoading: shouldFetch ? query.loading : false,
     error: shouldFetch ? (query.error || null) : null,
     refetch: async () => {
@@ -215,7 +219,9 @@ export function useResearchById(researchId: string): UseResearchByIdReturn {
         return { data: null, success: false };
       }
       const response = await query.send();
-      return { data: response.data, success: true };
+      const transformedRefetchData = response?.data ? 
+        (Array.isArray(response.data) ? response.data[0] : response.data) : null;
+      return { data: transformedRefetchData, success: true };
     },
   };
 }

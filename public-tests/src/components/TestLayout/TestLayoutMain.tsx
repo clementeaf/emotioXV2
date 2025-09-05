@@ -4,7 +4,7 @@ import TestLayoutSidebar from './sidebar/TestLayoutSidebar';
 import { SidebarStep } from './types';
 
 const TestLayoutMain: React.FC = () => {
-  const [sidebarSteps, setSidebarSteps] = useState<SidebarStep[]>([]);
+  const [, setSidebarSteps] = useState<SidebarStep[]>([]);
 
   const handleStepsReady = useCallback((steps: SidebarStep[]) => {
     setSidebarSteps(steps);

@@ -5,44 +5,29 @@
 
 import { DYNAMIC_API_ENDPOINTS, isEndpointsSynced } from './dynamic-endpoints';
 
-// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
-const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
-
 // Endpoints de API exportados desde backend - Priorizar endpoints dinámicos
 export const API_ENDPOINTS = {
-  // Endpoint HTTP API - Usar dinámicos si están sincronizados
-  http: isEndpointsSynced()
-    ? DYNAMIC_API_ENDPOINTS.http
-    : (isDevelopment
-      ? "http://localhost:3000"
-      : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev"),
+  // Endpoint HTTP API - FIXED: Siempre usar AWS Lambda
+  http: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
 
-  // Endpoint WebSocket - Usar dinámicos si están sincronizados
-  ws: isEndpointsSynced()
-    ? DYNAMIC_API_ENDPOINTS.ws
-    : (isDevelopment
-      ? "ws://localhost:3001"
-      : "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev"),
+  // Endpoint WebSocket - FIXED: Siempre usar AWS Lambda
+  ws: "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: isEndpointsSynced() ? DYNAMIC_API_ENDPOINTS.stage : "dev"
 };
 
-// URLs de desarrollo local
+// URLs de desarrollo local - FIXED: Usar puerto correcto para public-tests
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700",
+  "publicTests": "http://localhost:5173",
   "generatedAt": "2025-01-07T15:30:00.000Z"
 };
 
-// Constantes para uso más fácil
-export const API_HTTP_ENDPOINT = isDevelopment
-  ? "http://localhost:3000"
-  : (import.meta.env.VITE_API_URL || "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev");
+// Constantes para uso más fácil - FIXED: Siempre usar AWS Lambda
+export const API_HTTP_ENDPOINT = import.meta.env.VITE_API_URL || "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev";
 
-export const API_WEBSOCKET_ENDPOINT = isDevelopment
-  ? "ws://localhost:3001"
-  : (import.meta.env.VITE_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev");
+export const API_WEBSOCKET_ENDPOINT = import.meta.env.VITE_WS_URL || "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev";
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path: string): string {
@@ -58,7 +43,7 @@ export function getWebsocketUrl(): string {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl(): string {
-  return LOCAL_URLS.publicTests || 'http://localhost:4700';
+  return LOCAL_URLS.publicTests || 'http://localhost:5173';
 }
 
 // Función para navegar a public-tests con researchID

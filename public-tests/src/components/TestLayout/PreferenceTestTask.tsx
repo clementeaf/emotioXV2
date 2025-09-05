@@ -86,7 +86,7 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
     if (externalSelectedImageId !== selectedImageId) {
       setSelectedImageId(externalSelectedImageId);
     }
-  }, [externalSelectedImageId]);
+  }, [externalSelectedImageId, selectedImageId]);
 
   // Reset zoom y pan al cambiar de imagen
   useEffect(() => {

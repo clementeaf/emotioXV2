@@ -14,10 +14,10 @@ export const API_ENDPOINTS = {
   stage: "dev"
 };
 
-// URLs de desarrollo local
+// URLs de desarrollo local - FIXED: Usar puerto correcto para public-tests
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700"
+  "publicTests": "http://localhost:5173"
 };
 
 // Constantes para uso más fácil
@@ -38,7 +38,7 @@ export function getWebsocketUrl() {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl() {
-  return LOCAL_URLS.publicTests || 'http://localhost:4700';
+  return LOCAL_URLS.publicTests || 'http://localhost:5173';
 }
 
 // Función para navegar a public-tests con researchID

@@ -1,62 +1,27 @@
 /**
- * Componente de prueba para AlovaJS - INVISIBLE y TEMPORAL
+ * Componente de prueba para AlovaJS - TEMPORALMENTE DESHABILITADO
  * Solo para verificar conectividad sin afectar producción
+ * 
+ * NOTA: Deshabilitado temporalmente debido a problemas de configuración de tipos
  */
 
-import React, { useEffect } from 'react';
-import { useAvailableFormsQueryAlova } from '../hooks/useApiQueries-alova';
+import React from 'react';
 
 interface TestAlovaProps {
   researchId: string;
 }
 
 export const TestAlova: React.FC<TestAlovaProps> = ({ researchId }) => {
-  const { data, loading, error } = useAvailableFormsQueryAlova(researchId, {
-    enabled: !!researchId
-  });
-
-  useEffect(() => {
-    if (data) {
-      console.log('[TestAlova] ✅ AlovaJS conectado correctamente:', {
-        researchId,
-        dataReceived: true,
-        dataKeys: Object.keys(data),
-        hasSteps: 'steps' in data,
-        timestamp: new Date().toISOString()
-      });
-    }
-    
-    if (error) {
-      console.warn('[TestAlova] ❌ Error en conexión AlovaJS:', {
-        researchId,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    if (loading) {
-      console.log('[TestAlova] ⏳ Cargando datos con AlovaJS...', {
-        researchId,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }, [data, loading, error, researchId]);
-
-  // Componente INVISIBLE - no afecta UI
+  // Componente INVISIBLE - no afecta UI (temporalmente deshabilitado)
   return (
     <div style={{ display: 'none' }} data-testid="alova-test">
-      {/* Solo para testing, completamente invisible */}
-      <pre>{JSON.stringify({ 
-        hasData: !!data, 
-        isLoading: loading, 
-        hasError: !!error,
-        researchId 
-      }, null, 2)}</pre>
+      {/* AlovaJS temporalmente deshabilitado */}
+      <pre>AlovaJS temporalmente deshabilitado - researchId: {researchId}</pre>
     </div>
   );
 };
 
 // Debug info
 if (import.meta.env.DEV) {
-  console.log('[TestAlova] Componente de prueba AlovaJS creado - INVISIBLE');
+  console.log('[TestAlova] Componente AlovaJS temporalmente deshabilitado');
 }

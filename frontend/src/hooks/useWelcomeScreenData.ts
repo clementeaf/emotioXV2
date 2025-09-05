@@ -51,7 +51,7 @@ export function useWelcomeScreenData(researchId: string): UseWelcomeScreenDataRe
   };
 
   return {
-    data: query.data || null,
+    data: query.data?.data || query.data || null,
     isLoading: query.loading,
     error: query.error || null,
     refetch: handleRefetch,
@@ -78,7 +78,7 @@ export function useCreateWelcomeScreen() {
         throw new Error('Invalid create response');
       }
 
-      return response;
+      return response.data || response;
     } catch (error) {
       console.error('Failed to create welcome screen:', error);
       throw error;
@@ -122,7 +122,7 @@ export function useUpdateWelcomeScreen() {
       // Clear cache after update
       clearWelcomeScreenCache(researchId);
 
-      return response;
+      return response.data || response;
     } catch (error) {
       console.error('Failed to update welcome screen:', error);
       throw error;

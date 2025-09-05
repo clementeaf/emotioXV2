@@ -1,4 +1,5 @@
 import React from 'react';
+import { ALL_EMOTIONS } from './emotionConstants';
 
 /**
  * Interfaces para los componentes de jerarquía de emociones
@@ -20,99 +21,7 @@ export interface EmotionOption {
   color: string;
 }
 
-/**
- * Clusters emocionales según la jerarquía de valor emocional
- * Basado en BeyondPhilosophy.com - Versión en español
- */
-export const EMOTION_CLUSTERS: EmotionCluster[] = [
-  {
-    id: 'destroying',
-    name: 'Destroying',
-    color: '#ef4444', // Red
-    value: 1,
-    emotions: [
-      'Frustrado',
-      'Irritado',
-      'Decepción',
-      'Estresado',
-      'Infeliz',
-      'Desatendido',
-      'Apresurado'
-    ],
-    description: 'Estados emocionales destructivos que generan valor negativo'
-  },
-  {
-    id: 'attention',
-    name: 'Attention',
-    color: '#16a34a', // Dark Green
-    value: 2,
-    emotions: [
-      'Indulgente',
-      'Estimulado',
-      'Exploratorio',
-      'Interesado',
-      'Enérgico'
-    ],
-    description: 'Emociones que capturan atención y engagement'
-  },
-  {
-    id: 'recommendation',
-    name: 'Recommendation',
-    color: '#22c55e', // Medium Green
-    value: 3,
-    emotions: [
-      'Confiado',
-      'Valorado',
-      'Cuidado',
-      'Seguro',
-      'Enfocado'
-    ],
-    description: 'Estados que fomentan confianza y llevan a recomendaciones'
-  },
-  {
-    id: 'advocacy',
-    name: 'Advocacy',
-    color: '#86efac', // Light Green
-    value: 4,
-    emotions: [
-      'Feliz',
-      'Satisfecho'
-    ],
-    description: 'Estados más positivos que llevan a la defensa de la marca'
-  }
-];
 
-/**
- * Todas las emociones individuales con sus valores y clusters
- * Basado en la imagen con 22 emociones en español
- */
-export const ALL_EMOTIONS: EmotionOption[] = [
-  // Primera fila - Advocacy y Recommendation (Verde Claro)
-  { id: 'feliz', name: 'Feliz', cluster: 'advocacy', value: 4, color: '#86efac' },
-  { id: 'satisfecho', name: 'Satisfecho', cluster: 'advocacy', value: 4, color: '#86efac' },
-  { id: 'confiado', name: 'Confiado', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  { id: 'valorado', name: 'Valorado', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  { id: 'cuidado', name: 'Cuidado', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  { id: 'seguro', name: 'Seguro', cluster: 'recommendation', value: 3, color: '#22c55e' },
-  { id: 'enfocado', name: 'Enfocado', cluster: 'recommendation', value: 3, color: '#22c55e' },
-
-  // Segunda fila - Attention (Verde Medio) + 1 Destroying (Rojo Claro)
-  { id: 'indulgente', name: 'Indulgente', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'estimulado', name: 'Estimulado', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'exploratorio', name: 'Exploratorio', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'interesado', name: 'Interesado', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'energico', name: 'Enérgico', cluster: 'attention', value: 2, color: '#16a34a' },
-  { id: 'descontento', name: 'Descontento', cluster: 'destroying', value: 1, color: '#ef4444' },
-
-  // Tercera fila - Destroying (Rojo Claro)
-  { id: 'frustrado', name: 'Frustrado', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'irritado', name: 'Irritado', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'decepcion', name: 'Decepción', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'estresado', name: 'Estresado', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'infeliz', name: 'Infeliz', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'desatendido', name: 'Desatendido', cluster: 'destroying', value: 1, color: '#ef4444' },
-  { id: 'apresurado', name: 'Apresurado', cluster: 'destroying', value: 1, color: '#ef4444' }
-];
 
 /**
  * Componente para mostrar la jerarquía de valor emocional
@@ -385,3 +294,4 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
     </div>
   );
 };
+

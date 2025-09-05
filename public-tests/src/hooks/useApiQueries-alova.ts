@@ -1,151 +1,60 @@
 /**
- * Hooks AlovaJS - PARALELO al sistema actual
+ * Hooks AlovaJS - TEMPORALMENTE DESHABILITADO
  * NO REEMPLAZA useApiQueries.ts - Solo para testing paralelo
+ * 
+ * NOTA: Deshabilitado temporalmente debido a problemas de configuración de tipos
  */
 
-import { useRequest, useWatcher } from 'alova/react';
-import { 
-  getAvailableFormsAlova,
-  saveModuleResponseAlova,
-  updateModuleResponseAlova,
-  getModuleResponsesAlova,
-  deleteAllResponsesAlova
-} from '../lib/routes-alova';
-import { 
-  AvailableFormsResponse, 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import type { 
   CreateModuleResponseDto, 
   ParticipantResponsesDocument, 
   UpdateModuleResponseDto 
 } from '../lib/types';
 
-// ✅ HOOK PARALELO - No reemplaza useAvailableFormsQuery
-export function useAvailableFormsQueryAlova(researchId: string, options?: {
+// ✅ HOOK PARALELO PLACEHOLDER - No reemplaza useAvailableFormsQuery
+export function useAvailableFormsQueryAlova(_researchId: string, _options?: {
   enabled?: boolean;
   staleTime?: number;
 }) {
-  return useRequest(getAvailableFormsAlova(researchId), {
-    immediate: options?.enabled !== false && !!researchId,
-    // Configuración similar a TanStack Query
-    initialData: null,
-    force: ({ data }) => {
-      if (options?.staleTime) {
-        const now = Date.now();
-        const lastUpdate = data?._lastUpdate || 0;
-        return now - lastUpdate > options.staleTime;
-      }
-      return false;
-    }
-  });
+  throw new Error('AlovaJS temporalmente deshabilitado');
 }
 
-// ✅ HOOK PARALELO - No reemplaza useModuleResponsesQuery
+// ✅ HOOK PARALELO PLACEHOLDER - No reemplaza useModuleResponsesQuery
 export function useModuleResponsesQueryAlova(
-  researchId: string, 
-  participantId: string,
-  options?: { enabled?: boolean }
+  _researchId: string, 
+  _participantId: string,
+  _options?: { enabled?: boolean }
 ) {
-  return useRequest(getModuleResponsesAlova(researchId, participantId), {
-    immediate: options?.enabled !== false && !!researchId && !!participantId,
-    initialData: null
-  });
+  throw new Error('AlovaJS temporalmente deshabilitado');
 }
 
-// ✅ HOOK PARALELO - No reemplaza useSaveModuleResponseMutation
-export function useSaveModuleResponseMutationAlova(options?: {
+// ✅ HOOK PARALELO PLACEHOLDER - No reemplaza useSaveModuleResponseMutation
+export function useSaveModuleResponseMutationAlova(_options?: {
   onSuccess?: (data: ParticipantResponsesDocument, variables: CreateModuleResponseDto) => void;
   onError?: (error: Error, variables: CreateModuleResponseDto) => void;
 }) {
-  const { loading, error, send, data } = useRequest(
-    saveModuleResponseAlova({}), // Placeholder, se sobrescribe en send()
-    { immediate: false }
-  );
-
-  const mutateAsync = async (variables: CreateModuleResponseDto): Promise<ParticipantResponsesDocument> => {
-    try {
-      const result = await send(saveModuleResponseAlova(variables));
-      options?.onSuccess?.(result, variables);
-      return result;
-    } catch (err) {
-      options?.onError?.(err as Error, variables);
-      throw err;
-    }
-  };
-
-  return {
-    mutateAsync,
-    loading,
-    error,
-    data
-  };
+  throw new Error('AlovaJS temporalmente deshabilitado');
 }
 
-// ✅ HOOK PARALELO - No reemplaza useUpdateModuleResponseMutation
-export function useUpdateModuleResponseMutationAlova(options?: {
+// ✅ HOOK PARALELO PLACEHOLDER - No reemplaza useUpdateModuleResponseMutation
+export function useUpdateModuleResponseMutationAlova(_options?: {
   onSuccess?: (data: ParticipantResponsesDocument, variables: { responseId: string; data: UpdateModuleResponseDto }) => void;
   onError?: (error: Error, variables: { responseId: string; data: UpdateModuleResponseDto }) => void;
 }) {
-  const { loading, error, send, data } = useRequest(
-    updateModuleResponseAlova('', {}), // Placeholder
-    { immediate: false }
-  );
-
-  const mutateAsync = async (variables: { responseId: string; data: UpdateModuleResponseDto }) => {
-    try {
-      const result = await send(updateModuleResponseAlova(variables.responseId, variables.data));
-      options?.onSuccess?.(result, variables);
-      return result;
-    } catch (err) {
-      options?.onError?.(err as Error, variables);
-      throw err;
-    }
-  };
-
-  return {
-    mutateAsync,
-    loading,
-    error,
-    data
-  };
+  throw new Error('AlovaJS temporalmente deshabilitado');
 }
 
-// ✅ HOOK PARALELO - No reemplaza useDeleteAllResponsesMutation
-export function useDeleteAllResponsesMutationAlova(options?: {
-  onSuccess?: (data: any, variables: { researchId: string; participantId: string }) => void;
+// ✅ HOOK PARALELO PLACEHOLDER - No reemplaza useDeleteAllResponsesMutation
+export function useDeleteAllResponsesMutationAlova(_options?: {
+  onSuccess?: (data: unknown, variables: { researchId: string; participantId: string }) => void;
   onError?: (error: Error, variables: { researchId: string; participantId: string }) => void;
 }) {
-  const { loading, error, send, data } = useRequest(
-    deleteAllResponsesAlova('', ''), // Placeholder
-    { immediate: false }
-  );
-
-  const mutateAsync = async (variables: { researchId: string; participantId: string }) => {
-    try {
-      const result = await send(deleteAllResponsesAlova(variables.researchId, variables.participantId));
-      options?.onSuccess?.(result, variables);
-      return result;
-    } catch (err) {
-      options?.onError?.(err as Error, variables);
-      throw err;
-    }
-  };
-
-  return {
-    mutateAsync,
-    loading,
-    error,
-    data
-  };
+  throw new Error('AlovaJS temporalmente deshabilitado');
 }
 
 // Debug para desarrollo
 if (import.meta.env.DEV) {
-  console.log('[AlovaJS Hooks] Hooks paralelos creados:', {
-    hooks: [
-      'useAvailableFormsQueryAlova',
-      'useModuleResponsesQueryAlova',
-      'useSaveModuleResponseMutationAlova',
-      'useUpdateModuleResponseMutationAlova', 
-      'useDeleteAllResponsesMutationAlova'
-    ]
-  });
+  console.log('[AlovaJS Hooks] AlovaJS temporalmente deshabilitado para resolver problemas de tipos');
 }

@@ -10,7 +10,7 @@ export function useSidebarSteps(
   localSteps: SidebarStep[],
   onStepsReady?: (steps: SidebarStep[]) => void
 ) {
-  const { setCurrentQuestionKey, currentQuestionKey } = useStepStore();
+  const { setCurrentQuestionKey } = useStepStore();
   const { hasResponse } = useTestStore();
   const queryClient = useQueryClient();
   const { data, isLoading, error, refetch } = useAvailableFormsQuery(researchId);

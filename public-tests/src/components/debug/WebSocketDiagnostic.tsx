@@ -7,8 +7,12 @@ interface WebSocketDiagnosticProps {
 
 export function WebSocketDiagnostic({ className = '' }: WebSocketDiagnosticProps) {
   const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<any>(null);
-  const [envVars, setEnvVars] = useState<any>(null);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    error?: string;
+    details?: unknown;
+  } | null>(null);
+  const [envVars, setEnvVars] = useState<Record<string, unknown> | null>(null);
 
   const runDiagnostic = async () => {
     setIsTesting(true);

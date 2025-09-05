@@ -90,7 +90,7 @@ export const useSidebarLogic = ({
             questionKey: stepConfig.questionKey
           };
         })
-        .filter(step => step !== null);
+        .filter((step: any): step is NonNullable<typeof step> => step !== null);
 
 
       return orderedSteps;
@@ -110,7 +110,7 @@ export const useSidebarLogic = ({
     if (steps.length > 0) {
 
       // Convertir steps al formato del store
-      const storeSteps = steps.map((step) => ({
+      const storeSteps = steps.map((step: any) => ({
         questionKey: step.questionKey,
         title: step.title
       }));
@@ -136,7 +136,7 @@ export const useSidebarLogic = ({
   useEffect(() => {
     if (steps.length > 0 && onStepsReady && !stepsNotifiedRef.current) {
       stepsNotifiedRef.current = true;
-      const sidebarSteps: SidebarStep[] = steps.map(step => ({
+      const sidebarSteps: SidebarStep[] = steps.map((step: any) => ({
         label: step.title,
         questionKey: step.questionKey
       }));
@@ -189,7 +189,7 @@ export const useSidebarLogic = ({
     steps,
     totalSteps,
     isLoading,
-    error,
+    error: error || null,
     isOpen,
     setIsOpen,
     toggleSidebar,

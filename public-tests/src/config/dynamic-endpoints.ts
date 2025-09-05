@@ -13,10 +13,8 @@ const isDevelopment = import.meta.env.DEV || window.location.hostname === 'local
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
-  // Endpoint HTTP API
-  http: isDevelopment
-    ? "http://localhost:3000"
-    : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint HTTP API - FIXED: Siempre usar AWS Lambda, incluso en desarrollo
+  http: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
 
   // Endpoint WebSocket - Siempre usar AWS Lambda
   ws: "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
@@ -29,7 +27,7 @@ export const DYNAMIC_API_ENDPOINTS = {
   syncedFromStage: "dev"
 };
 
-// URLs de desarrollo local
+// URLs de desarrollo local - FIXED: Usar puertos correctos
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:5173",
