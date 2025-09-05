@@ -13,22 +13,86 @@ const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
 const client = new DynamoDBClient({ region: AWS_REGION });
 const docClient = DynamoDBDocumentClient.from(client);
 
-// Interfaz para los ítems de DynamoDB
+// Tipos específicos para metadatos
+interface QuestionMetadata {
+  [key: string]: string | number | boolean | null;
+}
+
+// Tipos específicos para configuraciones
+interface QuestionConfig {
+  [key: string]: string | number | boolean | null | string[] | number[];
+}
+
+// Tipo para choices de preguntas
+interface QuestionChoice {
+  id: string;
+  text: string;
+  value: string | number;
+}
+
+// Tipo para scale config
+interface ScaleConfig {
+  min: number;
+  max: number;
+  step?: number;
+  labels?: {
+    [key: number]: string;
+  };
+}
+
+// Tipo para archivos adjuntos
+interface QuestionFile {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size?: number;
+}
+
+// Interfaz para los ítems de DynamoDB con tipos específicos
 interface DynamoDBItem {
   id?: string;
   sk?: string; // Sort key para identificar el tipo
   researchId?: string;
   stepOrder?: number;
   order?: number;
-  questions?: unknown;
-  metadata?: unknown;
-  config?: unknown;
-  parameterOptions?: unknown;
-  backlinks?: unknown;
-  [key: string]: unknown;
+  questions?: Question[];
+  metadata?: QuestionMetadata;
+  config?: QuestionConfig;
+  parameterOptions?: QuestionConfig;
+  backlinks?: string[];
+  // Campos específicos de Welcome/Thank You screen
+  title?: string;
+  message?: string;
+  startButtonText?: string;
+  isEnabled?: boolean;
+  // Campos específicos de Eye Tracking
+  demographicQuestions?: Record<string, {
+    enabled: boolean;
+    [key: string]: string | number | boolean;
+  }>;
+  stimuli?: {
+    items: Array<{
+      id: string;
+      url: string;
+      type: string;
+      [key: string]: string | number | boolean;
+    }>;
+  };
+  areasOfInterest?: {
+    areas: Array<{
+      id: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      [key: string]: string | number | boolean;
+    }>;
+  };
+  deviceFrame?: boolean;
 }
 
-// Interfaz para una pregunta
+// Interfaz para una pregunta con tipos específicos
 interface Question {
   id?: string;
   questionKey?: string;
@@ -37,43 +101,68 @@ interface Question {
   description?: string;
   instructions?: string;
   required?: boolean;
-  choices?: unknown[];
-  scaleConfig?: unknown;
-  files?: unknown[];
-  [key: string]: unknown;
+  choices?: QuestionChoice[];
+  scaleConfig?: ScaleConfig;
+  files?: QuestionFile[];
+  metadata?: QuestionMetadata;
+  config?: QuestionConfig;
+  companyName?: string;
+  order?: number;
+  [key: string]: string | number | boolean | null | QuestionChoice[] | ScaleConfig | QuestionFile[] | QuestionMetadata | QuestionConfig | undefined;
 }
 
-// Interfaz para la configuración de un paso
+// Tipos específicos para las configuraciones de contenido
+interface WelcomeScreenConfiguration {
+  title: string;
+  message: string;
+  startButtonText: string;
+  isEnabled: boolean;
+  metadata: QuestionMetadata;
+}
+
+interface ThankYouScreenConfiguration {
+  title: string;
+  message: string;
+  startButtonText: string;
+  isEnabled: boolean;
+  metadata: QuestionMetadata;
+}
+
+
+// Interfaz para la configuración de un paso con tipos específicos
 interface StepConfiguration {
   questionKey: string;
-  contentConfiguration: Record<string, unknown>;
+  contentConfiguration: Record<string, any>;
 }
 
 /**
- * Función para parsear JSON si es string
+ * Función para parsear JSON si es string con tipado genérico
  */
-function parseJsonField(field: unknown): unknown {
+function parseJsonField<T = QuestionMetadata | QuestionConfig | Question[] | Record<string, any>>(field: string | T | undefined): T | null {
   if (typeof field === 'string') {
     try {
-      return JSON.parse(field);
+      return JSON.parse(field) as T;
     } catch (e) {
       console.warn(`Error parseando JSON: ${e}`);
-      return field;
+      return null;
     }
   }
-  return field;
+  if (field === undefined || field === null) {
+    return null;
+  }
+  return field as T;
 }
 
 /**
  * Función para extraer configuración de Welcome Screen
  */
 function extractWelcomeScreenConfig(item: DynamoDBItem): StepConfiguration | null {
-  const config = {
+  const config: WelcomeScreenConfiguration = {
     title: item.title || '',
     message: item.message || '',
     startButtonText: item.startButtonText || 'Continuar',
     isEnabled: item.isEnabled !== false,
-    metadata: parseJsonField(item.metadata) || {}
+    metadata: parseJsonField<QuestionMetadata>(item.metadata) || {}
   };
 
   return {
@@ -86,12 +175,12 @@ function extractWelcomeScreenConfig(item: DynamoDBItem): StepConfiguration | nul
  * Función para extraer configuración de Thank You Screen
  */
 function extractThankYouScreenConfig(item: DynamoDBItem): StepConfiguration | null {
-  const config = {
+  const config: ThankYouScreenConfiguration = {
     title: item.title || '',
     message: item.message || '',
     startButtonText: item.startButtonText || 'Finalizar',
     isEnabled: item.isEnabled !== false,
-    metadata: parseJsonField(item.metadata) || {}
+    metadata: parseJsonField<QuestionMetadata>(item.metadata) || {}
   };
 
   return {
@@ -236,7 +325,46 @@ function extractCognitiveTaskConfig(item: DynamoDBItem): StepConfiguration[] {
 }
 
 /**
+ * Función para obtener configuraciones por defecto cuando no hay configuraciones en DynamoDB
+ */
+function getDefaultStepConfigurations(): {
+  steps: string[];
+  stepsConfiguration: StepConfiguration[];
+} {
+  const defaultSteps = [QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN];
+  
+  const defaultConfigurations: StepConfiguration[] = [
+    {
+      questionKey: QuestionType.WELCOME_SCREEN,
+      contentConfiguration: {
+        title: 'Bienvenido a la investigación',
+        message: 'Gracias por participar en esta investigación. A continuación, encontrarás una serie de preguntas y actividades.',
+        startButtonText: 'Continuar',
+        isEnabled: true,
+        metadata: {}
+      }
+    },
+    {
+      questionKey: QuestionType.THANK_YOU_SCREEN,
+      contentConfiguration: {
+        title: 'Gracias por tu participación',
+        message: 'Has completado exitosamente la investigación. Tus respuestas han sido registradas correctamente.',
+        startButtonText: 'Finalizar',
+        isEnabled: true,
+        metadata: {}
+      }
+    }
+  ];
+
+  return {
+    steps: defaultSteps,
+    stepsConfiguration: defaultConfigurations
+  };
+}
+
+/**
  * Función para obtener los questionKey y configuraciones de los formularios configurados
+ * Si no hay configuraciones, retorna configuraciones por defecto en lugar de error
  */
 async function getAvailableFormTypesAndConfigurations(researchId: string): Promise<{
   steps: string[];
@@ -255,6 +383,12 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
     const command = new QueryCommand(params);
     const result = await docClient.send(command);
     const items: DynamoDBItem[] = (result.Items || []) as DynamoDBItem[];
+
+    // Si no hay elementos configurados, devolver configuración por defecto
+    if (items.length === 0) {
+      console.log(`[getAvailableFormTypesAndConfigurations] No se encontraron configuraciones para researchId: ${researchId}, devolviendo configuración por defecto`);
+      return getDefaultStepConfigurations();
+    }
 
     const availableTypes: string[] = [];
     const configurations: StepConfiguration[] = [];
@@ -327,6 +461,12 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
     // Eliminar duplicados
     const uniqueTypes = [...new Set(availableTypes)];
 
+    // Si después de procesar no hay tipos válidos, devolver configuración por defecto
+    if (uniqueTypes.length === 0) {
+      console.log(`[getAvailableFormTypesAndConfigurations] No se encontraron tipos válidos después del procesamiento, devolviendo configuración por defecto`);
+      return getDefaultStepConfigurations();
+    }
+
     // Aplicar orden específico según las reglas
     const orderedSteps = applySpecificOrder(uniqueTypes);
 
@@ -341,7 +481,9 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
 
   } catch (error: unknown) {
     console.error('[getAvailableFormTypesAndConfigurations] Error al consultar DynamoDB:', error);
-    throw new Error(`Error al consultar DynamoDB: ${((error as Error)?.message || 'Error desconocido')}`);
+    // En caso de error de DynamoDB, devolver configuración por defecto en lugar de fallar
+    console.log('[getAvailableFormTypesAndConfigurations] Devolviendo configuración por defecto debido a error en DynamoDB');
+    return getDefaultStepConfigurations();
   }
 }
 
