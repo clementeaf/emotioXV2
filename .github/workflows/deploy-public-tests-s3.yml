@@ -44,8 +44,6 @@ jobs:
         run: |
           cd public-tests
           npm install --ignore-scripts --prefer-offline --no-audit
-        env:
-          NODE_ENV: production
 
       - name: 🔍 Verify environment variables
         run: |
