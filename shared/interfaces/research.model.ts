@@ -3,15 +3,8 @@
  * Este archivo define las interfaces que se utilizan tanto en el frontend como en el backend
  */
 
-/**
- * Tipos de investigación soportados
- */
-export enum ResearchType {
-  EYE_TRACKING = 'eye-tracking',
-  ATTENTION_PREDICTION = 'attention-prediction',
-  COGNITIVE_ANALYSIS = 'cognitive-analysis',
-  BEHAVIOURAL = 'behavioural'
-}
+// Importar tipos centralizados desde backend-core.types
+import { ResearchType, ResearchStatus } from '../types/backend-core.types';
 
 /**
  * Técnicas de investigación disponibles
@@ -21,15 +14,6 @@ export enum ResearchTechnique {
   AIM_FRAMEWORK = 'aim-framework'
 }
 
-/**
- * Estados posibles de una investigación
- */
-export enum ResearchStatus {
-  DRAFT = 'draft',
-  IN_PROGRESS = 'in-progress',
-  COMPLETED = 'completed',
-  ARCHIVED = 'archived'
-}
 
 /**
  * Interfaz para los datos básicos de una investigación (Paso 1)
@@ -136,9 +120,9 @@ export interface BiometricConfig {
 }
 
 /**
- * Interfaz para la investigación completa
+ * Interfaz para la investigación completa con configuración detallada
  */
-export interface Research {
+export interface ResearchModel {
   /** ID único de la investigación */
   id: string;
 
@@ -168,10 +152,10 @@ export interface Research {
 }
 
 /**
- * Interfaz para la creación de una investigación (solicitud al backend)
+ * Interfaz para la creación de una investigación con configuración detallada (solicitud al backend)
  * Contiene los datos recopilados en los 3 pasos del formulario
  */
-export interface CreateResearchRequest {
+export interface CreateResearchModelRequest {
   /** Datos básicos recogidos en el Paso 1 y 2 */
   basic: ResearchBasicData;
 
@@ -280,7 +264,7 @@ export function generateResearchId(): string {
  * @param research La investigación a verificar
  * @returns true si la investigación utiliza la técnica AIM Framework
  */
-export function isAIMFrameworkResearch(research: Research | { technique?: string } | { basic?: { technique?: string } }): boolean {
+export function isAIMFrameworkResearch(research: ResearchModel | { technique?: string } | { basic?: { technique?: string } }): boolean {
   // Si es el tipo completo Research
   if ('basic' in research && research.basic && 'technique' in research.basic) {
     return research.basic.technique === ResearchTechnique.AIM_FRAMEWORK;
