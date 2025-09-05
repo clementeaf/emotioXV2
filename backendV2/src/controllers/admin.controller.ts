@@ -2,22 +2,12 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { AdminService } from '../services/admin.service';
 import { authService } from '../services/auth.service';
 import { getCorsHeaders } from '../middlewares/cors';
-
-/**
- * Respuesta estándar para endpoints de admin
- */
-interface AdminResponse {
-  statusCode: number;
-  body: string;
-  headers: {
-    [key: string]: string | boolean;
-  };
-}
+import { AdminResponse } from '../types/auth.types';
 
 /**
  * Crear respuesta HTTP estándar
  */
-const createResponse = (statusCode: number, data: any, message?: string, event?: APIGatewayProxyEvent): AdminResponse => {
+const createResponse = (statusCode: number, data: unknown, message?: string, event?: APIGatewayProxyEvent): AdminResponse => {
   const headers = event ? getCorsHeaders(event) : {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -95,7 +85,7 @@ const validateAdminAuth = async (event: APIGatewayProxyEvent): Promise<{ isValid
 /**
  * Parsear y validar body JSON
  */
-const parseRequestBody = (body: string | null): { isValid: boolean; data?: any; error?: string } => {
+const parseRequestBody = (body: string | null): { isValid: boolean; data?: unknown; error?: string } => {
   if (!body) {
     return { isValid: false, error: 'Body requerido' };
   }
@@ -192,7 +182,12 @@ export const createUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
       return createErrorResponse(400, bodyValidation.error || 'Datos inválidos');
     }
 
-    const userData = bodyValidation.data!;
+    const userData = bodyValidation.data as {
+      email?: string;
+      password?: string;
+      name?: string;
+      role?: 'admin' | 'researcher' | 'user' | 'participant';
+    };
 
     // Validar campos requeridos
     if (!userData.email || !userData.password) {
@@ -200,7 +195,12 @@ export const createUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
     }
 
     // Crear usuario
-    const response = await AdminService.createUser(userData);
+    const response = await AdminService.createUser({
+      email: userData.email,
+      password: userData.password,
+      name: userData.name,
+      role: userData.role
+    });
     
     if (!response.success) {
       return createErrorResponse(400, response.error || 'Error creando usuario');
@@ -239,10 +239,16 @@ export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
       return createErrorResponse(400, bodyValidation.error || 'Datos inválidos');
     }
 
-    const updates = bodyValidation.data!;
+    const updates = bodyValidation.data as {
+      email?: string;
+      password?: string;
+      name?: string;
+      role?: 'admin' | 'researcher' | 'user' | 'participant';
+      status?: 'active' | 'inactive';
+    };
 
     // Validar que al menos hay un campo para actualizar
-    if (!updates.email && !updates.password && !updates.role && !updates.status) {
+    if (!updates.email && !updates.password && !updates.name && !updates.role && !updates.status) {
       return createErrorResponse(400, 'Al menos un campo debe ser proporcionado para actualizar');
     }
 

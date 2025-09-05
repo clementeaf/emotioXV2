@@ -15,7 +15,11 @@ import {
   LoginCredentialsDto,
   JwtPayload
 } from '../models/user';
-import { AuthResponse } from '../../../shared/src/types/auth.types';
+import { 
+  AuthResponse,
+  DynamoDBUpdateAttributes,
+  ManuallyDecodedToken
+} from '../types/auth.types';
 
 // Agregar definición de RegisterUserDto
 interface RegisterUserDto {
@@ -230,29 +234,43 @@ class AuthService implements IAuthService {
         updatedUser.passwordHash = await this.hashPassword(data.password);
       }
       
-      // Actualizar los campos proporcionados
-      Object.entries(data).forEach(([key, value]) => {
-        if (key !== 'password' && value !== undefined) {
-          (updatedUser as Record<string, unknown>)[key] = value;
-        }
-      });
+      // Actualizar los campos proporcionados específicamente
+      if (data.name !== undefined) updatedUser.name = data.name;
+      if (data.role !== undefined) updatedUser.role = data.role;
+      if (data.isActive !== undefined) updatedUser.isActive = data.isActive;
+      if (data.isVerified !== undefined) updatedUser.isVerified = data.isVerified;
+      if (data.preferences !== undefined) updatedUser.preferences = data.preferences;
       
       // Actualizar el timestamp
       updatedUser.updatedAt = Date.now();
       
       // Construir la expresión de actualización
       let updateExpression = 'SET updatedAt = :updatedAt';
-      const expressionAttributeValues: Record<string, unknown> = {
+      const expressionAttributeValues: DynamoDBUpdateAttributes = {
         ':updatedAt': updatedUser.updatedAt
       };
       
-      // Añadir los campos que se están actualizando
-      Object.entries(data).forEach(([key, value]) => {
-        if (key !== 'password' && key !== 'id' && value !== undefined) {
-          updateExpression += `, ${key} = :${key}`;
-          expressionAttributeValues[`:${key}`] = value;
-        }
-      });
+      // Añadir los campos específicos que se están actualizando
+      if (data.name !== undefined) {
+        updateExpression += ', #name = :name';
+        expressionAttributeValues[':name'] = data.name;
+      }
+      if (data.role !== undefined) {
+        updateExpression += ', #role = :role';
+        expressionAttributeValues[':role'] = data.role;
+      }
+      if (data.isActive !== undefined) {
+        updateExpression += ', isActive = :isActive';
+        expressionAttributeValues[':isActive'] = data.isActive;
+      }
+      if (data.isVerified !== undefined) {
+        updateExpression += ', isVerified = :isVerified';
+        expressionAttributeValues[':isVerified'] = data.isVerified;
+      }
+      if (data.preferences !== undefined) {
+        updateExpression += ', preferences = :preferences';
+        expressionAttributeValues[':preferences'] = data.preferences;
+      }
       
       // Si se actualizó la contraseña, actualizar el hash
       if (data.password) {
@@ -260,11 +278,20 @@ class AuthService implements IAuthService {
         expressionAttributeValues[':passwordHash'] = updatedUser.passwordHash;
       }
       
+      const expressionAttributeNames: Record<string, string> = {};
+      if (data.name !== undefined) {
+        expressionAttributeNames['#name'] = 'name';
+      }
+      if (data.role !== undefined) {
+        expressionAttributeNames['#role'] = 'role';
+      }
+
       const params = {
         TableName: this.tableName,
         Key: { id },
         UpdateExpression: updateExpression,
         ExpressionAttributeValues: expressionAttributeValues,
+        ...(Object.keys(expressionAttributeNames).length > 0 && { ExpressionAttributeNames: expressionAttributeNames }),
         ReturnValues: ReturnValue.ALL_NEW
       };
       
@@ -429,7 +456,7 @@ class AuthService implements IAuthService {
    * Decodifica un token JWT manualmente sin verificar la firma
    * Utilizado para debugging y como fallback
    */
-  private decodeTokenManually(token: string): Record<string, unknown> | null {
+  private decodeTokenManually(token: string): ManuallyDecodedToken | null {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
@@ -446,7 +473,17 @@ class AuthService implements IAuthService {
       // Usar base64url decode (reemplazar caracteres URL-safe)
       payload = payload.replace(/-/g, '+').replace(/_/g, '/');
       const decodedPayload = Buffer.from(payload, 'base64').toString('utf8');
-      return JSON.parse(decodedPayload);
+      const parsed = JSON.parse(decodedPayload);
+      
+      return {
+        id: parsed.id || parsed.sub,
+        email: parsed.email,
+        name: parsed.name,
+        role: parsed.role,
+        iat: parsed.iat,
+        exp: parsed.exp,
+        sub: parsed.sub
+      };
     } catch (error) {
       console.error('Error al decodificar token manualmente:', error);
       throw error;
@@ -578,10 +615,12 @@ class AuthService implements IAuthService {
    */
   private sanitizeUser(user: User): User {
     const sanitized = { ...user };
-    delete (sanitized as Record<string, unknown>).password;
-    delete (sanitized as Record<string, unknown>).passwordHash;
-    delete (sanitized as Record<string, unknown>).verificationCode;
-    return sanitized;
+    // Crear una copia sin las propiedades sensibles
+    const { passwordHash: _passwordHash, verificationCode: _verificationCode, ...cleanUser } = sanitized as User & { 
+      passwordHash?: string; 
+      verificationCode?: string; 
+    };
+    return cleanUser as User;
   }
   
   /**

@@ -1,16 +1,16 @@
 import { QuestionDictionary, QuestionModule } from '../../../shared/interfaces/question-dictionary.interface';
+import { BaseQuestion, FormData, DEFAULT_MODULE_MAP, DEFAULT_COMPONENT_MAP } from '../types/question-dictionary.types';
 
 /**
  * Infiero el módulo a partir de la estructura de la pregunta si no viene explícito
  */
-function inferModule(q: any): QuestionModule {
+function inferModule(q: BaseQuestion): QuestionModule {
   if (q.module) return q.module;
   if (q.type && typeof q.type === 'string') {
     const t = q.type.toLowerCase();
-    if (t.includes('voc')) return 'smartvoc';
-    if (t.includes('cognitive')) return 'cognitive_task';
-    if (t.includes('demographic')) return 'demographic';
-    if (t.includes('eye')) return 'eye_tracking';
+    for (const [key, module] of Object.entries(DEFAULT_MODULE_MAP)) {
+      if (t.includes(key)) return module;
+    }
   }
   return 'custom';
 }
@@ -18,7 +18,7 @@ function inferModule(q: any): QuestionModule {
 /**
  * Infiero el tipo de pregunta si no viene explícito
  */
-function inferType(q: any): string {
+function inferType(q: BaseQuestion): string {
   if (q.type) return q.type;
   if (q.config && q.config.type) return q.config.type;
   return 'unknown';
@@ -35,13 +35,13 @@ function buildQuestionKey(module: string, type: string, id: string): string {
  * Construye el diccionario global de preguntas a partir de una lista de formularios
  * @param forms Lista de formularios de todos los módulos
  */
-export function buildQuestionDictionary(forms: any[]): QuestionDictionary {
+export function buildQuestionDictionary(forms: FormData[]): QuestionDictionary {
   const dict: QuestionDictionary = {};
 
   forms.forEach((form, formIdx) => {
     // NUEVO: Procesar cada pregunta individual dentro del formulario
     if (form.questions && Array.isArray(form.questions)) {
-      form.questions.forEach((question: any, questionIndex: number) => {
+      form.questions.forEach((question: BaseQuestion, questionIndex: number) => {
         const module = inferModule(question);
         const type = inferType(question);
         const id = question.id || `q_${formIdx}_${questionIndex}`;
@@ -58,7 +58,7 @@ export function buildQuestionDictionary(forms: any[]): QuestionDictionary {
           labels: question.labels,
           images: question.images,
           hitzones: question.hitzones,
-          config: question.config,
+          config: question.config as Record<string, unknown> | undefined,
           renderComponent: question.renderComponent || inferRenderComponent(type, module),
           ...question // Otros props custom
         };
@@ -81,7 +81,7 @@ export function buildQuestionDictionary(forms: any[]): QuestionDictionary {
         labels: form.labels,
         images: form.images,
         hitzones: form.hitzones,
-        config: form.config,
+        config: form.config as Record<string, unknown> | undefined,
         renderComponent: form.renderComponent || inferRenderComponent(type, module),
         ...form // Otros props custom
       };
@@ -97,19 +97,6 @@ export function buildQuestionDictionary(forms: any[]): QuestionDictionary {
  */
 function inferRenderComponent(type: string, _module: string): string {
   // Ejemplo simple, puedes expandirlo según tus componentes
-  const map: Record<string, string> = {
-    'VOC': 'VOCTextQuestion',
-    'CSAT': 'CSATView',
-    'CES': 'DifficultyScaleView',
-    'CV': 'AgreementScaleView',
-    'NPS': 'NPSView',
-    'NEV': 'EmotionSelectionView',
-    'SHORT_TEXT': 'ShortTextQuestion',
-    'LONG_TEXT': 'LongTextQuestion',
-    'MULTIPLE_CHOICE': 'MultipleChoiceQuestion',
-    'RANKING': 'RankingQuestion',
-    'LINEAR_SCALE': 'LinearScaleQuestion',
-    // ...otros mapeos
-  };
+  const map = DEFAULT_COMPONENT_MAP;
   return map[type.toUpperCase()] || 'GenericQuestion';
 }

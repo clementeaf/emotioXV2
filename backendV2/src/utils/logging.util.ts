@@ -12,7 +12,14 @@ export type LogLevel = 'info' | 'error' | 'warn' | 'debug';
  * @param message Mensaje principal del log.
  * @param data Datos adicionales a incluir en el log (objeto opcional).
  */
-export function structuredLog(level: LogLevel, context: string, message: string, data?: any): void {
+/**
+ * Interfaz para datos de log estructurado con tipos específicos
+ */
+export interface LogData {
+  [key: string]: string | number | boolean | Error | Record<string, string | number | boolean> | null | undefined;
+}
+
+export function structuredLog(level: LogLevel, context: string, message: string, data?: LogData): void {
     const logEntry = {
         timestamp: new Date().toISOString(),
         level,

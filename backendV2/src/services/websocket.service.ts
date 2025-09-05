@@ -3,10 +3,20 @@ import { DeleteCommand, DynamoDBDocumentClient, PutCommand, QueryCommand } from 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { structuredLog } from '../utils/logging.util';
 
-// Local MonitoringEvent interface to avoid import issues
+/**
+ * Interfaz para eventos de monitoreo con tipos específicos
+ */
 interface MonitoringEvent {
-  type: string;
-  data: any;
+  type: 'participant_joined' | 'participant_left' | 'session_started' | 'session_ended' | 'error' | 'status_update';
+  data: {
+    participantId?: string;
+    sessionId?: string;
+    timestamp: string;
+    message?: string;
+    error?: string;
+    status?: string;
+    metadata?: Record<string, string | number | boolean>;
+  };
 }
 
 /**
@@ -195,7 +205,7 @@ export class WebSocketService {
   /**
    * Envía mensaje a una conexión específica
    */
-  async sendMessageToConnection(connectionId: string, message: any): Promise<boolean> {
+  async sendMessageToConnection(connectionId: string, message: MonitoringEvent): Promise<boolean> {
     const context = 'sendMessageToConnection';
     try {
       await this.apiGatewayClient.send(new PostToConnectionCommand({

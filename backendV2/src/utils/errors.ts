@@ -17,11 +17,20 @@ export class ApiError extends Error {
 }
 
 /**
+ * Interfaz para errores de aplicación con tipos específicos
+ */
+interface ApplicationError extends Error {
+  statusCode?: number;
+  name: string;
+  message: string;
+}
+
+/**
  * Función para manejar errores en handlers Lambda
  * @param error Error capturado
  * @returns Respuesta formateada para Lambda
  */
-export const handleError = (error: any) => {
+export const handleError = (error: ApplicationError | Error) => {
   console.error('Error:', error);
   
   if (error instanceof ApiError) {

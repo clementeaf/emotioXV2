@@ -3,6 +3,19 @@ import { getCorsHeaders } from '../middlewares/cors';
 import { moduleResponseService } from '../services/moduleResponse.service';
 import { participantService } from '../services/participant.service';
 import { structuredLog } from '../utils/logging.util';
+import { 
+  ParticipantWithStatus, 
+  PROGRESS_MAP, 
+  ParticipantStatus
+} from '../types/research-progress.types';
+
+/**
+ * Interfaz para errores de controlador con tipos específicos
+ */
+interface _ControllerError extends Error {
+  statusCode?: number;
+  message: string;
+}
 
 /**
  * Controlador para Research In Progress
@@ -35,17 +48,17 @@ export class ResearchInProgressController {
       const allParticipants = await participantService.findAll();
 
       // Crear mapa de participantes por research
-      const participantsWithStatus = allParticipants.map(participant => {
+      const participantsWithStatus: ParticipantWithStatus[] = allParticipants.map(participant => {
         // Buscar respuestas de este participante en este research
         const participantResponses = allResponses.find(
           response => response.participantId === participant.id
         );
 
         // Determinar estado basado en las respuestas
-        let status = 'Por iniciar';
+        let status: ParticipantStatus = 'Por iniciar';
         let progress = 0;
-        let lastActivity = null;
-        let duration = null;
+        let lastActivity: string | null = null;
+        let duration: number | null = null;
 
         if (participantResponses) {
           const responses = participantResponses.responses || [];
@@ -63,19 +76,11 @@ export class ResearchInProgressController {
             const responseTypes = responses.map(r => r.questionKey);
             let calculatedProgress = 0;
 
-            // 🎯 MAPA DE PROGRESO POR TIPO DE RESPUESTA
-            const progressMap: Record<string, number> = {
-              'demographics': 20,      // 20% por demográficos
-              'welcome_screen': 40,    // 40% por pantalla de bienvenida
-              'eye_tracking': 60,      // 60% por eye tracking
-              'smart_voc': 80,         // 80% por smart VOC
-              'cognitive_task': 90,    // 90% por tarea cognitiva
-              'thank_you_screen': 100  // 100% por pantalla de agradecimiento
-            };
+            // 🎯 USAR MAPA DE PROGRESO TIPADO
 
             // 🎯 CALCULAR PROGRESO BASADO EN RESPUESTAS ENVIADAS
             if (responseTypes.length > 0) {
-              const maxProgress = Math.max(...responseTypes.map(type => progressMap[type] || 0));
+              const maxProgress = Math.max(...responseTypes.map(type => PROGRESS_MAP[type] || 0));
               calculatedProgress = maxProgress;
             }
 
@@ -124,14 +129,14 @@ export class ResearchInProgressController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'ResearchInProgressController.getParticipantsWithStatus', 'Error al obtener participantes con estados', { error });
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener participantes con estados',
-          status: error.statusCode || 500
+          error: error instanceof Error ? error.message : 'Error al obtener participantes con estados',
+          status: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500
         })
       };
     }
@@ -194,7 +199,7 @@ export class ResearchInProgressController {
       const averageSeconds = Math.floor((averageDuration % (1000 * 60)) / 1000);
 
       // Obtener última actividad
-      let lastActivity = null;
+      let lastActivity: string | null = null;
       if (allResponses.length > 0) {
         const allTimestamps = allResponses.flatMap(r => r.responses?.map(resp => resp.timestamp) || []);
         if (allTimestamps.length > 0) {
@@ -203,7 +208,20 @@ export class ResearchInProgressController {
         }
       }
 
-      const metrics = {
+      interface MetricValue {
+        value: string;
+        description: string;
+        icon: string;
+      }
+
+      interface MetricsResponse {
+        status: MetricValue;
+        participants: MetricValue;
+        completionRate: MetricValue;
+        averageTime: MetricValue;
+      }
+
+      const metrics: MetricsResponse = {
         status: {
           value: 'Activa',
           description: 'Los participantes pueden acceder',
@@ -234,14 +252,14 @@ export class ResearchInProgressController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'ResearchInProgressController.getOverviewMetrics', 'Error al obtener métricas de overview', { error });
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           error: error.message || 'Error al obtener métricas de overview',
-          status: error.statusCode || 500
+          status: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500
         })
       };
     }
@@ -284,14 +302,14 @@ export class ResearchInProgressController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'ResearchInProgressController.getParticipantsByResearch', 'Error al obtener participantes por research', { error });
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           error: error.message || 'Error al obtener participantes por research',
-          status: error.statusCode || 500
+          status: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500
         })
       };
     }
@@ -400,14 +418,23 @@ export class ResearchInProgressController {
       const participantResponses = await moduleResponseService.getResponsesForParticipant(researchId, participantId);
 
       // Determinar estado y progreso
-      let status = 'Por iniciar';
+      let status: ParticipantStatus = 'Por iniciar';
       let progress = 0;
-      let startTime = null;
-      let endTime = null;
+      let startTime: string | null = null;
+      let endTime: string | null = null;
       let totalDuration = 0;
-      let responses: any[] = [];
-      let deviceInfo = null;
-      let location = null;
+      
+      interface ResponseItem {
+        questionKey: string;
+        timestamp: string;
+        answer: string | number | boolean | string[];
+        deviceInfo?: Record<string, string>;
+        location?: Record<string, string>;
+      }
+      
+      let responses: ResponseItem[] = [];
+      let deviceInfo: Record<string, string> | null = null;
+      let location: Record<string, string> | null = null;
 
       if (participantResponses && participantResponses.responses) {
         responses = participantResponses.responses;
@@ -499,14 +526,14 @@ export class ResearchInProgressController {
           status: 200
         })
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'ResearchInProgressController.getParticipantDetails', 'Error al obtener detalles del participante', { error });
       return {
-        statusCode: error.statusCode || 500,
+        statusCode: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           error: error.message || 'Error al obtener detalles del participante',
-          status: error.statusCode || 500
+          status: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500
         })
       };
     }
@@ -600,7 +627,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
     };
-  } catch (error: any) {
+  } catch (error: ControllerError) {
     structuredLog('error', 'ResearchInProgressHandler', 'Error en researchInProgressHandler', { error });
     return {
       statusCode: 500,

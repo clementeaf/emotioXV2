@@ -1,5 +1,32 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getCorsHeaders as getCorsHeadersFromMiddleware } from '../middlewares/cors';
+import { ApiResponse as _ApiResponse, ApiError as _ApiError } from '../types';
+
+/**
+ * Interfaz para respuestas de controlador con tipos específicos
+ * Permite objetos complejos para flexibilidad en las respuestas
+ */
+export type ControllerResponse = unknown;
+
+/**
+ * Interfaz para controladores con métodos específicos
+ */
+interface Controller {
+  getAllCompanies?: (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>;
+  createCompany?: (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>;
+  updateCompany?: (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>;
+  deleteCompany?: (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>;
+}
+
+/**
+ * Interfaz específica para errores de aplicación
+ */
+interface ApplicationError extends Error {
+  name: string;
+  message: string;
+  statusCode?: number;
+  details?: string;
+}
 
 /**
  * Obtiene los headers CORS estándar para todas las respuestas API
@@ -44,7 +71,7 @@ export const getDynamicCorsHeaders = (event: APIGatewayProxyEvent): { [key: stri
  * @param event Evento de API Gateway para determinar CORS dinámicos
  * @returns Respuesta HTTP formateada
  */
-export const createResponse = (statusCode: number, body: any, event?: APIGatewayProxyEvent): APIGatewayProxyResult => {
+export const createResponse = (statusCode: number, body: ControllerResponse, event?: APIGatewayProxyEvent): APIGatewayProxyResult => {
   const corsHeaders = event ? getDynamicCorsHeaders(event) : getCorsHeaders();
   
   return {
@@ -61,7 +88,7 @@ export const createResponse = (statusCode: number, body: any, event?: APIGateway
  * @param event Evento de API Gateway para determinar el origen
  * @returns Respuesta HTTP formateada con CORS dinámico
  */
-export const createResponseWithDynamicCors = (statusCode: number, body: any, event: APIGatewayProxyEvent): APIGatewayProxyResult => {
+export const createResponseWithDynamicCors = (statusCode: number, body: ControllerResponse, event: APIGatewayProxyEvent): APIGatewayProxyResult => {
   const corsHeaders = getDynamicCorsHeaders(event);
   
   return {
@@ -141,7 +168,7 @@ export const validateTokenAndSetupAuth = async (
     // Devolver el ID del usuario para uso en el controlador
     return { userId };
     
-  } catch (error: any) {
+  } catch (error: ApplicationError) {
     // Proporcionar mensajes de error más específicos y útiles
     console.error('Error al validar token:', error);
     
@@ -153,7 +180,7 @@ export const validateTokenAndSetupAuth = async (
       errorDetails = 'Su sesión ha caducado. Por favor, inicie sesión nuevamente';
     } else if (error.message && error.message.includes('firma')) {
       errorMessage = 'Token con firma inválida';
-      errorDetails = 'El token de autenticación ha sido alterado o es inválido';
+      errorDetails = 'El token de autenticación ha sido alterado or es inválido';
     }
     
     return createResponse(401, { 
@@ -189,7 +216,7 @@ export const getUserIdFromEvent = (event: APIGatewayProxyEvent): string | null =
  * @param controllerClass Class instance with methods to handle routes
  * @returns Handler function for API Gateway events
  */
-export const createController = (controllerClass: any) => {
+export const createController = (controllerClass: Controller) => {
   return async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
       const method = event.httpMethod;
@@ -197,19 +224,20 @@ export const createController = (controllerClass: any) => {
       
       // Handle different HTTP methods and routes
       if (method === 'GET' && path === '/companies') {
-        return await controllerClass.getAllCompanies(event);
+        return await controllerClass.getAllCompanies?.(event) || createResponseWithDynamicCors(404, { message: 'Method not implemented' }, event);
       } else if (method === 'POST' && path === '/companies') {
-        return await controllerClass.createCompany(event);
+        return await controllerClass.createCompany?.(event) || createResponseWithDynamicCors(404, { message: 'Method not implemented' }, event);
       } else if (method === 'PUT' && path.startsWith('/companies/')) {
-        return await controllerClass.updateCompany(event);
+        return await controllerClass.updateCompany?.(event) || createResponseWithDynamicCors(404, { message: 'Method not implemented' }, event);
       } else if (method === 'DELETE' && path.startsWith('/companies/')) {
-        return await controllerClass.deleteCompany(event);
+        return await controllerClass.deleteCompany?.(event) || createResponseWithDynamicCors(404, { message: 'Method not implemented' }, event);
       }
       
       return createResponseWithDynamicCors(404, { message: 'Route not found' }, event);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Controller error:', error);
-      return createResponseWithDynamicCors(500, { message: 'Internal server error', error: error.message }, event);
+      const errorMessage = (error instanceof Error) ? error.message : 'Error interno del servidor';
+      return createResponseWithDynamicCors(500, { message: 'Internal server error', error: errorMessage }, event);
     }
   };
 };

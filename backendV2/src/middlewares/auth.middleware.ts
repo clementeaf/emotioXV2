@@ -1,17 +1,10 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as jwt from 'jsonwebtoken';
-
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  role: 'user' | 'admin';
-}
-
-export interface AuthResult {
-  success: boolean;
-  user?: AuthenticatedUser;
-  error?: string;
-}
+import { 
+  AuthenticatedUser, 
+  AuthResult, 
+  DecodedJwtPayload 
+} from '../types/auth.types';
 
 /**
  * Middleware de autenticación para verificar tokens JWT
@@ -45,7 +38,7 @@ export class AuthMiddleware {
       const token = tokenMatch[1];
 
       // Verificar y decodificar el token JWT
-      const decoded = jwt.verify(token, this.JWT_SECRET) as any;
+      const decoded = jwt.verify(token, this.JWT_SECRET) as DecodedJwtPayload;
 
       if (!decoded.id || !decoded.email) {
         return {
@@ -59,6 +52,7 @@ export class AuthMiddleware {
         user: {
           id: decoded.id,
           email: decoded.email,
+          name: decoded.name,
           role: decoded.role || 'user'
         }
       };
@@ -122,6 +116,7 @@ export class AuthMiddleware {
         user: {
           id: 'dev-admin-id',
           email: 'dev@localhost',
+          name: 'Dev Admin',
           role: 'admin'
         }
       };

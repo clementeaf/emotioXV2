@@ -11,6 +11,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { Participant } from '../models/participant.model';
 import { ApiError } from '../utils/errors';
 
+/**
+ * Interfaz para errores de DynamoDB con tipos específicos
+ */
+// Interface for DynamoDB errors (commented out as not used currently)
+
 const EMAIL_INDEX_NAME = 'EmailIndex';
 
 export class ParticipantService {
@@ -56,12 +61,13 @@ export class ParticipantService {
     try {
       await this.dynamoClient.send(command);
       return newParticipant;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ParticipantService.create] Error:', error);
-      if (error.name === 'ConditionalCheckFailedException') {
+      if (error instanceof Error && error.name === 'ConditionalCheckFailedException') {
         throw new ApiError('Conflict: Participant ID collision or already exists.', 409);
       }
-      throw new ApiError(`Database Error: Could not create participant - ${error.message}`, 500);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new ApiError(`Database Error: Could not create participant - ${errorMessage}`, 500);
     }
   }
 
@@ -77,9 +83,10 @@ export class ParticipantService {
     try {
       const result = await this.dynamoClient.send(command);
       return result.Item as Participant || null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ParticipantService.findById] Error:', error);
-      throw new ApiError(`Database Error: Could not retrieve participant by ID - ${error.message}`, 500);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new ApiError(`Database Error: Could not retrieve participant by ID - ${errorMessage}`, 500);
     }
   }
 
@@ -100,13 +107,14 @@ export class ParticipantService {
     try {
       const result = await this.dynamoClient.send(command);
       return result.Items?.[0] as Participant || null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ParticipantService.findByEmail] Error:', error);
-      if ((error as Error).message?.includes('index')) {
+      if (error instanceof Error && error.message?.includes('index')) {
         console.error(`Error: GSI '${EMAIL_INDEX_NAME}' not found or not configured correctly for table ${this.tableName}.`);
         throw new ApiError(`Configuration Error: Missing index for email lookup.`, 500);
       }
-      throw new ApiError(`Database Error: Could not retrieve participant by email - ${error.message}`, 500);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new ApiError(`Database Error: Could not retrieve participant by email - ${errorMessage}`, 500);
     }
   }
 
@@ -122,9 +130,10 @@ export class ParticipantService {
     try {
       const result = await this.dynamoClient.send(command);
       return (result.Items as Participant[]) || [];
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ParticipantService.findAll] Error:', error);
-      throw new ApiError(`Database Error: Could not retrieve all participants - ${error.message}`, 500);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new ApiError(`Database Error: Could not retrieve all participants - ${errorMessage}`, 500);
     }
   }
 
@@ -140,9 +149,10 @@ export class ParticipantService {
     try {
       const result = await this.dynamoClient.send(command);
       return result.Attributes as Participant || null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ParticipantService.delete] Error:', error);
-      throw new ApiError(`Database Error: Could not delete participant - ${error.message}`, 500);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new ApiError(`Database Error: Could not delete participant - ${errorMessage}`, 500);
     }
   }
 

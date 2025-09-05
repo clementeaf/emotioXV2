@@ -8,8 +8,10 @@ import {
   CreateUserRequest,
   UpdateUserRequest,
   UserStats,
-  AdminServiceResponse
-} from '../interfaces/admin.interface';
+  AdminServiceResponse,
+  DynamoDBUserItem,
+  DynamoDBUpdateAttributes
+} from '../types/auth.types';
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
 const dynamodb = DynamoDBDocumentClient.from(client);
@@ -35,13 +37,15 @@ export class AdminService {
         };
       }
 
-      const users: AdminUser[] = result.Items.map((item: any) => ({
+      const users: AdminUser[] = (result.Items as DynamoDBUserItem[]).map((item: DynamoDBUserItem) => ({
         id: item.id,
         email: item.email,
+        name: item.name,
         role: item.role || 'user',
         status: item.status || 'active',
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
+        createdAt: item.createdAt.toString(),
+        updatedAt: item.updatedAt.toString(),
+        loginCount: item.loginCount || 0
       }));
 
       console.log(`📋 Obtenidos ${users.length} usuarios`);
@@ -87,14 +91,17 @@ export class AdminService {
         };
       }
 
+      const item = result.Item as DynamoDBUserItem;
       const user: AdminUserWithPassword = {
-        id: result.Item.id,
-        email: result.Item.email,
-        role: result.Item.role || 'user',
-        status: result.Item.status || 'active',
-        createdAt: result.Item.createdAt,
-        updatedAt: result.Item.updatedAt,
-        hashedPassword: result.Item.passwordHash || result.Item.password
+        id: item.id,
+        email: item.email,
+        name: item.name,
+        role: item.role || 'user',
+        status: item.status || 'active',
+        createdAt: item.createdAt.toString(),
+        updatedAt: item.updatedAt.toString(),
+        loginCount: item.loginCount || 0,
+        hashedPassword: item.passwordHash
       };
 
       return {
@@ -188,10 +195,12 @@ export class AdminService {
       const createdUser: AdminUser = {
         id: newUserItem.id,
         email: newUserItem.email,
+        name: userData.name,
         role: newUserItem.role as 'user' | 'admin',
         status: newUserItem.status as 'active' | 'inactive',
         createdAt: newUserItem.createdAt,
-        updatedAt: newUserItem.updatedAt
+        updatedAt: newUserItem.updatedAt,
+        loginCount: newUserItem.loginCount
       };
 
       return {
@@ -251,7 +260,9 @@ export class AdminService {
 
       // Preparar actualizaciones
       const updateExpression: string[] = [];
-      const expressionAttributeValues: Record<string, any> = {};
+      const expressionAttributeValues: DynamoDBUpdateAttributes = {
+        ':updatedAt': Date.now()
+      };
       const expressionAttributeNames: Record<string, string> = {};
 
       if (updates.email) {
@@ -287,7 +298,7 @@ export class AdminService {
 
       // Siempre actualizar updatedAt
       updateExpression.push('updatedAt = :updatedAt');
-      expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+      expressionAttributeValues[':updatedAt'] = Date.now();
 
       if (updateExpression.length === 1) { // Solo updatedAt
         return {
@@ -316,13 +327,16 @@ export class AdminService {
 
       console.log(`✅ Usuario actualizado: ${result.Attributes.email}`);
 
+      const attributes = result.Attributes as DynamoDBUserItem;
       const updatedUser: AdminUser = {
-        id: result.Attributes.id,
-        email: result.Attributes.email,
-        role: result.Attributes.role,
-        status: result.Attributes.status,
-        createdAt: result.Attributes.createdAt,
-        updatedAt: result.Attributes.updatedAt
+        id: attributes.id,
+        email: attributes.email,
+        name: attributes.name,
+        role: attributes.role,
+        status: attributes.status,
+        createdAt: attributes.createdAt.toString(),
+        updatedAt: attributes.updatedAt.toString(),
+        loginCount: attributes.loginCount || 0
       };
 
       return {
@@ -415,15 +429,17 @@ export class AdminService {
         };
       }
 
-      const item = result.Items[0];
+      const item = result.Items[0] as DynamoDBUserItem;
       const user: AdminUserWithPassword = {
         id: item.id,
         email: item.email,
+        name: item.name,
         role: item.role || 'user',
         status: item.status || 'active',
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        hashedPassword: item.password
+        createdAt: item.createdAt.toString(),
+        updatedAt: item.updatedAt.toString(),
+        loginCount: item.loginCount || 0,
+        hashedPassword: item.passwordHash
       };
 
       return {
