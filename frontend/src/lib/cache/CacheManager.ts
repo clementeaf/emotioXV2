@@ -90,9 +90,9 @@ class CacheManager<T> {
 }
 
 // Instancias específicas para diferentes tipos de datos
-export const apiCache = new CacheManager<any>();
-export const companiesCache = new CacheManager<any>();
-export const researchCache = new CacheManager<any>();
+export const apiCache = new CacheManager<unknown>();
+export const companiesCache = new CacheManager<unknown>();
+export const researchCache = new CacheManager<unknown>();
 
 export { CacheManager };
 export default CacheManager;
