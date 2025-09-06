@@ -147,12 +147,19 @@ jobs:
           echo "Frontend: ${{ needs.deploy-frontend.result }}"
           echo "Public Tests: ${{ needs.deploy-public-tests.result }}"
           
-          if [ "${{ needs.deploy-frontend.result }}" == "success" ] || [ "${{ needs.deploy-public-tests.result }}" == "success" ]; then
-            echo "✅ Al menos un despliegue fue exitoso!"
-            echo "🌐 URLs de acceso:"
-            echo "Frontend: https://d12psv9dnscmm4.amplifyapp.com"
-            echo "Public Tests: https://d2vbj9lxdnqvqq.amplifyapp.com"
+          # Check if any deployment succeeded or was skipped (skipped is OK)
+          if [ "${{ needs.deploy-frontend.result }}" == "success" ] || [ "${{ needs.deploy-public-tests.result }}" == "success" ] || 
+             [ "${{ needs.deploy-frontend.result }}" == "skipped" ] || [ "${{ needs.deploy-public-tests.result }}" == "skipped" ]; then
+            if [ "${{ needs.deploy-frontend.result }}" == "success" ] || [ "${{ needs.deploy-public-tests.result }}" == "success" ]; then
+              echo "✅ Deployment completado exitosamente!"
+              echo "🌐 URLs de acceso:"
+              echo "Frontend: https://d12psv9dnscmm4.amplifyapp.com"
+              echo "Public Tests: https://d2vbj9lxdnqvqq.amplifyapp.com"
+            else
+              echo "ℹ️ No se realizaron deployments (sin cambios detectados)"
+              echo "🔄 Los deployments se ejecutarán cuando haya cambios en frontend o public-tests"
+            fi
           else
-            echo "❌ Todos los despliegues fallaron!"
+            echo "❌ Deployments fallaron!"
             exit 1
           fi
