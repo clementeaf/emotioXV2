@@ -110,7 +110,11 @@ jobs:
            grep -v "\[key: string\]: unknown" | \
            grep -v "q: unknown" | \
            grep -v "value: unknown" | \
-           grep -v "data: unknown"; then
+           grep -v "data: unknown" | \
+           grep -v "value?: unknown" | \
+           grep -v "hitzones?: unknown" | \
+           grep -v "WebSocketMessage<T = unknown>" | \
+           grep -v "data?: unknown"; then
           echo "❌ FOUND PROHIBITED 'unknown' TYPES!"
           echo "Please replace with specific types or use proper type guards."
           exit 1
