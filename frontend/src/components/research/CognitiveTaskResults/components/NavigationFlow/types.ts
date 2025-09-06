@@ -1,5 +1,5 @@
 /**
- * NavigationFlow types
+ * NavigationFlow types - Updated to match real data structure
  */
 
 export interface NavigationFlowResultsProps {
@@ -8,15 +8,50 @@ export interface NavigationFlowResultsProps {
 }
 
 export interface NavigationFlowData {
-  metrics: NavigationMetrics;
-  heatmapAreas: HeatmapArea[];
-  clickData: ClickData[];
+  question: string;
+  totalParticipants: number;
+  totalSelections: number;
+  researchId: string;
+  imageSelections: Record<string, {
+    hitzoneId: string;
+    click: {
+      x: number;
+      y: number;
+      hitzoneWidth: number;
+      hitzoneHeight: number;
+    };
+  }>;
+  visualClickPoints: VisualClickPoint[];
+  allClicksTracking: ClickTrackingData[];
+  files: ImageFile[];
+}
+
+export interface VisualClickPoint {
+  x: number;
+  y: number;
+  timestamp: number;
+  isCorrect: boolean;
+  imageIndex: number;
+  participantId?: string;
+}
+
+export interface ClickTrackingData {
+  x: number;
+  y: number;
+  timestamp: number;
+  hitzoneId?: string;
+  imageIndex: number;
+  isCorrectHitzone: boolean;
+  participantId?: string;
 }
 
 export interface NavigationMetrics {
   totalClicks: number;
-  averageTimeOnPage: number;
-  bounceRate: number;
+  totalParticipants: number;
+  correctClicks: number;
+  incorrectClicks: number;
+  averageTimePerImage: number;
+  completionRate: number;
 }
 
 export interface HeatmapArea {
@@ -24,12 +59,7 @@ export interface HeatmapArea {
   x: number;
   y: number;
   intensity: number;
-}
-
-export interface ClickData {
-  x: number;
-  y: number;
-  timestamp: number;
+  imageIndex: number;
 }
 
 export interface AOI {

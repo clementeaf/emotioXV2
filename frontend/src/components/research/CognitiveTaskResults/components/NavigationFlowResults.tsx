@@ -12,9 +12,10 @@ export type {
   NavigationFlowData,
   HeatmapArea,
   AOI,
-  ClickData,
   ConvertedHitZone,
   HitZone,
   ImageFile,
-  NavigationMetrics
+  NavigationMetrics,
+  VisualClickPoint,
+  ClickTrackingData
 } from './NavigationFlow/types';
