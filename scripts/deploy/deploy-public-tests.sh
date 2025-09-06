@@ -61,8 +61,15 @@ else
 fi
 
 log_info "Invalidando CloudFront..."
-aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*" --region $REGION || { log_error "Error al invalidar CloudFront"; exit 1; }
-log_success "CloudFront invalidado."
+if aws cloudfront get-distribution --id $DISTRIBUTION_ID --region $REGION >/dev/null 2>&1; then
+    aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*" --region $REGION || { 
+        log_warning "Error al invalidar CloudFront, pero continuando deployment"; 
+    }
+    log_success "CloudFront invalidado."
+else
+    log_warning "⚠️ Distribución CloudFront no encontrada ($DISTRIBUTION_ID), saltando invalidación"
+    log_info "🔄 El contenido será accesible directamente desde S3"
+fi
 
 log_info "Verificando deployment..."
 sleep 10

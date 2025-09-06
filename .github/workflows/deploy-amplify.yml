@@ -97,12 +97,16 @@ jobs:
       - name: Deploy Frontend to Amplify
         run: |
           echo "🚀 Desplegando Frontend..."
-          aws amplify start-job \
-            --app-id ${{ secrets.AMPLIFY_FRONTEND_APP_ID }} \
-            --branch-name main \
-            --job-type RELEASE
-          
-          echo "📱 Frontend: https://d12psv9dnscmm4.amplifyapp.com"
+          if [ -z "${{ secrets.AMPLIFY_FRONTEND_APP_ID }}" ]; then
+            echo "⚠️ Warning: AMPLIFY_FRONTEND_APP_ID no está configurado, saltando deployment"
+            echo "🔧 Configura el secret AMPLIFY_FRONTEND_APP_ID en GitHub para habilitar deployments"
+          else
+            aws amplify start-job \
+              --app-id ${{ secrets.AMPLIFY_FRONTEND_APP_ID }} \
+              --branch-name main \
+              --job-type RELEASE
+            echo "📱 Frontend: https://d12psv9dnscmm4.amplifyapp.com"
+          fi
 
   # Despliegue de Public Tests
   deploy-public-tests:
@@ -120,12 +124,16 @@ jobs:
       - name: Deploy Public Tests to Amplify
         run: |
           echo "🚀 Desplegando Public Tests..."
-          aws amplify start-job \
-            --app-id ${{ secrets.AMPLIFY_PUBLIC_TESTS_APP_ID }} \
-            --branch-name main \
-            --job-type RELEASE
-          
-          echo "📱 Public Tests: https://d2vbj9lxdnqvqq.amplifyapp.com"
+          if [ -z "${{ secrets.AMPLIFY_PUBLIC_TESTS_APP_ID }}" ]; then
+            echo "⚠️ Warning: AMPLIFY_PUBLIC_TESTS_APP_ID no está configurado, saltando deployment"
+            echo "🔧 Configura el secret AMPLIFY_PUBLIC_TESTS_APP_ID en GitHub para habilitar deployments"
+          else
+            aws amplify start-job \
+              --app-id ${{ secrets.AMPLIFY_PUBLIC_TESTS_APP_ID }} \
+              --branch-name main \
+              --job-type RELEASE
+            echo "📱 Public Tests: https://d2vbj9lxdnqvqq.amplifyapp.com"
+          fi
 
   # Notificación final
   notify-deployment:
