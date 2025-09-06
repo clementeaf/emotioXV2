@@ -49,6 +49,7 @@ export interface QuestionConfig {
   options?: QuestionOption[];
   validation?: ValidationRule[];
   styling?: StylingConfig;
+  [key: string]: unknown;
 }
 
 export interface QuestionOption {

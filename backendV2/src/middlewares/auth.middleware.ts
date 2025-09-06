@@ -103,26 +103,4 @@ export class AuthMiddleware {
     );
   }
 
-  /**
-   * Middleware para rutas de desarrollo (sin autenticación real)
-   * Permitir bypass desde localhost y en entorno de desarrollo
-   */
-  static developmentBypass(event: APIGatewayProxyEvent): AuthResult {
-    // Permitir bypass en desarrollo desde cualquier origen
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('🔓 Development bypass activated for development environment');
-      return {
-        success: true,
-        user: {
-          id: 'dev-admin-id',
-          email: 'dev@localhost',
-          name: 'Dev Admin',
-          role: 'admin'
-        }
-      };
-    }
-
-    // En producción, verificar token real
-    return this.verifyToken(event);
-  }
 }

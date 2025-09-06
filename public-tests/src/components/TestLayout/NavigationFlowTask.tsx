@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import NavigationFlowDebugger from '../debug/NavigationFlowDebugger';
+import { coordinateFidelityTester, injectFidelityTest } from '../../utils/coordinate-fidelity-test';
 
 // 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
 interface BackendResponse {
@@ -190,6 +191,12 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     }
   }, [allClicksTracking, currentQuestionKey]);
 
+  // 🧪 INYECTAR UTILIDADES DE TEST DE FIDELIDAD AL WINDOW GLOBAL
+  useEffect(() => {
+    injectFidelityTest();
+    console.log('🧪 [NavigationFlowTask] Fidelity test utilities injected for testing');
+  }, []);
+
   // 🎯 FUNCIÓN PARA PERSISTIR PUNTOS VISUALES
   const persistVisualClickPoints = () => {
     if (currentQuestionKey) {
@@ -256,6 +263,17 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     const clickY = e.clientY - imgRect.top;
     const timestamp = Date.now();
 
+    // 🧪 INICIAR TEST DE FIDELIDAD DE COORDENADAS
+    const testId = `nav-flow-${currentQuestionKey}-img-${localSelectedImageIndex}-${timestamp}`;
+    coordinateFidelityTester.startTest(testId);
+    coordinateFidelityTester.recordOriginalClick(
+      testId,
+      e.nativeEvent,
+      imageRef.current,
+      imageNaturalSize,
+      imgRenderSize!
+    );
+
     // 🎯 VERIFICAR SI EL CLIC ESTÁ DENTRO DE ALGÚN HITZONE
     let hitzoneId: string | undefined;
     let isCorrectHitzone = false;
@@ -296,6 +314,9 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
       isCorrect: isCorrectHitzone,
       imageIndex: localSelectedImageIndex
     };
+
+    // 🧪 REGISTRAR CLICK PROCESADO PARA TEST DE FIDELIDAD
+    coordinateFidelityTester.recordProcessedClick(testId, visualPoint);
 
     setVisualClickPoints(prev => {
       const newPoints = {

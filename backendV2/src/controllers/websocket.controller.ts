@@ -293,7 +293,18 @@ export class WebSocketController {
           }
         };
 
-        const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, monitoringEvent);
+        // Convert to WebSocket compatible format
+        const wsEvent = {
+          type: 'status_update' as const,
+          data: {
+            timestamp: new Date().toISOString(),
+            message: monitoringEvent.type,
+            participantId: monitoringEvent.data.participantId,
+            sessionId: researchId,
+            metadata: monitoringEvent.data
+          }
+        };
+        const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, wsEvent);
         
         console.log('[WebSocketController] ✅ Progreso broadcast al dashboard:', {
           researchId,

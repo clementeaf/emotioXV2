@@ -6,10 +6,39 @@ import { webSocketService } from '../services/websocket.service';
 import { uuidv4 } from '../utils/id-generator';
 import { getCorsHeaders } from '../middlewares/cors';
 
+
+// Helper function to convert monitoring event to websocket event
+const toWebSocketEvent = (event: MonitoringEvent): WebSocketEvent => {
+  return {
+    type: 'status_update' as const,
+    data: {
+      timestamp: new Date().toISOString(),
+      message: event.type,
+      participantId: event.data?.participantId,
+      sessionId: event.data?.researchId,
+      metadata: event.data
+    }
+  };
+};
+
 // Event interfaces defined locally to avoid import issues
 interface MonitoringEvent {
   type: string;
   data: any;
+}
+
+// WebSocket specific interface
+interface WebSocketEvent {
+  type: 'participant_joined' | 'participant_left' | 'session_started' | 'session_ended' | 'error' | 'status_update';
+  data: {
+    participantId?: string;
+    sessionId?: string;
+    timestamp: string;
+    message?: string;
+    error?: string;
+    status?: string;
+    metadata?: Record<string, string | number | boolean>;
+  };
 }
 
 interface ParticipantLoginEvent {
@@ -173,7 +202,7 @@ export class MonitoringController {
         })
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.${contextName}`, 'Error procesando evento de monitoreo', { error });
       return {
         statusCode: 500,
@@ -218,7 +247,7 @@ export class MonitoringController {
         researchId: data.researchId,
         participantId: data.participantId
       });
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.handleParticipantLogin`, 'Error guardando en DynamoDB', {
         error,
         researchId: data.researchId,
@@ -264,7 +293,7 @@ export class MonitoringController {
         stepName: data.stepName,
         progress: data.progress
       });
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.handleParticipantStep`, 'Error guardando progreso en DynamoDB', {
         error,
         researchId: data.researchId,
@@ -308,7 +337,7 @@ export class MonitoringController {
         participantId: data.participantId,
         reason: data.reason
       });
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.handleParticipantDisqualified`, 'Error guardando descalificación en DynamoDB', {
         error,
         researchId: data.researchId,
@@ -357,7 +386,7 @@ export class MonitoringController {
         quotaType: data.quotaType,
         maxQuota: data.maxQuota
       });
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.handleParticipantQuotaExceeded`, 'Error guardando exceso de cuota en DynamoDB', {
         error,
         researchId: data.researchId,
@@ -400,7 +429,7 @@ export class MonitoringController {
         participantId: data.participantId,
         totalDuration: data.totalDuration
       });
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.handleParticipantCompleted`, 'Error guardando completación en DynamoDB', {
         error,
         researchId: data.researchId,
@@ -442,7 +471,7 @@ export class MonitoringController {
         participantId: data.participantId,
         stepName: data.stepName
       });
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.handleParticipantError`, 'Error guardando error en DynamoDB', {
         error,
         researchId: data.researchId,
@@ -465,7 +494,8 @@ export class MonitoringController {
       }
 
       // 🎯 BROADCAST A TODAS LAS CONEXIONES DE LA INVESTIGACIÓN
-      const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, event);
+      const wsEvent = toWebSocketEvent(event);
+      const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, wsEvent);
       
       const eventHasParticipantId = (evt: MonitoringEvent): evt is ParticipantLoginEvent | ParticipantStepEvent | ParticipantDisqualifiedEvent | ParticipantQuotaExceededEvent | ParticipantCompletedEvent | ParticipantErrorEvent | ParticipantResponseSavedEvent => {
         return 'participantId' in evt.data;
@@ -478,7 +508,7 @@ export class MonitoringController {
         successfulBroadcasts
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.broadcastToDashboard`, 'Error en broadcast', { error });
     }
   }
@@ -534,7 +564,7 @@ export class MonitoringController {
           researchId,
           connectionId
         });
-      } catch (error) {
+      } catch (error: unknown) {
         structuredLog('error', `${this.controllerName}.${contextName}`, 'Error guardando suscripción en DynamoDB', {
           error,
           researchId,
@@ -551,7 +581,7 @@ export class MonitoringController {
         })
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.controllerName}.${contextName}`, 'Error en suscripción', { error });
       return {
         statusCode: 500,
@@ -587,7 +617,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent, context: Context)
       headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Recurso no encontrado' })
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     structuredLog('error', 'MonitoringHandler', 'Error en monitoringHandler', { error });
     return {
       statusCode: 500,

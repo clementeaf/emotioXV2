@@ -9,13 +9,6 @@ import {
   ParticipantStatus
 } from '../types/research-progress.types';
 
-/**
- * Interfaz para errores de controlador con tipos específicos
- */
-interface _ControllerError extends Error {
-  statusCode?: number;
-  message: string;
-}
 
 /**
  * Controlador para Research In Progress
@@ -258,7 +251,7 @@ export class ResearchInProgressController {
         statusCode: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener métricas de overview',
+          error: error instanceof Error ? error.message : 'Error al obtener métricas de overview',
           status: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500
         })
       };
@@ -308,7 +301,7 @@ export class ResearchInProgressController {
         statusCode: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener participantes por research',
+          error: error instanceof Error ? error.message : 'Error al obtener participantes por research',
           status: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500
         })
       };
@@ -437,7 +430,13 @@ export class ResearchInProgressController {
       let location: Record<string, string> | null = null;
 
       if (participantResponses && participantResponses.responses) {
-        responses = participantResponses.responses;
+        responses = participantResponses.responses.map((resp: any) => ({
+          questionKey: resp.questionKey,
+          timestamp: resp.timestamp,
+          answer: resp.response, // Map 'response' to 'answer'
+          deviceInfo: resp.metadata?.deviceInfo,
+          location: resp.metadata?.location
+        }));
 
         if (responses.length > 0) {
           // Calcular progreso basado en número de respuestas
@@ -510,9 +509,9 @@ export class ResearchInProgressController {
         responses: responses.map(r => ({
           questionKey: r.questionKey,
           questionText: this.getQuestionText(r.questionKey),
-          response: r.response,
+          response: r.answer, // Use 'answer' instead of 'response'
           timestamp: r.timestamp,
-          duration: r.duration || 0
+          duration: 0 // ResponseItem doesn't have duration, set default
         })),
         disqualificationReason: null,
         isDisqualified: false
@@ -532,7 +531,7 @@ export class ResearchInProgressController {
         statusCode: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al obtener detalles del participante',
+          error: error instanceof Error ? error.message : 'Error al obtener detalles del participante',
           status: (error instanceof Error && 'statusCode' in error) ? (error as Error & { statusCode: number }).statusCode : 500
         })
       };
@@ -627,7 +626,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
     };
-  } catch (error: ControllerError) {
+  } catch (error: unknown) {
     structuredLog('error', 'ResearchInProgressHandler', 'Error en researchInProgressHandler', { error });
     return {
       statusCode: 500,

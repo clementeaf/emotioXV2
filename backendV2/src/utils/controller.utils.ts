@@ -18,15 +18,6 @@ interface Controller {
   deleteCompany?: (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>;
 }
 
-/**
- * Interfaz específica para errores de aplicación
- */
-interface ApplicationError extends Error {
-  name: string;
-  message: string;
-  statusCode?: number;
-  details?: string;
-}
 
 /**
  * Obtiene los headers CORS estándar para todas las respuestas API
@@ -168,19 +159,23 @@ export const validateTokenAndSetupAuth = async (
     // Devolver el ID del usuario para uso en el controlador
     return { userId };
     
-  } catch (error: ApplicationError) {
+  } catch (error: unknown) {
     // Proporcionar mensajes de error más específicos y útiles
     console.error('Error al validar token:', error);
     
     let errorMessage = 'Token inválido o expirado';
-    let errorDetails = error.message || 'Error de autenticación no especificado';
+    let errorDetails = 'Error de autenticación no especificado';
     
-    if (error.message && error.message.includes('expirado')) {
-      errorMessage = 'Token expirado';
-      errorDetails = 'Su sesión ha caducado. Por favor, inicie sesión nuevamente';
-    } else if (error.message && error.message.includes('firma')) {
-      errorMessage = 'Token con firma inválida';
-      errorDetails = 'El token de autenticación ha sido alterado or es inválido';
+    if (error instanceof Error) {
+      errorDetails = error.message;
+      
+      if (error.message.includes('expirado')) {
+        errorMessage = 'Token expirado';
+        errorDetails = 'Su sesión ha caducado. Por favor, inicie sesión nuevamente';
+      } else if (error.message.includes('firma')) {
+        errorMessage = 'Token con firma inválida';
+        errorDetails = 'El token de autenticación ha sido alterado or es inválido';
+      }
     }
     
     return createResponse(401, { 

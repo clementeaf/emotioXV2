@@ -14,15 +14,15 @@ import type {
 } from '../../../shared/interfaces/research.interface';
 
 import type {
-  Research,
-  CreateResearchRequest,
+  ResearchModel,
+  CreateResearchModelRequest,
   CreateResearchResponse,
   ResearchBasicData
 } from '../../../shared/interfaces/research.model';
 
 // Re-export with explicit names
 export type { ResearchRecord, ResearchConfig, ResearchFormData, ResearchCreationResponse };
-export type { Research, CreateResearchRequest, CreateResearchResponse, ResearchBasicData };
+export type { ResearchModel as Research, CreateResearchModelRequest as CreateResearchRequest, CreateResearchResponse, ResearchBasicData };
 export { SharedResearchType as ResearchType, SharedResearchStatus as ResearchStatus };
 
 // Type alias for extended research (non-conflicting)
@@ -96,7 +96,7 @@ export interface FilterParams {
 
 export interface UpdateResearchRequest {
   id: string;
-  updates: Partial<CreateResearchRequest>;
+  updates: Partial<CreateResearchModelRequest>;
 }
 
 // SmartVOC types

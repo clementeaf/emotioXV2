@@ -6,7 +6,8 @@
   "types": "index.ts",
   "scripts": {
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "lint": "echo '✅ No linting configured for shared module'"
   },
   "dependencies": {
     "zod": "^3.22.4",

@@ -19,14 +19,47 @@ export interface LogData {
   [key: string]: string | number | boolean | Error | Record<string, string | number | boolean> | null | undefined;
 }
 
-export function structuredLog(level: LogLevel, context: string, message: string, data?: LogData): void {
+/**
+ * Helper function to convert unknown values to LogData compatible types
+ */
+const sanitizeLogValue = (value: unknown): string | number | boolean | Error | Record<string, string | number | boolean> | null | undefined => {
+  if (value === null || value === undefined) return value;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  if (value instanceof Error) return value;
+  if (Array.isArray(value)) return `[Array of ${value.length} items]`;
+  if (typeof value === 'object') {
+    try {
+      // Try to convert object to a sanitized record
+      const record: Record<string, string | number | boolean> = {};
+      for (const [key, val] of Object.entries(value)) {
+        if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+          record[key] = val;
+        } else {
+          record[key] = String(val);
+        }
+      }
+      return record;
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+};
+
+export function structuredLog(level: LogLevel, context: string, message: string, data?: Record<string, unknown> | LogData): void {
+    // Sanitize data to ensure type compatibility
+    const sanitizedData: LogData | undefined = data ? 
+        Object.fromEntries(
+            Object.entries(data).map(([key, value]) => [key, sanitizeLogValue(value)])
+        ) : undefined;
+
     const logEntry = {
         timestamp: new Date().toISOString(),
         level,
         context,
         message,
         // Solo añadir data si existe y tiene contenido
-        ...(data && Object.keys(data).length > 0 && { data })
+        ...(sanitizedData && Object.keys(sanitizedData).length > 0 && { data: sanitizedData })
     };
     
     switch (level) {

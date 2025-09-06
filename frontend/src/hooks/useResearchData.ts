@@ -5,23 +5,23 @@
 
 import { useRequest, useWatcher, useFetcher } from 'alova/client';
 import { alovaInstance } from '@/config/alova.config';
-import { Research } from '../../../shared/interfaces/research.model';
+import { ResearchRecord } from '../../../shared/interfaces/research.interface';
 import { useState, useEffect } from 'react';
 
 interface UseResearchDataReturn {
-  research: Research | null;
+  research: ResearchRecord | null;
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
-  updateResearch: (data: Partial<Research>) => Promise<void>;
-  deleteResearch: () => Promise<void>;
+  updateResearchRecord: (data: Partial<ResearchRecord>) => Promise<void>;
+  deleteResearchRecord: () => Promise<void>;
 }
 
 /**
  * Hook principal para datos de investigación con Alova
  */
-export const useResearchData = (researchId: string | null): UseResearchDataReturn => {
-  const [localData, setLocalData] = useState<Research | null>(null);
+export const useResearchRecordData = (researchId: string | null): UseResearchDataReturn => {
+  const [localData, setLocalData] = useState<ResearchRecord | null>(null);
   
   // useRequest de Alova para cargar los datos iniciales
   const {
@@ -31,7 +31,7 @@ export const useResearchData = (researchId: string | null): UseResearchDataRetur
     send: refetch,
     update
   } = useRequest(
-    alovaInstance.Get<{ success: boolean; data: Research }>(`/research/${researchId || 'null'}`),
+    alovaInstance.Get<{ success: boolean; data: ResearchRecord }>(`/research/${researchId || 'null'}`),
     {
       initialData: undefined,
       immediate: !!researchId, // Solo ejecutar si hay researchId
@@ -49,12 +49,12 @@ export const useResearchData = (researchId: string | null): UseResearchDataRetur
   }, [research]);
   
   // Función para actualizar investigación
-  const updateResearch = async (data: Partial<Research>) => {
+  const updateResearchRecord = async (data: Partial<ResearchRecord>) => {
     if (!researchId) throw new Error('No research ID provided');
     
     try {
       const response = await fetchUpdate(
-        alovaInstance.Put<{ success: boolean; data: Research }>(
+        alovaInstance.Put<{ success: boolean; data: ResearchRecord }>(
           `/research/${researchId}`,
           data
         )
@@ -78,7 +78,7 @@ export const useResearchData = (researchId: string | null): UseResearchDataRetur
   };
   
   // Función para eliminar investigación
-  const deleteResearch = async () => {
+  const deleteResearchRecord = async () => {
     if (!researchId) throw new Error('No research ID provided');
     
     try {
@@ -105,22 +105,22 @@ export const useResearchData = (researchId: string | null): UseResearchDataRetur
     refetch: async () => {
       await refetch();
     },
-    updateResearch,
-    deleteResearch,
+    updateResearchRecord,
+    deleteResearchRecord,
   };
 };
 
 /**
  * Hook para lista de investigaciones con Alova
  */
-export const useResearchList = () => {
+export const useResearchRecordList = () => {
   const {
     loading,
     data,
     error,
     send: refetch,
   } = useRequest(
-    alovaInstance.Get<{ success: boolean; data: Research[] }>('/research'),
+    alovaInstance.Get<{ success: boolean; data: ResearchRecord[] }>('/research'),
     {
       initialData: { success: false, data: [] },
       cacheFor: 1000 * 60 * 5, // Cache por 5 minutos
@@ -139,13 +139,13 @@ export const useResearchList = () => {
  * Hook reactivo para observar cambios en una investigación
  * Útil para actualizaciones en tiempo real
  */
-export const useWatchResearch = (researchId: string | null) => {
+export const useWatchResearchRecord = (researchId: string | null) => {
   const {
     loading,
     data,
     error,
   } = useWatcher(
-    alovaInstance.Get<{ success: boolean; data: Research }>(`/research/${researchId || 'null'}`),
+    alovaInstance.Get<{ success: boolean; data: ResearchRecord }>(`/research/${researchId || 'null'}`),
     [researchId], // Dependencias que disparan re-fetch
     {
       initialData: undefined,
@@ -164,14 +164,14 @@ export const useWatchResearch = (researchId: string | null) => {
 /**
  * Hook para gestionar el estado de la investigación
  */
-export const useResearchStatus = (researchId: string | null) => {
+export const useResearchRecordStatus = (researchId: string | null) => {
   const { fetch } = useFetcher();
   
   const updateStatus = async (status: string) => {
     if (!researchId) throw new Error('No research ID provided');
     
     const response = await fetch(
-      alovaInstance.Put<{ success: boolean; data: Research }>(
+      alovaInstance.Put<{ success: boolean; data: ResearchRecord }>(
         `/research/${researchId}/status`,
         { status }
       )
@@ -189,7 +189,7 @@ export const useResearchStatus = (researchId: string | null) => {
     if (!researchId) throw new Error('No research ID provided');
     
     const response = await fetch(
-      alovaInstance.Put<{ success: boolean; data: Research }>(
+      alovaInstance.Put<{ success: boolean; data: ResearchRecord }>(
         `/research/${researchId}/stage`,
         { stage, progress }
       )
@@ -212,7 +212,7 @@ export const useResearchStatus = (researchId: string | null) => {
 /**
  * Hook para gestionar módulos de investigación con Alova
  */
-export const useResearchModules = (researchId: string | null) => {
+export const useResearchRecordModules = (researchId: string | null) => {
   // SmartVOC
   const smartVoc = useRequest(
     alovaInstance.Get(`/research/${researchId || 'null'}/smart-voc`),
@@ -307,4 +307,4 @@ export const useResearchModules = (researchId: string | null) => {
   };
 };
 
-export default useResearchData;
+export default useResearchRecordData;
