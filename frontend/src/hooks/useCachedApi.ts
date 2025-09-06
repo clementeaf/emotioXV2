@@ -41,8 +41,8 @@ export function useCachedApi<T>(
         forceRefresh ? 0 : options.ttl
       );
 
-      setData(result);
-      return result;
+      setData(result as T);
+      return result as T;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'API call failed';
       setError(errorMessage);

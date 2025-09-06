@@ -50,7 +50,7 @@ export const useCachedCompanies = (autoLoad: boolean = true): UseCachedCompanies
         useCache ? undefined : 0 // TTL 0 para forzar refresh
       );
       
-      setCompanies(fetchedCompanies);
+      setCompanies(fetchedCompanies as Company[]);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading companies');
