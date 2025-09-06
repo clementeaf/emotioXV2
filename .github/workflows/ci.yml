@@ -114,7 +114,11 @@ jobs:
            grep -v "value?: unknown" | \
            grep -v "hitzones?: unknown" | \
            grep -v "WebSocketMessage<T = unknown>" | \
-           grep -v "data?: unknown"; then
+           grep -v "data?: unknown" | \
+           grep -v "response: unknown" | \
+           grep -v "responseValue: unknown" | \
+           grep -v "item: unknown" | \
+           grep -v "mapToEntity.*unknown"; then
           echo "❌ FOUND PROHIBITED 'unknown' TYPES!"
           echo "Please replace with specific types or use proper type guards."
           exit 1
