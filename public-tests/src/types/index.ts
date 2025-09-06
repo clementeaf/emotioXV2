@@ -3,8 +3,7 @@
  * Re-export common types for public tests
  */
 
-// Re-export shared types
-export * from '../../../shared/types/backend-core.types';
+// Re-export shared types (avoiding duplicate exports)
 export * from '../../../shared/interfaces/research.interface';
 
 // Local types for public tests
