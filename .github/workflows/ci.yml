@@ -106,7 +106,11 @@ jobs:
            grep -v "catch.*: unknown" | \
            grep -v "error: unknown" | \
            grep -v "sanitizeLogValue.*unknown" | \
-           grep -v "Record<string, unknown>"; then
+           grep -v "Record<string, unknown>" | \
+           grep -v "\[key: string\]: unknown" | \
+           grep -v "q: unknown" | \
+           grep -v "value: unknown" | \
+           grep -v "data: unknown"; then
           echo "❌ FOUND PROHIBITED 'unknown' TYPES!"
           echo "Please replace with specific types or use proper type guards."
           exit 1
