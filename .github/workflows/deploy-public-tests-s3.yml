@@ -119,6 +119,7 @@ jobs:
           echo "✅ Despliegue verificado correctamente"
 
       - name: 🌐 Test CloudFront accessibility
+        if: env.CLOUDFRONT_DISTRIBUTION_ID != 'none'
         run: |
           echo "🌐 Probando accesibilidad de CloudFront..."
 
@@ -138,6 +139,12 @@ jobs:
           curl -I "https://$CLOUDFRONT_DOMAIN" || {
             echo "⚠️ Warning: No se pudo verificar CloudFront (puede ser normal durante invalidación)"
           }
+          
+      - name: 🌐 S3-only deployment (no CloudFront)
+        if: env.CLOUDFRONT_DISTRIBUTION_ID == 'none'
+        run: |
+          echo "📝 Usando solo S3 website hosting (sin CloudFront)"
+          echo "🌐 URL S3: http://${{ env.BUCKET }}.s3-website-${{ env.REGION }}.amazonaws.com"
 
       - name: 📊 Deployment summary
         run: |
