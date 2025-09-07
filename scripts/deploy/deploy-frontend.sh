@@ -6,7 +6,7 @@
 set -e
 
 # Configuración
-BUCKET="emotioxv2-frontend-bucket"
+BUCKET="emotioxv2-frontend-041238861016"
 DISTRIBUTION_ID="E3MCIWNMF6ES2R"
 REGION="us-east-1"
 BUILD_DIR=".next"

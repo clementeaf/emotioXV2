@@ -42,13 +42,13 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Sync to S3
         run: |
-          aws s3 sync out/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+          aws s3 sync out/ s3://emotioxv2-frontend-041238861016 --delete
 
       - name: Deployment complete
         run: |
           echo "✅ Frontend deployed successfully to S3"
-          echo "🌐 URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-${{ secrets.AWS_REGION }}.amazonaws.com"
+          echo "🌐 URL: http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com"

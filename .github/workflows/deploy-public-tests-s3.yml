@@ -19,9 +19,9 @@ on:
 
 env:
   NODE_VERSION: '20'
-  BUCKET: ${{ secrets.PUBLIC_TESTS_S3_BUCKET }}
-  REGION: ${{ secrets.AWS_DEFAULT_REGION || 'us-east-1' }}
-  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }}
+  BUCKET: emotioxv2-public-tests-041238861016
+  REGION: us-east-1
+  CLOUDFRONT_DISTRIBUTION_ID: none
 
 jobs:
   deploy:
