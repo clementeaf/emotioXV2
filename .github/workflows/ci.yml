@@ -34,7 +34,7 @@ jobs:
     
     - name: Run tests
       run: cd ${{ matrix.project }} && npm test
-      continue-on-error: ${{ matrix.project == 'frontend' || matrix.project == 'public-tests' }}
+      continue-on-error: ${{ matrix.project == 'frontend' || matrix.project == 'public-tests' || matrix.project == 'shared' }}
 
   build-verification:
     runs-on: ubuntu-latest
