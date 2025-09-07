@@ -24,7 +24,7 @@ jobs:
         cache: 'npm'
     
     - name: Install dependencies
-      run: cd ${{ matrix.project }} && npm ci
+      run: cd ${{ matrix.project }} && npm install
     
     - name: TypeScript compilation check
       run: cd ${{ matrix.project }} && npx tsc --noEmit
