@@ -66,44 +66,6 @@ function ResearchInProgressContent() {
   const [error, setError] = useState<string | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
 
-  // 🎯 ACTUALIZAR DATOS CON MONITOREO EN TIEMPO REAL
-  useEffect(() => {
-
-    if (monitoringData && monitoringData.researchId === researchId) {
-
-      // 🎯 ACTUALIZAR ESTADÍSTICAS
-      setStatus(prev => ({
-        ...prev,
-        participants: {
-          value: monitoringData.totalParticipants.toString(),
-          description: `${monitoringData.activeParticipants} activos`,
-          icon: 'users'
-        },
-        completionRate: {
-          value: `${Math.round(monitoringData.averageProgress)}%`,
-          description: `${monitoringData.completedParticipants} completados`,
-          icon: 'check-circle'
-        }
-      }));
-
-      // 🎯 ACTUALIZAR PARTICIPANTES CON MEJOR MAPEADO
-      const updatedParticipants: Participant[] = monitoringData.participants.map(p => ({
-        id: p.participantId,
-        name: p.email || `Participante ${p.participantId.slice(-6)}`, // Usar email o ID corto como nombre
-        email: p.email || 'N/A',
-        status: p.status === 'in_progress' ? 'En proceso' :
-          p.status === 'completed' ? 'Completado' :
-            p.status === 'disqualified' ? 'Descalificado' : 'Por iniciar',
-        progress: p.progress || 0,
-        duration: p.duration ? `${Math.round(p.duration / 1000)}s` : '--',
-        lastActivity: p.lastActivity ? new Date(p.lastActivity).toLocaleString('es-ES') : '--'
-      }));
-
-
-      setParticipants(updatedParticipants);
-    } else {
-    }
-  }, [monitoringData, researchId, isConnected]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -124,8 +86,17 @@ function ResearchInProgressContent() {
 
         const participantsResponse = await researchInProgressAPI.getParticipantsWithStatus(researchId);
 
-        if (participantsResponse.success) {
-          setParticipants((participantsResponse.data as Participant[]) || []);
+        if (participantsResponse.success && participantsResponse.data) {
+          // La respuesta viene como { success: true, data: { data: [...], status: 200 } }
+          const participantsData = participantsResponse.data.data || [];
+          setParticipants(participantsData);
+        } else if (participantsResponse.data && Array.isArray(participantsResponse.data)) {
+          // Si viene directamente como array
+          setParticipants(participantsResponse.data);
+        } else {
+          // Fallback: buscar datos en cualquier estructura
+          const data = participantsResponse?.data?.data || participantsResponse?.data || [];
+          setParticipants(Array.isArray(data) ? data : []);
         }
       } catch (error: any) {
         setError(error.message || 'Error al cargar los datos de la investigación');

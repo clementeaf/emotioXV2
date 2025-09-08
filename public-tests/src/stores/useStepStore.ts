@@ -98,14 +98,19 @@ export const useStepStore = create<StepStore>()(
 
         const stepToActivate = stepOrder[activeStepIndex] || '';
 
+        // 🎯 SOLO ACTUALIZAR currentQuestionKey SI NO HAY UNO ESTABLECIDO O SI EL ACTUAL NO ES VÁLIDO
+        const currentKey = state.currentQuestionKey;
+        const shouldUpdateCurrentStep = !currentKey || !stepOrder.includes(currentKey);
+
         set({
           backendResponses: validResponses,
-          currentQuestionKey: stepToActivate
+          ...(shouldUpdateCurrentStep && { currentQuestionKey: stepToActivate })
         });
 
         console.log('[useStepStore] ✅ Store actualizado:', {
           totalResponses: validResponses.length,
-          stepToActivate,
+          stepToActivate: shouldUpdateCurrentStep ? stepToActivate : currentKey,
+          keepingCurrentStep: !shouldUpdateCurrentStep,
           responses: validResponses.map(r => r.questionKey)
         });
       },
