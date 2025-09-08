@@ -344,8 +344,20 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>): void => {
     const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
+    console.log('🖼️ [NavigationFlowTask] Imagen cargada exitosamente:', {
+      url: selectedImage.url,
+      naturalSize: { width: naturalWidth, height: naturalHeight },
+      renderSize: { width, height }
+    });
     setImageNaturalSize({ width: naturalWidth, height: naturalHeight });
     setImgRenderSize({ width, height });
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>): void => {
+    console.error('❌ [NavigationFlowTask] Error cargando imagen:', {
+      url: selectedImage.url,
+      error: e.nativeEvent
+    });
   };
 
   const handlePrevImage = (): void => {
@@ -372,6 +384,24 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   const availableHitzones: ConvertedHitZone[] = selectedImage?.hitZones
     ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones)
     : [];
+
+  // 🔍 DEBUG: Log información de la imagen seleccionada
+  React.useEffect(() => {
+    if (selectedImage) {
+      console.log('🖼️ [NavigationFlowTask] Imagen seleccionada:', {
+        index: localSelectedImageIndex,
+        id: selectedImage.id,
+        name: selectedImage.name,
+        url: selectedImage.url,
+        hasHitZones: !!selectedImage.hitZones,
+        hitZonesCount: selectedImage.hitZones?.length || 0,
+        imageNaturalSize,
+        imgRenderSize
+      });
+    } else {
+      console.warn('⚠️ [NavigationFlowTask] No hay imagen seleccionada en índice:', localSelectedImageIndex);
+    }
+  }, [selectedImage, localSelectedImageIndex, imageNaturalSize, imgRenderSize]);
 
   function getImageDrawRect(
     imgNatural: { width: number; height: number },
@@ -464,18 +494,37 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         )}
 
         <div
-          className="relative w-[80vw] max-w-4xl max-h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden"
-          style={{ aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : undefined }}
+          className="relative w-[80vw] max-w-4xl bg-white rounded-lg shadow-lg"
+          style={{ 
+            aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : '16/9',
+            maxHeight: '85vh', // Aumentar límite de altura
+            minHeight: '400px' // Altura mínima para debugging
+          }}
         >
+          {!selectedImage && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <p className="text-gray-600">No hay imagen disponible</p>
+            </div>
+          )}
+          {selectedImage && !imageNaturalSize && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="text-center">
+                <p className="text-gray-600 mb-2">Cargando imagen...</p>
+                <p className="text-sm text-gray-400">{selectedImage.name}</p>
+              </div>
+            </div>
+          )}
           <img
             ref={imageRef}
             src={selectedImage.url}
             alt={selectedImage.name || `Imagen detallada ${localSelectedImageIndex + 1}`}
-            className="w-full h-auto max-h-[80vh] object-contain bg-white"
-            loading="lazy"
+            className="w-full h-full object-contain bg-white"
+            loading="eager"
             style={{ display: 'block' }}
             onLoad={handleImageLoad}
+            onError={handleImageError}
             onClick={handleImageClick}
+            crossOrigin="anonymous"
           />
           {imageNaturalSize && imgRenderSize && (
             (() => {

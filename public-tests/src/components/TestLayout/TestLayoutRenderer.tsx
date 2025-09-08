@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useEffect } from 'react';
-import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/useApiQueries';
+import { useAvailableFormsQuery } from '../../hooks/useApiQueries';
+import { useStepStoreWithBackend } from '../../hooks/useStepStoreWithBackend';
 import { useDebugSteps } from '../../hooks/useDebugSteps';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useMobileStepVerification } from '../../hooks/useMobileStepVerification';
@@ -20,12 +21,15 @@ import { getCurrentStepData, getQuestionType } from './utils';
 
 const TestLayoutRenderer: React.FC = () => {
   const { researchId, participantId, participantEmail } = useTestStore();
-  const { currentQuestionKey, updateBackendResponses } = useStepStore();
+  const { currentQuestionKey } = useStepStore();
   const { getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
 
   // 🎯 HOOK WEBSOCKET OPTIMIZADO PARA NOTIFICACIONES
   const { sendParticipantLogin, isConnected, participantState } = useOptimizedMonitoringWebSocket();
+
+  // 🎯 HOOK PARA SINCRONIZACIÓN CON BACKEND
+  useStepStoreWithBackend();
 
   // 🎯 DEBUG HOOK PARA DIAGNOSTICAR PROBLEMAS
   useDebugSteps();
@@ -54,9 +58,6 @@ const TestLayoutRenderer: React.FC = () => {
   // 🎯 QUERY DE FORMS - SIEMPRE EJECUTAR
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
 
-  // 🎯 QUERY DE MODULE RESPONSES
-  const { data: moduleResponses } = useModuleResponsesQuery(researchId || '', participantId || '');
-
   // 🎯 ENVIAR EVENTO DE LOGIN CUANDO EL PARTICIPANTE INICIA LA SESIÓN
   // 🎯 NOTIFICAR AL DASHBOARD POR WEBSOCKET (OPTIMIZADO - SIN DUPLICADOS)
   useEffect(() => {
@@ -67,59 +68,6 @@ const TestLayoutRenderer: React.FC = () => {
       sendParticipantLogin(participantId, email);
     }
   }, [researchId, participantId, participantEmail, isConnected, participantState.hasLoggedIn, sendParticipantLogin]);
-
-  // 🎯 EFFECTS DESPUÉS DE TODOS LOS HOOKS
-  useEffect(() => {
-    if (moduleResponses?.responses && researchId && participantId) {
-
-      const backendResponses = moduleResponses.responses.map((response: { questionKey: string; response: unknown }) => {
-        return {
-          questionKey: response.questionKey,
-          response: response.response || {}
-        };
-      });
-
-      updateBackendResponses(backendResponses);
-
-      // 🎯 SINCRONIZAR CON FORM DATA STORE
-      const { setFormData } = useFormDataStore.getState();
-      backendResponses.forEach((backendResponse: { questionKey: string; response: unknown }) => {
-        if (backendResponse.questionKey && backendResponse.response) {
-          // 🎯 EXTRAER VALOR DE LA RESPUESTA
-          let value = null;
-          if (backendResponse.response.value !== undefined) {
-            value = backendResponse.response.value;
-          } else if (backendResponse.response.selectedValue !== undefined) {
-            value = backendResponse.response.selectedValue;
-          } else if (backendResponse.response.response !== undefined) {
-            value = backendResponse.response.response;
-          } else if (backendResponse.response.age !== undefined) {
-            // 🎯 CASO ESPECIAL PARA DEMOGRÁFICOS
-            value = backendResponse.response.age;
-          }
-
-          // 🎯 GUARDAR EN FORM DATA STORE
-          const formDataToSave = {
-            value,
-            selectedValue: value,
-            response: backendResponse.response,
-            timestamp: backendResponse.response.timestamp || new Date().toISOString()
-          };
-
-          // 🎯 PARA DEMOGRÁFICOS, GUARDAR TAMBIÉN EN EL FORMATO ESPERADO
-          if (backendResponse.questionKey === 'demographics') {
-            setFormData('demographics', {
-              ...formDataToSave,
-              age: value // 🎯 GUARDAR TAMBIÉN COMO age PARA COMPATIBILIDAD
-            });
-          } else {
-            setFormData(backendResponse.questionKey, formDataToSave);
-          }
-
-        }
-      });
-    }
-  }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses, currentQuestionKey]);
 
   // 🎯 TRACKING DE VISITA DE STEP
   useEffect(() => {

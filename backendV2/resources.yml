@@ -1,7 +1,6 @@
-# Bucket S3 para almacenamiento - Comentado porque ya existe
+# Bucket S3 para almacenamiento - Comentado porque ya existe y no puede ser gestionado por CloudFormation
 # StorageBucket:
 #   Type: AWS::S3::Bucket
-#   Condition: CreateBucket
 #   Properties:
 #     BucketName: ${self:custom.s3BucketName}
 #     CorsConfiguration:
@@ -308,19 +307,20 @@ ModuleResponsesTable:
       SSEType: KMS
       KMSMasterKeyId: alias/aws/dynamodb
 
-# Permite acceso público de solo lectura a los archivos bajo cognitive-task-files/
+# Permite acceso público de solo lectura a todos los archivos del bucket
+# COMENTADO: No se puede aplicar política sin actualizar primero las configuraciones del bucket existente
 # S3PublicReadPolicy:
 #   Type: AWS::S3::BucketPolicy
 #   Properties:
-#     Bucket: emotioxv2-uploads-dev
+#     Bucket: ${self:custom.s3BucketName}
 #     PolicyDocument:
 #       Version: "2012-10-17"
 #       Statement:
-#         - Sid: AllowPublicReadForCognitiveTaskFiles
+#         - Sid: AllowPublicReadForAllFiles
 #           Effect: Allow
 #           Principal: "*"
 #           Action: "s3:GetObject"
-#           Resource: "arn:aws:s3:::emotioxv2-uploads-dev/cognitive-task-files/*"
+#           Resource: "arn:aws:s3:::${self:custom.s3BucketName}/*"
 
 # Tabla para Location Tracking
 LocationTrackingTable:

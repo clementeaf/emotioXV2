@@ -115,15 +115,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
   const saveMutation = useSaveModuleResponseMutation({
     onSuccess: () => {
-      // 🚨 ACTUALIZAR EL STORE INMEDIATAMENTE PARA AVANZAR EL STEP
-      const store = useStepStore.getState();
-      store.updateBackendResponses([
-        ...store.backendResponses,
-        { questionKey: currentQuestionKey, response: formData || {} }
-      ]);
-
-      // 🎯 ACTUALIZAR ESTADO OPTIMISTA - YA CONFIRMADO POR BACKEND
-      setOptimisticSavedQuestions(prev => new Set(prev).add(currentQuestionKey));
+      console.log('[ButtonSteps] ✅ Save successful, refetch will update store automatically');
 
       // 🎯 ENVIAR EVENTO WEBSOCKET DE RESPUESTA GUARDADA
       if (participantId) {
@@ -149,9 +141,20 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       }
 
       setIsSaving(false);
+      
+      // 🎯 NAVEGACIÓN SEGURA - VERIFICAR QUE NO HAYA CAMBIOS DE NAVEGACIÓN MANUAL
       setTimeout(() => {
-        goToNextStep();
-      }, 100);
+        const store = useStepStore.getState();
+        const currentStep = store.currentQuestionKey;
+        
+        // 🛡️ SOLO NAVEGAR SI SEGUIMOS EN EL MISMO STEP (no navegación manual del usuario)
+        if (currentStep === currentQuestionKey) {
+          console.log('[ButtonSteps] ✅ Navegando automáticamente después de save');
+          goToNextStep();
+        } else {
+          console.log('[ButtonSteps] ⚠️ Navegación automática cancelada - usuario navegó manualmente');
+        }
+      }, 300);
     },
     onError: () => {
       setIsSaving(false);
@@ -192,12 +195,20 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       setIsSaving(false);
       setIsNavigating(true);
 
-      // Navegar automáticamente al siguiente step después de actualizar
+      // 🎯 NAVEGACIÓN SEGURA DESPUÉS DE UPDATE
       setTimeout(() => {
-        console.log('[ButtonSteps] Navegando después de actualizar, nextStep:', nextStep);
-        goToNextStep(); // Usar el método del store
+        const store = useStepStore.getState();
+        const currentStep = store.currentQuestionKey;
+        
+        // 🛡️ SOLO NAVEGAR SI SEGUIMOS EN EL MISMO STEP
+        if (currentStep === currentQuestionKey) {
+          console.log('[ButtonSteps] ✅ Navegando automáticamente después de update');
+          goToNextStep();
+        } else {
+          console.log('[ButtonSteps] ⚠️ Navegación automática cancelada - usuario navegó manualmente');
+        }
         setIsNavigating(false);
-      }, 1000);
+      }, 500);
     },
     onError: (error) => {
       console.error('Error al actualizar:', error);
@@ -286,6 +297,12 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   });
 
   const handleClick = async () => {
+    // 🛡️ PROTECCIÓN CONTRA DOBLE-CLICK
+    if (isSaving || isNavigating) {
+      console.log('[ButtonSteps] ⚠️ Click ignorado - operación en progreso');
+      return;
+    }
+
     if (isWelcomeScreen) {
       setIsNavigating(true);
       setTimeout(() => {

@@ -6,7 +6,7 @@ import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery
 import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useParticipantStore } from '../../stores/useParticipantStore';
-import { useStepStore } from '../../stores/useStepStore';
+// import { useStepStore } from '../../stores/useStepStore'; // Commented out - handled by useStepStoreWithBackend
 import { useTestStore } from '../../stores/useTestStore';
 // import OptimisticFormWrapper from '../common/OptimisticFormWrapper'; // Not used
 
@@ -60,11 +60,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
           setFormData('demographics', backendData);
           setHasLoadedData(true);
 
-          // 🎯 ACTUALIZAR EL STORE DE STEPS PARA REFLEJAR LA RESPUESTA
-          const { updateBackendResponses } = useStepStore.getState();
-          updateBackendResponses([
-            { questionKey: 'demographics', response: backendData }
-          ]);
+          // 🎯 NOTE: useStepStoreWithBackend hook will handle store updates automatically
 
         }
       }
