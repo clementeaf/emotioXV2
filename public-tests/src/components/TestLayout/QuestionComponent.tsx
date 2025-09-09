@@ -2,7 +2,6 @@
  
 import React from 'react';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
-import { useFormDataStore } from '../../stores/useFormDataStore';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 
 interface QuestionComponentProps {
@@ -15,9 +14,10 @@ interface QuestionComponentProps {
     description: string;
   };
   currentStepKey: string;
+  initialFormData?: Record<string, unknown>;
 }
 
-export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, currentStepKey }) => {
+export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, currentStepKey, initialFormData }) => {
   // 🎯 USAR EL HOOK CORRECTO PARA PERSISTENCIA
   const {
     isLoading,
@@ -31,30 +31,9 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
   // 🎯 INICIALIZAR VALOR CORRECTO DESDE EL INICIO
   const [value, setValue] = React.useState<unknown[]>([]);
 
-  // 🚨 RESET EXPLÍCITO CUANDO CAMBIA EL STEP PARA EVITAR CONTAMINACIÓN CRUZADA
+  // 🎯 RESET SUAVE SOLO DEL VALOR LOCAL CUANDO CAMBIA EL STEP
   React.useEffect(() => {
-    
-    // 🚨 LIMPIAR STORE ANTES DE RESETEAR VALOR LOCAL
-    const { clearFormData } = useFormDataStore.getState();
-    
-    // 🎯 LIMPIAR TODOS LOS DATOS RESIDUALES DE STEPS ANTERIORES
-    try {
-      const existingData = localStorage.getItem('emotio-form-data');
-      if (existingData) {
-        const parsed = JSON.parse(existingData);
-        if (parsed.state && parsed.state.formData) {
-          Object.keys(parsed.state.formData).forEach(key => {
-            if (key !== currentStepKey) {
-              clearFormData(key);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('[QuestionComponent] Error clearing form data:', error);
-    }
-    
-    // 🎯 RESET INMEDIATO DEL VALOR LOCAL SEGÚN EL TIPO
+    // 🎯 SOLO RESETEAR EL VALOR LOCAL SEGÚN EL TIPO (NO LIMPIAR STORE)
     let initialValue;
     if (question.type === 'emojis' && question.config?.maxSelections > 1) {
       initialValue = [];
@@ -67,12 +46,36 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
     }
     
     setValue(initialValue);
-  }, [currentStepKey, question.type, question.config?.maxSelections, question.config?.multiple, question.title]);
+    console.log('[QuestionComponent] 🔄 Reset suave para:', currentStepKey, 'valor inicial:', initialValue);
+  }, [currentStepKey, question.type, question.config?.maxSelections, question.config?.multiple]);
 
-  // 🎯 CARGAR VALOR GUARDADO (SOLO DESPUÉS DEL RESET)
+  // 🎯 CARGAR VALOR GUARDADO (PRIMERO initialFormData, LUEGO PERSISTENCIA)
   React.useEffect(() => {
+    // 🚨 PRIORIDAD 1: Si hay initialFormData del backend, usarlo
+    if (initialFormData && Object.keys(initialFormData).length > 0) {
+      const backendValue = initialFormData.value || initialFormData.selectedValue;
+      console.log('[QuestionComponent] 🎯 Cargando desde backend:', {
+        currentStepKey,
+        initialFormData,
+        backendValue
+      });
+      
+      if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (backendValue === null || backendValue === undefined)) {
+        setValue('');
+      } else {
+        setValue(backendValue);
+      }
+      return;
+    }
+    
+    // 🚨 PRIORIDAD 2: Si no hay backend data, usar persistencia local
     if (hasLoadedData && formValues && Object.keys(formValues).length > 0) {
       const savedValue = formValues.value || formValues.selectedValue;
+      console.log('[QuestionComponent] 🎯 Cargando desde local:', {
+        currentStepKey,
+        formValues,
+        savedValue
+      });
       
       // 🎯 MANEJAR VALORES NULL/UNDEFINED PARA TEXTAREA
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (savedValue === null || savedValue === undefined)) {
@@ -81,7 +84,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
         setValue(savedValue);
       }
     }
-  }, [currentStepKey, formValues, question.type, question.config?.maxSelections, hasLoadedData]);
+  }, [currentStepKey, formValues, question.type, question.config?.maxSelections, hasLoadedData, initialFormData]);
 
 
 

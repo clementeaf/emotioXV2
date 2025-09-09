@@ -69,22 +69,6 @@ export const useMobileDeviceCheck = (
       setIsLoading(true);
       setError(null);
 
-      const deviceType = detectDeviceType();
-      const isMobileOrTablet = deviceType === 'mobile' || deviceType === 'tablet';
-      const mobileConfig = getMobileConfig(eyeTrackingConfig);
-
-      // Determinar si se debe bloquear el acceso
-      const shouldBlock = !isLoading && isMobileOrTablet && !mobileConfig.allowMobile;
-
-      console.log('[useMobileDeviceCheck] Resultado:', {
-        deviceType,
-        isMobileOrTablet,
-        allowMobile: mobileConfig.allowMobile,
-        configFound: mobileConfig.configFound,
-        shouldBlock,
-        researchId
-      });
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
       console.error('[useMobileDeviceCheck] Error:', err);

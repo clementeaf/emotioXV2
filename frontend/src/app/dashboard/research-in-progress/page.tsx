@@ -78,13 +78,37 @@ function ResearchInProgressContent() {
       setError(null);
 
       try {
-        const metricsResponse = await researchInProgressAPI.getOverviewMetrics(researchId);
+        console.log('[Dashboard] 🚀 Cargando datos para research:', researchId);
+        console.log('[Dashboard] 🔑 Token disponible:', !!localStorage.getItem('token'));
 
-        if (metricsResponse.success) {
-          setStatus(metricsResponse.data as ResearchStatus);
+        const metricsResponse = await researchInProgressAPI.getOverviewMetrics(researchId);
+        console.log('[Dashboard] 📊 Respuesta de métricas:', metricsResponse);
+
+        if (metricsResponse?.success && metricsResponse?.data) {
+          // 🚨 FIX: Validar que la estructura de datos sea correcta antes de actualizar
+          const metricsData = metricsResponse.data as ResearchStatus;
+          if (metricsData.status && metricsData.participants && metricsData.completionRate && metricsData.averageTime) {
+            setStatus(metricsData);
+            console.log('[Dashboard] ✅ Métricas cargadas correctamente');
+          } else {
+            console.warn('[Dashboard] ⚠️ Estructura de métricas incompleta:', metricsData);
+          }
+        } else {
+          console.warn('[Dashboard] ⚠️ Respuesta de métricas inesperada:', metricsResponse);
+          // 🚨 FIX: Si no hay success flag, pero hay datos, validar estructura
+          if (metricsResponse && typeof metricsResponse === 'object') {
+            const directData = metricsResponse as ResearchStatus;
+            if (directData.status && directData.participants && directData.completionRate && directData.averageTime) {
+              setStatus(directData);
+              console.log('[Dashboard] ✅ Métricas cargadas desde estructura alternativa');
+            } else {
+              console.warn('[Dashboard] ❌ Estructura de datos inválida:', directData);
+            }
+          }
         }
 
         const participantsResponse = await researchInProgressAPI.getParticipantsWithStatus(researchId);
+        console.log('[Dashboard] 👥 Respuesta de participantes:', participantsResponse);
 
         if (participantsResponse.success && participantsResponse.data) {
           // La respuesta viene como { success: true, data: { data: [...], status: 200 } }
@@ -99,6 +123,13 @@ function ResearchInProgressContent() {
           setParticipants(Array.isArray(data) ? data : []);
         }
       } catch (error: any) {
+        console.error('[Dashboard] ❌ Error cargando datos:', error);
+        console.error('[Dashboard] ❌ Error details:', {
+          message: error.message,
+          status: error.status,
+          response: error.response,
+          stack: error.stack
+        });
         setError(error.message || 'Error al cargar los datos de la investigación');
       } finally {
         setIsLoading(false);
@@ -197,8 +228,8 @@ function ResearchInProgressContent() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{status.status.value}</div>
-            <p className="text-xs text-muted-foreground">{status.status.description}</p>
+            <div className="text-2xl font-bold">{status.status?.value || '--'}</div>
+            <p className="text-xs text-muted-foreground">{status.status?.description || 'Cargando...'}</p>
           </CardContent>
         </Card>
 
@@ -208,8 +239,8 @@ function ResearchInProgressContent() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{status.participants.value}</div>
-            <p className="text-xs text-muted-foreground">{status.participants.description}</p>
+            <div className="text-2xl font-bold">{status.participants?.value || '--'}</div>
+            <p className="text-xs text-muted-foreground">{status.participants?.description || 'Cargando...'}</p>
           </CardContent>
         </Card>
 
@@ -219,8 +250,8 @@ function ResearchInProgressContent() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{status.completionRate.value}</div>
-            <p className="text-xs text-muted-foreground">{status.completionRate.description}</p>
+            <div className="text-2xl font-bold">{status.completionRate?.value || '--'}</div>
+            <p className="text-xs text-muted-foreground">{status.completionRate?.description || 'Cargando...'}</p>
           </CardContent>
         </Card>
 
@@ -230,8 +261,8 @@ function ResearchInProgressContent() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{status.averageTime.value}</div>
-            <p className="text-xs text-muted-foreground">{status.averageTime.description}</p>
+            <div className="text-2xl font-bold">{status.averageTime?.value || '--'}</div>
+            <p className="text-xs text-muted-foreground">{status.averageTime?.description || 'Cargando...'}</p>
           </CardContent>
         </Card>
       </div>

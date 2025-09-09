@@ -54,12 +54,10 @@ export const useStepStore = create<StepStore>()(
 
       // 🎯 MÉTODOS ESENCIALES
       setCurrentQuestionKey: (questionKey: string) => {
-        console.log('[useStepStore] setCurrentQuestionKey:', questionKey);
         set({ currentQuestionKey: questionKey });
       },
 
       setSteps: (newSteps: Step[]) => {
-        console.log('[useStepStore] setSteps:', newSteps.map(s => s.questionKey));
         set({ steps: newSteps });
 
         // 🎯 Inicializar step activo si no hay uno
@@ -74,12 +72,6 @@ export const useStepStore = create<StepStore>()(
         const validResponses = responses.filter(response =>
           response && typeof response === 'object' && response.questionKey
         );
-
-        console.log('[useStepStore] 📊 ACTUALIZANDO RESPONSAS:', {
-          responses: validResponses.map(r => r.questionKey),
-          currentQuestionKey: get().currentQuestionKey
-        });
-
         // 🎯 ENCONTRAR STEP ACTIVO basado en respuestas
         const state = get();
         const stepOrder = state.steps.map(s => s.questionKey);
@@ -106,19 +98,11 @@ export const useStepStore = create<StepStore>()(
           backendResponses: validResponses,
           ...(shouldUpdateCurrentStep && { currentQuestionKey: stepToActivate })
         });
-
-        console.log('[useStepStore] ✅ Store actualizado:', {
-          totalResponses: validResponses.length,
-          stepToActivate: shouldUpdateCurrentStep ? stepToActivate : currentKey,
-          keepingCurrentStep: !shouldUpdateCurrentStep,
-          responses: validResponses.map(r => r.questionKey)
-        });
       },
 
       resetStore: () => {
         const state = get();
         const firstStepKey = state.steps[0]?.questionKey || '';
-        console.log('[useStepStore] 🔄 RESETEANDO STORE');
         set({
           backendResponses: [],
           currentQuestionKey: firstStepKey
@@ -135,7 +119,7 @@ export const useStepStore = create<StepStore>()(
 
         // 🎯 VERIFICAR SI HAY DATOS LOCALES PERSISTIDOS
         try {
-          const localData = localStorage.getItem('form-data-storage');
+          const localData = localStorage.getItem('emotio-form-data');
           if (localData) {
             const parsedData = JSON.parse(localData);
             const stateData = parsedData.state;
@@ -143,7 +127,6 @@ export const useStepStore = create<StepStore>()(
               const localFormData = stateData.formData[questionKey];
               // 🎯 CONSIDERAR COMO RESPUESTA SI HAY DATOS VÁLIDOS
               if (localFormData && Object.keys(localFormData).length > 0) {
-                console.log('[useStepStore] 🎯 Encontrada respuesta local para:', questionKey, localFormData);
                 return true;
               }
             }
@@ -158,7 +141,7 @@ export const useStepStore = create<StepStore>()(
           const demographicsCompleted = state.backendResponses.some(response => response.questionKey === 'demographics') ||
             (() => {
               try {
-                const localData = localStorage.getItem('form-data-storage');
+                const localData = localStorage.getItem('emotio-form-data');
                 if (localData) {
                   const parsedData = JSON.parse(localData);
                   const stateData = parsedData.state;
@@ -172,7 +155,6 @@ export const useStepStore = create<StepStore>()(
             })();
 
           if (demographicsCompleted) {
-            console.log('[useStepStore] 🎯 welcome_screen marcado como completado porque demographics está completado');
             return true;
           }
         }
@@ -202,7 +184,6 @@ export const useStepStore = create<StepStore>()(
         if (step.questionKey === 'welcome_screen') {
           const demographicsCompleted = state.hasBackendResponse('demographics');
           if (demographicsCompleted) {
-            console.log('[useStepStore] 🎯 welcome_screen puede acceder porque demographics está completado');
             return true;
           }
         }
@@ -225,28 +206,16 @@ export const useStepStore = create<StepStore>()(
         const canAccess = state.canAccessStep(stepIndex);
         const isCurrentStep = step.questionKey === state.currentQuestionKey;
 
-        // 🎯 LOG PARA DEBUG
-        console.log('[useStepStore] 🎯 getStepState para', step.questionKey, ':', {
-          stepIndex,
-          hasResponse,
-          canAccess,
-          isCurrentStep,
-          currentQuestionKey: state.currentQuestionKey
-        });
-
         let stateType: StepState;
         if (isCurrentStep) {
           stateType = 'active';
         } else if (hasResponse) {
-          // 🎯 SI TIENE RESPUESTA, SIEMPRE ES COMPLETED (VERDE)
           stateType = 'completed';
         } else if (!canAccess) {
           stateType = 'disabled';
         } else {
           stateType = 'available';
         }
-
-        console.log('[useStepStore] 🎯 Estado final para', step.questionKey, ':', stateType);
 
         return {
           state: stateType,
@@ -278,15 +247,16 @@ export const useStepStore = create<StepStore>()(
       getNextStep: () => {
         const state = get();
         const stepOrder = state.steps.map(s => s.questionKey);
-        const completedKeys = state.backendResponses.map(r => r.questionKey);
+        const currentStep = state.currentQuestionKey;
+        const currentIndex = stepOrder.findIndex(step => step === currentStep);
 
-        for (let i = 0; i < stepOrder.length; i++) {
-          if (!completedKeys.includes(stepOrder[i])) {
-            return stepOrder[i];
-          }
+        // Si hay un siguiente step en el orden, retornarlo
+        if (currentIndex >= 0 && currentIndex < stepOrder.length - 1) {
+          const nextStep = stepOrder[currentIndex + 1];
+          return nextStep;
         }
 
-        return stepOrder[stepOrder.length - 1] || '';
+        return '';
       },
 
       getCompletedSteps: () => {
@@ -301,6 +271,7 @@ export const useStepStore = create<StepStore>()(
       goToNextStep: () => {
         const state = get();
         const nextStepKey = state.getNextStep();
+        
         if (nextStepKey) {
           state.setCurrentQuestionKey(nextStepKey);
         }

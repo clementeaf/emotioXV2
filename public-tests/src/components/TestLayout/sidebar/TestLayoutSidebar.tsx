@@ -21,22 +21,11 @@ const TestLayoutSidebar: React.FC<Props> = ({
     backendResponses
   } = useStepStore();
   const { clearAllFormData } = useFormDataStore();
-
-  // 🎯 OBTENER CONFIGURACIÓN DE EYE TRACKING
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const shouldShowProgressFeatures = eyeTrackingConfig?.linkConfig?.showProgressBar ?? true;
 
-  // 🎯 DEBUG: Log para verificar la configuración
-  console.log('[TestLayoutSidebar] Configuración:', {
-    researchId,
-    eyeTrackingConfig,
-    showProgressBar: eyeTrackingConfig?.linkConfig?.showProgressBar,
-    shouldShowProgressFeatures
-  });
-
   const deleteMutation = useDeleteAllResponsesMutation({
     onSuccess: () => {
-      console.log('[TestLayoutSidebar] ✅ Respuestas eliminadas exitosamente');
       clearAllFormData();
       const { resetStore } = useStepStore.getState();
       resetStore();

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useEffect } from 'react';
-import { useAvailableFormsQuery } from '../../hooks/useApiQueries';
+import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useStepStoreWithBackend } from '../../hooks/useStepStoreWithBackend';
 import { useDebugSteps } from '../../hooks/useDebugSteps';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
@@ -24,6 +24,12 @@ const TestLayoutRenderer: React.FC = () => {
   const { currentQuestionKey } = useStepStore();
   const { getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
+
+  // 🎯 OBTENER RESPUESTAS DEL BACKEND
+  const { data: moduleResponses } = useModuleResponsesQuery(
+    researchId || '',
+    participantId || ''
+  );
 
   // 🎯 HOOK WEBSOCKET OPTIMIZADO PARA NOTIFICACIONES
   const { sendParticipantLogin, isConnected, participantState } = useOptimizedMonitoringWebSocket();
@@ -187,9 +193,17 @@ const TestLayoutRenderer: React.FC = () => {
 
   const currentStepData = getCurrentStepData(formsData, currentQuestionKey);
 
+  console.log('[TestLayoutRenderer] 🔍 Debug smartvoc_csat:', {
+    currentQuestionKey,
+    currentStepData: currentStepData ? 'found' : 'not found',
+    contentConfiguration: currentStepData?.contentConfiguration ? 'found' : 'not found',
+    formsDataSteps: formsData?.steps?.length || 0,
+    questionType: currentQuestionKey ? getQuestionType(currentQuestionKey) : 'unknown'
+  });
 
   if (!currentStepData) {
-    return <div>No se encontró información para este step</div>;
+    console.log('[TestLayoutRenderer] ❌ currentStepData is null for:', currentQuestionKey);
+    return <div>No se encontró información para este step: {currentQuestionKey}</div>;
   }
 
   const { contentConfiguration } = currentStepData;
@@ -200,23 +214,47 @@ const TestLayoutRenderer: React.FC = () => {
     Object.values(contentConfiguration?.demographicQuestions || {}).some((q: { enabled?: boolean }) => q?.enabled) :
     true;
 
+  console.log('[TestLayoutRenderer] 🎯 Rendering component:', {
+    questionType,
+    hasRenderer: !!RENDERERS[questionType],
+    availableRenderers: Object.keys(RENDERERS),
+    currentQuestionKey
+  });
+
+  // 🎯 PRIMERO BUSCAR EN BACKEND, LUEGO EN LOCAL
+  const backendResponse = moduleResponses?.responses?.find(
+    (response: any) => response.questionKey === currentQuestionKey
+  );
+  
+  // 🚨 FIX: La estructura correcta es directamente response.response
+  const formData = backendResponse?.response || getFormData(currentQuestionKey) || {};
+
+  console.log('[TestLayoutRenderer] 🔍 Debug formData:', {
+    currentQuestionKey,
+    backendResponse: backendResponse ? 'found' : 'not found',
+    backendResponseStructure: backendResponse ? Object.keys(backendResponse) : [],
+    actualBackendData: backendResponse?.response,
+    localData: getFormData(currentQuestionKey),
+    finalFormData: formData,
+    moduleResponsesStructure: moduleResponses ? Object.keys(moduleResponses) : [],
+    totalResponses: moduleResponses?.responses?.length || 0
+  });
+
   const renderedForm =
-    RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig }) ||
+    RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig, formData }) ||
     <UnknownStepComponent
       data={{
         questionKey: currentQuestionKey,
         contentConfiguration,
-        message: `No se encontró un componente específico para: ${currentQuestionKey}`
+        message: `No se encontró un componente específico para: ${currentQuestionKey}`,
+        questionType,
+        availableRenderers: Object.keys(RENDERERS)
       }}
     />;
 
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
   const isConfigurationPending = questionType === 'demographics' && !hasConfiguredQuestions;
-
-  const rawFormData = getFormData(currentQuestionKey);
-  // 🎯 EXTRAER EL VALOR REAL DE LOS DATOS DEL FORMULARIO
-  const formData: Record<string, unknown> = rawFormData?.value !== undefined ? { value: rawFormData.value } : rawFormData || {};
 
   return (
     <div className="flex flex-col h-full">

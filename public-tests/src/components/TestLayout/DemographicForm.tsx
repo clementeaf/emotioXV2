@@ -1,6 +1,6 @@
 // @ts-nocheck
-import React, { useCallback, useEffect, useState } from 'react';
-import { getApiUrl } from '../../config/endpoints';
+import React, { useEffect, useState } from 'react';
+import { useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
@@ -19,7 +19,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   demographicQuestions,
   onSubmit
 }) => {
-  const { researchId } = useTestStore();
+  const { researchId, participantId } = useTestStore();
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const { redirectToDisqualification } = useDisqualificationRedirect();
   const { sendParticipantDisqualified } = useOptimizedMonitoringWebSocket();
@@ -30,6 +30,12 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedData, setHasLoadedData] = useState(false);
 
+  // 🎯 USAR EL HOOK EXISTENTE PARA OBTENER RESPUESTAS DEL BACKEND
+  const { data: moduleResponses } = useModuleResponsesQuery(
+    researchId || '',
+    participantId || ''
+  );
+
   // 🎯 CARGAR DATOS PERSISTIDOS AL INICIALIZAR
   useEffect(() => {
     const savedData = getFormData('demographics');
@@ -38,43 +44,21 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     }
   }, [getFormData]);
 
-  // 🎯 FUNCIÓN PARA VERIFICAR SI YA SE ENVIARON DATOS AL BACKEND
-  const checkBackendData = useCallback(async () => {
-    try {
-      const participantId = getParticipantId();
-      const apiUrl = getApiUrl(`module-responses/research/${researchId}`);
-
-
-      const response = await fetch(apiUrl);
-      if (response.ok) {
-        const data = await response.json();
-        const participantResponses = data.data?.find((item: { participantId?: string; questionKey?: string }) =>
-          item.participantId === participantId &&
-          item.questionKey === 'demographics'
-        );
-
-        if (participantResponses && participantResponses.responses?.length > 0) {
-          const backendData = participantResponses.responses[0].response;
-
-          // 🎯 CARGAR DATOS DEL BACKEND AL STORE LOCAL
-          setFormData('demographics', backendData);
-          setHasLoadedData(true);
-
-          // 🎯 NOTE: useStepStoreWithBackend hook will handle store updates automatically
-
-        }
-      }
-    } catch (error) {
-      console.error('[DemographicForm] Error checking backend data:', error);
-    }
-  }, [getParticipantId, researchId, setFormData]);
-
-  // 🎯 VERIFICAR DATOS DEL BACKEND AL INICIALIZAR
+  // 🎯 CARGAR DATOS DEL BACKEND CUANDO ESTÉN DISPONIBLES
   useEffect(() => {
-    if (researchId) {
-      checkBackendData();
+    if (moduleResponses?.responses) {
+      const demographicsResponse = moduleResponses.responses.find(
+        (response: any) => response.questionKey === 'demographics'
+      );
+
+      if (demographicsResponse?.response) {
+        console.log('[DemographicForm] 🎯 Cargando datos del backend:', demographicsResponse.response);
+        // 🎯 CARGAR DATOS DEL BACKEND AL STORE LOCAL
+        setFormData('demographics', demographicsResponse.response);
+        setHasLoadedData(true);
+      }
     }
-  }, [researchId, checkBackendData]);
+  }, [moduleResponses, setFormData]);
 
   // 🎯 FUNCIÓN PARA MANEJAR CAMBIOS EN LOS INPUTS
   const handleInputChange = (key: string, value: string) => {

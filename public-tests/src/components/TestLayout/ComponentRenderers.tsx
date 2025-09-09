@@ -18,6 +18,7 @@ interface RendererArgs {
   currentQuestionKey: string;
   quotaResult?: unknown;
   eyeTrackingConfig?: unknown;
+  formData?: Record<string, unknown>;
   [key: string]: unknown; // Para permitir propiedades adicionales
 }
 
@@ -70,7 +71,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
     />
   ),
 
-  smartvoc_csat: ({ contentConfiguration, currentQuestionKey }) => {
+  smartvoc_csat: ({ contentConfiguration, currentQuestionKey, formData }) => {
+    console.log('[ComponentRenderers] 🎯 smartvoc_csat renderer called:', {
+      currentQuestionKey,
+      contentConfiguration: contentConfiguration ? 'exists' : 'missing',
+      configKeys: contentConfiguration ? Object.keys(contentConfiguration) : []
+    });
 
     // 🎯 DETERMINAR EL TIPO DE VISUALIZACIÓN DESDE LA CONFIGURACIÓN
     const displayType = contentConfiguration?.type || 'stars';
@@ -118,11 +124,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
+        initialFormData={formData}
       />
     );
   },
 
-  smartvoc_ces: ({ contentConfiguration, currentQuestionKey }) => {
+  smartvoc_ces: ({ contentConfiguration, currentQuestionKey, formData }) => {
     // 🎯 USAR CONFIGURACIÓN DEL BACKEND
     const scaleRange = (contentConfiguration?.scaleRange as { start: number; end: number }) || { start: 1, end: 5 };
     const startLabel = String(contentConfiguration?.startLabel || 'Muy fácil');
@@ -147,11 +154,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
+        initialFormData={formData}
       />
     );
   },
 
-  smartvoc_cv: ({ contentConfiguration, currentQuestionKey }) => {
+  smartvoc_cv: ({ contentConfiguration, currentQuestionKey, formData }) => {
     // 🎯 DETERMINAR ESCALA DINÁMICAMENTE
     const scaleRange = (contentConfiguration?.scaleRange as { start: number; end: number }) || { start: 1, end: 5 };
     const maxValue = scaleRange.end;
@@ -205,11 +213,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
+        initialFormData={formData}
       />
     );
   },
 
-  smartvoc_nps: ({ contentConfiguration, currentQuestionKey }) => {
+  smartvoc_nps: ({ contentConfiguration, currentQuestionKey, formData }) => {
     // 🎯 DETERMINAR ESCALA DINÁMICAMENTE
     const scaleRange = (contentConfiguration?.scaleRange as { start: number; end: number }) || { start: 0, end: 10 };
     const maxValue = scaleRange.end;
@@ -251,11 +260,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
+        initialFormData={formData}
       />
     );
   },
 
-  smartvoc_nev: ({ contentConfiguration, currentQuestionKey }) => {
+  smartvoc_nev: ({ contentConfiguration, currentQuestionKey, formData }) => {
     // 🎯 USAR EL TIPO DEL BACKEND
     const selectorType = String(contentConfiguration?.type || 'detailed');
 
@@ -276,11 +286,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           description: '' // 🎯 NO MOSTRAR DESCRIPCIÓN DUPLICADA
         }}
         currentStepKey={currentQuestionKey}
+        initialFormData={formData}
       />
     );
   },
 
-  smartvoc_voc: ({ contentConfiguration, currentQuestionKey }) => (
+  smartvoc_voc: ({ contentConfiguration, currentQuestionKey, formData }) => (
     <QuestionComponent
       question={{
         title: String(contentConfiguration?.title || 'VOC'),
@@ -294,10 +305,11 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
         description: String(contentConfiguration?.description || '')
       }}
       currentStepKey={currentQuestionKey}
+      initialFormData={formData}
     />
   ),
 
-  cognitive: ({ contentConfiguration, currentQuestionKey }) => (
+  cognitive: ({ contentConfiguration, currentQuestionKey, formData }) => (
     <QuestionComponent
       question={{
         title: String(contentConfiguration?.title || 'Pregunta Cognitive Task'),
@@ -308,6 +320,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
         description: String(contentConfiguration?.description || '')
       }}
       currentStepKey={currentQuestionKey}
+      initialFormData={formData}
     />
   ),
 
@@ -354,7 +367,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
     );
   },
 
-  cognitive_ranking: ({ contentConfiguration, currentQuestionKey }) => {
+  cognitive_ranking: ({ contentConfiguration, currentQuestionKey, formData }) => {
 
     // 🎯 EXTRAER TEXTO DE LAS CHOICES
     const rankingItems = Array.isArray(contentConfiguration?.choices)
@@ -363,6 +376,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           .filter(item => item)
       : [];
 
+    console.log('[cognitive_ranking] 🎯 Renderer data:', {
+      currentQuestionKey,
+      formData,
+      rankingItems,
+      backendValue: formData?.selectedValue
+    });
 
     return (
       <div className='flex flex-col items-center justify-center h-full gap-6'>
@@ -381,13 +400,14 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
             isApiLoading={false}
             dataLoading={false}
             currentQuestionKey={currentQuestionKey}
+            initialFormData={formData}
           />
         </div>
       </div>
     );
   },
 
-  cognitive_short_text: ({ contentConfiguration, currentQuestionKey }) => {
+  cognitive_short_text: ({ contentConfiguration, currentQuestionKey, formData }) => {
 
     const questionConfig = {
       title: String(contentConfiguration?.title || 'Respuesta Corta'),
@@ -403,11 +423,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
       <QuestionComponent
         question={questionConfig}
         currentStepKey={currentQuestionKey}
+        initialFormData={formData}
       />
     );
   },
 
-  cognitive_long_text: ({ contentConfiguration, currentQuestionKey }) => (
+  cognitive_long_text: ({ contentConfiguration, currentQuestionKey, formData }) => (
     <QuestionComponent
       question={{
         title: String(contentConfiguration?.title || 'Respuesta Larga'),
@@ -418,10 +439,11 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
         description: String(contentConfiguration?.description || 'Escribe tu respuesta detallada')
       }}
       currentStepKey={currentQuestionKey}
+      initialFormData={formData}
     />
   ),
 
-  cognitive_multiple_choice: ({ contentConfiguration, currentQuestionKey }) => {
+  cognitive_multiple_choice: ({ contentConfiguration, currentQuestionKey, formData }) => {
 
     const questionConfig = {
       title: String(contentConfiguration?.title || 'Selección Múltiple'),
@@ -437,11 +459,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
       <QuestionComponent
         question={questionConfig}
         currentStepKey={currentQuestionKey}
+        initialFormData={formData}
       />
     );
   },
 
-  cognitive_single_choice: ({ contentConfiguration, currentQuestionKey }) => {
+  cognitive_single_choice: ({ contentConfiguration, currentQuestionKey, formData }) => {
 
     const questionConfig = {
       title: String(contentConfiguration?.title || 'Selección Única'),
@@ -457,11 +480,12 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
       <QuestionComponent
         question={questionConfig}
         currentStepKey={currentQuestionKey}
+        initialFormData={formData}
       />
     );
   },
 
-  cognitive_linear_scale: ({ contentConfiguration, currentQuestionKey }) => (
+  cognitive_linear_scale: ({ contentConfiguration, currentQuestionKey, formData }) => (
     <QuestionComponent
       question={{
         title: String(contentConfiguration?.title || 'Escala Lineal'),
@@ -472,10 +496,11 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
         description: String(contentConfiguration?.description || 'Selecciona un valor en la escala')
       }}
       currentStepKey={currentQuestionKey}
+      initialFormData={formData}
     />
   ),
 
-  cognitive_rating: ({ contentConfiguration, currentQuestionKey }) => (
+  cognitive_rating: ({ contentConfiguration, currentQuestionKey, formData }) => (
     <QuestionComponent
       question={{
         title: String(contentConfiguration?.title || 'Calificación'),
@@ -486,6 +511,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
         description: String(contentConfiguration?.description || 'Califica usando las opciones')
       }}
       currentStepKey={currentQuestionKey}
+      initialFormData={formData}
     />
   ),
 };
@@ -619,7 +645,7 @@ export const ThankYouScreenComponent: React.FC<{
 
       sendToAPI();
     }
-  }, [currentQuestionKey, setFormData, researchId, participantId, eyeTrackingConfig?.parameterOptions?.saveDeviceInfo, eyeTrackingConfig?.parameterOptions?.saveLocationInfo, saveModuleResponseMutation]);
+  }, [currentQuestionKey, researchId, participantId, eyeTrackingConfig?.parameterOptions?.saveDeviceInfo, eyeTrackingConfig?.parameterOptions?.saveLocationInfo]);
 
   // 🎯 VERIFICAR SI EL USUARIO FUE DESCALIFICADO
   const isDisqualified = eyeTrackingConfig?.backlinks?.disqualified &&

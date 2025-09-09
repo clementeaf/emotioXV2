@@ -20,8 +20,3 @@ export const TestAlova: React.FC<TestAlovaProps> = ({ researchId }) => {
     </div>
   );
 };
-
-// Debug info
-if (import.meta.env.DEV) {
-  console.log('[TestAlova] Componente AlovaJS temporalmente deshabilitado');
-}

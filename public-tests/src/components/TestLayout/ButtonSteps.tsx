@@ -16,16 +16,17 @@ import { ButtonStepsProps } from './types';
 
 export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   currentQuestionKey,
-  formData = {},
   isWelcomeScreen = false
 }) => {
   const { researchId, participantId } = useTestStore();
   const { goToNextStep } = useStepStore();
-  const { getNextStep } = useStepStore();
-  const nextStep = getNextStep();
   const [isSaving, setIsSaving] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [showOptimisticSuccess, setShowOptimisticSuccess] = useState(false);
+
+  // 🚨 FIX: Obtener datos más recientes del store en lugar de usar prop
+  const { getFormData } = useFormDataStore();
+  const getCurrentFormData = () => getFormData(currentQuestionKey) || {};
 
   // 🎯 HOOKS PARA DESCALIFICACIÓN
   const { validateDemographics } = useDemographicValidation();
@@ -99,23 +100,26 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     return [];
   }, [formsData?.steps, formsData?.stepsConfiguration]);
 
-  // Obtener el estado de los steps para navegación
-  // const { getNextStep: getStoreNextStep } = useStepStore();
-  // const storeNextStep = getStoreNextStep();
-
-
-
-  // Log para depuración
-  console.log('[ButtonSteps] Estado actual:', {
-    currentQuestionKey,
-    nextStep,
-    formData,
-    isWelcomeScreen
-  });
-
   const saveMutation = useSaveModuleResponseMutation({
     onSuccess: () => {
-      console.log('[ButtonSteps] ✅ Save successful, refetch will update store automatically');
+      // 🎯 ACTUALIZACIÓN OPTIMISTA: marcar respuesta como guardada inmediatamente
+      const { updateBackendResponses } = useStepStore.getState();
+      const currentBackendResponses = useStepStore.getState().backendResponses;
+      
+      // Agregar o actualizar la respuesta actual en el store
+      const newResponse = {
+        questionKey: currentQuestionKey,
+        response: getCurrentFormData()
+      };
+      
+      const updatedResponses = [
+        ...currentBackendResponses.filter(r => r.questionKey !== currentQuestionKey),
+        newResponse
+      ];
+      
+      updateBackendResponses(updatedResponses);
+      
+      console.log('[ButtonSteps] ✅ Actualización optimista aplicada para:', currentQuestionKey);
 
       // 🎯 ENVIAR EVENTO WEBSOCKET DE RESPUESTA GUARDADA
       if (participantId) {
@@ -125,19 +129,11 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         sendParticipantResponseSaved(
           participantId,
           currentQuestionKey,
-          formData || {},
+          getCurrentFormData(),
           currentStepIndex + 1,
           steps.length,
           progress
         );
-
-        console.log('[ButtonSteps] 🎯 Evento WebSocket enviado: PARTICIPANT_RESPONSE_SAVED', {
-          participantId,
-          questionKey: currentQuestionKey,
-          stepNumber: currentStepIndex + 1,
-          totalSteps: steps.length,
-          progress
-        });
       }
 
       setIsSaving(false);
@@ -147,12 +143,18 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         const store = useStepStore.getState();
         const currentStep = store.currentQuestionKey;
         
+        console.log('[ButtonSteps] 🔄 Navegación automática después de CREATE:', {
+          fromStep: currentQuestionKey,
+          currentStepInStore: currentStep,
+          shouldNavigate: currentStep === currentQuestionKey
+        });
+        
         // 🛡️ SOLO NAVEGAR SI SEGUIMOS EN EL MISMO STEP (no navegación manual del usuario)
         if (currentStep === currentQuestionKey) {
-          console.log('[ButtonSteps] ✅ Navegando automáticamente después de save');
+          console.log('[ButtonSteps] ➡️ Ejecutando goToNextStep()...');
           goToNextStep();
         } else {
-          console.log('[ButtonSteps] ⚠️ Navegación automática cancelada - usuario navegó manualmente');
+          console.log('[ButtonSteps] ⏸️ No navegando - usuario cambió de step manualmente');
         }
       }, 300);
     },
@@ -177,19 +179,11 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         sendParticipantResponseSaved(
           participantId,
           currentQuestionKey,
-          formData || {},
+          getCurrentFormData(),
           currentStepIndex + 1,
           steps.length,
           progress
         );
-
-        console.log('[ButtonSteps] 🎯 Evento WebSocket enviado: PARTICIPANT_RESPONSE_SAVED (actualización)', {
-          participantId,
-          questionKey: currentQuestionKey,
-          stepNumber: currentStepIndex + 1,
-          totalSteps: steps.length,
-          progress
-        });
       }
 
       setIsSaving(false);
@@ -200,12 +194,18 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         const store = useStepStore.getState();
         const currentStep = store.currentQuestionKey;
         
+        console.log('[ButtonSteps] 🔄 Navegación automática después de UPDATE:', {
+          fromStep: currentQuestionKey,
+          currentStepInStore: currentStep,
+          shouldNavigate: currentStep === currentQuestionKey
+        });
+        
         // 🛡️ SOLO NAVEGAR SI SEGUIMOS EN EL MISMO STEP
         if (currentStep === currentQuestionKey) {
-          console.log('[ButtonSteps] ✅ Navegando automáticamente después de update');
+          console.log('[ButtonSteps] ➡️ Ejecutando goToNextStep()...');
           goToNextStep();
         } else {
-          console.log('[ButtonSteps] ⚠️ Navegación automática cancelada - usuario navegó manualmente');
+          console.log('[ButtonSteps] ⏸️ No navegando - usuario cambió de step manualmente');
         }
         setIsNavigating(false);
       }, 500);
@@ -226,38 +226,13 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     (moduleResponse: { questionKey: string }) => moduleResponse.questionKey === currentQuestionKey
   );
 
-  // 🎯 VERIFICAR SI HAY DATOS PERSISTIDOS LOCALMENTE
-  const { getFormData } = useFormDataStore();
-  const localData = getFormData(currentQuestionKey);
-  const hasLocalData = localData && Object.keys(localData).length > 0;
-
   // 🎯 DETERMINAR SI EXISTE RESPUESTA (SOLO BACKEND - NO ESTADO OPTIMISTA PARA DETECCIÓN)
   const hasExistingResponse = !!existingResponse;
-
-  // 🎯 LOG PARA DEBUG
-  console.log('[ButtonSteps] 🔍 DETECCIÓN DE RESPUESTAS:', {
-    currentQuestionKey,
-    existingResponse: !!existingResponse,
-    existingResponseData: existingResponse,
-    hasLocalData,
-    hasExistingResponse,
-    moduleResponses: moduleResponses?.responses?.map(r => r.questionKey),
-    moduleResponsesFull: moduleResponses,
-    localData
-  });
 
   // Obtener el ID del documento principal para actualizaciones
   const documentId = moduleResponses?.id;
 
   const getButtonText = (): string => {
-    console.log('[ButtonSteps] 🎯 getButtonText:', {
-      isWelcomeScreen,
-      isSaving,
-      isNavigating,
-      hasExistingResponse,
-      showOptimisticSuccess,
-      currentQuestionKey
-    });
 
     if (isWelcomeScreen) {
       return 'Comenzar';
@@ -299,7 +274,6 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const handleClick = async () => {
     // 🛡️ PROTECCIÓN CONTRA DOBLE-CLICK
     if (isSaving || isNavigating) {
-      console.log('[ButtonSteps] ⚠️ Click ignorado - operación en progreso');
       return;
     }
 
@@ -324,17 +298,16 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     }
 
     // 🎯 VERIFICAR DESCALIFICACIÓN PARA DEMOGRAPHICS
-    if (currentQuestionKey === 'demographics' && formData && eyeTrackingConfig?.demographicQuestions) {
+    const currentFormData = getCurrentFormData();
+    if (currentQuestionKey === 'demographics' && currentFormData && Object.keys(currentFormData).length > 0 && eyeTrackingConfig?.demographicQuestions) {
       // Convertir formData a formato string para validación
       const formValuesString = Object.fromEntries(
-        Object.entries(formData).map(([key, value]) => [key, String(value || '')])
+        Object.entries(currentFormData).map(([key, value]) => [key, String(value || '')])
       ) as Record<string, string>;
 
       const validationResult = validateDemographics(formValuesString, eyeTrackingConfig.demographicQuestions);
 
       if (validationResult.isDisqualified) {
-        console.log('[ButtonSteps] Usuario descalificado:', validationResult);
-
         // 🎯 NUEVO: GUARDAR ANTES DE REDIRIGIR
         try {
           const timestamp = new Date().toISOString();
@@ -363,7 +336,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             questionKey: currentQuestionKey,
             responses: [{
               questionKey: currentQuestionKey,
-              response: formData || {},
+              response: currentFormData,
               timestamp,
               createdAt: now
             }],
@@ -371,7 +344,6 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           };
 
           await saveMutation.mutateAsync(createData);
-          console.log('[ButtonSteps] ✅ Datos guardados antes de descalificación');
         } catch (error) {
           console.error('[ButtonSteps] ❌ Error guardando datos de descalificación:', error);
           // Continuar con redirección aunque falle el guardado
@@ -386,7 +358,6 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     // 🎯 NUEVO: VERIFICAR DESCALIFICACIÓN POR CUOTAS
     const quotaResult = useFormDataStore.getState().quotaResult;
     if (quotaResult && quotaResult.status === 'DISQUALIFIED_OVERQUOTA') {
-      console.log('[ButtonSteps] Usuario descalificado por cuota:', quotaResult);
 
       // 🎯 GUARDAR ANTES DE REDIRIGIR
       try {
@@ -422,7 +393,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           questionKey: currentQuestionKey,
           responses: [{
             questionKey: currentQuestionKey,
-            response: formData || {},
+            response: currentFormData,
             timestamp,
             createdAt: now
           }],
@@ -430,10 +401,8 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         };
 
         await saveMutation.mutateAsync(createData);
-        console.log('[ButtonSteps] ✅ Datos guardados antes de descalificación por cuota');
       } catch (error) {
         console.error('[ButtonSteps] ❌ Error guardando datos de descalificación por cuota:', error);
-        // Continuar con redirección aunque falle el guardado
       }
 
       // 🎯 REDIRIGIR A DESCALIFICACIÓN POR CUOTA
@@ -469,7 +438,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           questionKey: currentQuestionKey,
           responses: [{
             questionKey: currentQuestionKey,
-            response: formData || {},
+            response: currentFormData,
             timestamp,
             createdAt: existingResponse?.createdAt || now,
             updatedAt: now
@@ -489,7 +458,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           questionKey: currentQuestionKey,
           responses: [{
             questionKey: currentQuestionKey,
-            response: formData || {},
+            response: currentFormData,
             timestamp,
             createdAt: now,
             updatedAt: undefined
@@ -514,15 +483,6 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           progress,
           timingData?.duration
         );
-
-        console.log('[ButtonSteps] 📡 Evento WebSocket enviado:', {
-          participantId,
-          stepName: currentQuestionKey,
-          stepNumber,
-          totalSteps,
-          progress,
-          duration: timingData?.duration
-        });
       }
 
       // 🎯 FINALIZAR CRONOMETRAJE

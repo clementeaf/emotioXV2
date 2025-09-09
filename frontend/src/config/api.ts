@@ -632,6 +632,22 @@ export class AlovaApiClient {
   setAuthToken(token: string): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', token);
+      // 🚨 FIX: Invalidar caché para que las nuevas peticiones usen el token actualizado
+      this.invalidateAllCache();
+    }
+  }
+
+  /**
+   * Invalida toda la caché de Alova
+   */
+  private invalidateAllCache(): void {
+    try {
+      alovaInstance.snapshots.match(/.*/g).forEach(method => {
+        method.abort();
+      });
+    } catch (error) {
+      // Ignore cache invalidation errors
+      console.warn('Error invalidating Alova cache:', error);
     }
   }
   
@@ -641,6 +657,9 @@ export class AlovaApiClient {
   clearAuthToken(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // 🚨 FIX: Invalidar caché cuando se limpia el token
+      this.invalidateAllCache();
     }
   }
 }

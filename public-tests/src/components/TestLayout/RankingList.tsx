@@ -1,16 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useFormDataStore } from '../../stores/useFormDataStore';
-import { useStepStore } from '../../stores/useStepStore';
+import { useTestStore } from '../../stores/useTestStore';
 
-// 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
-interface BackendResponse {
-  questionKey: string;
-  response: {
-    selectedValue?: string;
-    textValue?: string;
-    [key: string]: unknown;
-  };
-}
 
 interface RankingListProps {
     items: string[];
@@ -20,6 +12,7 @@ interface RankingListProps {
     isApiLoading: boolean;
     dataLoading: boolean;
     currentQuestionKey?: string;
+    initialFormData?: Record<string, unknown>;
 }
 
 export const RankingList: React.FC<RankingListProps> = ({
@@ -29,47 +22,92 @@ export const RankingList: React.FC<RankingListProps> = ({
     isSaving,
     isApiLoading,
     dataLoading,
-    currentQuestionKey
+    currentQuestionKey,
+    initialFormData
 }) => {
     const [rankedItems, setRankedItems] = useState<string[]>(items);
     const { setFormData, getFormData } = useFormDataStore();
+    const { researchId, participantId } = useTestStore();
 
-    // 🎯 CARGAR RESPUESTA DEL BACKEND SI EXISTE
+    // 🎯 OBTENER RESPUESTAS DEL BACKEND EN TIEMPO REAL
+    const { data: moduleResponses } = useModuleResponsesQuery(
+        researchId || '',
+        participantId || ''
+    );
+
+    // 🎯 CARGAR RESPUESTA (REACTIVO A CAMBIOS EN TIEMPO REAL)
     useEffect(() => {
-        if (currentQuestionKey) {
-            // Buscar respuesta del backend para este step
-            const store = useStepStore.getState();
-            const backendResponse = store.backendResponses.find(
-                (r: BackendResponse) => r.questionKey === currentQuestionKey
-            );
+        console.log('[RankingList] 🔄 useEffect triggered:', {
+            currentQuestionKey,
+            hasModuleResponses: !!moduleResponses,
+            totalResponses: moduleResponses?.responses?.length || 0,
+            hasInitialFormData: !!initialFormData,
+            initialFormDataKeys: initialFormData ? Object.keys(initialFormData) : [],
+            selectedValue: initialFormData?.selectedValue
+        });
 
-            if (backendResponse?.response?.selectedValue) {
-                // Parsear el ranking guardado
+        if (currentQuestionKey) {
+            let dataSource: Record<string, unknown> | null = null;
+            let sourceType = 'none';
+
+            // 🚨 PRIORIDAD 1: Datos directos del backend (más reactivo)
+            if (moduleResponses?.responses) {
+                const backendResponse = moduleResponses.responses.find(
+                    (response: any) => response.questionKey === currentQuestionKey
+                );
+                if (backendResponse?.response && typeof backendResponse.response === 'object' && backendResponse.response !== null && 'selectedValue' in backendResponse.response) {
+                    dataSource = backendResponse.response as Record<string, unknown>;
+                    sourceType = 'moduleResponses';
+                }
+            }
+
+            // 🚨 PRIORIDAD 2: initialFormData (fallback)
+            if (!dataSource && initialFormData && Object.keys(initialFormData).length > 0 && initialFormData.selectedValue) {
+                dataSource = initialFormData;
+                sourceType = 'initialFormData';
+            }
+
+            // 🚨 PRIORIDAD 3: Store local (último recurso)
+            if (!dataSource) {
+                const localData = getFormData(currentQuestionKey);
+                if (localData?.selectedValue) {
+                    dataSource = localData as Record<string, unknown>;
+                    sourceType = 'localStorage';
+                }
+            }
+
+            if (dataSource?.selectedValue) {
                 try {
-                    const savedRanking = JSON.parse(backendResponse.response.selectedValue);
-                    if (Array.isArray(savedRanking)) {
+                    let savedRanking;
+                    
+                    // 🚨 FIX: Manejar tanto string como array desde cualquier fuente
+                    if (typeof dataSource.selectedValue === 'string') {
+                        // Si es string, puede ser JSON o string separado por comas
+                        if ((dataSource.selectedValue as string).startsWith('[')) {
+                            // Es JSON array
+                            savedRanking = JSON.parse(dataSource.selectedValue as string);
+                        } else {
+                            // Es string separado por comas
+                            savedRanking = (dataSource.selectedValue as string).split(',').map((s: string) => s.trim());
+                        }
+                    } else if (Array.isArray(dataSource.selectedValue)) {
+                        // Ya es array
+                        savedRanking = dataSource.selectedValue;
+                    }
+                    
+                    if (Array.isArray(savedRanking) && savedRanking.length > 0) {
+                        console.log(`[RankingList] 🎯 Cargando desde ${sourceType}:`, savedRanking);
                         setRankedItems(savedRanking);
                         return;
                     }
                 } catch (error) {
-                    console.warn('[RankingList] Error parsing saved ranking:', error);
+                    console.warn(`[RankingList] Error parsing ${sourceType} ranking:`, error);
                 }
             }
 
-            // Si no hay respuesta del backend, cargar del store local
-            const localData = getFormData(currentQuestionKey);
-            if (localData?.selectedValue) {
-                try {
-                    const savedRanking = JSON.parse(localData.selectedValue as string);
-                    if (Array.isArray(savedRanking)) {
-                        setRankedItems(savedRanking);
-                    }
-                } catch (error) {
-                    console.warn('[RankingList] Error parsing local ranking:', error);
-                }
-            }
+            console.log('[RankingList] ⚠️ No data found from any source');
         }
-    }, [currentQuestionKey, getFormData]);
+    }, [currentQuestionKey, moduleResponses, initialFormData]);
 
     // 🎯 SINCRONIZAR CON ITEMS PROPS
     useEffect(() => {

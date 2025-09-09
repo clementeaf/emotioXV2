@@ -40,33 +40,12 @@ export const useFormLoadingState = ({
     }
   }, [onDataLoaded]);
 
-  // 🎯 RESET COMPLETO DEL ESTADO CUANDO CAMBIA LA PREGUNTA
+  // 🎯 RESET SUAVE DEL ESTADO CUANDO CAMBIA LA PREGUNTA (NO LIMPIAR STORE)
   useEffect(() => {
-    // 🚨 LIMPIAR DATOS LOCALES PREVIOS PARA EVITAR CONTAMINACIÓN CRUZADA
-    const { clearFormData } = useFormDataStore.getState();
-    
-    // 🎯 OBTENER LISTA DE TODOS LOS QUESTION KEYS PERSISTIDOS
-    try {
-      const localStorageKey = 'emotio-form-data';
-      const existingData = localStorage.getItem(localStorageKey);
-      if (existingData) {
-        const parsed = JSON.parse(existingData);
-        if (parsed.state && parsed.state.formData) {
-          // 🎯 LIMPIAR SOLO LAS KEYS QUE NO SEAN LA ACTUAL
-          Object.keys(parsed.state.formData).forEach(key => {
-            if (key !== questionKey) {
-              clearFormData(key);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      // Handle cleanup error silently
-    }
-    
     setFormValues({});
     setHasLoadedData(false);
     setIsLoading(true);
+    console.log('[useFormLoadingState] 🔄 Reset suave para question:', questionKey);
   }, [questionKey]);
 
   useEffect(() => {
@@ -81,13 +60,13 @@ export const useFormLoadingState = ({
         (response: any) => response.questionKey === questionKey
       );
 
-      if (existingResponse?.responses?.[0]?.response) {
-        setFormValues(existingResponse.responses[0].response as Record<string, unknown>);
+      if (existingResponse?.response) {
+        setFormValues(existingResponse.response as Record<string, unknown>);
         setHasLoadedData(true);
         setIsLoading(false);
 
         // Callback opcional cuando se cargan los datos
-        stableOnDataLoaded(existingResponse.responses[0].response as Record<string, unknown>);
+        stableOnDataLoaded(existingResponse.response as Record<string, unknown>);
         return;
       }
     }
