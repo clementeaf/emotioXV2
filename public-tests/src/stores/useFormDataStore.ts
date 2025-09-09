@@ -62,7 +62,16 @@ export const useFormDataStore = create<FormDataState>()(
       }
     }),
     {
-      name: 'emotio-form-data', // Nombre único para localStorage
+      // 🎯 CREAR STORAGE KEY DINÁMICO BASADO EN PARTICIPANTE Y RESEARCH
+      name: (() => {
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const participantId = urlParams.get('userId') || localStorage.getItem('userId') || 'default';
+          const researchId = urlParams.get('researchId') || localStorage.getItem('researchId') || 'default';
+          return `emotio-form-data-${researchId}-${participantId}`;
+        }
+        return 'emotio-form-data-default';
+      })(),
       partialize: (state) => ({
         formData: state.formData,
         quotaResult: state.quotaResult

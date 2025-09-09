@@ -278,7 +278,16 @@ export const useStepStore = create<StepStore>()(
       }
     }),
     {
-      name: 'step-storage', // required: unique name
+      // 🎯 CREAR STORAGE KEY DINÁMICO BASADO EN PARTICIPANTE Y RESEARCH
+      name: (() => {
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const participantId = urlParams.get('userId') || localStorage.getItem('userId') || 'default';
+          const researchId = urlParams.get('researchId') || localStorage.getItem('researchId') || 'default';
+          return `step-storage-${researchId}-${participantId}`;
+        }
+        return 'step-storage-default';
+      })(), // required: unique name
     }
   )
 );

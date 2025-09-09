@@ -39,7 +39,16 @@ export const useParticipantStore = create<ParticipantState>()(
       }
     }),
     {
-      name: 'emotio-participant-data',
+      // 🎯 CREAR STORAGE KEY DINÁMICO BASADO EN PARTICIPANTE Y RESEARCH
+      name: (() => {
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const participantId = urlParams.get('userId') || localStorage.getItem('userId') || 'default';
+          const researchId = urlParams.get('researchId') || localStorage.getItem('researchId') || 'default';
+          return `emotio-participant-data-${researchId}-${participantId}`;
+        }
+        return 'emotio-participant-data-default';
+      })(),
       partialize: (state) => ({
         participantId: state.participantId,
         email: state.email
