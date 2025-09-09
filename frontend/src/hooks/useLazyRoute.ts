@@ -56,8 +56,7 @@ export function useLazyRoute() {
   useEffect(() => {
     const commonRoutes = [
       '/dashboard',
-      '/dashboard/research/new',
-      '/dashboard/research'
+      '/dashboard/research/new'
     ];
 
     // Precargar después de un delay para no bloquear la carga inicial

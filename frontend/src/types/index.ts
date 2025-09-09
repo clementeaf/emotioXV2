@@ -69,3 +69,8 @@ export {
 export type {
   ThankYouScreenConfig, ThankYouScreenFormData, ThankYouScreenModel, ThankYouScreenResponse
 } from '@/shared/interfaces/thank-you-screen.interface';
+
+// Interfaces de Company
+export type {
+  Company, CreateCompanyRequest, UpdateCompanyRequest, GetCompaniesResponse, CompanyResponse
+} from '../../../shared/interfaces/company.interface';
