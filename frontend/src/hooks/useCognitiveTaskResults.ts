@@ -210,18 +210,32 @@ export function useCognitiveTaskResults(researchId: string) {
     }
 
     // Obtener todas las preguntas cognitivas de la configuración
-    const cognitiveQuestions = configData?.questions?.filter((q) =>
-      typeof q.questionKey === 'string' && q.questionKey.startsWith('cognitive_')
-    ) || [];
+    // Verificar si usar questionKey o type para el filtrado
+    const cognitiveQuestions = configData?.questions?.filter((q) => {
+      // Probar múltiples formas de identificar preguntas cognitivas
+      const questionKey = q.questionKey;
+      const questionType = q.type;
+      
+      // Verificar por questionKey o por type
+      const isCognitive = 
+        (typeof questionKey === 'string' && questionKey.startsWith('cognitive_')) ||
+        (typeof questionType === 'string' && questionType.startsWith('cognitive_'));
+        
+      return isCognitive;
+    }) || [];
+    
 
     cognitiveQuestions.forEach((questionConfig) => {
-      const questionKey = questionConfig.questionKey as string;
+      // Usar questionKey si existe, sino usar type como clave
+      const questionKey = (questionConfig.questionKey as string) || (questionConfig.type as string);
       const rawResponses = groupedResponses[questionKey];
       
       // Validar que responses es un array
       const responses = Array.isArray(rawResponses) ? rawResponses : [];
 
-      if (responses.length === 0) return;
+      if (responses.length === 0) {
+        return;
+      }
 
       const questionType = questionConfig.type as CognitiveQuestionType;
       const questionId = questionConfig.id;
@@ -707,14 +721,17 @@ export function useCognitiveTaskResults(researchId: string) {
 
       // 🎯 NUEVA LÓGICA: Verificar si es la estructura optimizada
       if (response && typeof response === 'object' && !Array.isArray(response)) {
-        // Estructura optimizada agrupada por questionKey
-        const groupedResponses = response as GroupedResponsesData;
+        // La respuesta viene con { data: { cognitive_short_text: [...], ... } }
+        // Necesitamos acceder a response.data
+        const rawData = (response as any).data || response;
+        const groupedResponses = rawData as GroupedResponsesData;
+        
         const processed = processOptimizedData(groupedResponses, configData);
         setProcessedData(processed);
 
         // Convertir a formato legacy para mantener compatibilidad
         const legacyResponses: ParticipantResponse[] = [];
-        Object.entries(groupedResponses).forEach(([questionKey, rawResponses]) => {
+        Object.entries(rawData).forEach(([questionKey, rawResponses]) => {
           // Validar que responses es un array antes de usar forEach
           const responses = Array.isArray(rawResponses) ? rawResponses : [];
           
