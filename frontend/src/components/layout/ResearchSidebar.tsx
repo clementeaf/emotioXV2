@@ -3,10 +3,9 @@
 import { ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, memo, useMemo, useCallback, lazy } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
@@ -57,8 +56,8 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   // FIXED: Use global research data with corrected response handling
   const { researchData, isLoading: isLoadingResearch, researchError } = useGlobalResearchData(researchId || '');
 
-  // Bloque de usuario/avatar
-  function UserInfo() {
+  // Memoized User Info Component
+  const UserInfo = memo(() => {
     if (!user) {
       return (
         <div className="flex items-center gap-3 p-3">
@@ -85,11 +84,11 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
         </div>
       </div>
     );
-  }
+  });
 
-  // Footer (logout)
-  function LogoutButton() {
-    const handleLogout = async () => {
+  // Memoized Logout Button Component
+  const LogoutButton = memo(() => {
+    const handleLogout = useCallback(async () => {
       try {
         await logout();
       } catch (error) {
@@ -97,7 +96,8 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
         localStorage.removeItem('user');
         window.location.href = '/login';
       }
-    };
+    }, [logout]);
+
     return (
       <button
         onClick={handleLogout}
@@ -107,7 +107,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
         <span className="font-[400]">Cerrar sesión</span>
       </button>
     );
-  }
+  });
 
   // Estados para el nombre y la carga
   // Obtener el nombre del research desde el hook global (ahora arreglado)
@@ -115,10 +115,12 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const isLoadingName = isLoadingResearch && !researchData?.name;
   const error = researchError?.message || null;
 
-  const handleBackToDashboard = () => { router.push('/dashboard'); };
+  const handleBackToDashboard = useCallback(() => { 
+    router.push('/dashboard'); 
+  }, [router]);
 
-  // Función para navegar a public-tests
-  const handleOpenPublicTests = () => {
+  // Optimized function for navigating to public-tests
+  const handleOpenPublicTests = useCallback(() => {
     if (researchId) {
       // Usar la URL local en desarrollo, configurada en producción
       const isDevelopment = window.location.hostname === 'localhost';
@@ -127,7 +129,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
         : 'https://public-tests.emotioxv2.com';
       window.open(`${baseUrl}/?researchId=${researchId}`, '_blank');
     }
-  };
+  }, [researchId]);
 
   // Bloque superior: nombre proyecto y enlaces
   const TopBlock = (
@@ -170,40 +172,42 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const [isPublishEnabled, setIsPublishEnabled] = useState(false);
   const [isCheckingContent, setIsCheckingContent] = useState(false);
 
-  // Verificar contenido solo cuando sea necesario
-  useEffect(() => {
+  // Optimized publish state management with useMemo
+  const publishState = useMemo(() => {
     // Solo verificar si estamos en una sección que requiere eye-tracking
     const shouldCheckEyeTracking = currentSection === 'eye-tracking' || currentSection === 'eye-tracking-recruit';
 
     if (!shouldCheckEyeTracking) {
-      // Si no estamos en sección de eye-tracking, habilitar publicación por defecto
-      setIsPublishEnabled(true);
-      setIsCheckingContent(false);
-      return;
+      return { enabled: true, checking: false };
     }
 
     // Simplified: Enable publish for recruit section by default
     // Content validation happens in the actual components
-    if (currentSection === 'eye-tracking-recruit') {
-      setIsPublishEnabled(true);
-    } else {
-      setIsPublishEnabled(false);
-    }
-  }, [researchId, currentSection]);
+    return {
+      enabled: currentSection === 'eye-tracking-recruit',
+      checking: false
+    };
+  }, [currentSection]);
+
+  // Use the memoized state
+  useEffect(() => {
+    setIsPublishEnabled(publishState.enabled);
+    setIsCheckingContent(publishState.checking);
+  }, [publishState]);
 
   // REMOVED: Content checking logic to avoid unnecessary API calls
   // The actual form components handle content validation
 
-  // Función para publicar investigación
-  const handlePublishResearch = () => {
+  // Optimized publish research function
+  const handlePublishResearch = useCallback(() => {
     if (researchId && isPublishEnabled) {
       // Publication logic pending - requires research.updateStatus('published') API call
       alert('La función de publicación estará disponible próximamente');
     }
-  };
+  }, [researchId, isPublishEnabled]);
 
-  // Menú/secciones
-  const MenuBlock = (
+  // Memoized Menu Block to prevent unnecessary re-renders
+  const MenuBlock = useMemo(() => (
     <nav className="space-y-6">
       {sections.map((section) => (
         <div key={section.id} className="space-y-1">
@@ -258,7 +262,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
         )}
       </div>
     </nav>
-  );
+  ), [researchId, currentSection, isPublishEnabled, isCheckingContent, handlePublishResearch]);
 
   return (
     <SidebarBase
@@ -274,13 +278,40 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
 
 const ResearchSidebarContentWithSuspense = withSearchParams(ResearchSidebarContent);
 
+// Optimized loading skeleton component
+const SidebarSkeleton = memo(() => (
+  <div className="w-64 flex flex-col bg-white border-r border-neutral-200">
+    <div className="px-6 pt-8 pb-6">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-neutral-200 animate-pulse"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-neutral-200 rounded animate-pulse w-24"></div>
+          <div className="h-3 bg-neutral-200 rounded animate-pulse w-32"></div>
+        </div>
+      </div>
+    </div>
+    <div className="px-6 pt-4 pb-3 space-y-2">
+      <div className="h-5 bg-neutral-200 rounded animate-pulse w-40"></div>
+      <div className="h-4 bg-neutral-200 rounded animate-pulse w-32"></div>
+    </div>
+    <div className="flex-1 px-6 py-4 space-y-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <div className="h-3 bg-neutral-200 rounded animate-pulse w-16"></div>
+          <div className="space-y-1">
+            {Array.from({ length: 2 }).map((_, j) => (
+              <div key={j} className="h-8 bg-neutral-100 rounded animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+));
+
 export function ResearchSidebar({ researchId, activeStage }: ResearchSidebarProps) {
   return (
-    <Suspense fallback={<div className="w-60 flex flex-col">
-      <div className="p-4">
-        <LoadingSkeleton type="steps" count={6} />
-      </div>
-    </div>}>
+    <Suspense fallback={<SidebarSkeleton />}>
       <ResearchSidebarContentWithSuspense researchId={researchId} activeStage={activeStage} />
     </Suspense>
   );

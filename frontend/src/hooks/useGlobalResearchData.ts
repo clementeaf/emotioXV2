@@ -60,13 +60,13 @@ class GlobalAPISingleton {
     } catch (error) {
       throw error;
     } finally {
-      // Limpiar después de 10 segundos
+      // Limpiar después de 5 minutos para mejor performance
       setTimeout(() => {
         this.promises.delete(key);
         this.isInitialized.delete(key);
         this.callCount.delete(key);
         this.listeners.delete(key);
-      }, 10000);
+      }, 5 * 60 * 1000); // 5 minutos
     }
   }
 
@@ -94,13 +94,13 @@ class GlobalAPISingleton {
     } catch (error) {
       throw error;
     } finally {
-      // Limpiar después de 10 segundos
+      // Limpiar después de 5 minutos para mejor performance
       setTimeout(() => {
         this.promises.delete(key);
         this.isInitialized.delete(key);
         this.callCount.delete(key);
         this.listeners.delete(key);
-      }, 10000);
+      }, 5 * 60 * 1000); // 5 minutos
     }
   }
 
@@ -405,8 +405,8 @@ export const useGlobalResearchData = (researchId: string) => {
       return processSmartVOCData(groupedResponsesData.data);
     },
     enabled: !!groupedResponsesData && !!groupedResponsesData.data && Array.isArray(groupedResponsesData.data),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 15 * 60 * 1000,    // 15 minutos
   });
 
   // Derivar CPV data desde groupedResponses
@@ -419,8 +419,8 @@ export const useGlobalResearchData = (researchId: string) => {
       return processCPVData(groupedResponsesData.data);
     },
     enabled: !!groupedResponsesData && !!groupedResponsesData.data && Array.isArray(groupedResponsesData.data),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 15 * 60 * 1000,    // 15 minutos
   });
 
   // Derivar TrustFlow data desde groupedResponses
@@ -433,8 +433,8 @@ export const useGlobalResearchData = (researchId: string) => {
       return processTrustFlowData(groupedResponsesData.data);
     },
     enabled: !!groupedResponsesData && !!groupedResponsesData.data && Array.isArray(groupedResponsesData.data),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 15 * 60 * 1000,    // 15 minutos
   });
 
   // Función para combinar configuración con respuestas
@@ -447,8 +447,8 @@ export const useGlobalResearchData = (researchId: string) => {
       return combineCognitiveTaskData(cognitiveTaskConfig, groupedResponsesData.data);
     },
     enabled: !!cognitiveTaskConfig && !!groupedResponsesData && !!groupedResponsesData.data,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 15 * 60 * 1000,    // 15 minutos
   });
 
   return {
