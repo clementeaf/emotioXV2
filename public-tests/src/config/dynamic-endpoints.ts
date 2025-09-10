@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-09-04T15:19:09.000Z
+// Generado: 2025-09-10T18:40:03.000Z
 // Stage: dev
 
 /**
@@ -13,8 +13,10 @@ const isDevelopment = import.meta.env.DEV || window.location.hostname === 'local
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
-  // Endpoint HTTP API - FIXED: Siempre usar AWS Lambda, incluso en desarrollo
-  http: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint HTTP API
+  http: isDevelopment
+    ? "http://localhost:3000"
+    : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
 
   // Endpoint WebSocket - Siempre usar AWS Lambda
   ws: "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
@@ -23,15 +25,15 @@ export const DYNAMIC_API_ENDPOINTS = {
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-09-04T15:19:09.000Z",
+  syncedAt: "2025-09-10T18:40:03.000Z",
   syncedFromStage: "dev"
 };
 
-// URLs de desarrollo local - FIXED: Usar puertos correctos
+// URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:5173",
-  "generatedAt": "2025-09-04T15:19:09.000Z"
+  "generatedAt": "2025-09-10T18:40:03.000Z"
 };
 
 // Constantes para uso más fácil
@@ -47,6 +49,10 @@ export function getApiUrl(path: string): string {
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
   const wsUrl = API_WEBSOCKET_ENDPOINT;
+  
+  if (typeof window !== 'undefined') {
+    console.log('🔌 WebSocket URL configurada:', wsUrl);
+  }
   
   return wsUrl;
 }
