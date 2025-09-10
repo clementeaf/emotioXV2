@@ -25,9 +25,7 @@ const LoginRedirect: React.FC = () => {
 
     if (researchId && participantId) {
       // 🎯 AMBOS PARÁMETROS ESTÁN PRESENTES - PROCEDER DIRECTAMENTE
-      // Guardar en localStorage para persistencia
-      localStorage.setItem('researchId', researchId);
-      localStorage.setItem('userId', participantId);
+      // 🎯 NO MÁS LOCALSTORAGE - Solo memoria en runtime
 
       // Configurar participante con participantId
       // Generar un nombre más descriptivo basado en el ID

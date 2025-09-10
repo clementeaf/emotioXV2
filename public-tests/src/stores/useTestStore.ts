@@ -6,7 +6,6 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 // Tipos simplificados
 export interface TestStep {
@@ -79,10 +78,10 @@ const initialState = {
   isSessionActive: false,
 };
 
+// 🎯 NO MÁS LOCALSTORAGE - Solo memoria en runtime
 export const useTestStore = create<TestState>()(
-  persist(
-    (set, get) => ({
-      ...initialState,
+  (set, get) => ({
+    ...initialState,
 
       // Establecer información del participante
       setParticipant: (id: string, name: string, email: string, researchId: string) => {
@@ -208,30 +207,9 @@ export const useTestStore = create<TestState>()(
         return null;
       },
 
-      // Limpiar todas las respuestas
-      clearResponses: () => {
-        set({ responses: {} });
-      },
-    }),
-    {
-      // 🎯 CREAR STORAGE KEY DINÁMICO BASADO EN PARTICIPANTE Y RESEARCH
-      name: (() => {
-        if (typeof window !== 'undefined') {
-          const urlParams = new URLSearchParams(window.location.search);
-          const participantId = urlParams.get('userId') || localStorage.getItem('userId') || 'default';
-          const researchId = urlParams.get('researchId') || localStorage.getItem('researchId') || 'default';
-          return `test-store-${researchId}-${participantId}`;
-        }
-        return 'test-store-default';
-      })(),
-      partialize: (state: TestState) => ({
-        researchId: state.researchId,
-        participantId: state.participantId,
-        participantName: state.participantName,
-        participantEmail: state.participantEmail,
-        responses: state.responses,
-        sessionStartTime: state.sessionStartTime,
-      }),
-    }
-  )
+    // Limpiar todas las respuestas
+    clearResponses: () => {
+      set({ responses: {} });
+    },
+  })
 );

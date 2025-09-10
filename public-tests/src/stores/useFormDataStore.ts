@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 interface QuotaResult {
   status: 'QUALIFIED' | 'DISQUALIFIED_OVERQUOTA';
@@ -22,28 +21,9 @@ interface FormDataState {
   clearQuotaResult: () => void;
 }
 
-// 🎯 LIMPIAR CLAVES VIEJAS DE LOCALSTORAGE
-const cleanupOldLocalStorageKeys = () => {
-  if (typeof window !== 'undefined') {
-    const keysToRemove = [
-      'emotio-form-data',
-      'test-store', 
-      'step-storage',
-      'emotio-participant-data'
-    ];
-    
-    keysToRemove.forEach(key => {
-      if (localStorage.getItem(key)) {
-        localStorage.removeItem(key);
-        console.log(`🧹 Cleaned old localStorage key: ${key}`);
-      }
-    });
-  }
-};
-
+// 🎯 NO MÁS LOCALSTORAGE - Solo memoria en runtime
 export const useFormDataStore = create<FormDataState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       formData: {},
       quotaResult: null,
 
@@ -79,25 +59,5 @@ export const useFormDataStore = create<FormDataState>()(
       clearQuotaResult: () => {
         set({ quotaResult: null });
       }
-    }),
-    {
-      // 🎯 CREAR STORAGE KEY DINÁMICO BASADO EN PARTICIPANTE Y RESEARCH
-      name: (() => {
-        if (typeof window !== 'undefined') {
-          // 🧹 LIMPIAR CLAVES VIEJAS PRIMERO
-          cleanupOldLocalStorageKeys();
-          
-          const urlParams = new URLSearchParams(window.location.search);
-          const participantId = urlParams.get('userId') || localStorage.getItem('userId') || 'default';
-          const researchId = urlParams.get('researchId') || localStorage.getItem('researchId') || 'default';
-          return `emotio-form-data-${researchId}-${participantId}`;
-        }
-        return 'emotio-form-data-default';
-      })(),
-      partialize: (state) => ({
-        formData: state.formData,
-        quotaResult: state.quotaResult
-      })
-    }
-  )
+    })
 );

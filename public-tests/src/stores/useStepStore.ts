@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export type StepState = 'active' | 'completed' | 'disabled' | 'available';
 
@@ -44,9 +43,9 @@ export interface StepStore {
   goToNextStep: () => void;
 }
 
+// 🎯 NO MÁS LOCALSTORAGE - Solo memoria en runtime
 export const useStepStore = create<StepStore>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       // 🎯 UNA SOLA FUENTE DE VERDAD
       backendResponses: [],
       steps: [],
@@ -109,57 +108,10 @@ export const useStepStore = create<StepStore>()(
         });
       },
 
-      // 🎯 CÁLCULOS DINÁMICOS
+      // 🎯 SOLO BACKEND - NO MÁS LOCALSTORAGE
       hasBackendResponse: (questionKey: string): boolean => {
         const state = get();
-        const hasBackendResponse = state.backendResponses.some(response => response.questionKey === questionKey);
-
-        // 🎯 TAMBIÉN VERIFICAR DATOS LOCALES PERSISTIDOS
-        if (hasBackendResponse) return true;
-
-        // 🎯 VERIFICAR SI HAY DATOS LOCALES PERSISTIDOS
-        try {
-          const localData = localStorage.getItem('emotio-form-data');
-          if (localData) {
-            const parsedData = JSON.parse(localData);
-            const stateData = parsedData.state;
-            if (stateData && stateData.formData && stateData.formData[questionKey]) {
-              const localFormData = stateData.formData[questionKey];
-              // 🎯 CONSIDERAR COMO RESPUESTA SI HAY DATOS VÁLIDOS
-              if (localFormData && Object.keys(localFormData).length > 0) {
-                return true;
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('[useStepStore] Error al verificar datos locales:', error);
-        }
-
-        // 🎯 LÓGICA ESPECIAL PARA STEPS DE BIENVENIDA
-        if (questionKey === 'welcome_screen') {
-          // 🎯 SI DEMOGRÁFICOS ESTÁ COMPLETADO, BIENVENIDO TAMBIÉN ESTÁ COMPLETADO
-          const demographicsCompleted = state.backendResponses.some(response => response.questionKey === 'demographics') ||
-            (() => {
-              try {
-                const localData = localStorage.getItem('emotio-form-data');
-                if (localData) {
-                  const parsedData = JSON.parse(localData);
-                  const stateData = parsedData.state;
-                  return stateData && stateData.formData && stateData.formData['demographics'] &&
-                    Object.keys(stateData.formData['demographics']).length > 0;
-                }
-              } catch (error) {
-                console.warn('[useStepStore] Error al verificar datos locales para welcome_screen:', error);
-              }
-              return false;
-            })();
-
-          if (demographicsCompleted) {
-            return true;
-          }
-        }
-
-        return hasBackendResponse;
+        return state.backendResponses.some(response => response.questionKey === questionKey);
       },
 
       canAccessStep: (stepIndex: number): boolean => {
@@ -276,18 +228,5 @@ export const useStepStore = create<StepStore>()(
           state.setCurrentQuestionKey(nextStepKey);
         }
       }
-    }),
-    {
-      // 🎯 CREAR STORAGE KEY DINÁMICO BASADO EN PARTICIPANTE Y RESEARCH
-      name: (() => {
-        if (typeof window !== 'undefined') {
-          const urlParams = new URLSearchParams(window.location.search);
-          const participantId = urlParams.get('userId') || localStorage.getItem('userId') || 'default';
-          const researchId = urlParams.get('researchId') || localStorage.getItem('researchId') || 'default';
-          return `step-storage-${researchId}-${participantId}`;
-        }
-        return 'step-storage-default';
-      })(), // required: unique name
-    }
-  )
+    })
 );
