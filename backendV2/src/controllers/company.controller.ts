@@ -3,7 +3,7 @@ import { BadRequestError, NotFoundError } from '../errors';
 // import { InternalServerError } from '../errors';
 import { getCorsHeaders } from '../middlewares/cors';
 import { CompanyError, companyService } from '../services/company.service';
-import { extractAuthDataFromEvent } from '../utils/controller.utils';
+import { validateTokenAndSetupAuth } from '../utils/controller.utils';
 
 /**
  * Controlador para manejar operaciones CRUD de empresas
@@ -120,9 +120,15 @@ class CompanyController {
     try {
       console.log('[CompanyController] Procesando solicitud POST /companies');
 
-      // Extraer datos de autenticación
-      const authData = extractAuthDataFromEvent(event);
-      const userId = authData.userId;
+      // Validar token y configurar contexto de autenticación
+      const authResult = await validateTokenAndSetupAuth(event, '/companies');
+      
+      // Si authResult contiene una respuesta de error, devolverla
+      if ('statusCode' in authResult) {
+        return authResult;
+      }
+      
+      const userId = authResult.userId;
 
       // Parsear el body
       if (!event.body) {
