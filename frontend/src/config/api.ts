@@ -157,6 +157,7 @@ export const API_ENDPOINTS = {
     getParticipantsByResearch: '/research/{researchId}/participants',
     getParticipantDetails: '/research/{researchId}/participants/{participantId}',
     deleteParticipant: '/research/{researchId}/participants/{participantId}',
+    getResearchConfiguration: '/eye-tracking-recruit/research/{researchId}',
   },
 
   // Admin (administración de usuarios)

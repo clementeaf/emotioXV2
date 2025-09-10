@@ -114,6 +114,10 @@ export const researchInProgressAPI = {
   
   deleteParticipant: async (researchId: string, participantId: string) => {
     return alovaApiClient.delete('researchInProgress', 'deleteParticipant', { researchId, participantId });
+  },
+
+  getResearchConfiguration: async (researchId: string) => {
+    return alovaApiClient.get('researchInProgress', 'getResearchConfiguration', { researchId });
   }
 };
 

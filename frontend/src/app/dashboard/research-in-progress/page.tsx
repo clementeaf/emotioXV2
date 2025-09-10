@@ -45,13 +45,17 @@ interface Participant {
   lastActivity: string;
 }
 
+interface ResearchConfiguration {
+  allowMobileDevices: boolean;
+  trackLocation: boolean;
+}
+
 function ResearchInProgressContent() {
   const searchParams = useSearchParams();
   const researchId = searchParams?.get('research');
   const { token, authLoading } = useAuth();
 
 
-  // 🎯 MONITOREO EN TIEMPO REAL
   const { isConnected, monitoringData, reconnect } = useMonitoringReceiver(researchId || '');
 
 
@@ -62,6 +66,7 @@ function ResearchInProgressContent() {
     averageTime: { value: '--', description: 'Cargando...', icon: 'clock' }
   });
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [researchConfig, setResearchConfig] = useState<ResearchConfiguration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -78,63 +83,49 @@ function ResearchInProgressContent() {
       setError(null);
 
       try {
-        console.log('[Dashboard] 🚀 Cargando datos para research:', researchId);
-        console.log('[Dashboard] 🔑 Token disponible:', !!localStorage.getItem('token'));
+        const [metricsResponse, participantsResponse, configResponse] = await Promise.all([
+          researchInProgressAPI.getOverviewMetrics(researchId),
+          researchInProgressAPI.getParticipantsWithStatus(researchId),
+          researchInProgressAPI.getResearchConfiguration(researchId)
+        ]);
 
-        const metricsResponse = await researchInProgressAPI.getOverviewMetrics(researchId);
-        console.log('[Dashboard] 📊 Respuesta de métricas:', metricsResponse);
-
-        // 🎯 FIX: Check for success OR status 200, then check data structure
+        // Handle metrics
         if ((metricsResponse?.success && metricsResponse?.data) || (metricsResponse?.status === 200 && metricsResponse?.data)) {
           const metricsData = metricsResponse.data as ResearchStatus;
           if (metricsData.status && metricsData.participants && metricsData.completionRate && metricsData.averageTime) {
             setStatus(metricsData);
-            console.log('[Dashboard] ✅ Métricas cargadas correctamente');
-          } else {
-            console.warn('[Dashboard] ⚠️ Estructura de métricas incompleta:', metricsData);
           }
-        } else {
-          console.warn('[Dashboard] ⚠️ Respuesta de métricas inesperada:', metricsResponse);
         }
 
-        const participantsResponse = await researchInProgressAPI.getParticipantsWithStatus(researchId);
-        console.log('[Dashboard] 👥 Respuesta de participantes:', participantsResponse);
-
-        // 🎯 FIX: Check for success OR status 200
+        // Handle participants
         if ((participantsResponse.success && participantsResponse.data) || (participantsResponse.status === 200 && participantsResponse.data)) {
-          console.log('[Dashboard] 🔍 Processing participants data:', participantsResponse.data);
-          
           let participantsData;
           
           // If data is directly an array
           if (Array.isArray(participantsResponse.data)) {
             participantsData = participantsResponse.data;
-            console.log('[Dashboard] 📊 Data is direct array, length:', participantsData.length);
           }
           // If data has nested data property
           else if (participantsResponse.data.data && Array.isArray(participantsResponse.data.data)) {
             participantsData = participantsResponse.data.data;
-            console.log('[Dashboard] 📊 Data has nested property, length:', participantsData.length);
           }
           // Fallback
           else {
             participantsData = [];
-            console.warn('[Dashboard] ⚠️ Could not parse participants data structure');
           }
           
           setParticipants(participantsData);
-          console.log('[Dashboard] ✅ Participants set, count:', participantsData.length);
-        } else {
-          console.warn('[Dashboard] ❌ Participants response not successful:', participantsResponse);
+        }
+
+        // Handle research configuration
+        if ((configResponse?.success && configResponse?.data) || (configResponse?.status === 200 && configResponse?.data)) {
+          const config = configResponse.data;
+          setResearchConfig({
+            allowMobileDevices: config.linkConfig?.allowMobileDevices ?? true,
+            trackLocation: config.linkConfig?.trackLocation ?? true
+          });
         }
       } catch (error: any) {
-        console.error('[Dashboard] ❌ Error cargando datos:', error);
-        console.error('[Dashboard] ❌ Error details:', {
-          message: error.message,
-          status: error.status,
-          response: error.response,
-          stack: error.stack
-        });
         setError(error.message || 'Error al cargar los datos de la investigación');
       } finally {
         setIsLoading(false);
@@ -144,12 +135,9 @@ function ResearchInProgressContent() {
     loadData();
   }, [researchId, token, authLoading]);
 
-  // 🎯 FUNCIÓN PARA MANEJAR ELIMINACIÓN DE PARTICIPANTE
   const handleParticipantDeleted = (participantId: string) => {
-    // 🎯 ACTUALIZAR LISTA DE PARTICIPANTES
     setParticipants(prev => prev.filter(p => p.id !== participantId));
 
-    // 🎯 ACTUALIZAR ESTADÍSTICAS
     setStatus(prev => ({
       ...prev,
       participants: {
@@ -188,7 +176,6 @@ function ResearchInProgressContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* 🎯 INDICADOR DE CONEXIÓN WEBSOCKET */}
       <div className="mb-6 p-4 rounded-lg border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -211,7 +198,6 @@ function ResearchInProgressContent() {
         )}
       </div>
 
-      {/* 🎯 HEADER PRINCIPAL */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Investigación en Curso</h1>
@@ -225,7 +211,6 @@ function ResearchInProgressContent() {
         </Button>
       </div>
 
-      {/* 🎯 TARJETAS DE ESTADÍSTICAS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -272,7 +257,6 @@ function ResearchInProgressContent() {
         </Card>
       </div>
 
-      {/* 🎯 TABS PRINCIPALES */}
       <Tabs defaultValue="participants" className="space-y-4">
         <TabsList>
           <TabsTrigger value="participants">Participantes</TabsTrigger>
@@ -286,6 +270,7 @@ function ResearchInProgressContent() {
             researchId={researchId || ''}
             onParticipantDeleted={handleParticipantDeleted}
             isLoading={isLoading}
+            researchConfig={researchConfig}
           />
         </TabsContent>
 
@@ -300,7 +285,6 @@ function ResearchInProgressContent() {
 
       </Tabs>
 
-      {/* 🎯 MODAL INFORMATIVO SOBRE ACCESO A TESTS */}
       {showInfoModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">

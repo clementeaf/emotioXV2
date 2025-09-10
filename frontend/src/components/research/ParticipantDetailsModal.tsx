@@ -35,7 +35,7 @@ interface ParticipantDetails {
   endTime?: string;
   totalDuration?: number;
   deviceInfo?: {
-    type: 'desktop' | 'mobile' | 'tablet';
+    type: 'desktop' | 'mobile' | 'tablet' | 'N/A' | string;
     browser: string;
     os: string;
     screenSize: string;
@@ -48,12 +48,22 @@ interface ParticipantDetails {
   responses?: ParticipantResponse[];
   disqualificationReason?: string;
   isDisqualified: boolean;
+  permissions?: {
+    deviceInfoAllowed?: boolean;
+    locationAllowed?: boolean;
+  };
+}
+
+interface ResearchConfiguration {
+  allowMobileDevices: boolean;
+  trackLocation: boolean;
 }
 
 interface ParticipantDetailsModalProps {
   participant: ParticipantDetails | null;
   isOpen: boolean;
   onClose: () => void;
+  researchConfig?: ResearchConfiguration | null;
 }
 
 const deviceConfig = {
@@ -80,22 +90,21 @@ const statusConfig = {
   }
 };
 
-export function ParticipantDetailsModal({ participant, isOpen, onClose }: ParticipantDetailsModalProps) {
+export function ParticipantDetailsModal({ participant, isOpen, onClose, researchConfig }: ParticipantDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'responses' | 'timeline'>('overview');
 
   if (!isOpen || !participant) return null;
-
-  // 🎯 DEBUG: Log participant data
-  console.log('[ParticipantDetailsModal] 📊 Participant data received:', participant);
-  console.log('[ParticipantDetailsModal] 📝 Responses count:', participant.responses?.length || 0);
-  console.log('[ParticipantDetailsModal] 📝 Responses data:', participant.responses);
 
   const getStatusConfig = (status: string) => {
     return statusConfig[status as keyof typeof statusConfig] || statusConfig['Por iniciar'];
   };
 
   const getDeviceConfig = (deviceType: string) => {
-    return deviceConfig[deviceType as keyof typeof deviceConfig] || deviceConfig.desktop;
+    const validTypes = ['desktop', 'mobile', 'tablet'] as const;
+    if (validTypes.includes(deviceType as any)) {
+      return deviceConfig[deviceType as keyof typeof deviceConfig];
+    }
+    return deviceConfig.desktop; // Default fallback
   };
 
   const formatDuration = (seconds: number): string => {
@@ -153,7 +162,7 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
 
       // Para otros objetos, mostrar solo los valores principales
       const mainValues = Object.entries(response)
-        .filter(([key, value]) => value !== null && value !== undefined && value !== '')
+        .filter(([, value]) => value !== null && value !== undefined && value !== '')
         .map(([key, value]) => `${key}: ${value}`)
         .join(' • ');
 
@@ -274,59 +283,126 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
 
               {/* Device and Location */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {participant.deviceInfo && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <Monitor className="h-4 w-4" />
-                        Dispositivo
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {(() => {
-                          const device = getDeviceConfig(participant.deviceInfo.type);
-                          const DeviceIcon = device.icon;
-                          return (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Monitor className="h-4 w-4" />
+                      Dispositivo
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      // Check if device tracking is disabled in research config
+                      if (researchConfig?.allowMobileDevices === false) {
+                        return (
+                          <div className="text-sm text-neutral-500 italic">
+                            La captura de información del dispositivo está deshabilitada en la configuración del estudio
+                          </div>
+                        );
+                      }
+                      
+                      // Check if participant explicitly denied device info permissions
+                      if (participant.permissions?.deviceInfoAllowed === false) {
+                        return (
+                          <div className="text-sm text-amber-600 italic">
+                            El participante no autorizó la captura de información del dispositivo
+                          </div>
+                        );
+                      }
+                      
+                      // Check if we have valid device info (not null, undefined, or N/A values)
+                      const hasValidDeviceInfo = participant.deviceInfo && 
+                        participant.deviceInfo.type !== 'N/A' &&
+                        participant.deviceInfo.browser !== 'N/A' &&
+                        participant.deviceInfo.os !== 'N/A' &&
+                        participant.deviceInfo.screenSize !== 'N/A';
+                      
+                      if (hasValidDeviceInfo && participant.deviceInfo) {
+                        const device = getDeviceConfig(participant.deviceInfo.type);
+                        const DeviceIcon = device.icon;
+                        return (
+                          <div className="space-y-2">
                             <Badge className={`${device.color} flex items-center gap-1 w-fit`}>
                               <DeviceIcon className="h-3 w-3" />
                               {device.label}
                             </Badge>
-                          );
-                        })()}
-                        <div className="text-sm text-neutral-600">
-                          <div>{participant.deviceInfo.browser}</div>
-                          <div>{participant.deviceInfo.os}</div>
-                          <div>{participant.deviceInfo.screenSize}</div>
+                            <div className="text-sm text-neutral-600">
+                              <div>{participant.deviceInfo.browser}</div>
+                              <div>{participant.deviceInfo.os}</div>
+                              <div>{participant.deviceInfo.screenSize}</div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      // Default message when no valid device info is available
+                      return (
+                        <div className="text-sm text-neutral-500 italic">
+                          La identificación del dispositivo no fue configurada para este estudio
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
 
-                {participant.location && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Ubicación
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4 text-neutral-500" />
-                          <span className="text-sm font-medium">
-                            {participant.location.city}, {participant.location.country}
-                          </span>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Ubicación
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      // Check if location tracking is disabled in research config
+                      if (researchConfig?.trackLocation === false) {
+                        return (
+                          <div className="text-sm text-neutral-500 italic">
+                            El rastreo de ubicación está deshabilitado en la configuración del estudio
+                          </div>
+                        );
+                      }
+                      
+                      // Check if participant explicitly denied location permissions
+                      if (participant.permissions?.locationAllowed === false) {
+                        return (
+                          <div className="text-sm text-amber-600 italic">
+                            El participante no autorizó el rastreo de su ubicación
+                          </div>
+                        );
+                      }
+                      
+                      // Check if we have valid location info (not null, undefined, or N/A values)
+                      const hasValidLocationInfo = participant.location && 
+                        participant.location.city !== 'N/A' &&
+                        participant.location.country !== 'N/A' &&
+                        participant.location.ip !== 'N/A';
+                      
+                      if (hasValidLocationInfo && participant.location) {
+                        return (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4 text-neutral-500" />
+                              <span className="text-sm font-medium">
+                                {participant.location.city}, {participant.location.country}
+                              </span>
+                            </div>
+                            <div className="text-xs text-neutral-500">
+                              IP: {participant.location.ip}
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      // Default message when no valid location info is available
+                      return (
+                        <div className="text-sm text-neutral-500 italic">
+                          El rastreo de ubicación no fue configurado para este estudio
                         </div>
-                        <div className="text-xs text-neutral-500">
-                          IP: {participant.location.ip}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Timeline */}

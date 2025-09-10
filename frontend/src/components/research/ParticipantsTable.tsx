@@ -30,12 +30,18 @@ interface Participant {
   lastActivity: string;
 }
 
+interface ResearchConfiguration {
+  allowMobileDevices: boolean;
+  trackLocation: boolean;
+}
+
 interface ParticipantsTableProps {
   participants: Participant[];
   onViewDetails: (participantId: string) => void;
   researchId: string;
   onParticipantDeleted?: (participantId: string) => void;
   isLoading?: boolean;
+  researchConfig?: ResearchConfiguration | null;
 }
 
 const statusConfig = {
@@ -61,7 +67,8 @@ export function ParticipantsTable({
   onViewDetails,
   researchId,
   onParticipantDeleted,
-  isLoading = false
+  isLoading = false,
+  researchConfig
 }: ParticipantsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -69,7 +76,6 @@ export function ParticipantsTable({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [participantDetails, setParticipantDetails] = useState<any>(null);
 
-  // 🎯 ESTADOS PARA ELIMINACIÓN
   const [participantToDelete, setParticipantToDelete] = useState<Participant | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -90,19 +96,14 @@ export function ParticipantsTable({
     setIsModalOpen(true);
 
     try {
-      console.log('[ParticipantsTable] 🔍 Fetching details for participant:', participant.id);
       const response = await researchInProgressAPI.getParticipantDetails(researchId, participant.id);
-      console.log('[ParticipantsTable] 📊 Participant details response:', response);
 
-      // 🎯 FIX: Check for success OR status 200
+      // Fix: Check for success OR status 200
       if (response.success || response.status === 200) {
         setParticipantDetails(response.data);
-        console.log('[ParticipantsTable] ✅ Participant details set:', response.data);
-      } else {
-        console.warn('[ParticipantsTable] ⚠️ Failed to get participant details:', response);
       }
     } catch (error) {
-      console.error('[ParticipantsTable] ❌ Error fetching participant details:', error);
+      console.error('Error fetching participant details:', error);
     }
   };
 
@@ -112,13 +113,11 @@ export function ParticipantsTable({
     setParticipantDetails(null);
   };
 
-  // 🎯 FUNCIÓN PARA ABRIR MODAL DE ELIMINACIÓN
   const handleDeleteClick = (participant: Participant) => {
     setParticipantToDelete(participant);
     setIsDeleteModalOpen(true);
   };
 
-  // 🎯 FUNCIÓN PARA ELIMINAR PARTICIPANTE
   const handleDeleteParticipant = async () => {
     if (!participantToDelete) return;
 
@@ -128,11 +127,7 @@ export function ParticipantsTable({
       const response = await researchInProgressAPI.deleteParticipant(researchId, participantToDelete.id);
 
       if (response.success) {
-
-        // 🎯 NOTIFICAR AL COMPONENTE PADRE
         onParticipantDeleted?.(participantToDelete.id);
-
-        // 🎯 CERRAR MODAL
         setIsDeleteModalOpen(false);
         setParticipantToDelete(null);
       } else {
@@ -145,26 +140,16 @@ export function ParticipantsTable({
     }
   };
 
-  // 🎯 FUNCIÓN PARA CERRAR MODAL DE ELIMINACIÓN
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setParticipantToDelete(null);
   };
 
-  // 🎯 FUNCIÓN PARA GENERAR URL DE PUBLIC-TESTS
   const generatePublicTestsUrl = (participantId: string) => {
     const url = getPublicTestsUrl(researchId, participantId);
-    
-    console.log('Generated URL:', {
-      url,
-      participantId,
-      researchId
-    });
-    
     return url;
   };
 
-  // 🎯 FUNCIÓN PARA COPIAR URL
   const copyParticipantUrl = async (participantId: string) => {
     try {
       const url = generatePublicTestsUrl(participantId);
@@ -173,13 +158,11 @@ export function ParticipantsTable({
     }
   };
 
-  // 🎯 FUNCIÓN PARA ABRIR PUBLIC-TESTS
   const openParticipantTest = (participantId: string) => {
     const url = generatePublicTestsUrl(participantId);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  // 🎯 COMPONENTE DE SKELETON
   const SkeletonRow = () => (
     <tr className="border-b">
       <td className="py-3 px-4">
@@ -271,12 +254,10 @@ export function ParticipantsTable({
               </thead>
               <tbody>
                 {isLoading ? (
-                  // 🎯 MOSTRAR SKELETON MIENTRAS CARGA
                   Array.from({ length: 5 }).map((_, index) => (
                     <SkeletonRow key={index} />
                   ))
                 ) : (
-                  // 🎯 MOSTRAR PARTICIPANTES REALES
                   filteredParticipants.map((participant) => {
                     const status = getStatusConfig(participant.status);
                     const StatusIcon = status.icon;
@@ -360,16 +341,15 @@ export function ParticipantsTable({
         </CardContent>
       </Card>
 
-      {/* 🎯 MODAL DE DETALLES */}
       {selectedParticipant && (
         <ParticipantDetailsModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           participant={participantDetails || selectedParticipant}
+          researchConfig={researchConfig}
         />
       )}
 
-      {/* 🎯 MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
       {isDeleteModalOpen && participantToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
