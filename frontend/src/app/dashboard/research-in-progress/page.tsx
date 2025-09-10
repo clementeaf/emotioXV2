@@ -84,8 +84,8 @@ function ResearchInProgressContent() {
         const metricsResponse = await researchInProgressAPI.getOverviewMetrics(researchId);
         console.log('[Dashboard] 📊 Respuesta de métricas:', metricsResponse);
 
-        if (metricsResponse?.success && metricsResponse?.data) {
-          // 🚨 FIX: Validar que la estructura de datos sea correcta antes de actualizar
+        // 🎯 FIX: Check for success OR status 200, then check data structure
+        if ((metricsResponse?.success && metricsResponse?.data) || (metricsResponse?.status === 200 && metricsResponse?.data)) {
           const metricsData = metricsResponse.data as ResearchStatus;
           if (metricsData.status && metricsData.participants && metricsData.completionRate && metricsData.averageTime) {
             setStatus(metricsData);
@@ -95,22 +95,13 @@ function ResearchInProgressContent() {
           }
         } else {
           console.warn('[Dashboard] ⚠️ Respuesta de métricas inesperada:', metricsResponse);
-          // 🚨 FIX: Si no hay success flag, pero hay datos, validar estructura
-          if (metricsResponse && typeof metricsResponse === 'object') {
-            const directData = metricsResponse as ResearchStatus;
-            if (directData.status && directData.participants && directData.completionRate && directData.averageTime) {
-              setStatus(directData);
-              console.log('[Dashboard] ✅ Métricas cargadas desde estructura alternativa');
-            } else {
-              console.warn('[Dashboard] ❌ Estructura de datos inválida:', directData);
-            }
-          }
         }
 
         const participantsResponse = await researchInProgressAPI.getParticipantsWithStatus(researchId);
         console.log('[Dashboard] 👥 Respuesta de participantes:', participantsResponse);
 
-        if (participantsResponse.success && participantsResponse.data) {
+        // 🎯 FIX: Check for success OR status 200
+        if ((participantsResponse.success && participantsResponse.data) || (participantsResponse.status === 200 && participantsResponse.data)) {
           // La respuesta viene como { success: true, data: { data: [...], status: 200 } }
           const participantsData = participantsResponse.data.data || [];
           setParticipants(participantsData);
