@@ -81,7 +81,7 @@ const CustomLegend = () => (
   </div>
 );
 
-export const TrustRelationshipFlow = ({ data, className, hasData = true, isLoading = false }: TrustRelationshipFlowProps) => {
+export const TrustRelationshipFlow = ({ data, className, isLoading = false }: TrustRelationshipFlowProps) => {
 
   // Si está cargando, mostrar skeleton
   if (isLoading) {
@@ -113,20 +113,7 @@ export const TrustRelationshipFlow = ({ data, className, hasData = true, isLoadi
       </div>
 
       <div className="h-64 mt-6 relative">
-        {!hasData || data.length === 0 ? (
-          <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-gray-200 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <p className="text-gray-500 font-medium">Aún no hay datos</p>
-              <p className="text-gray-400 text-sm">El gráfico de percepción del cliente aparecerá aquí cuando los participantes completen las encuestas SmartVOC.</p>
-            </div>
-          </div>
-        ) : (
-          <>
+        {/* Siempre mostrar el gráfico, incluso sin datos */}
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
                 <CartesianGrid
@@ -197,8 +184,6 @@ export const TrustRelationshipFlow = ({ data, className, hasData = true, isLoadi
                 </div>
               </div>
             )}
-          </>
-        )}
       </div>
     </Card>
   );

@@ -85,6 +85,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
       </div>
     );
   });
+  UserInfo.displayName = 'UserInfo';
 
   // Memoized Logout Button Component
   const LogoutButton = memo(() => {
@@ -108,6 +109,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
       </button>
     );
   });
+  LogoutButton.displayName = 'LogoutButton';
 
   // Estados para el nombre y la carga
   // Obtener el nombre del research desde el hook global (ahora arreglado)
@@ -308,6 +310,7 @@ const SidebarSkeleton = memo(() => (
     </div>
   </div>
 ));
+SidebarSkeleton.displayName = 'SidebarSkeleton';
 
 export function ResearchSidebar({ researchId, activeStage }: ResearchSidebarProps) {
   return (

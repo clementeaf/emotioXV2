@@ -172,6 +172,9 @@ interface CPVData {
   nevValue: number;
   npsValue: number;
   peakValue: number;
+  promoters: number;
+  neutrals: number;
+  detractors: number;
 }
 
 interface TrustFlowData {
@@ -655,6 +658,7 @@ function processCPVData(groupedResponses: QuestionWithResponses[]): CPVData {
 
   const promoters = npsScores.filter(score => score >= 9).length;
   const neutrals = npsScores.filter(score => score >= 7 && score <= 8).length;
+  const detractors = npsScores.filter(score => score <= 6).length;
   const retention = totalResponses > 0 ? Math.round(((promoters + neutrals) / totalResponses) * 100) : 0;
 
   const impact = totalResponses > 0 && promoters > (npsScores.length - promoters - neutrals) ? 'Alto' : totalResponses > 0 ? 'Medio' : 'Bajo';
@@ -672,8 +676,11 @@ function processCPVData(groupedResponses: QuestionWithResponses[]): CPVData {
     cesPercentage,
     cvValue: cvScores.length > 0 ? Math.round((cvScores.reduce((a, b) => a + b, 0) / cvScores.length) * 10) / 10 : 0,
     nevValue: nevScores.length > 0 ? Math.round((nevScores.reduce((a, b) => a + b, 0) / nevScores.length) * 10) / 10 : 0,
-    npsValue: npsScores.length > 0 ? Math.round(((promoters - (npsScores.length - promoters - neutrals)) / npsScores.length) * 100) : 0,
-    peakValue
+    npsValue: npsScores.length > 0 ? Math.round(((promoters - detractors) / npsScores.length) * 100) : 0,
+    peakValue,
+    promoters,
+    neutrals,
+    detractors
   };
 }
 

@@ -24,6 +24,8 @@ interface EmotionalStatesProps {
   responseTime?: string;
   positivePercentage?: number;
   negativePercentage?: number;
+  questionText?: string;
+  instructionsText?: string;
 }
 
 export function EmotionalStates({
@@ -34,7 +36,9 @@ export function EmotionalStates({
   totalResponses = 0,
   responseTime = '0s',
   positivePercentage: customPositivePercentage,
-  negativePercentage: customNegativePercentage
+  negativePercentage: customNegativePercentage,
+  questionText,
+  instructionsText
 }: EmotionalStatesProps) {
   const calculatedPositivePercentage = emotionalStates
     .filter(state => state.isPositive)
@@ -46,9 +50,6 @@ export function EmotionalStates({
   const positivePercentage = customPositivePercentage ?? calculatedPositivePercentage;
   const negativePercentage = customNegativePercentage ?? calculatedNegativePercentage;
 
-  // Verificar si hay datos disponibles
-  const hasData = emotionalStates.length > 0;
-
 
   return (
     <Card className={cn('p-6 pb-14', className)}>
@@ -57,12 +58,9 @@ export function EmotionalStates({
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <h2 className="text-lg font-semibold">2.4.-Question: Net Emotional Value (NEV)</h2>
-            <span className="text-sm px-2 py-1 bg-green-100 text-green-700 rounded">Linear Scale question</span>
-            <span className="text-sm px-2 py-1 bg-blue-100 text-blue-700 rounded">Conditionality disabled</span>
-            <span className="text-sm px-2 py-1 bg-red-100 text-red-700 rounded">Required</span>
           </div>
-          <p className="text-gray-600">How do you feel about the experience offered by the [company]?</p>
-          <p className="text-gray-500 text-sm">Please select up to 3 options from these 20 emotional moods</p>
+          <p className="text-gray-600">{questionText || "How do you feel about the experience offered by the [company]?"}</p>
+          <p className="text-gray-500 text-sm">{instructionsText || "Please select up to 3 options from these 20 emotional moods"}</p>
         </div>
         <div className="flex flex-col items-end">
           <div className="flex items-center gap-2">
@@ -109,21 +107,7 @@ export function EmotionalStates({
           <h3 className="text-xl font-light text-gray-500 mb-2">Emotional states</h3>
           <p className="text-2xl font-bold mb-12">{positivePercentage.toFixed(2)}% Positive</p>
 
-          {!hasData && (
-            <div className="flex items-center justify-center h-[360px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="text-center">
-                <div className="text-gray-400 mb-2">
-                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <p className="text-gray-500 font-medium">No hay datos disponibles</p>
-                <p className="text-gray-400 text-sm">Los datos de emociones aparecerán aquí cuando se recopilen respuestas</p>
-              </div>
-            </div>
-          )}
-
-          {hasData && (
+          {/* Siempre mostrar el gráfico, incluso sin datos */}
 
             <div className="relative h-[360px] mt-8 pb-10">
               {/* Fondo cuadriculado */}
@@ -207,7 +191,6 @@ export function EmotionalStates({
                 ))}
               </div>
             </div>
-          )}
         </div>
 
         {/* Clusters en columna */}
@@ -229,7 +212,7 @@ export function EmotionalStates({
                         'text-sm font-medium',
                         cluster.trend === 'up' ? 'text-[#4ADE80]' : 'text-[#F87171]'
                       )}>
-                        {cluster.value}%
+                        {cluster.value.toFixed(2)}%
                       </span>
                     </div>
                   </div>
@@ -259,7 +242,7 @@ export function EmotionalStates({
                         'text-sm font-medium',
                         cluster.trend === 'up' ? 'text-[#4ADE80]' : 'text-[#F87171]'
                       )}>
-                        {cluster.value}%
+                        {cluster.value.toFixed(2)}%
                       </span>
                     </div>
                   </div>

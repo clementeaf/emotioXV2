@@ -2,7 +2,6 @@
 
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -69,7 +68,7 @@ const CustomLegend = ({ payload, cardType }: { payload: any; cardType: string })
   );
 };
 
-export const MetricCard = ({ title, score, question, data, className, hasData = false }: MetricCardProps) => {
+export const MetricCard = ({ title, score, question, data, className }: MetricCardProps) => {
   return (
     <Card className={cn('p-6 space-y-6', className)}>
       <div className="space-y-4">
@@ -83,103 +82,94 @@ export const MetricCard = ({ title, score, question, data, className, hasData = 
           </button>
         </div>
 
-        {hasData ? (
-          <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-medium">
-              {title === 'Customer Satisfaction' ? 'CSAT' :
-                title === 'Customer Effort Score' ? 'CES' :
-                  title === 'Cognitive Value' ? 'CV' : ''} {(score || 0).toFixed(2)}
-            </span>
-            {/* Trend indicator removed - no mock data */}
-            <div className="flex items-center text-gray-400 text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4 mr-1"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12.577 4.878a.75.75 0 01.919-.53l4.78 1.281a.75.75 0 01.531.919l-1.281 4.78a.75.75 0 01-1.449-.387l.81-3.022a19.407 19.407 0 00-5.594 5.203.75.75 0 01-1.139.093L7 10.06l-4.72 4.72a.75.75 0 01-1.06-1.061l5.25-5.25a.75.75 0 011.06 0l3.074 3.073a20.923 20.923 0 015.545-4.931l-3.042.815a.75.75 0 01-.919-.53z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              --
-            </div>
+        {/* Siempre mostrar el score */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl font-medium">
+            {title === 'Customer Satisfaction' ? 'CSAT' :
+              title === 'Customer Effort Score' ? 'CES' :
+                title === 'Cognitive Value' ? 'CV' : ''} {(score || 0).toFixed(2)}
+          </span>
+          {/* Trend indicator */}
+          <div className="flex items-center text-gray-400 text-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="w-4 h-4 mr-1"
+            >
+              <path
+                fillRule="evenodd"
+                d="M12.577 4.878a.75.75 0 01.919-.53l4.78 1.281a.75.75 0 01.531.919l-1.281 4.78a.75.75 0 01-1.449-.387l.81-3.022a19.407 19.407 0 00-5.594 5.203.75.75 0 01-1.139.093L7 10.06l-4.72 4.72a.75.75 0 01-1.06-1.061l5.25-5.25a.75.75 0 011.06 0l3.074 3.073a20.923 20.923 0 015.545-4.931l-3.042.815a.75.75 0 01-.919-.53z"
+                clipRule="evenodd"
+              />
+            </svg>
+            --
           </div>
-        ) : (
-          <div className="h-8 bg-gray-100 rounded animate-pulse"></div>
-        )}
+        </div>
 
         <p className="text-gray-500">{question}</p>
       </div>
 
       <div className="h-40">
-        {hasData && data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                vertical={false}
-                stroke="#E5E7EB"
-              />
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                stroke="#9CA3AF"
-                fontSize={12}
-                tickMargin={10}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                stroke="#9CA3AF"
-                fontSize={12}
-                domain={[0, 100]}
-                ticks={[0, 50, 100]}
-                tickMargin={10}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend content={<CustomLegend payload={[]} cardType={title} />} />
-              <Line
-                type="monotone"
-                dataKey="satisfied"
-                name="Satisfied"
-                stroke="#22c55e"
-                strokeWidth={2}
-                dot={{ r: 4, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
-                activeDot={{ r: 6, strokeWidth: 0 }}
-                isAnimationActive={true}
-                animationDuration={1000}
-                animationEasing="ease-out"
-              />
-              <Line
-                type="monotone"
-                dataKey="dissatisfied"
-                name="Dissatisfied"
-                stroke="#ef4444"
-                strokeWidth={2}
-                dot={{ r: 4, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }}
-                activeDot={{ r: 6, strokeWidth: 0 }}
-                isAnimationActive={true}
-                animationDuration={1000}
-                animationEasing="ease-out"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <p className="text-sm text-gray-500">Aún no hay datos</p>
-            </div>
-          </div>
-        )}
+        {/* Siempre mostrar el gráfico, incluso sin datos */}
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data && data.length > 0 ? data : [
+            { date: 'Ene', satisfied: 0, dissatisfied: 0 },
+            { date: 'Feb', satisfied: 0, dissatisfied: 0 },
+            { date: 'Mar', satisfied: 0, dissatisfied: 0 },
+            { date: 'Abr', satisfied: 0, dissatisfied: 0 },
+            { date: 'May', satisfied: 0, dissatisfied: 0 },
+            { date: 'Jun', satisfied: 0, dissatisfied: 0 }
+          ]}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="#E5E7EB"
+            />
+            <XAxis
+              dataKey="date"
+              axisLine={false}
+              tickLine={false}
+              stroke="#9CA3AF"
+              fontSize={12}
+              tickMargin={10}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              stroke="#9CA3AF"
+              fontSize={12}
+              domain={[0, 100]}
+              ticks={[0, 50, 100]}
+              tickMargin={10}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="satisfied"
+              name="Satisfied"
+              stroke="#22c55e"
+              strokeWidth={2}
+              dot={{ r: 4, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              isAnimationActive={true}
+              animationDuration={1000}
+              animationEasing="ease-out"
+            />
+            <Line
+              type="monotone"
+              dataKey="dissatisfied"
+              name="Dissatisfied"
+              stroke="#ef4444"
+              strokeWidth={2}
+              dot={{ r: 4, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              isAnimationActive={true}
+              animationDuration={1000}
+              animationEasing="ease-out"
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Leyenda siempre visible */}

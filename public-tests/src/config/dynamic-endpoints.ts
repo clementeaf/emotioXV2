@@ -68,6 +68,7 @@ export function navigateToPublicTests(researchID: string): void {
 
 // Función para verificar si los endpoints están sincronizados
 export function isEndpointsSynced(): boolean {
+  const isDevelopment = process.env.NODE_ENV === 'development';
   return !isDevelopment && API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
 }
 

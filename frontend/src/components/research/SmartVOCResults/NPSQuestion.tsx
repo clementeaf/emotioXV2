@@ -9,10 +9,57 @@ import {
   YAxis
 } from 'recharts';
 
-import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { CircularProgress } from '@/components/ui/CircularProgress';
 import Progress from '@/components/ui/progress';
+
+// Componente circular especializado para NPS que maneja valores de -100 a +100
+const NPSCircularProgress = ({ value, size = 96, strokeWidth = 8 }: { value: number; size?: number; strokeWidth?: number }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  
+  // Normalizar el valor NPS (-100 a +100) a porcentaje (0 a 100) para el display visual
+  const normalizedValue = Math.max(0, Math.min(100, (value + 100) / 2));
+  const offset = circumference - (normalizedValue / 100) * circumference;
+
+  return (
+    <div style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Background circle */}
+        <circle
+          className="stroke-gray-200"
+          strokeWidth={strokeWidth}
+          fill="none"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+        />
+        {/* Progress circle */}
+        <circle
+          className="stroke-blue-600 transition-all duration-300 ease-in-out"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          fill="none"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+        {/* Text in the middle showing actual NPS score */}
+        <text
+          x="50%"
+          y="50%"
+          dominantBaseline="middle"
+          textAnchor="middle"
+          className="fill-current font-semibold text-lg"
+        >
+          {value}
+        </text>
+      </svg>
+    </div>
+  );
+};
 
 // Componente Skeleton para NPSQuestion
 const NPSQuestionSkeleton = () => {
@@ -90,6 +137,7 @@ interface NPSQuestionProps {
   neutrals?: number;
   totalResponses?: number;
   isLoading?: boolean; // Nueva prop para loading
+  questionText?: string;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -132,7 +180,8 @@ export function NPSQuestion({
   detractors = 0,
   neutrals = 0,
   totalResponses = 0,
-  isLoading = false
+  isLoading = false,
+  questionText
 }: NPSQuestionProps) {
   const hasData = monthlyData.length > 0;
 
@@ -152,9 +201,6 @@ export function NPSQuestion({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-medium">2.5.- Question: Net Promoter Score (NPS)</h3>
-            <Badge variant="secondary" className="bg-green-100 text-green-700">Linear Scale question</Badge>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700">Conditionality disabled</Badge>
-            <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Responses</span>
@@ -193,37 +239,23 @@ export function NPSQuestion({
             <Target className="w-5 h-5 text-blue-600" />
             <span className="text-sm">NPS' question</span>
           </div>
-          <p className="text-sm text-gray-500">On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?</p>
+          <p className="text-sm text-gray-500">{questionText || "On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?"}</p>
         </div>
 
         <div className="flex justify-end">
           <div className="w-24 h-24">
-            <CircularProgress value={npsScore} size={96} strokeWidth={8} />
+            <NPSCircularProgress value={npsScore} size={96} strokeWidth={8} />
           </div>
         </div>
 
         <div className="h-[480px]">
-          {!hasData && (
-            <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="text-center">
-                <div className="text-gray-400 mb-2">
-                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <p className="text-gray-500 font-medium">No hay datos disponibles</p>
-                <p className="text-gray-400 text-sm">Los datos de NPS aparecerán aquí cuando se recopilen respuestas</p>
-              </div>
-            </div>
-          )}
-
-          {hasData && (
+          {/* Siempre mostrar el gráfico, incluso sin datos */}
             <>
               <div className="flex justify-between items-center mb-4">
                 <CustomLegend />
                 <div className="relative inline-block">
                   <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white">
-                    <span>Year</span>
+                    <span>Month</span>
                     <ChevronDown size={16} />
                   </button>
                 </div>
@@ -280,7 +312,6 @@ export function NPSQuestion({
                 </ComposedChart>
               </ResponsiveContainer>
             </>
-          )}
         </div>
 
         <div className="border-t border-gray-200 pt-4">

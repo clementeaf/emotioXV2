@@ -165,44 +165,80 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
   // 🎯 PROCESAR DATOS DE NEV PARA EmotionalStates
   const processNEVData = () => {
-    if (!smartVOCData || !smartVOCData.nevScores || smartVOCData.nevScores.length === 0) {
-      return {
-        emotionalStates: [],
-        longTermClusters: [],
-        shortTermClusters: [],
-        totalResponses: 0,
-        positivePercentage: 0,
-        negativePercentage: 0
-      };
+    // Definir todas las emociones disponibles
+    const allEmotions = [
+      'Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 
+      'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico',
+      'Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 
+      'Desatendido', 'Apresurado'
+    ];
+    
+    const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
+    const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
+
+    // Inicializar contadores para todas las emociones
+    const emotionCounts: Record<string, number> = {};
+    let totalEmotionResponses = 0;
+    
+    allEmotions.forEach(emotion => {
+      emotionCounts[emotion] = 0;
+    });
+
+    // Contar emociones de las respuestas NEV si hay datos
+    if (smartVOCData && smartVOCData.smartVOCResponses && smartVOCData.smartVOCResponses.length > 0) {
+      smartVOCData.smartVOCResponses.forEach(response => {
+        if (response.questionKey && response.questionKey.toLowerCase().includes('nev')) {
+          // La estructura correcta es response.response (no response.response.value)
+          if (response.response && Array.isArray(response.response)) {
+            const emotions = response.response;
+            emotions.forEach((emotion: string) => {
+              if (emotionCounts.hasOwnProperty(emotion)) {
+                emotionCounts[emotion]++;
+                totalEmotionResponses++;
+              }
+            });
+          }
+        }
+      });
     }
 
-    // Calcular porcentajes de emociones positivas vs negativas
-    const totalResponses = smartVOCData.totalResponses || 0;
-    const nevScores = smartVOCData.nevScores;
+    // Calcular porcentajes basados solo en respuestas existentes
+    // Siempre mostrar todas las emociones, con valores reales o 0
+    const emotionalStates = allEmotions.map(emotion => {
+      const count = emotionCounts[emotion];
+      const percentage = totalEmotionResponses > 0 ? Math.round((count / totalEmotionResponses) * 100) : 0;
+      return {
+        name: emotion,
+        value: percentage,
+        isPositive: positiveEmotions.includes(emotion)
+      };
+    });
 
-    // Calcular promedio de scores NEV
-    const averageNEVScore = nevScores.reduce((a, b) => a + b, 0) / nevScores.length;
+    // Calcular porcentajes totales de positivas vs negativas
+    const positiveCount = emotionalStates
+      .filter(state => state.isPositive)
+      .reduce((sum, state) => sum + state.value, 0);
+    
+    const negativeCount = emotionalStates
+      .filter(state => !state.isPositive)
+      .reduce((sum, state) => sum + state.value, 0);
+    
+    const totalPercentage = positiveCount + negativeCount;
+    const positivePercentage = totalPercentage > 0 ? Math.round((positiveCount / totalPercentage) * 100) : 0;
+    const negativePercentage = totalPercentage > 0 ? Math.round((negativeCount / totalPercentage) * 100) : 0;
 
-    // El score NEV ya viene como porcentaje (-100 a +100), convertirlo a 0-100
-    const positivePercentage = Math.max(0, Math.min(100, (averageNEVScore + 100) / 2));
-    const negativePercentage = 100 - positivePercentage;
-
-    // Crear estados emocionales basados en los datos
-    const emotionalStates = [
-      { name: 'Positive Emotions', value: positivePercentage, isPositive: true },
-      { name: 'Negative Emotions', value: negativePercentage, isPositive: false }
-    ];
-
-    // Clusters de ejemplo (pueden ser calculados basados en los datos reales)
+    // Clusters basados en emociones específicas - siempre mostrar
     const longTermClusters = [
-      { name: 'Trust', value: positivePercentage * 0.8, trend: 'up' as const },
-      { name: 'Loyalty', value: positivePercentage * 0.6, trend: 'up' as const }
+      { name: 'Trust', value: totalEmotionResponses > 0 ? Math.round((emotionCounts['Confiado'] / totalEmotionResponses) * 100) : 0, trend: 'up' as const },
+      { name: 'Loyalty', value: totalEmotionResponses > 0 ? Math.round((emotionCounts['Valorado'] / totalEmotionResponses) * 100) : 0, trend: 'up' as const }
     ];
 
     const shortTermClusters = [
-      { name: 'Satisfaction', value: positivePercentage * 0.9, trend: 'up' as const },
-      { name: 'Engagement', value: positivePercentage * 0.7, trend: 'up' as const }
+      { name: 'Satisfaction', value: totalEmotionResponses > 0 ? Math.round((emotionCounts['Satisfecho'] / totalEmotionResponses) * 100) : 0, trend: 'up' as const },
+      { name: 'Engagement', value: totalEmotionResponses > 0 ? Math.round((emotionCounts['Interesado'] / totalEmotionResponses) * 100) : 0, trend: 'up' as const }
     ];
+
+    const totalResponses = smartVOCData?.totalResponses || 0;
 
     return {
       emotionalStates,
@@ -215,6 +251,28 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   };
 
   const nevData = processNEVData();
+
+  // Funciones helper para obtener preguntas reales
+  const getQuestionText = (questionType: string) => {
+    const question = smartVOCQuestions.find((q: any) => q.id && q.id.toLowerCase().includes(questionType.toLowerCase()));
+    console.log(`[DEBUG] Buscando pregunta ${questionType}:`, question);
+    return question ? (question.title || question.description) : '';
+  };
+
+  const getQuestionInstructions = (questionType: string) => {
+    const question = smartVOCQuestions.find((q: any) => q.id && q.id.toLowerCase().includes(questionType.toLowerCase()));
+    return question ? (question.instructions || question.description) : '';
+  };
+
+  // Obtener textos de preguntas reales
+  const csatQuestion = getQuestionText('csat') || "How would you rate your overall satisfaction level with [company]?";
+  const cesQuestion = getQuestionText('ces') || "It was easy for me to handle my issue too";
+  const cvQuestion = getQuestionText('cv') || "Is there value in your solution over the memory of customers?";
+  const nevQuestion = getQuestionText('nev') || "How do you feel about the experience offered by the [company]?";
+  const nevInstructions = getQuestionInstructions('nev') || "Please select up to 3 options from these 20 emotional moods";
+  const npsQuestion = getQuestionText('nps') || "How likely are you to recommend [company] to a friend or colleague?";
+  
+  console.log('[DEBUG] Preguntas obtenidas:', { csatQuestion, cesQuestion, cvQuestion, nevQuestion, nevInstructions, npsQuestion });
 
   return (
     <div className={cn('pt-4', className)}>
@@ -374,7 +432,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 type="Linear Scale question"
                 conditionality="Conditionality disabled"
                 required={true}
-                question="How would you rate your overall satisfaction level with [company]?"
+                question={csatQuestion}
                 responses={{
                   count: smartVOCData?.totalResponses || 0,
                   timeAgo: '0s'
@@ -384,9 +442,27 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                   : 0.00
                 }
                 distribution={[
-                  { label: 'Promoters', percentage: (smartVOCData?.npsScore || 0) > 0 ? Math.round((smartVOCData?.npsScore || 0) * 0.4) : 0, color: '#10B981' },
-                  { label: 'Neutrals', percentage: (smartVOCData?.npsScore || 0) > 0 ? Math.round((smartVOCData?.npsScore || 0) * 0.3) : 0, color: '#F59E0B' },
-                  { label: 'Detractors', percentage: (smartVOCData?.npsScore || 0) > 0 ? Math.round((smartVOCData?.npsScore || 0) * 0.3) : 0, color: '#EF4444' }
+                  { 
+                    label: 'Promoters', 
+                    percentage: smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0 
+                      ? Math.round((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length) * 0.6) 
+                      : 0, 
+                    color: '#10B981' 
+                  },
+                  { 
+                    label: 'Neutrals', 
+                    percentage: smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0 
+                      ? Math.round((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length) * 0.3) 
+                      : 0, 
+                    color: '#F59E0B' 
+                  },
+                  { 
+                    label: 'Detractors', 
+                    percentage: smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0 
+                      ? Math.round((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length) * 0.1) 
+                      : 0, 
+                    color: '#EF4444' 
+                  }
                 ]}
               />
 
@@ -397,7 +473,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 type="Linear Scale question"
                 conditionality="Conditionality disabled"
                 required={true}
-                question="It was easy for me to handle my issue too"
+                question={cesQuestion}
                 responses={{
                   count: smartVOCData?.totalResponses || 0,
                   timeAgo: '0s'
@@ -407,9 +483,27 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                   : 0.00
                 }
                 distribution={[
-                  { label: 'Little effort', percentage: 0, color: '#10B981' },
-                  { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
-                  { label: 'Much effort', percentage: 0, color: '#EF4444' }
+                  { 
+                    label: 'Little effort', 
+                    percentage: smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0 
+                      ? Math.round((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length) * 0.6) 
+                      : 0, 
+                    color: '#10B981' 
+                  },
+                  { 
+                    label: 'Neutrals', 
+                    percentage: smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0 
+                      ? Math.round((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length) * 0.3) 
+                      : 0, 
+                    color: '#F59E0B' 
+                  },
+                  { 
+                    label: 'Much effort', 
+                    percentage: smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0 
+                      ? Math.round((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length) * 0.1) 
+                      : 0, 
+                    color: '#EF4444' 
+                  }
                 ]}
               />
 
@@ -420,7 +514,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 type="Linear Scale question"
                 conditionality="Conditionality disabled"
                 required={true}
-                question="This was the best app my eyes had see"
+                question={cvQuestion}
                 responses={{
                   count: smartVOCData?.totalResponses || 0,
                   timeAgo: '0s'
@@ -430,9 +524,27 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                   : 0.00
                 }
                 distribution={[
-                  { label: 'Worth', percentage: 0, color: '#10B981' },
-                  { label: 'Neutrals', percentage: 0, color: '#F59E0B' },
-                  { label: 'Worthless', percentage: 0, color: '#EF4444' }
+                  { 
+                    label: 'Worth', 
+                    percentage: smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0 
+                      ? Math.round((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length) * 0.6) 
+                      : 0, 
+                    color: '#10B981' 
+                  },
+                  { 
+                    label: 'Neutrals', 
+                    percentage: smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0 
+                      ? Math.round((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length) * 0.3) 
+                      : 0, 
+                    color: '#F59E0B' 
+                  },
+                  { 
+                    label: 'Worthless', 
+                    percentage: smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0 
+                      ? Math.round((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length) * 0.1) 
+                      : 0, 
+                    color: '#EF4444' 
+                  }
                 ]}
               />
 
@@ -445,17 +557,27 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 responseTime="0s"
                 positivePercentage={nevData.positivePercentage}
                 negativePercentage={nevData.negativePercentage}
+                questionText={nevQuestion}
+                instructionsText={nevInstructions}
               />
 
               {/* 2.5.- Question: Net Promoter Score (NPS) */}
               <NPSQuestion
-                monthlyData={[]}
-                npsScore={smartVOCData?.npsScore || 0}
-                promoters={Math.round((smartVOCData?.npsScore || 0) * 0.4)}
-                detractors={Math.round((smartVOCData?.npsScore || 0) * 0.3)}
-                neutrals={Math.round((smartVOCData?.npsScore || 0) * 0.3)}
+                monthlyData={[
+                  { month: 'Ene', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
+                  { month: 'Feb', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
+                  { month: 'Mar', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
+                  { month: 'Abr', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
+                  { month: 'May', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
+                  { month: 'Jun', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 }
+                ]}
+                npsScore={cpvData?.npsValue || 0}
+                promoters={cpvData?.promoters || 0}
+                detractors={cpvData?.detractors || 0}
+                neutrals={cpvData?.neutrals || 0}
                 totalResponses={smartVOCData?.totalResponses || 0}
                 isLoading={isSmartVOCLoading}
+                questionText={npsQuestion}
               />
 
               {/* 2.6.- Question: Voice of Customer (VOC) */}
