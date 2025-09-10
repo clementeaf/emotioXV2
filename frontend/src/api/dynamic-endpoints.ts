@@ -8,15 +8,13 @@
  * Sincronizado automáticamente después del deploy del backend
  */
 
-// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
-const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+// 🎯 SIEMPRE usar AWS Lambda para APIs del backend
+// El frontend está en localhost:3000, pero las APIs están en AWS Lambda
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
-  // Endpoint HTTP API
-  http: isDevelopment
-    ? "http://localhost:3000"
-    : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint HTTP API - SIEMPRE usar AWS Lambda
+  http: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
 
   // Endpoint WebSocket - Siempre usar AWS Lambda
   ws: "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
@@ -70,7 +68,7 @@ export function navigateToPublicTests(researchID: string): void {
 
 // Función para verificar si los endpoints están sincronizados
 export function isEndpointsSynced(): boolean {
-  return !isDevelopment && API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
+  return API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
 }
 
 // Versión default para import default

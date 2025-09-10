@@ -8,15 +8,13 @@
  * Sincronizado automáticamente después del deploy del backend
  */
 
-// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
-const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
+// 🎯 SIEMPRE usar AWS Lambda para APIs del backend
+// public-tests puede estar en localhost, pero las APIs están en AWS Lambda
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
-  // Endpoint HTTP API
-  http: isDevelopment
-    ? "http://localhost:3000"
-    : "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
+  // Endpoint HTTP API - SIEMPRE usar AWS Lambda
+  http: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
 
   // Endpoint WebSocket - Siempre usar AWS Lambda
   ws: "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
