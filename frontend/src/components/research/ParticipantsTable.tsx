@@ -36,6 +36,7 @@ interface ParticipantsTableProps {
   onViewDetails: (participantId: string) => void;
   researchId: string;
   onParticipantDeleted?: (participantId: string) => void;
+  isLoading?: boolean;
 }
 
 const statusConfig = {
@@ -60,7 +61,8 @@ export function ParticipantsTable({
   participants,
   onViewDetails,
   researchId,
-  onParticipantDeleted
+  onParticipantDeleted,
+  isLoading = false
 }: ParticipantsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -172,6 +174,51 @@ export function ParticipantsTable({
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  // 🎯 COMPONENTE DE SKELETON
+  const SkeletonRow = () => (
+    <tr className="border-b">
+      <td className="py-3 px-4">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+          <div className="h-3 bg-gray-200 rounded w-48"></div>
+        </div>
+      </td>
+      <td className="py-3 px-4">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-20"></div>
+        </div>
+      </td>
+      <td className="py-3 px-4">
+        <div className="animate-pulse flex items-center gap-2">
+          <div className="w-20 h-2 bg-gray-200 rounded-full"></div>
+          <div className="h-3 bg-gray-200 rounded w-8"></div>
+        </div>
+      </td>
+      <td className="py-3 px-4">
+        <div className="animate-pulse">
+          <div className="h-3 bg-gray-200 rounded w-16"></div>
+        </div>
+      </td>
+      <td className="py-3 px-4">
+        <div className="animate-pulse">
+          <div className="h-3 bg-gray-200 rounded w-20"></div>
+        </div>
+      </td>
+      <td className="py-3 px-4">
+        <div className="animate-pulse flex items-center gap-2">
+          <div className="h-8 w-8 bg-gray-200 rounded"></div>
+          <div className="h-8 w-8 bg-gray-200 rounded"></div>
+        </div>
+      </td>
+      <td className="py-3 px-4">
+        <div className="animate-pulse flex items-center gap-2">
+          <div className="h-8 w-8 bg-gray-200 rounded"></div>
+          <div className="h-8 w-8 bg-gray-200 rounded"></div>
+        </div>
+      </td>
+    </tr>
+  );
+
   return (
     <>
       <Card>
@@ -224,82 +271,90 @@ export function ParticipantsTable({
                 </tr>
               </thead>
               <tbody>
-                {filteredParticipants.map((participant) => {
-                  const status = getStatusConfig(participant.status);
-                  const StatusIcon = status.icon;
+                {isLoading ? (
+                  // 🎯 MOSTRAR SKELETON MIENTRAS CARGA
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <SkeletonRow key={index} />
+                  ))
+                ) : (
+                  // 🎯 MOSTRAR PARTICIPANTES REALES
+                  filteredParticipants.map((participant) => {
+                    const status = getStatusConfig(participant.status);
+                    const StatusIcon = status.icon;
 
-                  return (
-                    <tr key={participant.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div>
-                          <div className="font-medium">{participant.name}</div>
-                          <div className="text-sm text-gray-500">{participant.email}</div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge className={status.color}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {status.label}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full"
-                              style={{ width: `${participant.progress}%` }}
-                            />
+                    return (
+                      <tr key={participant.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div>
+                            <div className="font-medium">{participant.name}</div>
+                            <div className="text-sm text-gray-500">{participant.email}</div>
                           </div>
-                          <span className="text-sm text-gray-600">{participant.progress}%</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">{participant.duration}</td>
-                      <td className="py-3 px-4 text-gray-600">{participant.lastActivity}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => copyParticipantUrl(participant.id)}
-                            className="flex items-center gap-1"
-                            title="Copiar URL del participante"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => openParticipantTest(participant.id)}
-                            className="flex items-center gap-1"
-                            title="Abrir test del participante"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleParticipantClick(participant)}
-                            title="Ver detalles"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(participant)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            title="Eliminar participante"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge className={status.color}>
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {status.label}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-600 h-2 rounded-full"
+                                style={{ width: `${participant.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-sm text-gray-600">{participant.progress}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-gray-600">{participant.duration}</td>
+                        <td className="py-3 px-4 text-gray-600">{participant.lastActivity}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyParticipantUrl(participant.id)}
+                              className="flex items-center gap-1"
+                              title="Copiar URL del participante"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => openParticipantTest(participant.id)}
+                              className="flex items-center gap-1"
+                              title="Abrir test del participante"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleParticipantClick(participant)}
+                              title="Ver detalles"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(participant)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Eliminar participante"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

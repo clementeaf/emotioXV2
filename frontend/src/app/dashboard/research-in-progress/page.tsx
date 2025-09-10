@@ -289,6 +289,7 @@ function ResearchInProgressContent() {
             onViewDetails={() => { }}
             researchId={researchId || ''}
             onParticipantDeleted={handleParticipantDeleted}
+            isLoading={isLoading}
           />
         </TabsContent>
 
