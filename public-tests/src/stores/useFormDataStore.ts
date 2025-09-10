@@ -22,6 +22,25 @@ interface FormDataState {
   clearQuotaResult: () => void;
 }
 
+// 🎯 LIMPIAR CLAVES VIEJAS DE LOCALSTORAGE
+const cleanupOldLocalStorageKeys = () => {
+  if (typeof window !== 'undefined') {
+    const keysToRemove = [
+      'emotio-form-data',
+      'test-store', 
+      'step-storage',
+      'emotio-participant-data'
+    ];
+    
+    keysToRemove.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        console.log(`🧹 Cleaned old localStorage key: ${key}`);
+      }
+    });
+  }
+};
+
 export const useFormDataStore = create<FormDataState>()(
   persist(
     (set, get) => ({
@@ -65,6 +84,9 @@ export const useFormDataStore = create<FormDataState>()(
       // 🎯 CREAR STORAGE KEY DINÁMICO BASADO EN PARTICIPANTE Y RESEARCH
       name: (() => {
         if (typeof window !== 'undefined') {
+          // 🧹 LIMPIAR CLAVES VIEJAS PRIMERO
+          cleanupOldLocalStorageKeys();
+          
           const urlParams = new URLSearchParams(window.location.search);
           const participantId = urlParams.get('userId') || localStorage.getItem('userId') || 'default';
           const researchId = urlParams.get('researchId') || localStorage.getItem('researchId') || 'default';

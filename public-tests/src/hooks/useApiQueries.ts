@@ -68,10 +68,10 @@ export function useModuleResponsesQuery(researchId: string, participantId: strin
       }
     },
     enabled: !!researchId && !!participantId,
-    staleTime: 1000 * 60 * 2, // 2 minutos
-    gcTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 0, // 🎯 NO cachear datos entre participantes
+    gcTime: 1000 * 30, // 30 segundos solamente
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true, // 🎯 SIEMPRE refetch para nuevos participantes
     refetchOnReconnect: false,
     retry: 1,
     ...options,
