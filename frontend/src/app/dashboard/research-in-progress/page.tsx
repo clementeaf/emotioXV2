@@ -102,16 +102,30 @@ function ResearchInProgressContent() {
 
         // 🎯 FIX: Check for success OR status 200
         if ((participantsResponse.success && participantsResponse.data) || (participantsResponse.status === 200 && participantsResponse.data)) {
-          // La respuesta viene como { success: true, data: { data: [...], status: 200 } }
-          const participantsData = participantsResponse.data.data || [];
+          console.log('[Dashboard] 🔍 Processing participants data:', participantsResponse.data);
+          
+          let participantsData;
+          
+          // If data is directly an array
+          if (Array.isArray(participantsResponse.data)) {
+            participantsData = participantsResponse.data;
+            console.log('[Dashboard] 📊 Data is direct array, length:', participantsData.length);
+          }
+          // If data has nested data property
+          else if (participantsResponse.data.data && Array.isArray(participantsResponse.data.data)) {
+            participantsData = participantsResponse.data.data;
+            console.log('[Dashboard] 📊 Data has nested property, length:', participantsData.length);
+          }
+          // Fallback
+          else {
+            participantsData = [];
+            console.warn('[Dashboard] ⚠️ Could not parse participants data structure');
+          }
+          
           setParticipants(participantsData);
-        } else if (participantsResponse.data && Array.isArray(participantsResponse.data)) {
-          // Si viene directamente como array
-          setParticipants(participantsResponse.data);
+          console.log('[Dashboard] ✅ Participants set, count:', participantsData.length);
         } else {
-          // Fallback: buscar datos en cualquier estructura
-          const data = participantsResponse?.data?.data || participantsResponse?.data || [];
-          setParticipants(Array.isArray(data) ? data : []);
+          console.warn('[Dashboard] ❌ Participants response not successful:', participantsResponse);
         }
       } catch (error: any) {
         console.error('[Dashboard] ❌ Error cargando datos:', error);
