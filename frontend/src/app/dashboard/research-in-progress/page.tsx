@@ -3,12 +3,12 @@
 import { ParticipantGenerator } from '@/components/research/ParticipantGenerator';
 import { ParticipantsTable } from '@/components/research/ParticipantsTable';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useMonitoringReceiver } from '@/hooks/useMonitoringReceiver';
 import { researchInProgressAPI, setupAuthToken } from '@/config/api-client';
 import { useAuth } from '@/providers/AuthProvider';
-import { Activity, CheckCircle, Clock, ExternalLink, Info, Users } from 'lucide-react';
+import { Activity, CheckCircle, Clock, Info, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
@@ -272,18 +272,9 @@ function ResearchInProgressContent() {
         <TabsList>
           <TabsTrigger value="participants">Participantes</TabsTrigger>
           <TabsTrigger value="generator">Generar Participantes</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="configuration">Configuración</TabsTrigger>
         </TabsList>
 
         <TabsContent value="participants" className="space-y-4">
-          <div className="flex justify-end items-center">
-            <Button variant="outline">
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
-
           <ParticipantsTable
             participants={participants}
             onViewDetails={() => { }}
@@ -302,29 +293,6 @@ function ResearchInProgressContent() {
           />
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analytics</CardTitle>
-              <CardDescription>Análisis detallado de la investigación</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Contenido de analytics próximamente...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="configuration" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configuración de la investigación en curso</CardTitle>
-              <CardDescription>Gestiona la configuración de tu investigación activa</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Configuración próximamente...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* 🎯 MODAL INFORMATIVO SOBRE ACCESO A TESTS */}

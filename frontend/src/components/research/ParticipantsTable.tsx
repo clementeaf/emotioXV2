@@ -12,7 +12,6 @@ import {
   CheckCircle,
   Clock,
   Copy,
-  Download,
   ExternalLink,
   Eye,
   Search,
@@ -91,13 +90,18 @@ export function ParticipantsTable({
     setIsModalOpen(true);
 
     try {
+      console.log('[ParticipantsTable] 🔍 Fetching details for participant:', participant.id);
       const response = await researchInProgressAPI.getParticipantDetails(researchId, participant.id);
+      console.log('[ParticipantsTable] 📊 Participant details response:', response);
 
       if (response.success) {
         setParticipantDetails(response.data);
+        console.log('[ParticipantsTable] ✅ Participant details set:', response.data);
       } else {
+        console.warn('[ParticipantsTable] ⚠️ Failed to get participant details:', response);
       }
     } catch (error) {
+      console.error('[ParticipantsTable] ❌ Error fetching participant details:', error);
     }
   };
 
@@ -223,16 +227,10 @@ export function ParticipantsTable({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Participantes ({participants.length})
-            </CardTitle>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            Participantes ({participants.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 mb-4">
@@ -366,7 +364,7 @@ export function ParticipantsTable({
         <ParticipantDetailsModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          participant={selectedParticipant}
+          participant={participantDetails || selectedParticipant}
         />
       )}
 
