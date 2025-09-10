@@ -100,9 +100,10 @@ export class NewResearchService {
    */
   async getUserResearches(userId: string): Promise<NewResearch[]> {
     try {
-      return await newResearchModel.getByUserId(userId);
+      structuredLog('info', 'NewResearchService.getUserResearches', 'Obteniendo investigaciones del usuario', { userId });
+      return await newResearchModel.getAllByUserId(userId);
     } catch (error) {
-      console.error('Error al obtener investigaciones del usuario:', error);
+      structuredLog('error', 'NewResearchService.getUserResearches', 'Error al obtener investigaciones del usuario', { error, userId });
       throw new ResearchError('Error al obtener las investigaciones', 500);
     }
   }
@@ -196,9 +197,15 @@ export class NewResearchService {
    * Obtiene todas las investigaciones
    * @returns Lista de todas las investigaciones
    */
-  async getAllResearches(): Promise<NewResearch[]> {
+  async getAllResearches(userId?: string): Promise<NewResearch[]> {
     try {
-      return await newResearchModel.getAll();
+      if (userId) {
+        // Filtrar por usuario específico
+        return await newResearchModel.getAllByUserId(userId);
+      } else {
+        // Obtener todas (admin o casos especiales)
+        return await newResearchModel.getAll();
+      }
     } catch (error) {
       console.error('Error al obtener todas las investigaciones desde el modelo:', error);
       // Re-lanzar el error original para que el controlador lo maneje
@@ -207,6 +214,7 @@ export class NewResearchService {
       throw error;
     }
   }
+
 }
 
 // Exportar instancia única

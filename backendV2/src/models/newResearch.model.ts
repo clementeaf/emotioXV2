@@ -545,6 +545,66 @@ export class NewResearchModel {
     }
   }
 
+  /**
+   * Obtiene todas las investigaciones de un usuario específico
+   * @param userId ID del usuario
+   * @returns Lista de investigaciones del usuario
+   */
+  async getAllByUserId(userId: string): Promise<NewResearch[]> {
+    const context = { functionName: 'NewResearchModel.getAllByUserId' };
+    const contextString = context.functionName;
+    structuredLog('info', contextString, 'Iniciando consulta por userId usando userId-index', { userId });
+
+    const params = {
+      TableName: this.tableName,
+      IndexName: 'userId-index',
+      KeyConditionExpression: 'userId = :userId',
+      ExpressionAttributeValues: {
+        ':userId': userId
+      }
+    };
+    structuredLog('info', contextString, 'Parámetros de QueryCommand:', { params });
+
+    try {
+      const command = new QueryCommand(params);
+      const { Items } = await this.dynamoClient.send(command);
+      structuredLog('info', contextString, `Query completado. Encontrados: ${Items?.length ?? 0} elementos para userId: ${userId}`);
+      structuredLog('info', contextString, 'Raw items from DynamoDB:', { items: Items });
+
+      // Filtrar solo los items que son de tipo RESEARCH
+      const researchItems = Items?.filter(item => {
+        const dynamoItem = item as any;
+        return dynamoItem.EntityType === 'RESEARCH';
+      }) || [];
+
+      const researches = researchItems.map(item => this.mapToEntity(item as unknown as NewResearch));
+
+      structuredLog('info', contextString, 'Items filtrados y mapeados:', { researches });
+
+      return researches;
+    } catch (error: unknown) {
+       structuredLog('error', contextString, 'Error al obtener investigaciones por userId:', { error, userId });
+       
+       // Si es un error de "resource not found" o índice no existe, retornar array vacío
+       if (error && typeof error === 'object') {
+         const errorName = (error as Error & { name?: string }).name;
+         const errorMessage = (error as Error).message || '';
+         
+         if (errorName === 'ResourceNotFoundException' || 
+             errorMessage.includes('Requested resource not found') ||
+             errorMessage.includes('resource not found') ||
+             errorMessage.includes('Index not found')) {
+           console.warn(`[NewResearchModel] Table or userId-index not found, returning empty array. This is normal for new setup.`);
+           return [];
+         }
+       }
+       
+       // Para otros errores, también retornar array vacío para no romper la aplicación
+       console.warn(`[NewResearchModel] Error getting researches by userId, returning empty array:`, error);
+       return [];
+    }
+  }
+
   private mapToEntity(item: unknown): NewResearch {
     // Implement the logic to map a DynamoDB item to a NewResearch object
     // This is a placeholder and should be replaced with the actual implementation

@@ -225,8 +225,8 @@ export class NewResearchController {
         return errorResponse('Usuario no autenticado', 401, event);
       }
 
-      // Obtener todas las investigaciones
-      const researches = await newResearchService.getAllResearches();
+      // Obtener todas las investigaciones del usuario
+      const researches = await newResearchService.getAllResearches(userId);
 
       return createResponse(200, {
         data: researches
