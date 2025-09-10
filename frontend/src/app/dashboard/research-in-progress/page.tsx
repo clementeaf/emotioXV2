@@ -277,8 +277,7 @@ function ResearchInProgressContent() {
         </TabsList>
 
         <TabsContent value="participants" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Participantes ({participants.length})</h2>
+          <div className="flex justify-end items-center">
             <Button variant="outline">
               <ExternalLink className="w-4 h-4 mr-2" />
               Exportar
