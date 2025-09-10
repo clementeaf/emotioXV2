@@ -56,6 +56,16 @@ export function getWebsocketUrl(): string {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl(): string {
+  // Si estamos en producción (detectado por el dominio del frontend)
+  if (typeof window !== 'undefined' && 
+      (window.location.hostname.includes('s3') || 
+       window.location.hostname.includes('cloudfront') ||
+       window.location.hostname.includes('.amazonaws.com'))) {
+    // Usar variable de entorno si está disponible, sino usar localhost como fallback
+    return process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || LOCAL_URLS.publicTests;
+  }
+  
+  // En desarrollo local, usar localhost
   return LOCAL_URLS.publicTests;
 }
 
