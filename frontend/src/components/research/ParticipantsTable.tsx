@@ -94,7 +94,8 @@ export function ParticipantsTable({
       const response = await researchInProgressAPI.getParticipantDetails(researchId, participant.id);
       console.log('[ParticipantsTable] 📊 Participant details response:', response);
 
-      if (response.success) {
+      // 🎯 FIX: Check for success OR status 200
+      if (response.success || response.status === 200) {
         setParticipantDetails(response.data);
         console.log('[ParticipantsTable] ✅ Participant details set:', response.data);
       } else {
