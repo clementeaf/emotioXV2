@@ -85,6 +85,11 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
 
   if (!isOpen || !participant) return null;
 
+  // 🎯 DEBUG: Log participant data
+  console.log('[ParticipantDetailsModal] 📊 Participant data received:', participant);
+  console.log('[ParticipantDetailsModal] 📝 Responses count:', participant.responses?.length || 0);
+  console.log('[ParticipantDetailsModal] 📝 Responses data:', participant.responses);
+
   const getStatusConfig = (status: string) => {
     return statusConfig[status as keyof typeof statusConfig] || statusConfig['Por iniciar'];
   };
