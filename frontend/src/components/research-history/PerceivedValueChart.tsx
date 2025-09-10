@@ -8,7 +8,7 @@ interface PerceivedValueChartProps {
 
 function PerceivedValueChartContent() {
   return (
-    <div className="w-full aspect-[16/9] bg-neutral-50 rounded-lg flex items-center justify-center">
+    <div className="w-full aspect-[8/5] bg-neutral-50 rounded-lg flex items-center justify-center">
       <div className="text-sm text-neutral-600">
         Perceived Value Chart will be rendered here
       </div>

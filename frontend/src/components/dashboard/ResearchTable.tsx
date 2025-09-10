@@ -13,8 +13,6 @@ import {
 import { useResearchList } from '@/hooks/useResearchList';
 import { apiClient } from '@/config/api';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ErrorBoundary } from '../common/ErrorBoundary';
@@ -36,7 +34,7 @@ function TableSkeleton() {
           <tr key="header-row">
             <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>
             <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Estado</th>
-            <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Fecha</th>
+            <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Técnica</th>
             <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Acciones</th>
           </tr>
         </thead>
@@ -222,7 +220,7 @@ function ResearchTableContent() {
                 <tr key="header-row">
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Estado</th>
-                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Fecha</th>
+                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Técnica</th>
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Acciones</th>
                 </tr>
               </thead>
@@ -236,22 +234,7 @@ function ResearchTableContent() {
                       {getStatusBadge(item.status)}
                     </td>
                     <td className="px-6 py-4 text-sm text-neutral-500 whitespace-nowrap">
-
-                      {item.createdAt ?
-                        (() => {
-                          try {
-                            const date = new Date(item.createdAt);
-                            // Verificar si la fecha es válida
-                            if (isNaN(date.getTime())) {
-                              return 'Fecha no disponible';
-                            }
-                            return format(date, "d 'de' MMMM, yyyy", { locale: es });
-                          } catch (error) {
-                            return 'Fecha no disponible';
-                          }
-                        })()
-                        : 'Fecha no disponible'
-                      }
+                      {item.technique || 'No especificada'}
                     </td>
                     <td className="px-6 py-4 text-sm whitespace-nowrap">
                       <div className="flex space-x-2">
