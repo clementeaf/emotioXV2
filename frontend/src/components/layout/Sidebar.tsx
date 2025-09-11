@@ -12,7 +12,6 @@ import { useResearchList } from '@/hooks/useResearchList';
 import { researchAPI } from '@/config/api-client';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import { useResearch } from '@/stores/useResearchStore';
 import type { ResearchAPIResponse } from '@/types/research';
 
 import { SidebarBase } from './SidebarBase';
@@ -21,16 +20,10 @@ interface SidebarProps {
   className?: string;
 }
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
 
 const mainNavItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
   { id: 'new-research', label: 'Nueva Investigación', href: '/dashboard/research/new' },
-  { id: 'research-history', label: 'Historial de Investigaciones', href: '/dashboard/research-history' },
   { id: 'companies', label: 'Gestión de Empresas', href: '/dashboard/companies' },
 ];
 
@@ -101,7 +94,6 @@ function SidebarContent({ className }: SidebarProps) {
   const { user, logout } = useAuth();
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
-  const { hasDraft, currentDraft } = useResearch();
   const [recentResearch, setRecentResearch] = useState<Array<{ id: string, name: string, technique: string }>>([]);
   const [isLoadingResearch, setIsLoadingResearch] = useState<boolean>(true);
   const [showNoResearchMessage, setShowNoResearchMessage] = useState<boolean>(false);
@@ -111,7 +103,6 @@ function SidebarContent({ className }: SidebarProps) {
 
   // Detectar si estamos en modo investigación
   const researchId = searchParams ? searchParams.get('research') : '';
-  const section = searchParams ? searchParams.get('section') : '';
 
   const closeDeleteModal = () => {
     setShowDeleteModal(false);
