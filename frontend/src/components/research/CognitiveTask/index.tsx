@@ -131,65 +131,103 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   }
 
   return (
-    <div style={containerStyle}>
-      <div className={cn('space-y-4', className)} style={innerContainerStyle}>
-        {/* Mensaje amigable si no hay configuración previa */}
-        {isEmpty && (
-          <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
-            <strong>¡Aún no has configurado la tarea cognitiva!</strong><br />
-            Agrega preguntas y guarda para comenzar a recolectar datos de los participantes.
+    <div className="relative">
+      <div style={containerStyle}>
+        <div className={cn('space-y-4', className)} style={innerContainerStyle}>
+          {/* Mensaje amigable si no hay configuración previa */}
+          {isEmpty && (
+            <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+              <strong>¡Aún no has configurado la tarea cognitiva!</strong><br />
+              Agrega preguntas y guarda para comenzar a recolectar datos de los participantes.
+            </div>
+          )}
+
+          {/* Campos del formulario */}
+          <CognitiveTaskFields
+            questions={formData.questions}
+            randomizeQuestions={formData.randomizeQuestions}
+            onQuestionChange={handleQuestionChange}
+            onAddChoice={handleAddChoice}
+            onRemoveChoice={handleRemoveChoice}
+            onAddQuestion={handleAddQuestion}
+            onFileUpload={handleFileUpload}
+            onFileDelete={handleRemoveFile}
+            setRandomizeQuestions={setRandomizeQuestions}
+            disabled={isSaving}
+            isUploading={isUploading}
+            uploadProgress={uploadProgress}
+            validationErrors={validationErrors}
+          />
+
+          <CognitiveTaskFooter
+            onSave={saveForm}
+            onPreview={handlePreview}
+            onDelete={handleDeleteWithModal}
+            isSaving={isSaving}
+            cognitiveTaskId={cognitiveTaskId}
+            researchId={researchId}
+          />
+
+          {/* Modal para mostrar errores y mensajes */}
+          <ErrorModal
+            isOpen={modalVisible}
+            onClose={closeModal}
+            error={modalError}
+          />
+
+          {/* Modal para la vista previa del JSON */}
+          <JsonPreviewModal
+            isOpen={showJsonPreview}
+            onClose={closeJsonModal}
+            onContinue={continueWithAction}
+            jsonData={jsonToSend}
+            pendingAction={pendingAction}
+            hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
+          />
+          <ConfirmationModal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            onConfirm={handleConfirmDelete}
+            title="Confirmar Eliminación"
+            message="¿Estás seguro de que quieres eliminar TODOS los datos Cognitive Tasks de esta investigación? Esta acción no se puede deshacer."
+          />
+        </div>
+      </div>
+
+      {/* Columna lateral fija */}
+      <div className="fixed top-20 right-32 w-80 h-[800px] bg-white border border-gray-200 rounded-lg shadow-lg p-4 overflow-y-auto">
+        <div className="space-y-4">
+          <h3 className="font-semibold text-gray-900 text-lg border-b pb-2">
+            Configuración Avanzada
+          </h3>
+          
+          <div className="space-y-3">
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <h4 className="font-medium text-sm text-gray-700 mb-2">Estadísticas</h4>
+              <div className="text-xs text-gray-600 space-y-1">
+                <div>Preguntas configuradas: {formData.questions.length}</div>
+                <div>Estado: {cognitiveTaskId ? 'Guardado' : 'Sin guardar'}</div>
+                <div>Aleatorización: {formData.randomizeQuestions ? 'Activa' : 'Inactiva'}</div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <h4 className="font-medium text-sm text-blue-700 mb-2">Preguntas</h4>
+              <div className="text-xs text-blue-600 space-y-1">
+                {formData.questions.map((q, idx) => (
+                  <div key={idx}>
+                    Pregunta {idx + 1}: {q.type}
+                    {q.files && q.files.length > 0 && (
+                      <div className="ml-2 text-xs text-green-600">
+                        {q.files.length} archivo(s)
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Campos del formulario */}
-        <CognitiveTaskFields
-          questions={formData.questions}
-          randomizeQuestions={formData.randomizeQuestions}
-          onQuestionChange={handleQuestionChange}
-          onAddChoice={handleAddChoice}
-          onRemoveChoice={handleRemoveChoice}
-          onAddQuestion={handleAddQuestion}
-          onFileUpload={handleFileUpload}
-          onFileDelete={handleRemoveFile}
-          setRandomizeQuestions={setRandomizeQuestions}
-          disabled={isSaving}
-          isUploading={isUploading}
-          uploadProgress={uploadProgress}
-          validationErrors={validationErrors}
-        />
-
-        <CognitiveTaskFooter
-          onSave={saveForm}
-          onPreview={handlePreview}
-          onDelete={handleDeleteWithModal}
-          isSaving={isSaving}
-          cognitiveTaskId={cognitiveTaskId}
-          researchId={researchId}
-        />
-
-        {/* Modal para mostrar errores y mensajes */}
-        <ErrorModal
-          isOpen={modalVisible}
-          onClose={closeModal}
-          error={modalError}
-        />
-
-        {/* Modal para la vista previa del JSON */}
-        <JsonPreviewModal
-          isOpen={showJsonPreview}
-          onClose={closeJsonModal}
-          onContinue={continueWithAction}
-          jsonData={jsonToSend}
-          pendingAction={pendingAction}
-          hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
-        />
-        <ConfirmationModal
-          isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={handleConfirmDelete}
-          title="Confirmar Eliminación"
-          message="¿Estás seguro de que quieres eliminar TODOS los datos Cognitive Tasks de esta investigación? Esta acción no se puede deshacer."
-        />
+        </div>
       </div>
     </div>
   );
