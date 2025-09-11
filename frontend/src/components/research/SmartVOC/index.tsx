@@ -100,15 +100,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           Agrega preguntas y guarda para comenzar a recolectar feedback de los participantes.
         </div>
       )}
-      {/* Indicador de estado - Solo para debugging */}
-      {/* Configuración general */}
-      <SmartVOCSettings
-        randomize={formData.randomizeQuestions}
-        onRandomizeChange={handleRandomizeChange}
-        requireAnswers={formData.smartVocRequired}
-        onRequireAnswersChange={handleRequireAnswersChange}
-        disabled={isLoading || isSaving}
-      />
       {/* Gestión de preguntas */}
       <SmartVOCQuestions
         questions={questions}
