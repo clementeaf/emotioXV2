@@ -1,15 +1,133 @@
 'use client';
 
-import React from 'react';
-import { Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, Loader2 } from 'lucide-react';
+import { authService } from '@/services/authService';
+import { DYNAMIC_API_ENDPOINTS } from '@/api/dynamic-endpoints';
+
+interface EducationalContent {
+  id: string;
+  contentType: 'smart_voc' | 'cognitive_task';
+  title: string;
+  generalDescription: string;
+  typeExplanation: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 /**
  * Página de Configuraciones del Dashboard
  */
 export default function SettingsPage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Estados para los valores de los inputs
+  const [smartVocDescription, setSmartVocDescription] = useState('');
+  const [smartVocExplanation, setSmartVocExplanation] = useState('');
+  const [cognitiveDescription, setCognitiveDescription] = useState('');
+  const [cognitiveExplanation, setCognitiveExplanation] = useState('');
+
+  useEffect(() => {
+    loadEducationalContent();
+  }, []);
+
+  const loadEducationalContent = async () => {
+    try {
+      setLoading(true);
+      const token = authService.getToken();
+      
+      if (!token) {
+        setError('No se pudo obtener el token de autenticación');
+        return;
+      }
+
+      const response = await fetch(`${DYNAMIC_API_ENDPOINTS.http}/educational-content`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const contents = data.data;
+        
+        const smartVoc = contents.find((c: EducationalContent) => c.contentType === 'smart_voc');
+        const cognitive = contents.find((c: EducationalContent) => c.contentType === 'cognitive_task');
+        
+        if (smartVoc) {
+          setSmartVocDescription(smartVoc.generalDescription);
+          setSmartVocExplanation(smartVoc.typeExplanation);
+        }
+        
+        if (cognitive) {
+          setCognitiveDescription(cognitive.generalDescription);
+          setCognitiveExplanation(cognitive.typeExplanation);
+        }
+      } else {
+        setError('Error al cargar el contenido educativo');
+      }
+    } catch (error) {
+      console.error('Error loading educational content:', error);
+      setError('Error al cargar el contenido educativo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveEducationalContent = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      const token = authService.getToken();
+      
+      if (!token) {
+        setError('No se pudo obtener el token de autenticación');
+        return;
+      }
+
+      // Guardar SmartVOC content
+      await fetch(`${DYNAMIC_API_ENDPOINTS.http}/educational-content/smart_voc`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          generalDescription: smartVocDescription,
+          typeExplanation: smartVocExplanation,
+        }),
+      });
+
+      // Guardar Cognitive Task content
+      await fetch(`${DYNAMIC_API_ENDPOINTS.http}/educational-content/cognitive_task`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          generalDescription: cognitiveDescription,
+          typeExplanation: cognitiveExplanation,
+        }),
+      });
+
+      // Recargar el contenido después de guardar
+      await loadEducationalContent();
+      
+    } catch (error) {
+      console.error('Error saving educational content:', error);
+      setError('Error al guardar el contenido educativo');
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)] flex flex-col justify-start overflow-y-auto">
-      <div className="mx-auto px-6 py-8 w-full max-w-4xl">
+      <div className="px-6 py-8 w-full">
         <div className="mb-8">
           <div className="flex items-center gap-3">
             <Settings className="w-8 h-8 text-blue-600" />
@@ -21,135 +139,118 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-6">
-          {/* Configuraciones de Usuario */}
+          {/* Configuración de Información Educativa */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Configuraciones de Usuario
+              Información Educativa de Formularios
             </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Idioma del Sistema
-                </label>
-                <select className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="es">Español</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Zona Horaria
-                </label>
-                <select className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="America/Santiago">Santiago, Chile</option>
-                  <option value="America/Buenos_Aires">Buenos Aires, Argentina</option>
-                  <option value="America/Mexico_City">Ciudad de México</option>
-                </select>
-              </div>
-            </div>
-          </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Configura el contenido educativo que aparece en las columnas laterales para explicar qué se está configurando y para qué sirve cada pregunta
+            </p>
 
-          {/* Configuraciones de Notificaciones */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Notificaciones
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900">
-                    Notificaciones por Email
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Recibir notificaciones sobre investigaciones completadas
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
+                {error}
               </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900">
-                    Alertas de Sistema
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Notificaciones sobre mantenimiento y actualizaciones
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* Configuraciones de Seguridad */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Seguridad
-            </h2>
-            <div className="space-y-4">
-              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                Cambiar Contraseña
-              </button>
-              
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                <span className="ml-2 text-gray-600">Cargando contenido educativo...</span>
+              </div>
+            ) : (
+            <div className="space-y-8">
+              {/* SmartVOC Educational Content */}
               <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-2">
-                  Sesiones Activas
+                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                  SmartVOC - Contenido Educativo
                 </h3>
-                <div className="text-sm text-gray-500">
-                  <p>Dispositivo actual - Última actividad: Ahora</p>
-                  <button className="text-red-600 hover:text-red-800 mt-1">
-                    Cerrar todas las demás sesiones
-                  </button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Descripción General de SmartVOC
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={smartVocDescription}
+                      onChange={(e) => setSmartVocDescription(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Explica qué es SmartVOC y para qué sirve"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Explicación de Tipos de Preguntas
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={smartVocExplanation}
+                      onChange={(e) => setSmartVocExplanation(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Describe para qué sirve cada tipo de pregunta SmartVOC"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Configuraciones del Sistema */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Sistema
-            </h2>
-            <div className="space-y-4">
+              {/* Cognitive Task Educational Content */}
               <div>
-                <h3 className="text-sm font-medium text-gray-900">
-                  Exportación de Datos
+                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                  Cognitive Task - Contenido Educativo
                 </h3>
-                <p className="text-sm text-gray-500 mb-2">
-                  Exporta todos tus datos de investigaciones
-                </p>
-                <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                  Exportar Datos
-                </button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Descripción General de Cognitive Task
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={cognitiveDescription}
+                      onChange={(e) => setCognitiveDescription(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Explica qué son las Tareas Cognitivas y para qué sirven"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Explicación de Tipos de Tareas
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={cognitiveExplanation}
+                      onChange={(e) => setCognitiveExplanation(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Describe los diferentes tipos de tareas cognitivas y su propósito"
+                    />
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">
-                  Eliminar Cuenta
-                </h3>
-                <p className="text-sm text-gray-500 mb-2">
-                  Eliminar permanentemente tu cuenta y todos los datos asociados
-                </p>
-                <button className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                  Eliminar Cuenta
+              {/* Botón de Guardar */}
+              <div className="mt-6 flex justify-end">
+                <button 
+                  onClick={saveEducationalContent}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar Contenido Educativo'
+                  )}
                 </button>
               </div>
             </div>
+            )}
           </div>
-        </div>
-
-        {/* Botón de Guardar */}
-        <div className="mt-8 flex justify-end">
-          <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            Guardar Configuraciones
-          </button>
         </div>
       </div>
     </div>

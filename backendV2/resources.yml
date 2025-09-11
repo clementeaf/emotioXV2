@@ -378,4 +378,42 @@ QuotaRecordsTable:
       SSEType: KMS
       KMSMasterKeyId: alias/aws/dynamodb
 
+# Tabla Educational Content
+EducationalContentTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.EDUCATIONAL_CONTENT_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: contentType
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: UserIdIndex
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+      - IndexName: UserContentTypeIndex
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: contentType
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
 # --- Fin de las definiciones de Recursos ---

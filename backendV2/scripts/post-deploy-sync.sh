@@ -181,9 +181,7 @@ const isDevelopment = typeof window !== 'undefined' && window.location.hostname 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
-  http: isDevelopment
-    ? "http://localhost:3000"
-    : "${HTTP_ENDPOINT}",
+  http: "${HTTP_ENDPOINT}",
 
   // Endpoint WebSocket - Siempre usar AWS Lambda
   ws: "${WS_ENDPOINT}",
@@ -274,9 +272,7 @@ const isDevelopment = import.meta.env.DEV || window.location.hostname === 'local
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
   // Endpoint HTTP API
-  http: isDevelopment
-    ? "http://localhost:3000"
-    : "${HTTP_ENDPOINT}",
+  http: "${HTTP_ENDPOINT}",
 
   // Endpoint WebSocket - Siempre usar AWS Lambda
   ws: "${WS_ENDPOINT}",

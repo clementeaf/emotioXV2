@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-09-10T19:11:41.000Z
+// Generado: 2025-09-11T15:29:46.000Z
 // Stage: dev
 
 /**
@@ -8,12 +8,12 @@
  * Sincronizado automáticamente después del deploy del backend
  */
 
-// 🎯 SIEMPRE usar AWS Lambda para APIs del backend
-// public-tests puede estar en localhost, pero las APIs están en AWS Lambda
+// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
+const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
 
 // Endpoints de API exportados desde backend
 export const DYNAMIC_API_ENDPOINTS = {
-  // Endpoint HTTP API - SIEMPRE usar AWS Lambda
+  // Endpoint HTTP API
   http: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
 
   // Endpoint WebSocket - Siempre usar AWS Lambda
@@ -23,7 +23,7 @@ export const DYNAMIC_API_ENDPOINTS = {
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-09-10T19:11:41.000Z",
+  syncedAt: "2025-09-11T15:29:46.000Z",
   syncedFromStage: "dev"
 };
 
@@ -31,7 +31,7 @@ export const DYNAMIC_API_ENDPOINTS = {
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:5173",
-  "generatedAt": "2025-09-10T19:11:41.000Z"
+  "generatedAt": "2025-09-11T15:29:46.000Z"
 };
 
 // Constantes para uso más fácil
@@ -68,7 +68,6 @@ export function navigateToPublicTests(researchID: string): void {
 
 // Función para verificar si los endpoints están sincronizados
 export function isEndpointsSynced(): boolean {
-  const isDevelopment = process.env.NODE_ENV === 'development';
   return !isDevelopment && API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
 }
 

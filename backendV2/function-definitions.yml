@@ -46,6 +46,24 @@ api:
         method: DELETE
         cors: true
 
+    # --- Rutas de Contenido Educativo ---
+    - http:
+        path: /educational-content
+        method: GET
+        cors: true
+    - http:
+        path: /educational-content
+        method: POST
+        cors: true
+    - http:
+        path: /educational-content/{contentType}
+        method: GET
+        cors: true
+    - http:
+        path: /educational-content/{contentType}
+        method: PUT
+        cors: true
+
     # --- Rutas de Participantes ---
     - http:
         path: /participants/login

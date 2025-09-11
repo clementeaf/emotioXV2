@@ -22,6 +22,9 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Companies (NUEVA RUTA)
   { pathPattern: /^\/companies/, controllerType: 'companies' },
 
+  // Educational Content
+  { pathPattern: /^\/educational-content/, controllerType: 'educational-content' },
+
   // Welcome Screen (maneja /research/{id}/welcome-screen y /research/{id}/welcome-screen/{screenId})
   { pathPattern: /^\/research\/[^\/]+\/welcome-screen(\/[^\/]+)?$/, controllerType: 'welcome-screen' },
 

@@ -7,6 +7,7 @@ const handlers: Record<string, any> = {};
 const controllerImports = {
   'auth': () => import('./controllers/auth.controller'),
   'companies': () => import('./controllers/company.controller'),
+  'educational-content': () => import('./controllers/educationalContentHandler'),
   'research': () => import('./controllers/newResearch.controller'),
   'welcome-screen': () => import('./controllers/welcomeScreen.controller'),
   'thank-you-screen': () => import('./controllers/thankYouScreen.controller'),
