@@ -1,23 +1,15 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
 import React from 'react';
-
 import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
-
 import { cn } from '@/lib/utils';
-
 import { ConfirmationModal } from '../SmartVOC/components/ConfirmationModal';
-
 import {
   CognitiveTaskFooter,
-  CognitiveTaskHeader,
   ErrorModal,
   JsonPreviewModal
 } from './components';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
-import { ProgressBar } from './components/ProgressBar';
-import { UI_TEXTS } from './constants';
 import { useCognitiveTaskForm } from './hooks/useCognitiveTaskForm';
 import { CognitiveTaskFormProps } from './types';
 
@@ -149,23 +141,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           </div>
         )}
 
-        {/* Encabezado */}
-        <CognitiveTaskHeader
-          title={UI_TEXTS.TITLE}
-          description={UI_TEXTS.DESCRIPTION}
-        />
-
-        {/* --- Información Contextual --- */}
-        <div className="mt-4 mb-6 p-3 bg-gray-50 border rounded-md text-sm text-gray-600">
-          <p><span className="font-semibold">Estado:</span> {cognitiveTaskId ? 'Configuración existente' : 'Configuración nueva'}</p>
-          {cognitiveTaskId && (
-            <p><span className="font-semibold">ID:</span> {cognitiveTaskId}</p>
-          )}
-          {/* Asegurarse de que researchId siempre tenga valor aquí */}
-          <p><span className="font-semibold">Research ID:</span> {researchId || 'No disponible'}</p>
-        </div>
-        {/* --- Fin Información Contextual --- */}
-
         {/* Campos del formulario */}
         <CognitiveTaskFields
           questions={formData.questions}
@@ -208,18 +183,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           pendingAction={pendingAction}
           hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
         />
-
-        {/* >>> NUEVO: Modal para la previsualización interactiva */}
-        {/* TEMPORALMENTE COMENTADO hasta implementar las propiedades faltantes
-        {showInteractivePreview && (
-          <NavigationFlowPreview
-            config={formData}
-            onClose={closeInteractivePreview}
-          />
-        )}
-        */}
-
-        {/* 🆕 Modal de confirmación para eliminar datos */}
         <ConfirmationModal
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
@@ -228,64 +191,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           message="¿Estás seguro de que quieres eliminar TODOS los datos Cognitive Tasks de esta investigación? Esta acción no se puede deshacer."
         />
       </div>
-    </div>
-  );
-};
-
-/**
- * Componente para mostrar el progreso de carga de archivos
- */
-const FileProgressIndicator = ({ progress, isLoading }: { progress: number; isLoading: boolean }) => {
-  if (!isLoading) { return null; }
-
-  return (
-    <div className="my-2">
-      <div className="flex items-center gap-2 mb-1">
-        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-        <span className="text-sm text-gray-600">Cargando... {progress}%</span>
-      </div>
-      <ProgressBar value={progress} className="h-2 w-full" />
-    </div>
-  );
-};
-
-/**
- * Componente para mostrar un archivo con su progreso
- */
-const FileItem = ({ file, onDelete }: { file: any; onDelete: () => void }) => {
-  return (
-    <div className="relative border rounded-md p-3 mb-2 bg-white shadow-sm">
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2">
-          {file.type?.startsWith('image/') && file.url && (
-            <div className="relative w-12 h-12 overflow-hidden rounded border bg-gray-100 flex items-center justify-center">
-              {file.isLoading ? (
-                <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-              ) : (
-                <img src={file.url} alt={file.name} className="object-contain w-full h-full" />
-              )}
-            </div>
-          )}
-          <div>
-            <p className="font-medium text-sm truncate max-w-[200px]">{file.name}</p>
-            <p className="text-xs text-gray-500">
-              {(file.size / 1024 / 1024).toFixed(2)} MB
-              {file.isLoading && ' • Cargando...'}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={onDelete}
-          className="text-red-500 hover:text-red-700 p-1"
-          disabled={file.isLoading}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      </div>
-
-      {file.isLoading && <FileProgressIndicator progress={file.progress || 0} isLoading={file.isLoading} />}
     </div>
   );
 };

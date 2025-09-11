@@ -1,7 +1,4 @@
 import React from 'react';
-
-import { Switch } from '@/components/ui/Switch';
-
 import { SmartVOCSettingsProps } from '../types';
 
 /**
@@ -9,10 +6,7 @@ import { SmartVOCSettingsProps } from '../types';
  */
 export const SmartVOCSettings: React.FC<SmartVOCSettingsProps> = ({
   randomize,
-  onRandomizeChange,
   requireAnswers,
-  onRequireAnswersChange,
-  disabled
 }) => {
   return (
     <div className="bg-white  py-4">
@@ -23,17 +17,6 @@ export const SmartVOCSettings: React.FC<SmartVOCSettingsProps> = ({
             {randomize ? 'aleatorización activada' : 'aleatorización desactivada'}, 
             {requireAnswers ? ' respuestas obligatorias' : ' respuestas opcionales'}
           </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-500">
-            {randomize && requireAnswers ? 'Activado' : 'Configuración parcial'}
-          </span>
-          <Switch 
-            checked={randomize} 
-            onCheckedChange={onRandomizeChange} 
-            disabled={disabled}
-          />
         </div>
       </div>
     </div>

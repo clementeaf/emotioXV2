@@ -100,21 +100,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           Agrega preguntas y guarda para comenzar a recolectar feedback de los participantes.
         </div>
       )}
-      {/* Encabezado */}
-      <SmartVOCHeader
-        title={UI_TEXTS.TITLE}
-        description={UI_TEXTS.DESCRIPTION}
-      />
       {/* Indicador de estado - Solo para debugging */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
-          <p>Estado: {smartVocId ? 'Configuración existente' : 'Nueva configuración'}</p>
-          <p>ID: {smartVocId || 'No hay ID (nueva)'}</p>
-          <p>Preguntas activas: {questions.length}</p>
-          <p>Aleatorizar: {formData.randomizeQuestions ? 'Sí' : 'No'}</p>
-          <p>Requerir respuestas: {formData.smartVocRequired ? 'Sí' : 'No'}</p>
-        </div>
-      )}
       {/* Configuración general */}
       <SmartVOCSettings
         randomize={formData.randomizeQuestions}

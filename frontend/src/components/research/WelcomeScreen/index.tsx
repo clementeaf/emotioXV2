@@ -14,13 +14,10 @@ import { WelcomeScreenFormProps } from './types';
  * Componente principal para el formulario de configuración de la pantalla de bienvenida
  */
 export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
-  className,
   researchId,
-  onSave
 }) => {
   const {
     formData,
-    setFormData,
     validationErrors,
     isLoading,
     isSaving,
@@ -34,7 +31,6 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     isEmpty,
     handleDelete,
     isDeleting,
-    showDelete,
   } = useWelcomeScreenForm(researchId);
 
   // Determine if it's an existing config based on existingScreen data
@@ -82,18 +78,9 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         disabled={isLoading || isSaving}
       />
 
-      {/* Indicador de estado - Solo para debugging */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
-          <p>Estado: {isExisting ? 'Configuración existente' : 'Nueva configuración'}</p>
-          <p>ID: {existingScreen?.id || 'No hay ID (nueva)'}</p>
-          <p>Habilitado: {formData.isEnabled ? 'Sí' : 'No'}</p>
-          <p>Research ID: {researchId}</p>
-        </div>
-      )}
-
       {/* Contenido del formulario */}
-      <WelcomeScreenContent
+      <div className="mt-8">
+        <WelcomeScreenContent
         title={formData.title}
         message={formData.message}
         startButtonText={formData.startButtonText}
@@ -102,7 +89,8 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         onStartButtonTextChange={(value) => handleChange('startButtonText', value)}
         validationErrors={validationErrors}
         disabled={isLoading || isSaving || !formData.isEnabled}
-      />
+        />
+      </div>
 
       {/* Pie de página con acciones */}
       <WelcomeScreenFooter

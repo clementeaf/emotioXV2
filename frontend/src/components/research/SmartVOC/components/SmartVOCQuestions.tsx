@@ -163,50 +163,14 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
       case QuestionType.SMARTVOC_NEV:
         return (
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={question.config.companyName || ''}
-                  onChange={(e) => {
-                    const newCompanyName = e.target.value;
-                    // Sincronizar con todas las preguntas que usan companyName
-                    syncCompanyName(newCompanyName);
-                  }}
-                  className="w-full h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
-                  disabled={disabled}
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
-                    Se reutiliza
-                  </div>
-                </div>
-              </div>
-            </div>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-neutral-900">NEV</span>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-neutral-900">Jerarquía de Valor Emocional</span>
-                  <div className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                    Seleccionado
-                  </div>
-                </div>
-              </div>
-              <div className="bg-amber-50 p-3 rounded-md space-y-2">
-                <p className="text-sm font-medium text-amber-800">Nueva jerarquía de valor emocional</p>
-                <div className="flex flex-col gap-1 text-xs text-amber-700">
-                  <p>• <strong>Destroying:</strong> Irritated, Hurried, Neglected, Unhappy, Unsatisfied, Stressed, Disappointment, Frustrated</p>
-                  <p>• <strong>Attention:</strong> Interesting, Energetic, Stimulated, Exploratory, Indulgent</p>
-                  <p>• <strong>Recommendation:</strong> Trusting, Valued, Cared for, Focused, Safe</p>
-                  <p>• <strong>Advocacy:</strong> Happy, Pleased</p>
                 </div>
               </div>
             </div>
-
-
           </div>
         );
 
@@ -214,26 +178,6 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={question.config.companyName || ''}
-                  onChange={(e) => {
-                    const newCompanyName = e.target.value;
-                    // Sincronizar con todas las preguntas que usan companyName
-                    syncCompanyName(newCompanyName);
-                  }}
-                  className="w-full h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
-                  disabled={disabled}
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
-                    Se reutiliza
-                  </div>
-                </div>
-              </div>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">NPS</span>
@@ -345,15 +289,6 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             </div>
 
             {renderQuestionConfig(question)}
-
-            <div className="flex items-center justify-end gap-4 pt-4 border-t border-neutral-100 mt-4">
-              <span className="text-xs text-neutral-500">Mostrar condicionalmente</span>
-              <Switch
-                checked={question.showConditionally}
-                onCheckedChange={(checked) => onUpdateQuestion(question.id, { showConditionally: checked })}
-                disabled={disabled}
-              />
-            </div>
           </div>
         </div>
       ))}

@@ -330,39 +330,6 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
         )}
       </div>
 
-      <div className="pt-4 border-t border-neutral-200 space-y-3">
-        <h4 className="text-sm font-medium text-neutral-800 sr-only">Opciones Adicionales</h4>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.REQUIRED_LABEL}</span>
-          <Switch
-            checked={question.required || false}
-            onCheckedChange={(checked: boolean) => onQuestionChange({ required: checked })}
-            disabled={disabled}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.SHOW_CONDITIONALLY_LABEL}</span>
-          <Switch
-            checked={question.showConditionally || false}
-            onCheckedChange={(checked: boolean) => onQuestionChange({ showConditionally: checked })}
-            disabled={disabled}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.DEVICE_FRAME_LABEL}</span>
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={question.deviceFrame || false}
-              onCheckedChange={(checked: boolean) => onQuestionChange({ deviceFrame: checked })}
-              disabled={disabled}
-            />
-            <span className="text-xs text-neutral-500">
-              {question.deviceFrame ? DEFAULT_TEXTS.WITH_FRAME : DEFAULT_TEXTS.WITHOUT_FRAME}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* Modal de edición de hitzones */}
       {hitzoneModalOpen && hitzoneFile && (typeof window !== 'undefined' ? ReactDOM.createPortal(
         <div className="fixed inset-0 w-screen h-screen top-0 left-0 z-50 flex items-center justify-center bg-black bg-opacity-40 m-0 p-0">

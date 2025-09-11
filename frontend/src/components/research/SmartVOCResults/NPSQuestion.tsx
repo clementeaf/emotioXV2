@@ -183,8 +183,6 @@ export function NPSQuestion({
   isLoading = false,
   questionText
 }: NPSQuestionProps) {
-  const hasData = monthlyData.length > 0;
-
   // Calcular porcentajes
   const total = promoters + detractors + neutrals;
   const promotersPercentage = total > 0 ? Math.round((promoters / total) * 100) : 0;
@@ -318,13 +316,13 @@ export function NPSQuestion({
           <div className="mb-2">
             <h3 className="text-lg font-medium">Loyalty's Evolution</h3>
             <div className="text-green-600 font-medium">
-              {hasData ? '+16% Since last month' : 'No hay datos disponibles'}
+              {totalResponses > 0 ? `${npsScore >= 0 ? '+' : ''}${npsScore} NPS Score` : 'No hay datos disponibles'}
             </div>
           </div>
 
           <div className="flex mt-4">
             <div className="flex-1 flex flex-col items-center">
-              <div className="text-lg font-semibold text-gray-700">{hasData ? '35%' : '0%'}</div>
+              <div className="text-lg font-semibold text-gray-700">{promotersPercentage}%</div>
               <div className="my-2">
                 <div className="rounded-full bg-green-100 p-1.5">
                   <svg className="w-4 h-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
@@ -336,7 +334,7 @@ export function NPSQuestion({
             </div>
 
             <div className="flex-1 flex flex-col items-center">
-              <div className="text-lg font-semibold text-gray-700">{hasData ? '26%' : '0%'}</div>
+              <div className="text-lg font-semibold text-gray-700">{detractorsPercentage}%</div>
               <div className="my-2">
                 <div className="rounded-full bg-red-100 p-1.5">
                   <svg className="w-4 h-4 text-red-600" viewBox="0 0 20 20" fill="currentColor">
@@ -348,7 +346,7 @@ export function NPSQuestion({
             </div>
 
             <div className="flex-1 flex flex-col items-center">
-              <div className="text-lg font-semibold text-gray-700">{hasData ? '39%' : '0%'}</div>
+              <div className="text-lg font-semibold text-gray-700">{total > 0 ? Math.round((neutrals / total) * 100) : 0}%</div>
               <div className="my-2">
                 <div className="rounded-full bg-gray-200 p-1.5">
                   <svg className="w-4 h-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">

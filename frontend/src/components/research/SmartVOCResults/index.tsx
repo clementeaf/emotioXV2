@@ -274,6 +274,72 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   
   console.log('[DEBUG] Preguntas obtenidas:', { csatQuestion, cesQuestion, cvQuestion, nevQuestion, nevInstructions, npsQuestion });
 
+  // Procesar datos para MetricCards basados en respuestas reales
+  const processMetricData = (scores: number[], type: 'csat' | 'ces' | 'cv') => {
+    if (!scores || scores.length === 0) {
+      return [];
+    }
+
+    // Con pocas respuestas, mostrar los scores reales mapeados a porcentajes
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+    
+    return months.map((month, index) => {
+      // Solo mostrar datos para los primeros meses según el número de respuestas
+      if (index >= scores.length) {
+        return {
+          date: month,
+          satisfied: 0,
+          dissatisfied: 0
+        };
+      }
+
+      const score = scores[index];
+      
+      if (type === 'csat') {
+        // Para CSAT: convertir score de 1-5 a porcentaje
+        // Score alto = más satisfied, score bajo = más dissatisfied
+        const satisfied = ((score - 1) / 4) * 100; // 1=0%, 5=100%
+        const dissatisfied = 100 - satisfied;
+        return {
+          date: month,
+          satisfied: Math.round(satisfied),
+          dissatisfied: Math.round(dissatisfied)
+        };
+      } else if (type === 'ces') {
+        // Para CES: score bajo = menos esfuerzo (mejor), score alto = más esfuerzo (peor)
+        const littleEffort = ((5 - score) / 4) * 100; // 1=100%, 5=0%
+        const muchEffort = 100 - littleEffort;
+        return {
+          date: month,
+          satisfied: Math.round(littleEffort), // usando satisfied para little effort
+          dissatisfied: Math.round(muchEffort) // usando dissatisfied para much effort
+        };
+      } else { // cv
+        // Para CV: convertir score de 1-5 a porcentaje
+        const worth = ((score - 1) / 4) * 100; // 1=0%, 5=100%
+        const worthless = 100 - worth;
+        return {
+          date: month,
+          satisfied: Math.round(worth), // usando satisfied para worth
+          dissatisfied: Math.round(worthless) // usando dissatisfied para worthless
+        };
+      }
+    });
+  };
+
+  const csatData = processMetricData(smartVOCData?.csatScores || [], 'csat');
+  const cesData = processMetricData(smartVOCData?.cesScores || [], 'ces');
+  const cvData = processMetricData(smartVOCData?.cvScores || [], 'cv');
+
+  // Debug: mostrar los scores reales que se están procesando
+  console.log('[DEBUG] Raw scores:', {
+    csat: smartVOCData?.csatScores,
+    ces: smartVOCData?.cesScores,
+    cv: smartVOCData?.cvScores,
+    total: smartVOCData?.totalResponses
+  });
+  console.log('[DEBUG] Processed data:', { csatData, cesData, cvData });
+
   return (
     <div className={cn('pt-4', className)}>
       {/* Contenido superior sin sidebar */}
@@ -386,8 +452,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               ? parseFloat((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length).toFixed(2))
               : 0
             }
-            question="How are feeling your customers when they interact with you?"
-            data={[]}
+            question={csatQuestion}
+            data={csatData}
             hasData={!!(smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0)}
           />
 
@@ -398,8 +464,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               ? parseFloat((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length).toFixed(2))
               : 0
             }
-            question="How much effort do they need to do to complete a task?"
-            data={[]}
+            question={cesQuestion}
+            data={cesData}
             hasData={!!(smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0)}
           />
 
@@ -410,8 +476,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               ? parseFloat((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length).toFixed(2))
               : 0
             }
-            question="Is there value in your solution over the memory of customers?"
-            data={[]}
+            question={cvQuestion}
+            data={cvData}
             hasData={!!(smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0)}
           />
         </div>

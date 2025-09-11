@@ -140,36 +140,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
 
   return (
     <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>
-      <div className="mb-6">
-        <Label className="mb-2 block text-sm font-medium">
-          <div className="flex items-center gap-2">
-            <span>Configuración</span>
-            <Tooltip content="Opciones generales para configurar la tarea cognitiva">
-              <Info className="h-4 w-4 text-muted-foreground" />
-            </Tooltip>
-          </div>
-        </Label>
-
-        <div className="rounded-md border p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="randomizeQuestions"
-              checked={randomizeQuestions}
-              onCheckedChange={(checked) => setRandomizeQuestions(!!checked)}
-              disabled={disabled}
-            />
-            <Label
-              htmlFor="randomizeQuestions"
-              className="text-sm font-normal cursor-pointer"
-            >
-              Randomizar orden de preguntas
-            </Label>
-          </div>
-        </div>
-      </div>
-
       <div>
-        <Label className="text-sm font-medium mb-3 block">Preguntas</Label>
         <div className="space-y-4">
           {questions.length === 0 ? (
             <div className="text-center py-8 border-2 border-dashed border-neutral-300 bg-neutral-50 text-neutral-600 rounded-lg">
