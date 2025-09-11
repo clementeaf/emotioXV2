@@ -25,6 +25,7 @@ const mainNavItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
   { id: 'new-research', label: 'Nueva Investigación', href: '/dashboard/research/new' },
   { id: 'companies', label: 'Gestión de Empresas', href: '/dashboard/companies' },
+  { id: 'settings', label: 'Configuraciones', href: '/dashboard/settings' },
 ];
 
 // Añadir la interfaz para el modal de confirmación
