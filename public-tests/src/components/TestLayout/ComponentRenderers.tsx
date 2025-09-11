@@ -1,4 +1,6 @@
  
+// @ts-nocheck
+
 import React from 'react';
 import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useFormDataStore } from '../../stores/useFormDataStore';

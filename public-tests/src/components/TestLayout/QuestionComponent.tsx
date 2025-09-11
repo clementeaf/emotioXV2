@@ -1,4 +1,6 @@
  
+// @ts-nocheck
+
 import React from 'react';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';

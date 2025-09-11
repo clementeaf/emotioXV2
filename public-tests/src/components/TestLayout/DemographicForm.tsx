@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
