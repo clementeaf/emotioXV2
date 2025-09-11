@@ -1,6 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { EducationalContentModel } from '../models/EducationalContentModel';
+import { BadRequestError, UnauthorizedError, ConflictError, InternalServerError } from '../errors';
+import { EducationalContentService } from '../services/educationalContentService';
 import { authService } from '../services/auth.service';
+import { validateCreateEducationalContent, validateUpdateEducationalContent } from '../utils/validators/educationalContentValidators';
 
 // Helper function to extract userId from JWT token
 const getUserIdFromToken = async (event: APIGatewayProxyEvent): Promise<string | null> => {
@@ -49,43 +51,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   try {
     const userId = await getUserIdFromToken(event);
     if (!userId) {
-      return {
-        statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-        body: JSON.stringify({
-          success: false,
-          error: 'Usuario no autenticado',
-        }),
-      };
+      throw new UnauthorizedError('Usuario no autenticado');
     }
 
     // GET /educational-content - Obtener todo el contenido educativo del usuario
     if (httpMethod === 'GET' && path === '/educational-content') {
-      const userContent = await EducationalContentModel.getAllByUserId(userId);
-      const contentTypes: ('smart_voc' | 'cognitive_task')[] = ['smart_voc', 'cognitive_task'];
-      const result = [];
-
-      for (const contentType of contentTypes) {
-        let content = userContent.find(c => c.contentType === contentType);
-        
-        if (!content) {
-          const defaultContent = await EducationalContentModel.getDefaultContent(contentType);
-          content = {
-            id: 'default',
-            contentType,
-            userId,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            ...defaultContent,
-          } as any;
-        }
-        
-        result.push(content);
-      }
-
+      const result = await EducationalContentService.getAllEducationalContent(userId);
       return {
         statusCode: 200,
         headers: {
@@ -103,20 +74,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (httpMethod === 'GET' && path.match(/^\/educational-content\/(smart_voc|cognitive_task)$/)) {
       const contentType = event.pathParameters?.contentType as 'smart_voc' | 'cognitive_task';
       
-      let educationalContent = await EducationalContentModel.getByUserIdAndType(userId, contentType);
-      
-      if (!educationalContent) {
-        const defaultContent = await EducationalContentModel.getDefaultContent(contentType);
-        educationalContent = {
-          id: 'default',
-          contentType,
-          userId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          ...defaultContent,
-        } as any;
+      if (!contentType || !['smart_voc', 'cognitive_task'].includes(contentType)) {
+        throw new BadRequestError('Tipo de contenido inválido');
       }
 
+      const educationalContent = await EducationalContentService.getEducationalContent(userId, contentType);
       return {
         statusCode: 200,
         headers: {
@@ -130,20 +92,80 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       };
     }
 
+    // PUT /educational-content/{contentType} - Actualizar contenido específico
+    if (httpMethod === 'PUT' && path.match(/^\/educational-content\/(smart_voc|cognitive_task)$/)) {
+      const contentType = event.pathParameters?.contentType as 'smart_voc' | 'cognitive_task';
+      
+      if (!contentType || !['smart_voc', 'cognitive_task'].includes(contentType)) {
+        throw new BadRequestError('Tipo de contenido inválido');
+      }
+
+      const body = JSON.parse(event.body || '{}');
+      
+      // Validar datos de entrada
+      const validation = validateUpdateEducationalContent(body);
+      if (!validation.isValid) {
+        throw new BadRequestError(`Datos inválidos: ${validation.errors.join(', ')}`);
+      }
+
+      const updatedContent = await EducationalContentService.updateEducationalContent(userId, contentType, body);
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          success: true,
+          data: updatedContent,
+        }),
+      };
+    }
+
+    // POST /educational-content - Crear contenido nuevo
+    if (httpMethod === 'POST' && path === '/educational-content') {
+      const body = JSON.parse(event.body || '{}');
+      
+      // Validar datos de entrada
+      const validation = validateCreateEducationalContent({ ...body, userId });
+      if (!validation.isValid) {
+        throw new BadRequestError(`Datos inválidos: ${validation.errors.join(', ')}`);
+      }
+
+      const educationalContent = await EducationalContentService.createEducationalContent({ ...body, userId });
+      return {
+        statusCode: 201,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          success: true,
+          data: educationalContent,
+        }),
+      };
+    }
+
     // Ruta no encontrada
-    return {
-      statusCode: 404,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: 'Endpoint no encontrado',
-      }),
-    };
+    throw new BadRequestError('Endpoint no encontrado');
+
   } catch (error) {
     console.error('Error in educational content handler:', error);
+    
+    if (error instanceof BadRequestError || error instanceof UnauthorizedError || error instanceof ConflictError || error instanceof InternalServerError) {
+      return {
+        statusCode: error.statusCode,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          success: false,
+          error: error.message,
+        }),
+      };
+    }
+
     return {
       statusCode: 500,
       headers: {

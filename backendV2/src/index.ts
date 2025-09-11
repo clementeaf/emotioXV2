@@ -12,6 +12,7 @@ import { initializationService } from './services/initialization.service';
 import { APIGatewayEventWebsocketRequestContext } from './types/websocket';
 // Import estático del controlador admin para forzar su inclusión en el bundle
 // (This import ensures admin controller is included in bundle)
+import * as educationalContentHandler from './controllers/educationalContentHandler';
 
 type ConnectionType = 'http' | 'websocket';
 
@@ -70,6 +71,24 @@ async function getHandler(type: string): Promise<Function | null> {
       }
     } catch (error: any) {
       logger.error('Error importing admin controller:', error);
+      return null;
+    }
+  }
+
+  // Manejo especial para el controlador educational-content (import estático)
+  if (type === 'educational-content') {
+    try {
+      const handler = educationalContentHandler.handler;
+      
+      if (typeof handler === 'function') {
+        handlers[type] = handler;
+        return handler;
+      } else {
+        logger.error(`Educational content controller handler is missing or not a function`);
+        return null;
+      }
+    } catch (error: any) {
+      logger.error('Error importing educational content controller:', error);
       return null;
     }
   }

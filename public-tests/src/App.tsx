@@ -145,7 +145,7 @@ function App() {
 
           {/* ✅ TESTING ALOVA - INVISIBLE, solo si hay researchId */}
           {researchId && <TestAlova researchId={researchId} />}
-p        </div>
+        </div>
       </Router>
       {/* <ReactQueryDevtools initialIsOpen={false} /> */}
     </QueryClientProvider>

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useStepStoreWithBackend } from '../../hooks/useStepStoreWithBackend';

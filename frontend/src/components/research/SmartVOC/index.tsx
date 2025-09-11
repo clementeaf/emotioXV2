@@ -1,6 +1,8 @@
 import React from 'react';
 
 import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
+import { EducationalContentSidebar } from '@/components/research/shared/EducationalContentSidebar';
+import { useEducationalContent } from '@/hooks/useEducationalContent';
 import {
   ConfirmationModal,
   ErrorModal,
@@ -41,6 +43,13 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     closeDeleteModal,
     isEmpty
   } = useSmartVOCForm(researchId);
+
+  // Hook para el contenido educativo
+  const {
+    smartVocContent,
+    loading: educationalLoading,
+    error: educationalError
+  } = useEducationalContent();
 
 
   // Callback para guardar y notificar al componente padre si es necesario
@@ -112,35 +121,13 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         />
       </div>
 
-      {/* Columna lateral fija */}
-      <div className="fixed top-20 right-32 w-80 h-[800px] bg-white border border-gray-200 rounded-lg shadow-lg p-4 overflow-y-auto">
-        <div className="space-y-4">
-          <h3 className="font-semibold text-gray-900 text-lg border-b pb-2">
-            Configuración Avanzada
-          </h3>
-          
-          <div className="space-y-3">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <h4 className="font-medium text-sm text-gray-700 mb-2">Estadísticas</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <div>Preguntas configuradas: {questions.length}</div>
-                <div>Estado: {isExisting ? 'Guardado' : 'Sin guardar'}</div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <h4 className="font-medium text-sm text-blue-700 mb-2">Tipos de Pregunta</h4>
-              <div className="text-xs text-blue-600 space-y-1">
-                {questions.map((q, idx) => (
-                  <div key={q.id}>
-                    Pregunta {idx + 1}: {q.type}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Columna lateral con contenido educativo */}
+      <EducationalContentSidebar
+        content={smartVocContent}
+        loading={educationalLoading}
+        error={educationalError}
+        title="Configuración Avanzada"
+      />
       
       {/* Modales */}
       <ErrorModal

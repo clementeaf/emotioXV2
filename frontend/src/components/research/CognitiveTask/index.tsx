@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
+import { EducationalContentSidebar } from '@/components/research/shared/EducationalContentSidebar';
+import { useEducationalContent } from '@/hooks/useEducationalContent';
 import { cn } from '@/lib/utils';
 import { ConfirmationModal } from '../SmartVOC/components/ConfirmationModal';
 import {
@@ -52,6 +54,13 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     continueWithAction,
     isEmpty
   } = useCognitiveTaskForm(researchId, onSave);
+
+  // Hook para el contenido educativo
+  const {
+    cognitiveTaskContent,
+    loading: educationalLoading,
+    error: educationalError
+  } = useEducationalContent();
 
   // 🆕 Estado temporal para el modal de confirmación (hasta que se implemente en el hook)
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
@@ -194,41 +203,13 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         </div>
       </div>
 
-      {/* Columna lateral fija */}
-      <div className="fixed top-20 right-32 w-80 h-[800px] bg-white border border-gray-200 rounded-lg shadow-lg p-4 overflow-y-auto">
-        <div className="space-y-4">
-          <h3 className="font-semibold text-gray-900 text-lg border-b pb-2">
-            Configuración Avanzada
-          </h3>
-          
-          <div className="space-y-3">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <h4 className="font-medium text-sm text-gray-700 mb-2">Estadísticas</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <div>Preguntas configuradas: {formData.questions.length}</div>
-                <div>Estado: {cognitiveTaskId ? 'Guardado' : 'Sin guardar'}</div>
-                <div>Aleatorización: {formData.randomizeQuestions ? 'Activa' : 'Inactiva'}</div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <h4 className="font-medium text-sm text-blue-700 mb-2">Preguntas</h4>
-              <div className="text-xs text-blue-600 space-y-1">
-                {formData.questions.map((q, idx) => (
-                  <div key={idx}>
-                    Pregunta {idx + 1}: {q.type}
-                    {q.files && q.files.length > 0 && (
-                      <div className="ml-2 text-xs text-green-600">
-                        {q.files.length} archivo(s)
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Columna lateral con contenido educativo */}
+      <EducationalContentSidebar
+        content={cognitiveTaskContent}
+        loading={educationalLoading}
+        error={educationalError}
+        title="Configuración Avanzada"
+      />
     </div>
   );
 };

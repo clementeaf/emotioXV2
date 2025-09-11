@@ -1,7 +1,9 @@
-import { DynamoDB } from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { generateUniqueId } from '../utils/id-generator';
 
-const dynamodb = new DynamoDB.DocumentClient();
+const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const dynamodb = DynamoDBDocumentClient.from(client);
 
 export interface EducationalContent {
   id: string;
@@ -44,16 +46,16 @@ export class EducationalContentModel {
       userId: data.userId,
     };
 
-    await dynamodb.put({
+    await dynamodb.send(new PutCommand({
       TableName: this.tableName,
       Item: educationalContent,
-    }).promise();
+    }));
 
     return educationalContent;
   }
 
   static async getByUserIdAndType(userId: string, contentType: 'smart_voc' | 'cognitive_task'): Promise<EducationalContent | null> {
-    const result = await dynamodb.query({
+    const result = await dynamodb.send(new QueryCommand({
       TableName: this.tableName,
       IndexName: 'UserContentTypeIndex',
       KeyConditionExpression: 'userId = :userId AND contentType = :contentType',
@@ -61,7 +63,7 @@ export class EducationalContentModel {
         ':userId': userId,
         ':contentType': contentType,
       },
-    }).promise();
+    }));
 
     if (result.Items && result.Items.length > 0) {
       return result.Items[0] as EducationalContent;
@@ -71,10 +73,10 @@ export class EducationalContentModel {
   }
 
   static async getById(id: string): Promise<EducationalContent | null> {
-    const result = await dynamodb.get({
+    const result = await dynamodb.send(new GetCommand({
       TableName: this.tableName,
       Key: { id },
-    }).promise();
+    }));
 
     return result.Item as EducationalContent || null;
   }
@@ -108,34 +110,34 @@ export class EducationalContentModel {
       return this.getById(id);
     }
 
-    const result = await dynamodb.update({
+    const result = await dynamodb.send(new UpdateCommand({
       TableName: this.tableName,
       Key: { id },
       UpdateExpression: `SET ${updateExpression.join(', ')}`,
       ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW',
-    }).promise();
+    }));
 
     return result.Attributes as EducationalContent || null;
   }
 
   static async delete(id: string): Promise<void> {
-    await dynamodb.delete({
+    await dynamodb.send(new DeleteCommand({
       TableName: this.tableName,
       Key: { id },
-    }).promise();
+    }));
   }
 
   static async getAllByUserId(userId: string): Promise<EducationalContent[]> {
-    const result = await dynamodb.query({
+    const result = await dynamodb.send(new QueryCommand({
       TableName: this.tableName,
       IndexName: 'UserIdIndex',
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
         ':userId': userId,
       },
-    }).promise();
+    }));
 
     return (result.Items || []) as EducationalContent[];
   }
