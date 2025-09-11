@@ -42,6 +42,7 @@ interface EyeTrackingRecruitFormData {
   id?: string;
   researchId: string;
   questionKey: string;
+  lastUpdated?: string; // Para manejar datos optimistas
   demographicQuestions: {
     age: {
       enabled: boolean;
@@ -148,6 +149,10 @@ interface UseEyeTrackingRecruitResult {
   setFormData: React.Dispatch<React.SetStateAction<EyeTrackingRecruitFormData>>;
   stats: EyeTrackingRecruitStats | null;
 
+  // 🎯 NUEVOS ESTADOS PARA FEEDBACK VISUAL OPTIMISTA
+  lastSaved: string | null;
+  hasUnsavedChanges: boolean;
+
   // Estados para los switches principales
   demographicQuestionsEnabled: boolean;
   setDemographicQuestionsEnabled: (value: boolean) => void;
@@ -157,8 +162,8 @@ interface UseEyeTrackingRecruitResult {
   // Métodos para manipular el formulario
   handleDemographicChange: (key: DemographicQuestionKeys, value: boolean) => void;
   handleDemographicRequired: (key: DemographicQuestionKeys, required: boolean) => void;
-  handleLinkConfigChange: (key: LinkConfigKeys, value: any) => void;
-  handleBacklinkChange: (key: string, value: any) => void;
+  handleLinkConfigChange: (key: LinkConfigKeys, value: boolean) => void;
+  handleBacklinkChange: (key: string, value: string) => void;
   handleParamOptionChange: (key: ParameterOptionKeys, value: boolean) => void;
   setLimitParticipants: (value: boolean) => void;
   setParticipantLimit: (value: number) => void;
@@ -356,8 +361,28 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
   }
 };
 
+// Interfaz para el contexto de la mutación
+interface MutationContext {
+  previousDataMap: Map<string, EyeTrackingRecruitFormData | undefined>;
+  queryKeys: unknown[][];
+  mainQueryKey: unknown[];
+}
+
+// Interfaz para la respuesta de la API
+interface ApiResponse {
+  id?: string;
+  researchId?: string;
+  demographicQuestions?: Record<string, unknown>;
+  linkConfig?: Record<string, boolean>;
+  participantLimit?: Record<string, unknown>;
+  backlinks?: Record<string, string>;
+  researchUrl?: string;
+  parameterOptions?: Record<string, boolean>;
+  lastUpdated?: string;
+}
+
 // Función para procesar la respuesta de la API y asegurar que todas las opciones sean arrays
-const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
+const processApiResponse = (response: ApiResponse | null | undefined): EyeTrackingRecruitFormData => {
   // Empezar con una configuración segura basada en los valores predeterminados
   const safeResponse: EyeTrackingRecruitFormData = {
     ...DEFAULT_CONFIG,
@@ -383,54 +408,73 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
 
       // Procesar cada categoría demográfica
       demographicKeys.forEach(key => {
-        if (response.demographicQuestions[key]) {
-          const questionData = response.demographicQuestions[key];
-          safeResponse.demographicQuestions[key] = {
-            enabled: questionData.enabled || false,
-            required: questionData.required || false,
-            options: ensureOptionsArray(questionData.options) || [],
-            // Procesar propiedades específicas según el tipo
-            ...(key === 'age' && {
-              disqualifyingAges: ensureOptionsArray(questionData.disqualifyingAges),
-              quotas: questionData.quotas || [],
-              quotasEnabled: questionData.quotasEnabled || false
-            }),
-            ...(key === 'country' && {
-              disqualifyingCountries: ensureOptionsArray(questionData.disqualifyingCountries),
-              quotas: questionData.quotas || [],
-              quotasEnabled: questionData.quotasEnabled || false
-            }),
-            ...(key === 'gender' && {
-              disqualifyingGenders: ensureOptionsArray(questionData.disqualifyingGenders),
-              quotas: questionData.quotas || [],
-              quotasEnabled: questionData.quotasEnabled || false
-            }),
-            ...(key === 'educationLevel' && {
-              disqualifyingEducation: ensureOptionsArray(questionData.disqualifyingEducation),
-              quotas: questionData.quotas || [],
-              quotasEnabled: questionData.quotasEnabled || false
-            }),
-            ...(key === 'householdIncome' && {
-              disqualifyingIncomes: ensureOptionsArray(questionData.disqualifyingIncomes),
-              quotas: questionData.quotas || [],
-              quotasEnabled: questionData.quotasEnabled || false
-            }),
-            ...(key === 'employmentStatus' && {
-              disqualifyingEmploymentStatuses: ensureOptionsArray(questionData.disqualifyingEmploymentStatuses),
-              quotas: questionData.quotas || [],
-              quotasEnabled: questionData.quotasEnabled || false
-            }),
-            ...(key === 'dailyHoursOnline' && {
-              disqualifyingHours: ensureOptionsArray(questionData.disqualifyingHours),
-              quotas: questionData.quotas || [],
-              quotasEnabled: questionData.quotasEnabled || false
-            }),
-            ...(key === 'technicalProficiency' && {
-              disqualifyingProficiencies: ensureOptionsArray(questionData.disqualifyingProficiencies),
-              quotas: questionData.quotas || [],
-              quotasEnabled: questionData.quotasEnabled || false
-            })
+        const demographicQuestions = response.demographicQuestions;
+        if (demographicQuestions && demographicQuestions[key]) {
+          const questionData = demographicQuestions[key] as Record<string, unknown>;
+          const baseConfig = {
+            enabled: Boolean(questionData.enabled) || false,
+            required: Boolean(questionData.required) || false,
+            options: ensureOptionsArray(questionData.options as string[]) || [],
           };
+          
+          // Procesar propiedades específicas según el tipo usando type assertion
+          if (key === 'age') {
+            (safeResponse.demographicQuestions.age as Record<string, unknown>) = {
+              ...baseConfig,
+              disqualifyingAges: ensureOptionsArray(questionData.disqualifyingAges as string[]),
+              quotas: questionData.quotas || [],
+              quotasEnabled: Boolean(questionData.quotasEnabled) || false
+            };
+          } else if (key === 'country') {
+            (safeResponse.demographicQuestions.country as Record<string, unknown>) = {
+              ...baseConfig,
+              disqualifyingCountries: ensureOptionsArray(questionData.disqualifyingCountries as string[]),
+              quotas: questionData.quotas || [],
+              quotasEnabled: Boolean(questionData.quotasEnabled) || false
+            };
+          } else if (key === 'gender') {
+            (safeResponse.demographicQuestions.gender as Record<string, unknown>) = {
+              ...baseConfig,
+              disqualifyingGenders: ensureOptionsArray(questionData.disqualifyingGenders as string[]),
+              quotas: questionData.quotas || [],
+              quotasEnabled: Boolean(questionData.quotasEnabled) || false
+            };
+          } else if (key === 'educationLevel') {
+            (safeResponse.demographicQuestions.educationLevel as Record<string, unknown>) = {
+              ...baseConfig,
+              disqualifyingEducation: ensureOptionsArray(questionData.disqualifyingEducation as string[]),
+              quotas: questionData.quotas || [],
+              quotasEnabled: Boolean(questionData.quotasEnabled) || false
+            };
+          } else if (key === 'householdIncome') {
+            (safeResponse.demographicQuestions.householdIncome as Record<string, unknown>) = {
+              ...baseConfig,
+              disqualifyingIncomes: ensureOptionsArray(questionData.disqualifyingIncomes as string[]),
+              quotas: questionData.quotas || [],
+              quotasEnabled: Boolean(questionData.quotasEnabled) || false
+            };
+          } else if (key === 'employmentStatus') {
+            (safeResponse.demographicQuestions.employmentStatus as Record<string, unknown>) = {
+              ...baseConfig,
+              disqualifyingEmploymentStatuses: ensureOptionsArray(questionData.disqualifyingEmploymentStatuses as string[]),
+              quotas: questionData.quotas || [],
+              quotasEnabled: Boolean(questionData.quotasEnabled) || false
+            };
+          } else if (key === 'dailyHoursOnline') {
+            (safeResponse.demographicQuestions.dailyHoursOnline as Record<string, unknown>) = {
+              ...baseConfig,
+              disqualifyingHours: ensureOptionsArray(questionData.disqualifyingHours as string[]),
+              quotas: questionData.quotas || [],
+              quotasEnabled: Boolean(questionData.quotasEnabled) || false
+            };
+          } else if (key === 'technicalProficiency') {
+            (safeResponse.demographicQuestions.technicalProficiency as Record<string, unknown>) = {
+              ...baseConfig,
+              disqualifyingProficiencies: ensureOptionsArray(questionData.disqualifyingProficiencies as string[]),
+              quotas: questionData.quotas || [],
+              quotasEnabled: Boolean(questionData.quotasEnabled) || false
+            };
+          }
         }
       });
     }
@@ -447,9 +491,10 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
 
     // Límite de participantes
     if (response.participantLimit) {
+      const participantLimit = response.participantLimit as Record<string, unknown>;
       safeResponse.participantLimit = {
-        enabled: response.participantLimit.enabled || false,
-        value: response.participantLimit.value || 50
+        enabled: Boolean(participantLimit.enabled) || false,
+        value: Number(participantLimit.value) || 50
       };
     }
 
@@ -497,6 +542,11 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const [stats, setStats] = useState<EyeTrackingRecruitStats | null>(DEFAULT_STATS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // 🎯 NUEVOS ESTADOS PARA FEEDBACK VISUAL OPTIMISTA
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Estados para los switches principales
   const [demographicQuestionsEnabled, setDemographicQuestionsEnabledState] = useState(true);
@@ -533,22 +583,30 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
     try {
       if (!eyeTrackingRecruitData) {
-        // Si no hay datos, crear configuración predeterminada
-        const defaultConfig = createDefaultConfig(actualResearchId);
-        setFormData(defaultConfig);
-        setDemographicQuestionsEnabledState(false);
-        setLinkConfigEnabledState(false);
+        // Si no hay datos, crear configuración predeterminada SOLO si no hay datos locales optimistas
+        if (!formData.id) {
+          const defaultConfig = createDefaultConfig(actualResearchId);
+          setFormData(defaultConfig);
+          setDemographicQuestionsEnabledState(false);
+          setLinkConfigEnabledState(false);
+        }
         return;
       }
 
       // Verificar si la respuesta contiene los datos necesarios
       if (!eyeTrackingRecruitData.id) {
-        const defaultConfig = createDefaultConfig(actualResearchId);
-        setFormData(defaultConfig);
-        setDemographicQuestionsEnabledState(false);
-        setLinkConfigEnabledState(false);
+        // Solo crear config por defecto si no hay datos optimistas locales
+        if (!formData.id) {
+          const defaultConfig = createDefaultConfig(actualResearchId);
+          setFormData(defaultConfig);
+          setDemographicQuestionsEnabledState(false);
+          setLinkConfigEnabledState(false);
+        }
         return;
       }
+
+      // 🎯 SIEMPRE USAR DATOS DEL CACHE DE REACT QUERY
+      // El cache de React Query mantiene los datos optimistas persistentes
 
       // Procesar la respuesta para adaptarla a nuestra estructura
       const configData = processApiResponse(eyeTrackingRecruitData);
@@ -556,29 +614,38 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       // Asegurarnos de usar el researchId correcto
       configData.researchId = actualResearchId;
 
-      // Actualizar el estado del formulario
+      // Actualizar el estado del formulario solo si no hay datos optimistas
       setFormData(configData);
 
-      // Determinar si hay preguntas demográficas habilitadas
-      const hasDemographics = Object.values(configData.demographicQuestions).some(
-        (q: any) => q.enabled
-      );
-      setDemographicQuestionsEnabledState(hasDemographics);
+      // 🎯 SOLO calcular estados de switches en carga inicial, no después de guardar
+      if (isInitialLoad) {
+        // Determinar si hay preguntas demográficas habilitadas
+        const hasDemographics = Object.values(configData.demographicQuestions).some(
+          (q) => q.enabled
+        );
+        setDemographicQuestionsEnabledState(hasDemographics);
 
-      // Determinar si hay opciones de configuración de enlace habilitadas
-      const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
-      setLinkConfigEnabledState(hasLinkConfig);
-    } catch (error: any) {
-      if (error.statusCode === 404) {
-        const defaultConfig = createDefaultConfig(actualResearchId);
-        setFormData(defaultConfig);
-        setDemographicQuestionsEnabledState(false);
-        setLinkConfigEnabledState(false);
+        // Determinar si hay opciones de configuración de enlace habilitadas
+        const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
+        setLinkConfigEnabledState(hasLinkConfig);
+        
+        // Marcar que ya no es carga inicial
+        setIsInitialLoad(false);
+      }
+    } catch (error: unknown) {
+      if ((error as Record<string, unknown>)?.statusCode === 404) {
+        // Solo crear config por defecto si no hay datos optimistas
+        if (!formData.id) {
+          const defaultConfig = createDefaultConfig(actualResearchId);
+          setFormData(defaultConfig);
+          setDemographicQuestionsEnabledState(false);
+          setLinkConfigEnabledState(false);
+        }
         return;
       }
-      toast.error(`Error al cargar configuración: ${error.message || 'Error desconocido'}`);
+      toast.error(`Error al cargar configuración: ${(error as Error)?.message || 'Error desconocido'}`);
     }
-  }, [eyeTrackingRecruitData, isLoadingConfig, actualResearchId]);
+  }, [eyeTrackingRecruitData, isLoadingConfig, actualResearchId, formData.id, formData.lastUpdated]);
 
   // Actualizar estado de carga cuando termina la consulta y asignar URL automáticamente
   useEffect(() => {
@@ -593,6 +660,32 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }));
     }
   }, [isLoadingConfig, generateRecruitmentLink]);
+
+  // 🎯 DETECTAR CAMBIOS NO GUARDADOS PARA FEEDBACK VISUAL
+  useEffect(() => {
+    // Solo marcar cambios después de que se haya cargado inicialmente
+    if (!loading && !isLoadingConfig) {
+      setHasUnsavedChanges(true);
+    }
+  }, [formData, loading, isLoadingConfig]);
+
+  // 🔄 REFRESCAR CACHE CUANDO EL COMPONENTE SE MONTA (navegación entre formularios)
+  useEffect(() => {
+    const actualResearchId = researchId === 'current' ? '1234' : researchId;
+    
+    // 🎯 RESETEAR isInitialLoad cuando cambia el researchId para permitir recálculo de switches
+    setIsInitialLoad(true);
+    
+    // 🚨 NO INVALIDAR CACHE AL NAVEGAR - mantener datos optimistas
+    // Solo refetch si realmente no hay datos en cache
+    const existingData = queryClient.getQueryData(['eyeTracking', 'recruit', 'shared', actualResearchId]);
+    if (!existingData) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['eyeTracking', 'recruit', 'shared', actualResearchId],
+        refetchType: 'active'
+      });
+    }
+  }, [researchId, queryClient]);
 
   // Función para validar campos requeridos
   const checkRequiredFields = useCallback(() => {
@@ -619,21 +712,182 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     return true;
   }, [formData]);
 
-  // Configuración de la mutación para guardar
+  // Configuración de la mutación para guardar con carga optimista
   const saveConfigMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await eyeTrackingRecruitAPI.createConfig(researchId, data);
+    mutationFn: async (data: EyeTrackingRecruitFormData) => {
+      // Determinar si es una actualización o creación basado en si existe un ID
+      const isUpdate = data.id && typeof data.id === 'string' && data.id.length > 0;
+      
+      if (isUpdate) {
+        return await eyeTrackingRecruitAPI.updateConfig(researchId, data);
+      } else {
+        return await eyeTrackingRecruitAPI.createConfig(researchId, data);
+      }
     },
-    onSuccess: () => {
-      // Eliminamos el toast de aquí para evitar duplicados
+    // 🎯 CARGA OPTIMISTA: Actualizar inmediatamente múltiples caches
+    onMutate: async (newData) => {
       const actualResearchId = researchId === 'current' ? '1234' : researchId;
-      queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', actualResearchId] });
+      
+      // 📋 DEFINIR TODOS LOS QUERY KEYS QUE NECESITAMOS SINCRONIZAR
+      const queryKeys = [
+        ['eyeTrackingRecruit', actualResearchId],
+        ['eyeTracking', 'recruit', 'shared', actualResearchId] // 🔧 FIX: Usar el key correcto del hook compartido
+      ];
+      
+      // Cancelar todas las queries en progreso
+      await Promise.all(
+        queryKeys.map(queryKey => queryClient.cancelQueries({ queryKey }))
+      );
+      
+      // Obtener snapshots de todos los estados anteriores
+      const previousDataMap = new Map();
+      queryKeys.forEach(queryKey => {
+        const data = queryClient.getQueryData(queryKey);
+        previousDataMap.set(JSON.stringify(queryKey), data);
+      });
+      
+      // 🚀 ACTUALIZAR OPTIMÍSTICAMENTE TODOS LOS CACHES
+      const updateOptimisticData = (old: EyeTrackingRecruitFormData | undefined) => {
+        // Crear una estructura completa incluso si no hay datos previos
+        const baseData = old || {
+          researchId: actualResearchId,
+          questionKey: 'DEMOGRAPHICS'
+        };
+        
+        return {
+          ...baseData,
+          ...newData,
+          id: newData.id || (baseData as EyeTrackingRecruitFormData).id,
+          researchId: actualResearchId, // Asegurar que siempre tenga el researchId correcto
+          lastUpdated: new Date().toISOString()
+        };
+      };
+      
+      queryKeys.forEach(queryKey => {
+        queryClient.setQueryData(queryKey, updateOptimisticData);
+      });
+      
+      // 🎯 ACTUALIZAR TAMBIÉN EL ESTADO LOCAL PARA FEEDBACK INMEDIATO
+      const updatedFormData = updateOptimisticData(formData);
+      setFormData(updatedFormData);
+      
+      // 🎯 ACTUALIZAR ESTADOS DE FEEDBACK VISUAL OPTIMISTA
+      setLastSaved(new Date().toLocaleTimeString());
+      setHasUnsavedChanges(false);
+      
+      // Mostrar feedback visual inmediato
+      toast.success('Cambios aplicados', {
+        duration: 1500,
+        position: 'bottom-right'
+      });
+      
+      // Retornar contexto completo para rollback
+      return { 
+        previousDataMap, 
+        queryKeys,
+        mainQueryKey: ['eyeTrackingRecruit', actualResearchId]
+      };
     },
-    onError: (error: any) => {
+    onSuccess: (result) => {
+      const actualResearchId = researchId === 'current' ? '1234' : researchId;
+      
+      // 🔄 ACTUALIZAR MÚLTIPLES CACHES PARA SINCRONIZACIÓN COMPLETA
+      if (result) {
+        // 1. Cache principal de eyeTrackingRecruit
+        queryClient.setQueryData(['eyeTrackingRecruit', actualResearchId], result);
+        
+        // 2. Cache del hook compartido (useEyeTrackingSharedData)
+        queryClient.setQueryData(['eyeTracking', 'recruit', 'shared', actualResearchId], result);
+        
+        // 3. Invalidar otros caches relacionados para forzar re-fetch
+        queryClient.invalidateQueries({ 
+          queryKey: ['eyeTrackingRecruit'], 
+          exact: false 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['eyeTracking', 'recruit'], 
+          exact: false 
+        });
+        
+        // 4. Actualizar el estado local del formulario preservando los estados de switches
+        // 🎯 PRESERVAR ESTADOS DE SWITCHES - No recalcular después de guardar
+        if (result.id) {
+          setFormData(prev => ({
+            ...prev,
+            ...result,
+            id: result.id
+          }));
+        }
+        
+        // 🚨 IMPORTANTE: Los estados de demographicQuestionsEnabled y linkConfigEnabled 
+        // NO se recalculan después de guardar para preservar la intención del usuario
+        // Si el usuario desactivó un switch, debe permanecer desactivado incluso si
+        // los datos guardados contienen configuraciones que podrían reactivarlo
+      }
+      
+      // 🎯 ACTUALIZAR ESTADOS DE FEEDBACK VISUAL
+      setLastSaved(new Date().toLocaleTimeString());
+      setHasUnsavedChanges(false);
+      
+      // Mostrar confirmación final
+      toast.success('Configuración guardada correctamente', {
+        duration: 2000,
+        position: 'top-center'
+      });
+    },
+    onError: (error: Error, variables: EyeTrackingRecruitFormData, context: MutationContext | undefined) => {
+      // 🔄 ROLLBACK: Revertir todos los cambios optimistas en caso de error
+      if (context?.previousDataMap && context?.queryKeys) {
+        context.queryKeys.forEach((queryKey: unknown[]) => {
+          const keyString = JSON.stringify(queryKey);
+          const previousData = context.previousDataMap.get(keyString);
+          if (previousData) {
+            queryClient.setQueryData(queryKey, previousData);
+          }
+        });
+        
+        // 🎯 REVERTIR TAMBIÉN EL ESTADO LOCAL DEL FORMULARIO
+        const mainQueryKey = ['eyeTrackingRecruit', researchId === 'current' ? '1234' : researchId];
+        const keyString = JSON.stringify(mainQueryKey);
+        const previousFormData = context.previousDataMap.get(keyString);
+        if (previousFormData) {
+          setFormData(previousFormData);
+        }
+      }
+      
+      // 🎯 REVERTIR ESTADOS DE FEEDBACK VISUAL
+      setLastSaved(null);
+      setHasUnsavedChanges(true);
+      
+      // Mostrar error
+      toast.error(`Error al guardar: ${error.message || 'Error desconocido'}`, {
+        duration: 4000,
+        position: 'top-center'
+      });
+      
       setApiErrors({
         visible: true,
         title: 'Error al guardar',
         message: error.message || 'Ocurrió un error inesperado'
+      });
+    },
+    onSettled: () => {
+      // 🎯 REDUCIR INVALIDACIONES AGRESIVAS - Solo invalidar si es necesario
+      const actualResearchId = researchId === 'current' ? '1234' : researchId;
+      
+      // Solo invalidar queries que no sean las que acabamos de actualizar
+      // Esto evita sobreescribir los datos optimistas que funcionaron
+      queryClient.invalidateQueries({ 
+        queryKey: ['eyeTrackingRecruit'], 
+        exact: false,
+        predicate: (query) => {
+          // No invalidar las queries que acabamos de actualizar
+          const key = query.queryKey;
+          return !(
+            (key[0] === 'eyeTrackingRecruit' && key[1] === actualResearchId) ||
+            (key[0] === 'eyeTracking' && key[1] === 'recruit' && key[2] === 'shared' && key[3] === actualResearchId)
+          );
+        }
       });
     }
   });
@@ -655,60 +909,35 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     setModalVisible(true);
   }, []);
 
-  // Función que ejecuta el guardado real
+  // Función que ejecuta el guardado real (simplificada para carga optimista)
   const handleConfirmSave = React.useCallback(async () => {
-    setLoading(true);
+    setSaving(true);
 
     try {
       // Preparamos los datos para enviar
       const actualResearchId = researchId === 'current' ? '1234' : researchId;
 
-      // Extraer los datos excluyendo el id, para forzar al backend a usar updateByResearchId
-      const { id, ...restFormData } = formData;
+      // Mantener el id cuando existe para operaciones de actualización
       const dataToSave = {
-        ...restFormData,
+        ...formData,
         researchId: actualResearchId,
-        questionKey: restFormData.questionKey === QuestionType.DEMOGRAPHICS ? restFormData.questionKey : QuestionType.DEMOGRAPHICS
+        questionKey: formData.questionKey === QuestionType.DEMOGRAPHICS ? formData.questionKey : QuestionType.DEMOGRAPHICS
       };
 
-
-      // Enviamos los datos al servidor
-      const result = await saveConfigMutation.mutateAsync(dataToSave);
-
-      // Mostrar modal de éxito (tipo info para usar azul)
-      showModal({
-        title: 'Éxito',
-        message: 'Configuración de reclutamiento guardada correctamente.',
-        type: 'info'
-      });
-    } catch (error: any) {
-
-      // Mostrar información detallada del error
-      let errorMessage = '';
-      if (error.statusCode) {
-        errorMessage = `Error ${error.statusCode}: ${error.message || 'Error desconocido'}`;
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else {
-        errorMessage = 'Error desconocido al guardar la configuración';
-      }
-
-      toast.error(`Error: ${errorMessage}`);
-
-      // Mostrar el modal de error
-      setApiErrors({
-        visible: true,
-        title: 'Error al guardar',
-        message: errorMessage
-      });
+      // La mutación optimista se encarga del resto (feedback visual, rollback, etc.)
+      await saveConfigMutation.mutateAsync(dataToSave);
+      
+    } catch (error: unknown) {
+      // Los errores se manejan en la mutación optimista
+      console.error('Error en handleConfirmSave:', error as Error);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
-  }, [formData, saveConfigMutation, researchId, showModal, setApiErrors]);
+  }, [formData, saveConfigMutation, researchId]);
 
   // Función para guardar el formulario (punto de entrada principal)
   const saveForm = React.useCallback(async () => {
-    setLoading(true);
+    setSaving(true);
     setApiErrors(undefined);
 
     try {
@@ -719,14 +948,14 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       } else {
         toast.error('Por favor complete todos los campos requeridos');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setApiErrors({
         visible: true,
         title: 'Error al preparar datos',
-        message: error.message || 'Ocurrió un error inesperado al preparar los datos para guardar'
+        message: (error as Error)?.message || 'Ocurrió un error inesperado al preparar los datos para guardar'
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }, [checkRequiredFields, handleConfirmSave]);
 
@@ -793,7 +1022,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
 
-  const handleLinkConfigChange = useCallback((key: LinkConfigKeys, value: any) => {
+  const handleLinkConfigChange = useCallback((key: LinkConfigKeys, value: boolean) => {
     setFormData(prevData => ({
       ...prevData,
       linkConfig: {
@@ -1494,6 +1723,10 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     formData,
     stats,
     setFormData,
+
+    // 🎯 NUEVOS ESTADOS PARA FEEDBACK VISUAL OPTIMISTA
+    lastSaved,
+    hasUnsavedChanges,
 
     // Estados para los switches principales
     demographicQuestionsEnabled,

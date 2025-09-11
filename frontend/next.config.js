@@ -2,11 +2,11 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuración diferente para dev vs producción
-  ...(process.env.NODE_ENV === 'production' && {
-    output: 'export', // Solo en producción para S3
-    trailingSlash: true,
-  }),
+  // 🚨 DESACTIVAR EXPORT ESTÁTICO - Causa problemas con Server Components
+  // ...(process.env.NODE_ENV === 'production' && {
+  //   output: 'export', // Solo en producción para S3
+  //   trailingSlash: true,
+  // }),
   
   // Configuración para imágenes y rutas
   images: {
@@ -39,6 +39,20 @@ const nextConfig = {
   // Configuración específica para AWS Amplify
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+  
+  // 🎯 CONFIGURAR REWRITES PARA USAR AWS LAMBDA
+  async rewrites() {
+    // Solo aplicar rewrites en desarrollo para evitar conflictos
+    if (process.env.NODE_ENV === 'development') {
+      return [
+        {
+          source: '/api/:path*',
+          destination: 'https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev/:path*',
+        },
+      ];
+    }
+    return [];
   }
   // Las funciones headers y redirects han sido eliminadas para evitar warnings con output: 'export'.
 }

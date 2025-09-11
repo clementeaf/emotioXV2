@@ -102,6 +102,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     saving,
     formData,
     stats,
+    lastSaved,
     demographicQuestionsEnabled,
     setDemographicQuestionsEnabled,
     linkConfigEnabled,
@@ -869,32 +870,50 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     <label htmlFor="saveUserJourney" className="text-xs text-blue-600 cursor-pointer">Guardar recorrido del usuario</label>
                   </div>
                 </div>
-                <div className="flex justify-end self-end gap-4">
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={isDeleting || !formData.id}
-                    className="px-4 py-2 h-[40px] rounded-lg bg-red-600 text-white shadow hover:bg-red-700 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[180px] mt-8"
-                  >
-                    {isDeleting ? (
-                      <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div> Eliminando...</span>
-                    ) : (
-                      <span className="flex items-center gap-2"><Trash2 size={18} /> Eliminar datos</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveForm}
-                    disabled={saving}
-                    className="px-4 py-2 h-[40px] rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[180px] mt-8"
-                  >
+                <div className="flex flex-col items-end gap-2">
+                  {/* 🎯 INDICADOR DE ESTADO DE GUARDADO */}
+                  <div className="flex items-center gap-2 text-xs text-gray-500 min-h-[16px]">
                     {saving ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
                         <span>Guardando...</span>
                       </div>
-                    ) : getSaveButtonText()}
-                  </button>
+                    ) : lastSaved ? (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span>Guardado a las {lastSaved}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  
+                  <div className="flex justify-end gap-4">
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={isDeleting || !formData.id}
+                      className="px-4 py-2 h-[40px] rounded-lg bg-red-600 text-white shadow hover:bg-red-700 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[180px]"
+                    >
+                      {isDeleting ? (
+                        <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div> Eliminando...</span>
+                      ) : (
+                        <span className="flex items-center gap-2"><Trash2 size={18} /> Eliminar datos</span>
+                      )}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={saveForm}
+                      disabled={saving}
+                      className="px-4 py-2 h-[40px] rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[180px]"
+                    >
+                      {saving ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                          <span>Guardando...</span>
+                        </div>
+                      ) : getSaveButtonText()}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
