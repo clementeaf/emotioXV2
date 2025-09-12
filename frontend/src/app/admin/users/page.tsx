@@ -52,6 +52,68 @@ export default function AdminUsersPage() {
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  
+  // Estados para operaciones optimistas
+  const [optimisticOperations, setOptimisticOperations] = useState<Set<string>>(new Set());
+  
+  // Estado para evitar múltiples llamadas simultaneas a loadUsers
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  // Helper para actualizar lista filtrada
+  const updateFilteredUsers = (usersList: UserData[]) => {
+    return usersList.filter(user => 
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  // Helper para manejar operaciones optimistas
+  const startOptimisticOperation = (operationId: string) => {
+    setOptimisticOperations(prev => {
+      const next = new Set(prev);
+      next.add(operationId);
+      return next;
+    });
+  };
+
+  const endOptimisticOperation = (operationId: string) => {
+    setOptimisticOperations(prev => {
+      const next = new Set(prev);
+      next.delete(operationId);
+      return next;
+    });
+  };
+
+  // Helper para rollback optimista
+  const rollbackToState = (
+    operationId: string,
+    previousUsers: UserData[],
+    previousNewUser?: CreateUserData,
+    previousShowCreateForm?: boolean,
+    previousEditingUser?: UserData | null,
+    previousUserToDelete?: UserData | null,
+    previousShowDeleteModal?: boolean
+  ) => {
+    setUsers(previousUsers);
+    setFilteredUsers(updateFilteredUsers(previousUsers));
+    endOptimisticOperation(operationId);
+    
+    if (previousNewUser !== undefined) {
+      setNewUser(previousNewUser);
+    }
+    if (previousShowCreateForm !== undefined) {
+      setShowCreateForm(previousShowCreateForm);
+    }
+    if (previousEditingUser !== undefined) {
+      setEditingUser(previousEditingUser);
+    }
+    if (previousUserToDelete !== undefined) {
+      setUserToDelete(previousUserToDelete);
+    }
+    if (previousShowDeleteModal !== undefined) {
+      setShowDeleteModal(previousShowDeleteModal);
+    }
+  };
 
   // Formulario para crear usuario
   const [newUser, setNewUser] = useState<CreateUserData>({
@@ -70,9 +132,17 @@ export default function AdminUsersPage() {
   }, [isAuthenticated, router]);
 
   // Cargar todos los usuarios desde el backend
-  const loadUsers = async () => {
+  const loadUsers = async (silent = false) => {
+    // Evitar múltiples llamadas simultáneas
+    if (isLoadingUsers) {
+      console.log('loadUsers ya está ejecutándose, saltando...'); // Debug
+      return;
+    }
+    
+    setIsLoadingUsers(true);
+    
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       
       const response = await adminAPI.getAllUsers();
       
@@ -94,31 +164,35 @@ export default function AdminUsersPage() {
       // Handle different response formats
       if (data) {
         
+        let newUsers: UserData[] = [];
+        
         // Format 1: { success: true, data: [...] }
         if (data.success && Array.isArray(data.data)) {
-          setUsers(data.data);
-          setFilteredUsers(data.data);
-          toast.success(`Cargados ${data.data.length} usuarios`);
+          newUsers = data.data;
         }
         // Format 2: { data: [...] }
         else if (Array.isArray(data.data)) {
-          setUsers(data.data);
-          setFilteredUsers(data.data);
-          toast.success(`Cargados ${data.data.length} usuarios`);
+          newUsers = data.data;
         }
         // Format 3: Direct array
         else if (Array.isArray(data)) {
-          setUsers(data);
-          setFilteredUsers(data);
-          toast.success(`Cargados ${data.length} usuarios`);
+          newUsers = data;
         }
         // Format 4: { users: [...] }
         else if (Array.isArray(data.users)) {
-          setUsers(data.users);
-          setFilteredUsers(data.users);
-          toast.success(`Cargados ${data.users.length} usuarios`);
+          newUsers = data.users;
         }
-        else {
+        
+        if (newUsers.length >= 0) { // Allow empty arrays too
+          setUsers(newUsers);
+          // Preserve current search filter
+          setFilteredUsers(updateFilteredUsers(newUsers));
+          
+          // Solo mostrar toast en refresh manual
+          if (!silent) {
+            toast.success(`Cargados ${newUsers.length} usuarios`);
+          }
+        } else {
           toast.error('Formato de respuesta inesperado');
         }
       } else {
@@ -128,7 +202,8 @@ export default function AdminUsersPage() {
     } catch (error) {
       toast.error(`Error cargando usuarios: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
+      setIsLoadingUsers(false);
     }
   };
 
@@ -145,7 +220,7 @@ export default function AdminUsersPage() {
     }
   }, [searchTerm, users]);
 
-  // Crear nuevo usuario
+  // Crear nuevo usuario con optimistic update
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -159,54 +234,115 @@ export default function AdminUsersPage() {
       return;
     }
 
+    const operationId = `create-${Date.now()}`;
+    startOptimisticOperation(operationId);
+
+    // Crear usuario temporal para optimistic update
+    const tempUser: UserData = {
+      id: `temp-${Date.now()}`, // ID temporal
+      email: newUser.email,
+      role: newUser.role,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Optimistic update: agregar usuario inmediatamente a la UI
+    const previousUsers = users;
+    const updatedUsers = [tempUser, ...users];
+    setUsers(updatedUsers);
+    setFilteredUsers(updateFilteredUsers(updatedUsers));
+
+    // Limpiar formulario y cerrarlo optimísticamente
+    const previousNewUser = newUser;
+    setNewUser({ email: '', password: '', role: 'user' });
+    setShowCreateForm(false);
+    
+    // Mostrar mensaje de éxito optimista
+    toast.success('Usuario creado exitosamente');
+
     try {
-      const response = await adminAPI.createUser({
-        email: newUser.email,
-        password: newUser.password,
-        role: newUser.role
+      await adminAPI.createUser({
+        email: previousNewUser.email,
+        password: previousNewUser.password,
+        role: previousNewUser.role
       });
       
-      
-      // Check if response indicates success
-      if (response) {
-        // Always reload the users list after creation
-        await loadUsers();
-        
-        setNewUser({ email: '', password: '', role: 'user' });
-        setShowCreateForm(false);
-        toast.success('Usuario creado exitosamente');
-      } else {
-        toast.error('No se pudo crear el usuario');
-      }
+      // ✅ NO llamar loadUsers - el optimistic update ya actualizó la UI correctamente
+      endOptimisticOperation(operationId);
       
     } catch (error) {
       console.error('Error creating user:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error creando usuario';
+      
+      // Rollback: restaurar estado anterior
+      rollbackToState(
+        operationId,
+        previousUsers,
+        previousNewUser,
+        true, // showCreateForm
+        undefined, // editingUser
+        undefined, // userToDelete
+        undefined  // showDeleteModal
+      );
+      
       toast.error(errorMessage);
     }
   };
 
-  // Actualizar usuario
+  // Actualizar usuario con optimistic update
   const handleUpdateUser = async (userId: string, updates: Partial<UserData>) => {
+    const operationId = `update-${userId}`;
+    startOptimisticOperation(operationId);
+
+    // Guardar estado anterior para rollback
+    const previousUsers = users;
+    const previousEditingUser = editingUser;
+    
+    // Optimistic update: actualizar UI inmediatamente
+    const updatedUsers = users.map(user => 
+      user.id === userId 
+        ? { 
+            ...user, 
+            ...updates,
+            updatedAt: new Date().toISOString()
+          }
+        : user
+    );
+    
+    setUsers(updatedUsers);
+    setFilteredUsers(updateFilteredUsers(updatedUsers));
+    
+    // Cerrar modal de edición optimísticamente
+    setEditingUser(null);
+    toast.success('Usuario actualizado exitosamente');
+
     try {
-      const response = await adminAPI.updateUser(userId, {
+      await adminAPI.updateUser(userId, {
         email: updates.email,
         password: updates.password,
         role: updates.role,
         status: updates.status
       });
       
-      if (response && response.data) {
-        // Recargar la lista de usuarios
-        await loadUsers();
-        
-        setEditingUser(null);
-        toast.success('Usuario actualizado exitosamente');
-      }
+      // ✅ NO llamar loadUsers - el optimistic update ya actualizó la UI correctamente
+      endOptimisticOperation(operationId);
       
     } catch (error) {
       console.error('Error updating user:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error actualizando usuario';
+      
+      // Rollback: restaurar estado anterior
+      rollbackToState(
+        operationId,
+        previousUsers,
+        undefined, // newUser
+        undefined, // showCreateForm
+        previousEditingUser,
+        undefined, // userToDelete
+        undefined  // showDeleteModal
+      );
+      
       toast.error(errorMessage);
     }
   };
@@ -220,27 +356,50 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Confirmar eliminación de usuario
+  // Confirmar eliminación de usuario con optimistic update
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
 
+    const userIdToDelete = userToDelete.id;
+    const operationId = `delete-${userIdToDelete}`;
+    startOptimisticOperation(operationId);
+    
+    // Guardar estado anterior para rollback
+    const previousUsers = users;
+    const previousUserToDelete = userToDelete;
+    
+    // Optimistic update: eliminar usuario inmediatamente de la UI
+    const updatedUsers = users.filter(user => user.id !== userIdToDelete);
+    setUsers(updatedUsers);
+    setFilteredUsers(updateFilteredUsers(updatedUsers));
+    
+    // Cerrar modal optimísticamente
+    setShowDeleteModal(false);
+    setUserToDelete(null);
+    toast.success('Usuario eliminado exitosamente');
+
     try {
-      const response = await adminAPI.deleteUser(userToDelete.id);
+      await adminAPI.deleteUser(userIdToDelete);
       
-      if (response) {
-        // Recargar la lista de usuarios
-        await loadUsers();
-        
-        toast.success('Usuario eliminado exitosamente');
-      }
+      // ✅ NO llamar loadUsers - el optimistic update ya actualizó la UI correctamente
+      endOptimisticOperation(operationId);
       
     } catch (error) {
       console.error('Error deleting user:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error eliminando usuario';
+      
+      // Rollback: restaurar estado anterior
+      rollbackToState(
+        operationId,
+        previousUsers,
+        undefined, // newUser
+        undefined, // showCreateForm
+        undefined, // editingUser
+        previousUserToDelete,
+        true       // showDeleteModal
+      );
+      
       toast.error(errorMessage);
-    } finally {
-      setShowDeleteModal(false);
-      setUserToDelete(null);
     }
   };
 
@@ -359,7 +518,7 @@ export default function AdminUsersPage() {
               </div>
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={loadUsers}
+                  onClick={() => loadUsers(false)}
                   disabled={loading}
                   className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
                 >

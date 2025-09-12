@@ -87,7 +87,7 @@ export default function AdminPage() {
         </div>
 
         {/* Módulos de administración */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
           
           {/* Gestión de usuarios */}
           <div 
@@ -106,46 +106,6 @@ export default function AdminPage() {
             </p>
             <div className="flex items-center text-blue-600 text-sm font-medium">
               Administrar usuarios
-              <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Gestión de base de datos */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center mb-4">
-              <Database className="h-8 w-8 text-green-600 mr-3" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Base de Datos
-              </h2>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Herramientas para gestionar y limpiar datos.
-              Backups y mantenimiento del sistema.
-            </p>
-            <div className="flex items-center text-green-600 text-sm font-medium">
-              Próximamente
-              <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Configuración del sistema */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center mb-4">
-              <Settings className="h-8 w-8 text-purple-600 mr-3" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Configuración
-              </h2>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Ajustes generales del sistema, variables de entorno
-              y configuraciones avanzadas.
-            </p>
-            <div className="flex items-center text-purple-600 text-sm font-medium">
-              Próximamente
               <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>

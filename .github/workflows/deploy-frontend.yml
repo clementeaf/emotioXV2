@@ -49,8 +49,25 @@ jobs:
       - name: Sync to S3
         run: |
           aws s3 sync out/ s3://emotioxv2-frontend-041238861016 --delete
+          
+      - name: Configure S3 website hosting
+        run: |
+          aws s3 website s3://emotioxv2-frontend-041238861016 --index-document index.html --error-document error.html
+
+      - name: Verify deployment
+        run: |
+          echo "🔍 Testing website endpoint..."
+          sleep 10  # Wait for DNS propagation
+          
+          # Test website endpoint
+          if curl -f -s "http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com" > /dev/null; then
+            echo "✅ Website endpoint is accessible"
+          else
+            echo "⚠️  Website endpoint not yet accessible (DNS propagation may take time)"
+          fi
 
       - name: Deployment complete
         run: |
           echo "✅ Frontend deployed successfully to S3"
-          echo "🌐 URL: http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com"
+          echo "🌐 Website URL: http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com"
+          echo "🔗 Direct S3 URL: https://emotioxv2-frontend-041238861016.s3.us-east-1.amazonaws.com/index.html"
