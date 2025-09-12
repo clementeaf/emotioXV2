@@ -48,7 +48,6 @@ jobs:
 
       - name: Sync to S3
         run: |
-          ls -la  # Debug: list current directory contents
           aws s3 sync ./out/ s3://emotioxv2-frontend-041238861016 --delete
           
       - name: Configure S3 website hosting
