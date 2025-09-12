@@ -2,11 +2,11 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 🚨 DESACTIVAR EXPORT ESTÁTICO - Causa problemas con Server Components
-  // ...(process.env.NODE_ENV === 'production' && {
-  //   output: 'export', // Solo en producción para S3
-  //   trailingSlash: true,
-  // }),
+  // 🚀 HABILITAR EXPORT ESTÁTICO PARA S3
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'export', // Solo en producción para S3
+    trailingSlash: true,
+  }),
   
   // Configuración para imágenes y rutas
   images: {
