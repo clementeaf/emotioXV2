@@ -579,7 +579,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                     </p>
 
                     <div className="space-y-4">
-                      {/* Opción 2: AIM Framework Stage 3 */}
+                      {/* Opción 1: AIM Framework Stage 3 */}
                       <div className="flex items-center justify-between border border-neutral-200 rounded-lg p-4">
                         <div className="flex-1">
                           <div className="text-md font-medium mb-2">AIM Framework Stage 3</div>
@@ -595,6 +595,26 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                             className={formData.basic.technique === 'aim-framework' ? 'bg-blue-500 hover:bg-blue-600' : ''}
                           >
                             {formData.basic.technique === 'aim-framework' ? 'Selected' : 'Choose'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Opción 2: Biometric, Cognitive and Predictive */}
+                      <div className="flex items-center justify-between border border-neutral-200 rounded-lg p-4">
+                        <div className="flex-1">
+                          <div className="text-md font-medium mb-2">Biometric, Cognitive and Predictive</div>
+                          <p className="text-sm text-neutral-600">
+                            Evaluating one or more section with biometrics, implicit association and cognitive task. Also, you can have image and video predictions
+                          </p>
+                        </div>
+                        <div className="ml-4">
+                          <Button
+                            type="button"
+                            variant={formData.basic.technique === 'biometric-cognitive' ? 'default' : 'outline'}
+                            onClick={() => toggleResearchTechnique('biometric-cognitive')}
+                            className={formData.basic.technique === 'biometric-cognitive' ? 'bg-blue-500 hover:bg-blue-600' : ''}
+                          >
+                            {formData.basic.technique === 'biometric-cognitive' ? 'Selected' : 'Choose'}
                           </Button>
                         </div>
                       </div>

@@ -38,6 +38,26 @@ export const TechniqueStep: React.FC<TechniqueStepProps> = ({
               </Button>
             </div>
           </div>
+
+          {/* Opción Biometric, Cognitive and Predictive */}
+          <div className="flex items-center justify-between border border-neutral-200 rounded-lg p-4">
+            <div className="flex-1">
+              <div className="text-md font-medium mb-2">Biometric, Cognitive and Predictive</div>
+              <p className="text-sm text-neutral-600">
+                Evaluating one or more section with biometrics, implicit association and cognitive task. Also, you can have image and video predictions
+              </p>
+            </div>
+            <div className="ml-4">
+              <Button
+                type="button"
+                variant={selectedTechnique === 'biometric-cognitive' ? 'default' : 'outline'}
+                onClick={() => onTechniqueToggle('biometric-cognitive')}
+                className={selectedTechnique === 'biometric-cognitive' ? 'bg-blue-500 hover:bg-blue-600' : ''}
+              >
+                {selectedTechnique === 'biometric-cognitive' ? 'Selected' : 'Choose'}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
