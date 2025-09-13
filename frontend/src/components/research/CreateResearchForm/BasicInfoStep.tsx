@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input } from '@/components/ui/Input';
-import { cn } from '@/lib/utils';
+import { CustomSelect, Option } from '@/components/ui/CustomSelect';
 import { Company } from '../../../../../shared/interfaces/company.interface';
 
 interface BasicInfoStepProps {
@@ -13,7 +13,6 @@ interface BasicInfoStepProps {
   loadingCompanies: boolean;
   companiesError: string | null;
   onFieldChange: (field: string, value: string) => void;
-  enterpriseSelectRef: React.RefObject<HTMLSelectElement>;
 }
 
 export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
@@ -22,9 +21,23 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   companies,
   loadingCompanies,
   companiesError,
-  onFieldChange,
-  enterpriseSelectRef
+  onFieldChange
 }) => {
+  // Preparar opciones para el selector personalizado
+  const companyOptions: Option[] = [
+    {
+      value: '',
+      label: loadingCompanies ? 'Loading companies...' : 'Select a company',
+      disabled: true
+    },
+    ...companies
+      .filter(company => company.status === 'active')
+      .map(company => ({
+        value: company.id,
+        label: company.name
+      }))
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -54,26 +67,16 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             <label htmlFor="companyId" className="block text-sm font-medium text-neutral-900">
               It&apos;s made for
             </label>
-            <select
+            <CustomSelect
               id="companyId"
-              ref={enterpriseSelectRef}
               value={formData.companyId}
-              onChange={(e) => onFieldChange('companyId', e.target.value)}
+              onChange={(value) => onFieldChange('companyId', value)}
+              options={companyOptions}
+              placeholder={loadingCompanies ? 'Loading companies...' : 'Select a company'}
               disabled={loadingCompanies}
-              className={cn(
-                'w-full px-3 py-2 rounded-lg border bg-white text-neutral-900',
-                errors.companyId ? 'border-red-500' : 'border-neutral-200',
-                'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                loadingCompanies && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              <option value="">{loadingCompanies ? 'Loading companies...' : 'Select a company'}</option>
-              {companies.filter(company => company.status === 'active').map(company => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
+              error={!!errors.companyId}
+              className="bg-white"
+            />
             {companiesError && !loadingCompanies && (
               <p className="text-sm text-yellow-600">
                 ⚠️ Could not load companies from server. Using fallback options.

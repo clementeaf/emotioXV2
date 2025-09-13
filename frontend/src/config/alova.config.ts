@@ -53,8 +53,23 @@ export const alovaInstance = createAlova({
   // Interceptor de response para manejar errores globales
   responded: {
     onSuccess: async (response) => {
-      // Parse the response as JSON
-      return await response.json();
+      // Para respuestas 204 No Content (típico en DELETE), no hay JSON
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        return null; // Retornar null en lugar de intentar parsear JSON vacío
+      }
+
+      // Verificar si hay contenido antes de parsear JSON
+      const text = await response.text();
+      if (!text) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        // Si no es JSON válido, retornar el texto plano
+        return text;
+      }
     },
     onError: async (error) => {
       // Manejar error de autenticación (401)

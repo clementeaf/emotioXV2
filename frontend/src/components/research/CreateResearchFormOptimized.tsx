@@ -26,7 +26,6 @@ export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedPr
     isSubmitting,
     showSummary,
     countdown,
-    enterpriseSelectRef,
     updateFormData,
     goToNextStep,
     goToPreviousStep,
@@ -34,7 +33,7 @@ export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedPr
     toggleTechnique,
     submitForm,
     canGoNext
-  } = useCreateResearchForm();
+  } = useCreateResearchForm(onResearchCreated);
 
   // Si ya se completó, mostrar resumen
   if (showSummary) {
@@ -61,7 +60,6 @@ export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedPr
             loadingCompanies={loadingCompanies}
             companiesError={companiesError}
             onFieldChange={updateFormData}
-            enterpriseSelectRef={enterpriseSelectRef}
           />
         );
       case 2:
@@ -85,7 +83,7 @@ export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedPr
 
   return (
     <div className={cn('max-w-4xl mx-auto p-6', className)}>
-      <div className="space-y-8">
+      <div className="space-y-4">
         {/* Indicador de pasos */}
         <FormSteps
           steps={steps}
@@ -93,7 +91,7 @@ export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedPr
         />
 
         {/* Contenido principal */}
-        <div className="min-h-[400px]">
+        <div className="min-h-[200px]">
           {renderStepContent()}
         </div>
 

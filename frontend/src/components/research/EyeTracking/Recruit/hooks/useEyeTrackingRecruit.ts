@@ -691,9 +691,15 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const checkRequiredFields = useCallback(() => {
     const errors: string[] = [];
 
-    // Verificar que tenga una URL de investigación
+    // Verificar que tenga una URL de investigación - generar automáticamente si está vacía
     if (!formData.researchUrl) {
-      errors.push('URL de investigación es requerida');
+      // Generar automáticamente la URL si está vacía
+      const generatedLink = generateRecruitmentLink();
+      setFormData(prev => ({
+        ...prev,
+        researchUrl: generatedLink
+      }));
+      // No agregar error ya que acabamos de generar la URL
     }
 
     // Verificar campos demográficos marcados como required
@@ -710,7 +716,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
 
     return true;
-  }, [formData]);
+  }, [formData, generateRecruitmentLink, setFormData]);
 
   // Configuración de la mutación para guardar con carga optimista
   const saveConfigMutation = useMutation({
@@ -770,16 +776,18 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       // 🎯 ACTUALIZAR TAMBIÉN EL ESTADO LOCAL PARA FEEDBACK INMEDIATO
       const updatedFormData = updateOptimisticData(formData);
       setFormData(updatedFormData);
+
+      // ✨ MOSTRAR FEEDBACK INMEDIATO AL USUARIO (carga optimista)
+      toast.success('¡Configuración guardada!', {
+        duration: 2000,
+        icon: '⚡'
+      });
       
       // 🎯 ACTUALIZAR ESTADOS DE FEEDBACK VISUAL OPTIMISTA
       setLastSaved(new Date().toLocaleTimeString());
       setHasUnsavedChanges(false);
       
-      // Mostrar feedback visual inmediato
-      toast.success('Cambios aplicados', {
-        duration: 1500,
-        position: 'bottom-right'
-      });
+      // Feedback visual inmediato ya mostrado arriba
       
       // Retornar contexto completo para rollback
       return { 
@@ -799,15 +807,16 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         // 2. Cache del hook compartido (useEyeTrackingSharedData)
         queryClient.setQueryData(['eyeTracking', 'recruit', 'shared', actualResearchId], result);
         
-        // 3. Invalidar otros caches relacionados para forzar re-fetch
-        queryClient.invalidateQueries({ 
-          queryKey: ['eyeTrackingRecruit'], 
-          exact: false 
-        });
-        queryClient.invalidateQueries({ 
-          queryKey: ['eyeTracking', 'recruit'], 
-          exact: false 
-        });
+        // 3. NO invalidar queries inmediatamente para preservar carga optimista
+        // Las invalidaciones pueden causar re-fetches que sobrescriben los datos optimistas
+        // queryClient.invalidateQueries({
+        //   queryKey: ['eyeTrackingRecruit'],
+        //   exact: false
+        // });
+        // queryClient.invalidateQueries({
+        //   queryKey: ['eyeTracking', 'recruit'],
+        //   exact: false
+        // });
         
         // 4. Actualizar el estado local del formulario preservando los estados de switches
         // 🎯 PRESERVAR ESTADOS DE SWITCHES - No recalcular después de guardar
@@ -829,11 +838,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       setLastSaved(new Date().toLocaleTimeString());
       setHasUnsavedChanges(false);
       
-      // Mostrar confirmación final
-      toast.success('Configuración guardada correctamente', {
-        duration: 2000,
-        position: 'top-center'
-      });
+      // Confirmación final ya mostrada de forma optimista
     },
     onError: (error: Error, variables: EyeTrackingRecruitFormData, context: MutationContext | undefined) => {
       // 🔄 ROLLBACK: Revertir todos los cambios optimistas en caso de error

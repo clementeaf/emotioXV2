@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { researchAPI, setupAuthToken } from '@/config/api-client';
@@ -33,7 +33,7 @@ const initialFormState: FormState = {
   errors: {}
 };
 
-export default function useCreateResearchForm() {
+export default function useCreateResearchForm(onResearchCreated?: (researchId: string) => void) {
   const router = useRouter();
   const { token } = useAuth();
   const { currentDraft, createDraft, updateDraft, clearDraft } = useResearch();
@@ -44,7 +44,7 @@ export default function useCreateResearchForm() {
   const [showSummary, setShowSummary] = useState(false);
   const [countdown, setCountdown] = useState(3);
   
-  const enterpriseSelectRef = useRef<HTMLSelectElement>(null);
+  // Removed enterpriseSelectRef as we're using CustomSelect now
 
   // Restaurar borrador si existe
   useEffect(() => {
@@ -136,7 +136,8 @@ export default function useCreateResearchForm() {
         const nameInput = document.getElementById('name');
         nameInput?.focus();
       } else if (errors.companyId) {
-        enterpriseSelectRef.current?.focus();
+        const companySelect = document.getElementById('companyId');
+        companySelect?.focus();
       }
       
       return;
@@ -193,33 +194,40 @@ export default function useCreateResearchForm() {
       if (result.success && result.data) {
         setCreatedResearchId(result.data.id);
         clearDraft();
-        setShowSummary(true);
         
-        // Countdown para redirección
-        let timeLeft = 3;
-        setCountdown(timeLeft);
+        toast.success('Research created successfully!');
         
-        const countdownInterval = setInterval(() => {
-          timeLeft -= 1;
+        // ✅ Llamar al callback del parent si existe
+        if (onResearchCreated) {
+          onResearchCreated(result.data.id);
+        } else {
+          // Solo hacer el countdown si NO hay callback
+          setShowSummary(true);
+          
+          let timeLeft = 3;
           setCountdown(timeLeft);
           
-          if (timeLeft <= 0) {
-            clearInterval(countdownInterval);
+          const countdownInterval = setInterval(() => {
+            timeLeft -= 1;
+            setCountdown(timeLeft);
             
-            if (formData.basic.technique === 'aim-framework') {
-              router.push(`/dashboard/research/${result.data.id}/new`);
-            } else {
-              router.push(`/dashboard/research/${result.data.id}`);
+            if (timeLeft <= 0) {
+              clearInterval(countdownInterval);
+              
+              if (formData.basic.technique === 'aim-framework') {
+                router.push(`/dashboard/research/${result.data.id}/new`);
+              } else {
+                router.push(`/dashboard/research/${result.data.id}`);
+              }
             }
-          }
-        }, 1000);
-
-        toast.success('Research created successfully!');
+          }, 1000);
+        }
       } else {
         throw new Error(result.message || 'Failed to create research');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Error creating research');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error creating research';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -238,7 +246,6 @@ export default function useCreateResearchForm() {
     isSubmitting,
     showSummary,
     countdown,
-    enterpriseSelectRef,
     
     // Acciones
     updateFormData,

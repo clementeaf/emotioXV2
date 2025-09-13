@@ -11,7 +11,7 @@ export const TechniqueStep: React.FC<TechniqueStepProps> = ({
   onTechniqueToggle
 }) => {
   return (
-    <div className="space-y-6 h-[310px]">
+    <div className="space-y-4">
       <div>
         <h2 className="text-xl font-medium mb-2">Techniques for Behavioural Research</h2>
         <p className="text-neutral-500 text-sm mb-6">

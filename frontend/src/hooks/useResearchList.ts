@@ -139,19 +139,26 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
     }
   };
 
-  // Handle delete research
+  // Handle delete research with optimistic updates
   const handleDeleteResearch = async (id: string): Promise<void> => {
     if (!id) {
       throw new Error('Research ID is required for deletion');
     }
 
+    // ✅ Optimistic update - remove from UI immediately
+    const currentData = (listQuery.data as unknown as { data?: ResearchAPIResponse[] })?.data || [];
+    const optimisticData = currentData.filter(research => research.id !== id);
+    
+    // Update UI immediately
+    listQuery.data = { data: optimisticData } as any;
+
     try {
       await deleteMutation.send(id);
-      
-      // Refresh list after deletion
-      await listQuery.send();
+      // ✅ Success - no need to refetch, optimistic update was correct
     } catch (error) {
       console.error('Failed to delete research:', error);
+      // ✅ Rollback on error - restore original data
+      listQuery.data = { data: currentData } as any;
       throw error;
     }
   };

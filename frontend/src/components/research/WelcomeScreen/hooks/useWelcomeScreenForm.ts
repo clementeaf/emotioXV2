@@ -44,6 +44,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const [isEmpty, setIsEmpty] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   // Usar el hook centralizado para obtener datos
   const { data: existingScreen, isLoading, error } = useWelcomeScreenData(actualResearchId);
@@ -70,7 +71,8 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       };
       setFormData(formDataToSet);
       setIsEmpty(false);
-    } else {
+      setHasBeenSaved(true);
+    } else if (!hasBeenSaved) {
       setFormData({ ...INITIAL_FORM_DATA }); // No agregues researchId ni questionKey
       setIsEmpty(true);
     }
@@ -102,7 +104,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   };
 
   // Corrige el tipo de handleChange para que coincida con la interfaz pública
-  const handleChange = useCallback((field: string | number | symbol, value: any): void => {
+  const handleChange = useCallback((field: string | number | symbol, value: string | boolean): void => {
     setFormData((prev: WelcomeScreenServiceData) => ({
       ...prev,
       [field]: value,
@@ -173,6 +175,8 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
       setFormData(formDataFromResult);
       setRefetchTrigger(prev => prev + 1);
+      setHasBeenSaved(true); // Marcar que se ha guardado para que isExisting sea true
+      setIsEmpty(false); // Ya no está vacío
       // setExistingScreen(resultRecord); // Ya no es necesario, el hook centralizado maneja esto
       setModalError({
         title: 'Éxito',
@@ -253,6 +257,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       // Usar hook centralizado para eliminar
       await deleteWelcomeScreen(actualResearchId);
       setFormData({ ...INITIAL_FORM_DATA }); // No agregues researchId ni questionKey
+      setHasBeenSaved(false); // Resetear el estado de guardado
       setModalError({
         title: 'Eliminado',
         message: 'La pantalla de bienvenida fue eliminada correctamente.',

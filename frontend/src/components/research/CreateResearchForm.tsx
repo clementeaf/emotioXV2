@@ -98,7 +98,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   const [createdResearchId, setCreatedResearchId] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [countdown, setCountdown] = useState(3);
-  const enterpriseSelectRef = React.useRef<HTMLSelectElement>(null);
+  // Removed enterpriseSelectRef - using CustomSelect now
 
   // Efecto para crear un borrador si no existe
   useEffect(() => {
@@ -118,35 +118,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
     }
   }, [currentDraft, createDraft]);
 
-  // Efecto para manejar el comportamiento del placeholder en el select
-  useEffect(() => {
-    const selectEl = enterpriseSelectRef.current;
-    if (!selectEl) { return; }
-
-    // Función para ocultar la primera opción cuando el select está abierto
-    const handleSelectFocus = () => {
-      if (selectEl.options[0] && selectEl.options[0].value === '') {
-        selectEl.options[0].style.display = 'none';
-      }
-    };
-
-    // Función para mostrar la primera opción cuando el select está cerrado
-    const handleSelectBlur = () => {
-      if (selectEl.options[0] && selectEl.options[0].value === '') {
-        selectEl.options[0].style.display = '';
-      }
-    };
-
-    // Agregar event listeners
-    selectEl.addEventListener('focus', handleSelectFocus);
-    selectEl.addEventListener('blur', handleSelectBlur);
-
-    // Cleanup
-    return () => {
-      selectEl.removeEventListener('focus', handleSelectFocus);
-      selectEl.removeEventListener('blur', handleSelectBlur);
-    };
-  }, []);
+  // Removed useEffect for enterpriseSelectRef - using CustomSelect now
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -179,7 +151,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
     return Object.keys(newErrors).length === 0;
   };
 
-  const updateFormData = (field: string, value: any) => {
+  const updateFormData = (field: string, value: string | undefined) => {
     // Crear una copia local de formData que podamos modificar
     const currentFormData = { ...formData };
 
@@ -521,7 +493,6 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                         </label>
                         <select
                           id="companyId"
-                          ref={enterpriseSelectRef}
                           value={formData.basic.companyId}
                           onChange={(e) => updateFormData('companyId', e.target.value)}
                           disabled={loadingCompanies}

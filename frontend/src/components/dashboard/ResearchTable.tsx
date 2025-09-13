@@ -70,7 +70,7 @@ function ResearchTableContent() {
   const [projectToDelete, setProjectToDelete] = useState<ResearchTableItem | null>(null);
 
   // Usar el hook centralizado para obtener research data
-  const { researches: researchData = [], isLoading, error, refetch } = useResearchList();
+  const { researches: researchData = [], isLoading, error, refetch, deleteResearch } = useResearchList();
   
   // Cast del tipo para compatibilidad con la interfaz esperada
   const research = researchData as ResearchTableItem[];
@@ -95,12 +95,13 @@ function ResearchTableContent() {
     }
 
     try {
-      await apiClient.delete('research', 'delete', { id: projectToDelete.id });
-
+      // ✅ Usar el hook centralizado que ya maneja optimistic updates
+      await deleteResearch(projectToDelete.id);
+      
       toast.success('Investigación eliminada correctamente');
-      refetch();
       setShowDeleteModal(false);
       setProjectToDelete(null);
+      // ✅ NO llamar refetch - el hook ya lo maneja automáticamente
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error al eliminar la investigación';
       toast.error(errorMessage);

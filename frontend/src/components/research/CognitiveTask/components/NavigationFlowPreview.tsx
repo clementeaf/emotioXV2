@@ -15,6 +15,7 @@ export const NavigationFlowPreview: React.FC<NavigationFlowPreviewProps> = ({ co
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedHitzone, setSelectedHitzone] = useState<string | null>(null);
+  const [selectedHitzones, setSelectedHitzones] = useState<string[]>([]); // Nuevo: para múltiples hitzones
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [imgSize, setImgSize] = useState<{ width: number; height: number } | null>(null);
   const [imgNatural, setImgNatural] = useState<{ width: number; height: number } | null>(null);
@@ -67,9 +68,20 @@ export const NavigationFlowPreview: React.FC<NavigationFlowPreviewProps> = ({ co
     setShowSuccessModal(true);
   };
 
+  // Nuevo: Handler para múltiples hitzones
+  const handleMultipleHitzoneClick = (hitzoneIds: string[]) => {
+    setSelectedHitzones(hitzoneIds);
+    // Mantener compatibilidad con funcionalidad existente
+    if (hitzoneIds.length > 0) {
+      setSelectedHitzone(hitzoneIds[0]);
+    }
+    setShowSuccessModal(true);
+  };
+
   const handleNext = () => {
     setShowSuccessModal(false);
     setSelectedHitzone(null);
+    setSelectedHitzones([]); // Limpiar también las múltiples hitzones
     if (currentImageIndex < imageFiles.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
     } else {
@@ -102,6 +114,8 @@ export const NavigationFlowPreview: React.FC<NavigationFlowPreviewProps> = ({ co
               hitzones={availableHitzones}
               imageNaturalSize={imgNatural}
               imageRenderedSize={imgSize}
+              enableClicks={true} // Nuevo: habilitar clicks
+              onHitzoneClick={handleMultipleHitzoneClick} // Nuevo: usar handler de múltiples hitzones
             />
           )}
         </div>
@@ -117,9 +131,36 @@ export const NavigationFlowPreview: React.FC<NavigationFlowPreviewProps> = ({ co
       </div>
       {showSuccessModal && (
         <div className="fixed inset-0 z-[101] flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
-            <h2 className="text-xl font-bold mb-4 text-green-700">¡Área seleccionada!</h2>
-            <p className="text-neutral-600 mb-6">En una prueba real, esto registraría la respuesta del participante.</p>
+          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+            <h2 className="text-xl font-bold mb-4 text-green-700">
+              {selectedHitzones.length > 1 ? '¡Múltiples áreas detectadas!' : '¡Área seleccionada!'}
+            </h2>
+
+            {selectedHitzones.length > 1 ? (
+              <div className="mb-6">
+                <p className="text-neutral-600 mb-3">
+                  Se detectaron <strong>{selectedHitzones.length} hitzones superpuestas</strong>:
+                </p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="text-left space-y-2">
+                    {selectedHitzones.map((hitzoneId, index) => {
+                      const hitzone = availableHitzones.find(hz => hz.id === hitzoneId);
+                      return (
+                        <div key={hitzoneId} className="text-sm">
+                          <span className="font-medium">#{index + 1}:</span> {hitzone?.name || hitzoneId}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="text-xs text-neutral-500 mt-3">
+                  En una prueba real, todas estas áreas serían registradas como activadas.
+                </p>
+              </div>
+            ) : (
+              <p className="text-neutral-600 mb-6">En una prueba real, esto registraría la respuesta del participante.</p>
+            )}
+
             <button
               className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full"
               onClick={handleNext}

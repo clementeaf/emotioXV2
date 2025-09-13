@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, memo, useMemo, useCallback, lazy } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
+// Removido: import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -53,8 +53,8 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
 
-  // FIXED: Use global research data with corrected response handling
-  const { researchData, isLoading: isLoadingResearch, researchError } = useGlobalResearchData(researchId || '');
+  // FIXED: Removido useGlobalResearchData - el sidebar no necesita datos específicos del research
+  // Esto elimina las 4 llamadas innecesarias a la API cuando navegas por el sidebar
 
   // Memoized User Info Component
   const UserInfo = memo(() => {
@@ -111,11 +111,11 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   });
   LogoutButton.displayName = 'LogoutButton';
 
-  // Estados para el nombre y la carga
-  // Obtener el nombre del research desde el hook global (ahora arreglado)
-  const researchName = researchData?.name || (isLoadingResearch ? 'Cargando...' : 'Research no encontrado');
-  const isLoadingName = isLoadingResearch && !researchData?.name;
-  const error = researchError?.message || null;
+  // FIXED: Sidebar no necesita nombre específico del research
+  // Se puede obtener desde el contexto de la URL o parámetros de navegación
+  const researchName = researchId ? `Research ${researchId.slice(-8)}` : 'Research';
+  const isLoadingName = false;
+  const error = null;
 
   const handleBackToDashboard = useCallback(() => { 
     router.push('/dashboard'); 

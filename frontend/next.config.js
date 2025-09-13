@@ -2,9 +2,9 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 🚀 HABILITAR EXPORT ESTÁTICO PARA S3
-  ...(process.env.NODE_ENV === 'production' && {
-    output: 'export', // Solo en producción para S3
+  // 🚀 HABILITAR EXPORT ESTÁTICO PARA S3 (pero solo en deploy, no en build local)
+  ...(process.env.CI === 'true' && process.env.NODE_ENV === 'production' && {
+    output: 'export', // Solo en CI/CD para S3
     trailingSlash: true,
   }),
   
