@@ -1,6 +1,5 @@
 import { ClipboardListIcon, KeyboardIcon, UserIcon } from 'lucide-react';
 
-import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 
 interface Comment {
@@ -11,17 +10,22 @@ interface Comment {
 
 interface VOCQuestionProps {
   comments: Comment[];
+  questionNumber?: string;
+  questionType?: string;
+  questionText?: string;
 }
 
-export function VOCQuestion({ comments }: VOCQuestionProps) {
+export function VOCQuestion({
+  comments,
+  questionNumber = "2.6",
+  questionType = "VOC",
+  questionText
+}: VOCQuestionProps) {
   return (
     <Card className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-medium">2.6.-Question: Voice of Customer (VOC)</h3>
-          <Badge variant="secondary" className="bg-green-100 text-green-700">Short Text question</Badge>
-          <Badge variant="secondary" className="bg-blue-100 text-blue-700">Conditionality disabled</Badge>
-          <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>
+          <h3 className="text-lg font-medium">{questionNumber}- {questionText || "Voice of Customer"} ({questionType})</h3>
         </div>
       </div>
 

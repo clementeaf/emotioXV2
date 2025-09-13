@@ -1,13 +1,10 @@
 
-import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 
 interface QuestionResultProps {
   questionNumber: string;
   title: string;
-  type: string;
-  conditionality: string;
-  required: boolean;
+  questionType: string;
   question: string;
   responses: {
     count: number;
@@ -79,9 +76,7 @@ const BlueGauge = ({ value, size = 120 }: { value: number; size?: number }) => {
 export function QuestionResults({
   questionNumber,
   title,
-  type,
-  conditionality,
-  required,
+  questionType,
   question,
   responses,
   score,
@@ -92,12 +87,9 @@ export function QuestionResults({
   return (
     <Card className="p-6 space-y-6">
       <div className="space-y-4">
-        {/* Header con badges */}
+        {/* Header - Solo mostrar el título de la pregunta */}
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-medium">{questionNumber}- Question: {title}</h3>
-          <Badge variant="secondary" className="bg-green-100 text-green-700">{type}</Badge>
-          <Badge variant="secondary" className="bg-blue-100 text-blue-700">{conditionality}</Badge>
-          {required && <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>}
+          <h3 className="text-lg font-medium">{questionNumber}- {question} ({questionType})</h3>
         </div>
 
         {/* Layout principal: barras horizontales + responses + gauge */}

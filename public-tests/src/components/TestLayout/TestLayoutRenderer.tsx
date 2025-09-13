@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useStepStoreWithBackend } from '../../hooks/useStepStoreWithBackend';
 import { useDebugSteps } from '../../hooks/useDebugSteps';
@@ -20,7 +21,16 @@ import { getCurrentStepData, getQuestionType } from './utils';
 
 
 const TestLayoutRenderer: React.FC = () => {
+  const navigate = useNavigate();
   const { researchId, participantId, participantEmail } = useTestStore();
+
+  // 🎯 SAFEGUARD: Redirigir si faltan datos del participante
+  useEffect(() => {
+    if (!researchId || !participantId) {
+      console.warn('Missing participant data, redirecting to error page');
+      navigate('/error-no-research-id');
+    }
+  }, [researchId, participantId, navigate]);
   const { currentQuestionKey } = useStepStore();
   const { getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);

@@ -6,6 +6,7 @@
  */
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // Tipos simplificados
 export interface TestStep {
@@ -78,10 +79,11 @@ const initialState = {
   isSessionActive: false,
 };
 
-// 🎯 NO MÁS LOCALSTORAGE - Solo memoria en runtime
+// 🎯 PERSIST TO LOCALSTORAGE - Para que sobreviva a recargas de página
 export const useTestStore = create<TestState>()(
-  (set, get) => ({
-    ...initialState,
+  persist(
+    (set, get) => ({
+      ...initialState,
 
       // Establecer información del participante
       setParticipant: (id: string, name: string, email: string, researchId: string) => {
@@ -211,5 +213,19 @@ export const useTestStore = create<TestState>()(
     clearResponses: () => {
       set({ responses: {} });
     },
-  })
+  }),
+    {
+      name: 'test-store',
+      // Solo persistir los datos críticos del participante y estado básico
+      partialize: (state) => ({
+        researchId: state.researchId,
+        participantId: state.participantId,
+        participantName: state.participantName,
+        participantEmail: state.participantEmail,
+        responses: state.responses,
+        currentStepIndex: state.currentStepIndex,
+        completedSteps: state.completedSteps,
+      }),
+    }
+  )
 );

@@ -26,6 +26,8 @@ interface EmotionalStatesProps {
   negativePercentage?: number;
   questionText?: string;
   instructionsText?: string;
+  questionNumber?: string;
+  questionType?: string;
 }
 
 export function EmotionalStates({
@@ -38,7 +40,9 @@ export function EmotionalStates({
   positivePercentage: customPositivePercentage,
   negativePercentage: customNegativePercentage,
   questionText,
-  instructionsText
+  instructionsText,
+  questionNumber = "2.4",
+  questionType = "NEV"
 }: EmotionalStatesProps) {
   const calculatedPositivePercentage = emotionalStates
     .filter(state => state.isPositive)
@@ -57,10 +61,11 @@ export function EmotionalStates({
       <div className="flex items-center justify-between mb-6">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-lg font-semibold">2.4.-Question: Net Emotional Value (NEV)</h2>
+            <h2 className="text-lg font-semibold">{questionNumber}- {questionText || "Net Emotional Value"} ({questionType})</h2>
           </div>
-          <p className="text-gray-600">{questionText || "How do you feel about the experience offered by the [company]?"}</p>
-          <p className="text-gray-500 text-sm">{instructionsText || "Please select up to 3 options from these 20 emotional moods"}</p>
+          {instructionsText && (
+            <p className="text-gray-500 text-sm">{instructionsText}</p>
+          )}
         </div>
         <div className="flex flex-col items-end">
           <div className="flex items-center gap-2">

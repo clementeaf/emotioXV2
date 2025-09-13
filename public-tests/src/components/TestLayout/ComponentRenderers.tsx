@@ -776,9 +776,9 @@ export const ThankYouScreenComponent: React.FC<{
       <h2 className='text-2xl font-bold text-gray-800 text-center'>
         {String(contentConfiguration?.title || '¡Gracias por tu participación!')}
       </h2>
-      {(contentConfiguration?.description as string) && (
+      {(contentConfiguration?.message as string) && (
         <p className='text-gray-600 text-center max-w-2xl'>
-          {contentConfiguration.description as string}
+          {contentConfiguration.message as string}
         </p>
       )}
     </div>

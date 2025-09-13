@@ -271,6 +271,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   const nevQuestion = getQuestionText('nev') || "How do you feel about the experience offered by the [company]?";
   const nevInstructions = getQuestionInstructions('nev') || "Please select up to 3 options from these 20 emotional moods";
   const npsQuestion = getQuestionText('nps') || "How likely are you to recommend [company] to a friend or colleague?";
+  const vocQuestion = getQuestionText('voc') || "What else would you like to tell us about your experience?";
   
   console.log('[DEBUG] Preguntas obtenidas:', { csatQuestion, cesQuestion, cvQuestion, nevQuestion, nevInstructions, npsQuestion });
 
@@ -495,9 +496,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               <QuestionResults
                 questionNumber="2.1"
                 title="Customer Satisfaction Score (CSAT)"
-                type="Linear Scale question"
-                conditionality="Conditionality disabled"
-                required={true}
+                questionType="CSAT"
                 question={csatQuestion}
                 responses={{
                   count: smartVOCData?.totalResponses || 0,
@@ -536,9 +535,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               <QuestionResults
                 questionNumber="2.2"
                 title="Customer Effort Score (CES)"
-                type="Linear Scale question"
-                conditionality="Conditionality disabled"
-                required={true}
+                questionType="CES"
                 question={cesQuestion}
                 responses={{
                   count: smartVOCData?.totalResponses || 0,
@@ -577,9 +574,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               <QuestionResults
                 questionNumber="2.3"
                 title="Cognitive Value (CV)"
-                type="Linear Scale question"
-                conditionality="Conditionality disabled"
-                required={true}
+                questionType="CV"
                 question={cvQuestion}
                 responses={{
                   count: smartVOCData?.totalResponses || 0,
@@ -625,6 +620,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 negativePercentage={nevData.negativePercentage}
                 questionText={nevQuestion}
                 instructionsText={nevInstructions}
+                questionNumber="2.4"
+                questionType="NEV"
               />
 
               {/* 2.5.- Question: Net Promoter Score (NPS) */}
@@ -644,6 +641,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 totalResponses={smartVOCData?.totalResponses || 0}
                 isLoading={isSmartVOCLoading}
                 questionText={npsQuestion}
+                questionNumber="2.5"
+                questionType="NPS"
               />
 
               {/* 2.6.- Question: Voice of Customer (VOC) */}
@@ -677,6 +676,9 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                     selected: false
                   };
                 }) || []}
+                questionNumber="2.6"
+                questionType="VOC"
+                questionText={vocQuestion}
               />
             </div>
           </div>

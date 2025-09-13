@@ -138,6 +138,8 @@ interface NPSQuestionProps {
   totalResponses?: number;
   isLoading?: boolean; // Nueva prop para loading
   questionText?: string;
+  questionNumber?: string;
+  questionType?: string;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -181,7 +183,9 @@ export function NPSQuestion({
   neutrals = 0,
   totalResponses = 0,
   isLoading = false,
-  questionText
+  questionText,
+  questionNumber = "2.5",
+  questionType = "NPS"
 }: NPSQuestionProps) {
   // Calcular porcentajes
   const total = promoters + detractors + neutrals;
@@ -198,7 +202,7 @@ export function NPSQuestion({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-medium">2.5.- Question: Net Promoter Score (NPS)</h3>
+            <h3 className="text-lg font-medium">{questionNumber}- {questionText || "Net Promoter Score"} ({questionType})</h3>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Responses</span>
