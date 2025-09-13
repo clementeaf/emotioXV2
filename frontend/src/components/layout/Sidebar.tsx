@@ -149,6 +149,7 @@ function SidebarContent({ className }: SidebarProps) {
           createdAt: new Date(item.createdAt)
         }));
 
+
       setRecentResearch(sortedResearch);
       setShowNoResearchMessage(false);
     } else {

@@ -6,22 +6,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, memo, useMemo, useCallback, lazy } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-// Removido: import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
+import { useResearchList } from '@/hooks/useResearchList';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { SidebarBase } from './SidebarBase';
 
-const sections: ResearchSection[] = [
+// Base sections structure - BUILD stages will be dynamic based on technique
+const baseSections: ResearchSection[] = [
   {
     id: 'build',
     title: 'Build',
-    stages: [
-      { id: 'welcome-screen', title: 'Welcome Screen' },
-      { id: 'smart-voc', title: 'Smart VOC' },
-      { id: 'cognitive', title: 'Cognitive Tasks' },
-      { id: 'thank-you', title: 'Thank You Screen' }
-    ]
+    stages: [] // Will be populated dynamically
   },
   {
     id: 'recruit',
@@ -47,14 +43,38 @@ const sections: ResearchSection[] = [
   },
 ];
 
+// Function to get BUILD stages based on research technique
+const getBuildStages = (technique: string) => {
+  const baseStages = [
+    { id: 'welcome-screen', title: 'Welcome Screen' },
+    { id: 'smart-voc', title: 'Smart VOC' },
+    { id: 'cognitive', title: 'Cognitive Tasks' },
+    { id: 'thank-you', title: 'Thank You Screen' }
+  ];
+
+  // For biometric-cognitive technique, add Screener before Welcome Screen
+  if (technique === 'biometric-cognitive') {
+    return [
+      { id: 'screener', title: 'Screener' },
+      ...baseStages
+    ];
+  }
+
+  return baseStages;
+};
+
 function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
 
-  // FIXED: Removido useGlobalResearchData - el sidebar no necesita datos específicos del research
-  // Esto elimina las 4 llamadas innecesarias a la API cuando navegas por el sidebar
+  // Get research data from existing list instead of making another API call
+  const { researches } = useResearchList();
+  const researchData = researches.find(r => r.id === researchId);
+
+
+
 
   // Memoized User Info Component
   const UserInfo = memo(() => {
@@ -111,11 +131,36 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   });
   LogoutButton.displayName = 'LogoutButton';
 
-  // FIXED: Sidebar no necesita nombre específico del research
-  // Se puede obtener desde el contexto de la URL o parámetros de navegación
-  const researchName = researchId ? `Research ${researchId.slice(-8)}` : 'Research';
-  const isLoadingName = false;
-  const error = null;
+  // Use actual research data for display
+  // Try both nested (Research type) and flat (ResearchAPIResponse type) structures
+  const researchName = researchData?.name || (researchId ? `Research ${researchId.slice(-8)}` : 'Research');
+  const researchTechnique = researchData
+    ? (researchData as { technique?: string; basic?: { technique?: string } }).technique ||
+      (researchData as { technique?: string; basic?: { technique?: string } }).basic?.technique
+    : null;
+
+  // Generate dynamic sections based on research technique
+  const sections = useMemo(() => {
+    const dynamicSections = [...baseSections];
+    const buildSectionIndex = dynamicSections.findIndex(s => s.id === 'build');
+
+    if (buildSectionIndex !== -1 && researchTechnique) {
+      const buildStages = getBuildStages(researchTechnique);
+      dynamicSections[buildSectionIndex] = {
+        ...dynamicSections[buildSectionIndex],
+        stages: buildStages
+      };
+    } else if (buildSectionIndex !== -1) {
+      // Fallback to default stages if no technique is available
+      dynamicSections[buildSectionIndex] = {
+        ...dynamicSections[buildSectionIndex],
+        stages: getBuildStages('')
+      };
+    }
+    return dynamicSections;
+  }, [researchTechnique, researchData]);
+  const isLoadingName = false; // No loading since data comes from existing list
+  const error = null; // No error since we're using cached data
 
   const handleBackToDashboard = useCallback(() => { 
     router.push('/dashboard'); 
@@ -136,7 +181,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   // Bloque superior: nombre proyecto y enlaces
   const TopBlock = (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2">
         <h2 className="text-lg font-semibold text-neutral-900 truncate" title={typeof researchName === 'string' ? researchName : ''}>
           {isLoadingName ? (
             <div className="animate-pulse bg-gray-200 rounded h-6 w-32"></div>
@@ -144,6 +189,14 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
             researchName
           )}
         </h2>
+        {researchTechnique && !isLoadingName && (
+          <p className="text-sm text-neutral-600 mt-1 truncate" title={researchTechnique}>
+            {researchTechnique}
+          </p>
+        )}
+        {isLoadingName && (
+          <div className="animate-pulse bg-gray-200 rounded h-4 w-24 mt-1"></div>
+        )}
       </div>
 
 
@@ -264,7 +317,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
         )}
       </div>
     </nav>
-  ), [researchId, currentSection, isPublishEnabled, isCheckingContent, handlePublishResearch]);
+  ), [sections, researchId, currentSection, isPublishEnabled, isCheckingContent, handlePublishResearch]);
 
   return (
     <SidebarBase

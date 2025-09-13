@@ -18,7 +18,8 @@ export const fetchResearchList = () =>
  */
 export const fetchResearchById = (id: string) =>
   alovaInstance.Get<{ data: Research }>(`/research/${id}`, {
-    name: 'fetchResearchById'
+    name: 'fetchResearchById',
+    cacheFor: 0, // Disable cache for individual research requests to prevent wrong data being shown
   });
 
 /**

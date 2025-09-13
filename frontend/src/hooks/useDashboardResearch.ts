@@ -91,15 +91,43 @@ export const useDashboardResearch = () => {
   };
 
   const updateResearchList = (researchData: ResearchData) => {
-    const newResearchList = [{
+    if (typeof window === 'undefined') return;
+
+    // Obtener la lista existente de localStorage
+    const existingListString = localStorage.getItem('research_list');
+    let existingList: any[] = [];
+
+    try {
+      existingList = existingListString ? JSON.parse(existingListString) : [];
+    } catch (error) {
+      console.warn('Error parsing research list from localStorage, starting fresh:', error);
+      existingList = [];
+    }
+
+    // Crear el objeto de investigación actualizado
+    const updatedResearch = {
       id: researchData.id,
       name: researchData.name,
       technique: researchData.technique || '',
       createdAt: researchData.createdAt || new Date().toISOString()
-    }];
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('research_list', JSON.stringify(newResearchList));
+    };
+
+    // Buscar si la investigación ya existe en la lista
+    const existingIndex = existingList.findIndex(item => item.id === researchData.id);
+
+    if (existingIndex !== -1) {
+      // Si existe, actualizar los datos
+      existingList[existingIndex] = updatedResearch;
+    } else {
+      // Si no existe, agregarla al inicio de la lista
+      existingList.unshift(updatedResearch);
     }
+
+    // Limitar a las 10 investigaciones más recientes
+    const limitedList = existingList.slice(0, 10);
+
+    // Guardar la lista actualizada
+    localStorage.setItem('research_list', JSON.stringify(limitedList));
   };
 
   const handleAimFrameworkRedirect = (researchData: ResearchData, researchId: string) => {

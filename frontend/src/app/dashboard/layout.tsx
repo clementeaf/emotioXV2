@@ -9,6 +9,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const researchId = searchParams ? searchParams.get('research') : '';
 
+
   return (
     <div className="flex h-screen">
       <div className="w-60 mt-10 mx-5">

@@ -5,7 +5,9 @@
  */
 
 import { useRequest, useWatcher } from 'alova/client';
+import React from 'react';
 import { researchMethods } from '../services/research.methods';
+import { invalidateCache } from '@/config/alova.config';
 import type {
   Research,
   ResearchListResponse,
@@ -204,7 +206,14 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
 export function useResearchById(researchId: string): UseResearchByIdReturn {
   // Si no hay researchId válido, no hacer la petición
   const shouldFetch = Boolean(researchId && researchId.trim());
-  
+
+  // Clear any cached research data when the ID changes to prevent stale data
+  React.useEffect(() => {
+    if (shouldFetch) {
+      invalidateCache(/\/research\/.*$/);
+    }
+  }, [researchId, shouldFetch]);
+
   const query = useRequest(
     () => researchMethods.getById(researchId),
     {
@@ -213,9 +222,18 @@ export function useResearchById(researchId: string): UseResearchByIdReturn {
     }
   );
 
-  // Transformar los datos - el backend devuelve un array, extraer el primer elemento
-  const transformedData = shouldFetch && query.data?.data ? 
-    (Array.isArray(query.data.data) ? query.data.data[0] : query.data.data) : null;
+  // Transformar los datos - buscar el elemento correcto por ID
+  const transformedData = shouldFetch && query.data?.data ? (() => {
+    if (Array.isArray(query.data.data)) {
+      // Si es un array, buscar el elemento con el ID correcto
+      const foundResearch = query.data.data.find(item => item.id === researchId);
+      return foundResearch || null;
+    } else {
+      // Si no es un array, devolver el dato directamente
+      return query.data.data;
+    }
+  })() : null;
+
 
   return {
     data: shouldFetch ? transformedData : null,

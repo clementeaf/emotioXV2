@@ -33,8 +33,9 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     isDeleting,
   } = useWelcomeScreenForm(researchId);
 
-  // Determine if it's an existing config based on existingScreen data OR if it has been saved
-  const isExisting = !!existingScreen?.id || !isEmpty;
+  // Determine if it's an existing config based on real saved data (not default config)
+  // Check if it's NOT a default configuration (isDefault flag from backend)
+  const isExisting = !!existingScreen?.id && !(existingScreen?.metadata as any)?.isDefault;
 
   // <<< Lógica para el modal de confirmación >>>
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
