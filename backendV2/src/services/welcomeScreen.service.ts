@@ -132,8 +132,7 @@ export class WelcomeScreenService {
   /**
    * Obtener la pantalla de bienvenida de una investigación
    * @param researchId ID de la investigación
-   * @returns La pantalla de bienvenida encontrada
-   * @throws NotFoundError si no se encuentra
+   * @returns La pantalla de bienvenida encontrada o configuración por defecto
    */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord> {
     const context = 'getByResearchId';
@@ -148,8 +147,22 @@ export class WelcomeScreenService {
       const welcomeScreen = await welcomeScreenModel.getByResearchId(researchId);
 
       if (!welcomeScreen) {
-        structuredLog('warn', `${this.serviceName}.${context}`, 'No se encontró welcome screen', { researchId });
-        throw new NotFoundError(WelcomeScreenError.NOT_FOUND);
+        structuredLog('info', `${this.serviceName}.${context}`, 'No se encontró welcome screen, devolviendo configuración por defecto', { researchId });
+
+        // Para investigaciones nuevas, devolver configuración por defecto en lugar de error
+        return {
+          id: `default-${researchId}`, // ID temporal para identificar que es por defecto
+          researchId,
+          ...DEFAULT_WELCOME_SCREEN_CONFIG,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          metadata: {
+            version: '1.0',
+            isDefault: true, // Flag para identificar que es configuración por defecto
+            lastUpdated: new Date(),
+            lastModifiedBy: 'system'
+          }
+        } as WelcomeScreenRecord;
       }
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Welcome screen encontrado', { researchId, screenId: welcomeScreen.id });
