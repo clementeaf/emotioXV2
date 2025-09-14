@@ -17,7 +17,7 @@ import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
 import { WelcomeScreenForm } from './WelcomeScreen';
-import { STAGE_TITLES } from '@/config/research-stages.config';
+import { STAGE_TITLES, STAGE_COMPONENTS } from '@/config/research-stages.config';
 import { ChoiceQuestion } from './CognitiveTask/components/questions/ChoiceQuestion';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
@@ -33,54 +33,46 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
   const searchParams = useSearchParams();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
 
+  // Component mapping for dynamic rendering
+  const componentMap = {
+    ScreenerForm,
+    WelcomeScreenForm,
+    SmartVOCForm,
+    CognitiveTaskForm,
+    DisabledEyeTrackingForm,
+    RecruitEyeTrackingForm,
+    ThankYouScreenForm,
+    SmartVOCResults,
+    CognitiveTaskResults,
+    ResearchInProgressPage,
+    ConfigurationPlaceholder,
+    ParticipantsPlaceholder,
+    DefaultPlaceholder
+  };
+
   const renderStageContent = () => {
-    switch (currentSection) {
-      case 'screener':
-        return <ScreenerForm researchId={researchId} />;
-      case 'welcome-screen':
-        return <WelcomeScreenForm researchId={researchId} />;
-      case 'smart-voc':
-        return (
-          <div style={{ maxWidth: '768px', width: '100%' }}>
-            <SmartVOCForm researchId={researchId} />
-          </div>
-        );
-      case 'cognitive':
-        return (
-          <div style={{ maxWidth: '768px', width: '100%' }}>
-            <CognitiveTaskForm researchId={researchId} />
-          </div>
-        );
-      case 'eye-tracking':
-        return <DisabledEyeTrackingForm researchId={researchId} />;
-      case 'eye-tracking-recruit':
-        return <RecruitEyeTrackingForm researchId={researchId} />;
-      case 'thank-you':
-        return <ThankYouScreenForm researchId={researchId} />;
-      case 'smart-voc-results':
-        return <SmartVOCResults researchId={researchId} />;
-      case 'cognitive-task-results':
-        return <CognitiveTaskResults researchId={researchId} />;
-      case 'research-in-progress':
-        return <ResearchInProgressPage />;
-      case 'configuration':
-        return <div className="p-6 bg-white rounded-lg border border-neutral-200">
-          <h2 className="text-lg font-medium mb-4">Configuración del Reclutamiento</h2>
-          <p className="text-neutral-600 mb-4">Configura los parámetros para el reclutamiento de participantes.</p>
-          {/* Contenido de configuración */}
-        </div>;
-      case 'participants':
-        return <div className="p-6 bg-white rounded-lg border border-neutral-200">
-          <h2 className="text-lg font-medium mb-4">Gestión de Participantes</h2>
-          <p className="text-neutral-600 mb-4">Visualiza y gestiona a los participantes de tu estudio.</p>
-          {/* Contenido de participantes */}
-        </div>;
-      default:
-        return <div className="p-6 bg-white rounded-lg border border-neutral-200">
-          <h2 className="text-lg font-medium mb-4">Configuración de Investigación</h2>
-          <p className="text-neutral-600">Selecciona una sección para configurar tu investigación.</p>
-        </div>;
+    const stageConfig = STAGE_COMPONENTS[currentSection] || STAGE_COMPONENTS.default;
+    const ComponentToRender = componentMap[stageConfig.component as keyof typeof componentMap];
+
+    if (!ComponentToRender) {
+      console.warn(`Component ${stageConfig.component} not found for section ${currentSection}`);
+      const DefaultComponent = componentMap.DefaultPlaceholder;
+      return <DefaultComponent researchId={researchId} />;
     }
+
+    const componentProps = {
+      researchId,
+      ...stageConfig.props
+    };
+
+    const component = <ComponentToRender {...componentProps} />;
+
+    // Apply container styles if specified
+    if (stageConfig.containerStyles) {
+      return <div style={stageConfig.containerStyles}>{component}</div>;
+    }
+
+    return component;
   };
 
   const getStageTitle = () => {
@@ -246,7 +238,7 @@ const ScreenerForm = ({ researchId }: { researchId: string }) => {
   );
 };
 
-// En su lugar, agregar un componente provisional
+// Placeholder components
 const DisabledEyeTrackingForm = ({ researchId }: { researchId: string }) => (
   <div className="p-6 bg-white rounded-lg border border-neutral-200">
     <div className="text-center py-8">
@@ -260,5 +252,28 @@ const DisabledEyeTrackingForm = ({ researchId }: { researchId: string }) => (
         </p>
       </div>
     </div>
+  </div>
+);
+
+const ConfigurationPlaceholder = ({ researchId }: { researchId: string }) => (
+  <div className="p-6 bg-white rounded-lg border border-neutral-200">
+    <h2 className="text-lg font-medium mb-4">Configuración del Reclutamiento</h2>
+    <p className="text-neutral-600 mb-4">Configura los parámetros para el reclutamiento de participantes.</p>
+    {/* Contenido de configuración */}
+  </div>
+);
+
+const ParticipantsPlaceholder = ({ researchId }: { researchId: string }) => (
+  <div className="p-6 bg-white rounded-lg border border-neutral-200">
+    <h2 className="text-lg font-medium mb-4">Gestión de Participantes</h2>
+    <p className="text-neutral-600 mb-4">Visualiza y gestiona a los participantes de tu estudio.</p>
+    {/* Contenido de participantes */}
+  </div>
+);
+
+const DefaultPlaceholder = ({ researchId }: { researchId: string }) => (
+  <div className="p-6 bg-white rounded-lg border border-neutral-200">
+    <h2 className="text-lg font-medium mb-4">Configuración de Investigación</h2>
+    <p className="text-neutral-600">Selecciona una sección para configurar tu investigación.</p>
   </div>
 );

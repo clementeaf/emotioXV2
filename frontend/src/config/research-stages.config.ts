@@ -102,3 +102,65 @@ export const STAGE_TITLES: Record<string, string> = {
   // Default
   'default': 'Configuración de investigación'
 };
+
+// Component rendering configuration
+export interface StageComponentConfig {
+  component: string;
+  props?: Record<string, any>;
+  containerStyles?: React.CSSProperties;
+}
+
+// Centralized component mapping for ResearchStageManager
+export const STAGE_COMPONENTS: Record<string, StageComponentConfig> = {
+  // Build stages
+  'screener': {
+    component: 'ScreenerForm'
+  },
+  'welcome-screen': {
+    component: 'WelcomeScreenForm'
+  },
+  'smart-voc': {
+    component: 'SmartVOCForm',
+    containerStyles: { maxWidth: '768px', width: '100%' }
+  },
+  'cognitive': {
+    component: 'CognitiveTaskForm',
+    containerStyles: { maxWidth: '768px', width: '100%' }
+  },
+  'thank-you': {
+    component: 'ThankYouScreenForm'
+  },
+
+  // Recruit stages
+  'eye-tracking': {
+    component: 'DisabledEyeTrackingForm'
+  },
+  'eye-tracking-recruit': {
+    component: 'RecruitEyeTrackingForm'
+  },
+  'configuration': {
+    component: 'ConfigurationPlaceholder'
+  },
+  'participants': {
+    component: 'ParticipantsPlaceholder'
+  },
+
+  // Results stages
+  'smart-voc-results': {
+    component: 'SmartVOCResults'
+  },
+  'cognitive-task-results': {
+    component: 'CognitiveTaskResults'
+  },
+
+  // Research Status
+  'research-in-progress': {
+    component: 'ResearchInProgressPage',
+    props: { standalone: true }
+  },
+
+  // Default
+  'default': {
+    component: 'DefaultPlaceholder'
+  }
+};
