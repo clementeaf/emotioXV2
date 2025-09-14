@@ -17,6 +17,11 @@ import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
 import { WelcomeScreenForm } from './WelcomeScreen';
+import { ChoiceQuestion } from './CognitiveTask/components/questions/ChoiceQuestion';
+import { Switch } from '@/components/ui/Switch';
+import { Button } from '@/components/ui/Button';
+import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ResearchStageManagerProps {
   researchId: string;
@@ -29,6 +34,8 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
 
   const renderStageContent = () => {
     switch (currentSection) {
+      case 'screener':
+        return <ScreenerForm researchId={researchId} />;
       case 'welcome-screen':
         return <WelcomeScreenForm researchId={researchId} />;
       case 'smart-voc':
@@ -77,6 +84,8 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
 
   const getStageTitle = () => {
     switch (currentSection) {
+      case 'screener':
+        return 'Configuración de Screener';
       case 'welcome-screen':
         return 'Configuración de pantalla de bienvenida';
       case 'smart-voc':
@@ -167,6 +176,101 @@ export function LoadingState() {
     </div>
   );
 }
+
+// Componente Screener simple reutilizando ChoiceQuestion
+const ScreenerForm = ({ researchId }: { researchId: string }) => {
+  const [isEnabled, setIsEnabled] = useState(true);
+  const [question, setQuestion] = useState({
+    id: uuidv4(),
+    title: '',
+    description: '',
+    type: 'choice',
+    choices: [
+      { id: uuidv4(), text: '', isQualify: false, isDisqualify: false },
+      { id: uuidv4(), text: '', isQualify: false, isDisqualify: false }
+    ],
+    required: true,
+    showConditionally: false,
+    deviceFrame: false,
+    files: [],
+    hitZones: []
+  });
+
+  const handleQuestionChange = (updates: any) => {
+    setQuestion(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleAddChoice = () => {
+    const newChoice = { id: uuidv4(), text: '', isQualify: false, isDisqualify: false };
+    setQuestion(prev => ({
+      ...prev,
+      choices: [...prev.choices, newChoice]
+    }));
+  };
+
+  const handleRemoveChoice = (choiceId: string) => {
+    setQuestion(prev => ({
+      ...prev,
+      choices: prev.choices.filter((c: any) => c.id !== choiceId)
+    }));
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Toggle de habilitación */}
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Screener</h3>
+            <p className="text-sm text-gray-600">
+              Habilitar o deshabilitar el Screener para esta investigación
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              {isEnabled ? 'Habilitado' : 'Deshabilitado'}
+            </span>
+            <Switch
+              checked={isEnabled}
+              onCheckedChange={setIsEnabled}
+              aria-label="Habilitar o deshabilitar Screener"
+            />
+          </div>
+        </div>
+      </div>
+
+      {isEnabled && (
+        <div className="space-y-6">
+          {/* REUTILIZAMOS el ChoiceQuestion de CognitiveTask */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              1.0.- Screener
+            </h3>
+
+            <ChoiceQuestion
+              question={question}
+              onQuestionChange={handleQuestionChange}
+              onAddChoice={handleAddChoice}
+              onRemoveChoice={handleRemoveChoice}
+              validationErrors={null}
+              disabled={false}
+            />
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex justify-end space-x-3">
+            <Button variant="outline">
+              Vista Previa
+            </Button>
+            <Button>
+              Guardar
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // En su lugar, agregar un componente provisional
 const DisabledEyeTrackingForm = ({ researchId }: { researchId: string }) => (
