@@ -21,15 +21,24 @@ export const BUILD_STAGES = {
   'thank-you': { id: 'thank-you', title: 'Thank You Screen' }
 } as const;
 
+// Research technique constants
+export const RESEARCH_TECHNIQUES = {
+  DEFAULT: 'default',
+  BIOMETRIC_COGNITIVE: 'biometric-cognitive',
+  EYE_TRACKING: 'eye-tracking'
+} as const;
+
+export type ResearchTechnique = typeof RESEARCH_TECHNIQUES[keyof typeof RESEARCH_TECHNIQUES];
+
 // Stage sequences for different techniques - easy to modify
 export const TECHNIQUE_BUILD_SEQUENCES: Record<string, string[]> = {
-  'default': [
+  [RESEARCH_TECHNIQUES.DEFAULT]: [
     'welcome-screen',
     'smart-voc',
     'cognitive',
     'thank-you'
   ],
-  'biometric-cognitive': [
+  [RESEARCH_TECHNIQUES.BIOMETRIC_COGNITIVE]: [
     'screener',
     'welcome-screen',
     'implicit-association',
@@ -72,7 +81,7 @@ export const BASE_SECTIONS: ResearchSection[] = [
 
 // Function to get BUILD stages based on research technique
 export const getBuildStages = (technique: string): StageConfig[] => {
-  const sequence = TECHNIQUE_BUILD_SEQUENCES[technique] || TECHNIQUE_BUILD_SEQUENCES.default;
+  const sequence = TECHNIQUE_BUILD_SEQUENCES[technique] || TECHNIQUE_BUILD_SEQUENCES[RESEARCH_TECHNIQUES.DEFAULT];
   return sequence.map((stageKey: string) => BUILD_STAGES[stageKey as keyof typeof BUILD_STAGES]);
 };
 
@@ -102,6 +111,9 @@ export const STAGE_TITLES: Record<string, string> = {
   // Default
   'default': 'Configuración de investigación'
 };
+
+// Default values and constants
+export const DEFAULT_SECTION = 'welcome-screen';
 
 // Component rendering configuration
 export interface StageComponentConfig {

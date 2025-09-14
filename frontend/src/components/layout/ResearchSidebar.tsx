@@ -10,7 +10,7 @@ import { useResearchList } from '@/hooks/useResearchList';
 import { ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import { BASE_SECTIONS, getBuildStages } from '@/config/research-stages.config';
+import { BASE_SECTIONS, getBuildStages, DEFAULT_SECTION } from '@/config/research-stages.config';
 import { SidebarBase } from './SidebarBase';
 
 
@@ -18,7 +18,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, logout } = useAuth();
-  const currentSection = searchParams?.get('section') || 'welcome-screen';
+  const currentSection = searchParams?.get('section') || DEFAULT_SECTION;
   const { researches } = useResearchList();
   const researchData = researches.find(r => r.id === researchId);
 

@@ -17,7 +17,7 @@ import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
 import { WelcomeScreenForm } from './WelcomeScreen';
-import { STAGE_TITLES, STAGE_COMPONENTS } from '@/config/research-stages.config';
+import { STAGE_TITLES, STAGE_COMPONENTS, DEFAULT_SECTION } from '@/config/research-stages.config';
 import { ChoiceQuestion } from './CognitiveTask/components/questions/ChoiceQuestion';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
@@ -31,7 +31,7 @@ interface ResearchStageManagerProps {
 // Componente interno que usa useSearchParams
 function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) {
   const searchParams = useSearchParams();
-  const currentSection = searchParams?.get('section') || 'welcome-screen';
+  const currentSection = searchParams?.get('section') || DEFAULT_SECTION;
 
   // Component mapping for dynamic rendering
   const componentMap = {
