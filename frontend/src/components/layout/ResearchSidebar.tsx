@@ -3,7 +3,7 @@
 import { ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState, memo, useMemo, useCallback, lazy } from 'react';
+import { Suspense, useEffect, useState, memo, useMemo, useCallback } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { useResearchList } from '@/hooks/useResearchList';
@@ -52,11 +52,15 @@ const getBuildStages = (technique: string) => {
     { id: 'thank-you', title: 'Thank You Screen' }
   ];
 
-  // For biometric-cognitive technique, add Screener before Welcome Screen
+  // For biometric-cognitive technique, add Screener before Welcome Screen and Implicit Association after
   if (technique === 'biometric-cognitive') {
     return [
       { id: 'screener', title: 'Screener' },
-      ...baseStages
+      { id: 'welcome-screen', title: 'Welcome Screen' },
+      { id: 'implicit-association', title: 'Implicit Association' },
+      { id: 'smart-voc', title: 'Smart VOC' },
+      { id: 'cognitive', title: 'Cognitive Tasks' },
+      { id: 'thank-you', title: 'Thank You Screen' }
     ];
   }
 
