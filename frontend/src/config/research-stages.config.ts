@@ -75,3 +75,30 @@ export const getBuildStages = (technique: string): StageConfig[] => {
   const sequence = TECHNIQUE_BUILD_SEQUENCES[technique] || TECHNIQUE_BUILD_SEQUENCES.default;
   return sequence.map((stageKey: string) => BUILD_STAGES[stageKey as keyof typeof BUILD_STAGES]);
 };
+
+// Centralized stage titles for ResearchStageManager
+export const STAGE_TITLES: Record<string, string> = {
+  // Build stages
+  'screener': 'Configuración de Screener',
+  'welcome-screen': 'Configuración de pantalla de bienvenida',
+  'implicit-association': 'Configuración de Asociación Implícita',
+  'smart-voc': 'Configuración de Smart VOC',
+  'cognitive': 'Configuración de tareas cognitivas',
+  'thank-you': 'Configuración de pantalla de agradecimiento',
+
+  // Recruit stages
+  'eye-tracking': 'Configuración de seguimiento ocular',
+  'eye-tracking-recruit': 'Configuración de estudio',
+  'configuration': 'Configuración del Reclutamiento',
+  'participants': 'Gestión de Participantes',
+
+  // Results stages
+  'smart-voc-results': 'Resultados de SmartVOC',
+  'cognitive-task-results': 'Resultados de Tareas Cognitivas',
+
+  // Research Status
+  'research-in-progress': 'Investigación en curso',
+
+  // Default
+  'default': 'Configuración de investigación'
+};

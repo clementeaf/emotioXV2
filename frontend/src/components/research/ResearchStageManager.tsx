@@ -17,6 +17,7 @@ import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
 import { WelcomeScreenForm } from './WelcomeScreen';
+import { STAGE_TITLES } from '@/config/research-stages.config';
 import { ChoiceQuestion } from './CognitiveTask/components/questions/ChoiceQuestion';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
@@ -83,34 +84,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
   };
 
   const getStageTitle = () => {
-    switch (currentSection) {
-      case 'screener':
-        return 'Configuración de Screener';
-      case 'welcome-screen':
-        return 'Configuración de pantalla de bienvenida';
-      case 'smart-voc':
-        return 'Configuración de Smart VOC';
-      case 'cognitive':
-        return 'Configuración de tareas cognitivas';
-      case 'eye-tracking':
-        return 'Configuración de seguimiento ocular';
-      case 'eye-tracking-recruit':
-        return 'Configuración de estudio';
-      case 'thank-you':
-        return 'Configuración de pantalla de agradecimiento';
-      case 'configuration':
-        return 'Configuración del Reclutamiento';
-      case 'participants':
-        return 'Gestión de Participantes';
-      case 'smart-voc-results':
-        return 'Resultados de SmartVOC';
-      case 'cognitive-task-results':
-        return 'Resultados de Tareas Cognitivas';
-      case 'research-in-progress':
-        return 'Investigación en curso';
-      default:
-        return 'Configuración de investigación';
-    }
+    return STAGE_TITLES[currentSection] || STAGE_TITLES.default;
   };
 
   return (
