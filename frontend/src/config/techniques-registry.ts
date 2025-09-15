@@ -52,14 +52,14 @@ export const TECHNIQUES_REGISTRY: Record<string, TechniqueConfig> = {
       'screener',
       'welcome-screen',
       'implicit-association',
-      'smart-voc',
       'cognitive',
+      'eye-tracking',
       'thank-you'
     ],
     features: {
       hasScreener: true,
       hasImplicitAssociation: true,
-      hasEyeTracking: false,
+      hasEyeTracking: true,
       hasBiometrics: true
     },
     settings: {
