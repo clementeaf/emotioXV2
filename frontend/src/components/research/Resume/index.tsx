@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Filters } from '../SmartVOCResults/Filters';
 
 interface ResumeFormProps {
@@ -10,6 +10,8 @@ interface ResumeFormProps {
 export const ResumeForm: React.FC<ResumeFormProps> = ({
   researchId
 }) => {
+  const [iatView, setIatView] = useState('radar');
+
   return (
     <div className="space-y-6">
       {/* Analytics Overview */}
@@ -380,6 +382,235 @@ export const ResumeForm: React.FC<ResumeFormProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Implicit Association Section */}
+            <div className="mt-12">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-gray-900">3.0.- Implicit Association</h3>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600">View:</label>
+                  <select
+                    value={iatView}
+                    onChange={(e) => setIatView(e.target.value)}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="radar">IAT - Reaction Time Test (RTTT)</option>
+                    <option value="attributes">IAT - Comparing Attribute</option>
+                    <option value="objects">IAT - Comparing Objects</option>
+                  </select>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-8">
+                Priming display time set in 400 ms
+              </p>
+
+              <div className="bg-white rounded-xl border p-8">
+                {iatView === 'radar' && (
+                  <div className="flex justify-center">
+                    {/* Radar Chart Container */}
+                    <div className="relative w-96 h-96">
+                      <svg viewBox="0 0 400 400" className="w-full h-full">
+                        {/* Grid circles */}
+                        <circle cx="200" cy="200" r="50" fill="none" stroke="#e5e7eb" strokeWidth="1"/>
+                        <circle cx="200" cy="200" r="100" fill="none" stroke="#e5e7eb" strokeWidth="1"/>
+                        <circle cx="200" cy="200" r="150" fill="none" stroke="#e5e7eb" strokeWidth="1"/>
+
+                        {/* Grid lines */}
+                        {Array.from({length: 15}, (_, i) => {
+                          const angle = i * 24;
+                          const radian = (angle * Math.PI) / 180;
+                          const x1 = 200 + Math.cos(radian) * 50;
+                          const y1 = 200 + Math.sin(radian) * 50;
+                          const x2 = 200 + Math.cos(radian) * 150;
+                          const y2 = 200 + Math.sin(radian) * 150;
+
+                          return (
+                            <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#e5e7eb" strokeWidth="1"/>
+                          );
+                        })}
+
+                        {/* Purple polygon */}
+                        <polygon
+                          points="200,80 280,120 320,180 340,220 320,280 260,320 200,330 160,320 120,280 100,220 120,180 160,120"
+                          fill="#8b5cf6"
+                          fillOpacity="0.3"
+                          stroke="#8b5cf6"
+                          strokeWidth="2"
+                        />
+
+                        {/* Green polygon */}
+                        <polygon
+                          points="200,100 250,140 290,200 310,240 290,290 250,320 200,310 170,300 140,260 130,200 150,160 180,130"
+                          fill="#10b981"
+                          fillOpacity="0.3"
+                          stroke="#10b981"
+                          strokeWidth="2"
+                        />
+
+                        {/* Value labels */}
+                        <text x="200" y="155" textAnchor="middle" className="text-xs fill-gray-500">20</text>
+                        <text x="200" y="105" textAnchor="middle" className="text-xs fill-gray-500">60</text>
+                        <text x="200" y="55" textAnchor="middle" className="text-xs fill-gray-500">100</text>
+                        <text x="200" y="205" textAnchor="middle" className="text-xs fill-gray-500">0</text>
+                        <text x="200" y="255" textAnchor="middle" className="text-xs fill-gray-500">-60</text>
+
+                        {/* Attribute labels */}
+                        {[
+                          { label: 'Atributo 1', x: 200, y: 35 },
+                          { label: 'Atributo 2', x: 350, y: 80 },
+                          { label: 'Atributo 3', x: 370, y: 160 },
+                          { label: 'Atributo 4', x: 370, y: 240 },
+                          { label: 'Atributo 5', x: 350, y: 320 },
+                          { label: 'Atributo 6', x: 270, y: 380 },
+                          { label: 'Atributo 7', x: 200, y: 390 },
+                          { label: 'Atributo 8', x: 130, y: 380 },
+                          { label: 'Atributo 9', x: 50, y: 350 },
+                          { label: 'Atributo 10', x: 30, y: 270 },
+                          { label: 'Atributo 11', x: 30, y: 190 },
+                          { label: 'Atributo 12', x: 50, y: 110 },
+                          { label: 'Atributo 13', x: 110, y: 50 },
+                          { label: 'Atributo 14', x: 170, y: 35 },
+                          { label: 'Atributo 15', x: 250, y: 50 }
+                        ].map((point, i) => (
+                          <text
+                            key={i}
+                            x={point.x}
+                            y={point.y}
+                            textAnchor="middle"
+                            className="text-xs fill-gray-700 font-medium"
+                          >
+                            {point.label}
+                          </text>
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+                )}
+
+                {iatView === 'attributes' && (
+                  <div className="w-full max-w-2xl mx-auto">
+                    {/* Attributes Bar Chart */}
+                    <div className="space-y-4">
+                      <div className="flex justify-center mb-6">
+                        <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                            <span className="text-sm text-gray-600">Target 1</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-purple-600 rounded"></div>
+                            <span className="text-sm text-gray-600">Target 2</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="relative h-64 flex items-end justify-center gap-8 px-4">
+                        {/* Y-axis labels */}
+                        <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 py-2">
+                          <span>100</span>
+                          <span>80</span>
+                          <span>60</span>
+                          <span>40</span>
+                          <span>20</span>
+                          <span>0</span>
+                        </div>
+
+                        {/* Bars */}
+                        {[
+                          { name: 'Attribute 1', blue: 35, purple: 45 },
+                          { name: 'Attribute 2', blue: 75, purple: 85 },
+                          { name: 'Attribute 3', blue: 55, purple: 65 },
+                          { name: 'Attribute 4', blue: 45, purple: 35 },
+                          { name: 'Attribute 5', blue: 85, purple: 75 }
+                        ].map((item, i) => (
+                          <div key={i} className="flex flex-col items-center gap-2">
+                            <div className="flex items-end gap-1 h-48">
+                              <div
+                                className="w-6 bg-blue-500 rounded-t"
+                                style={{ height: `${(item.blue / 100) * 100}%` }}
+                              />
+                              <div
+                                className="w-6 bg-purple-600 rounded-t"
+                                style={{ height: `${(item.purple / 100) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-700 text-center max-w-16">
+                              {item.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {iatView === 'objects' && (
+                  <div className="w-full max-w-3xl mx-auto">
+                    {/* Objects Horizontal Bar Chart */}
+                    <div className="space-y-6">
+                      <div className="flex justify-center mb-6">
+                        <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                            <span className="text-sm text-gray-600">Attribute A</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-purple-600 rounded"></div>
+                            <span className="text-sm text-gray-600">Attribute B</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Horizontal bars */}
+                      <div className="space-y-8">
+                        {[
+                          { name: 'Object 1', blueLeft: 40, purpleRight: 20 },
+                          { name: 'Object 2', blueLeft: 60, purpleRight: 45 },
+                          { name: 'Object 3', blueLeft: 25, purpleRight: 35 },
+                          { name: 'Object 4', blueLeft: 45, purpleRight: 65 },
+                          { name: 'Object 5', blueLeft: 35, purpleRight: 55 }
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-center gap-4">
+                            <div className="w-16 text-right">
+                              <span className="text-sm font-medium text-gray-700">{item.name}</span>
+                            </div>
+
+                            <div className="flex-1 relative">
+                              {/* Scale markings */}
+                              <div className="absolute top-0 left-0 w-full h-8 flex justify-between text-xs text-gray-400">
+                                <span>-100</span><span>-80</span><span>-60</span><span>-40</span><span>-20</span><span>0</span>
+                                <span>20</span><span>40</span><span>60</span><span>80</span><span>100</span>
+                              </div>
+
+                              {/* Center line */}
+                              <div className="absolute top-8 left-1/2 w-px h-8 bg-gray-300"></div>
+
+                              <div className="flex h-8 mt-8">
+                                {/* Left (negative) side - Blue bars */}
+                                <div className="w-1/2 flex justify-end pr-1">
+                                  <div
+                                    className="bg-blue-500 h-6 rounded-l"
+                                    style={{ width: `${item.blueLeft}%` }}
+                                  />
+                                </div>
+
+                                {/* Right (positive) side - Purple bars */}
+                                <div className="w-1/2 flex justify-start pl-1">
+                                  <div
+                                    className="bg-purple-600 h-6 rounded-r"
+                                    style={{ width: `${item.purpleRight}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -88,6 +88,12 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
     displayTitle: 'Resumen de Resultados',
     component: 'ResumeForm'
   },
+  'implicit-association-results': {
+    id: 'implicit-association-results',
+    title: 'Implicit Association',
+    displayTitle: 'Resultados de Asociación Implícita',
+    component: 'ImplicitAssociationResults'
+  },
   'smart-voc-results': {
     id: 'smart-voc-results',
     title: 'SmartVOC',

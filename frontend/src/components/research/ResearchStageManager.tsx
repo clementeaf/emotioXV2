@@ -13,6 +13,7 @@ import { CognitiveTaskForm } from './CognitiveTask';
 import ResearchInProgressPage from '@/app/dashboard/research-in-progress/page';
 import { CognitiveTaskResults } from './CognitiveTaskResults';
 import { ImplicitAssociationForm } from './ImplicitAssociation';
+import { ImplicitAssociationResults } from './ImplicitAssociationResults';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
 import { SimpleEyeTrackingForm } from './EyeTracking/SimpleEyeTrackingForm';
 import { ResumeForm } from './Resume';
@@ -158,6 +159,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
     RecruitEyeTrackingForm,
     ThankYouScreenForm,
     ResumeForm,
+    ImplicitAssociationResults,
     SmartVOCResults,
     CognitiveTaskResults,
     ResearchInProgressPage,

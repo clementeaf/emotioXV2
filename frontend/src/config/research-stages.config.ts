@@ -63,10 +63,11 @@ export const getResultsStages = (technique: string): StageConfig[] => {
     { id: 'cognitive-task-results', title: 'Cognitive Task' }
   ];
 
-  // Add Resume stage for biometric-cognitive technique
+  // Add Resume and Implicit Association stages for biometric-cognitive technique
   if (technique === 'biometric-cognitive') {
     return [
       { id: 'resume', title: 'Resume' },
+      { id: 'implicit-association-results', title: 'Implicit Association' },
       ...baseResults
     ];
   }
