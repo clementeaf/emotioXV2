@@ -15,6 +15,7 @@ import { CognitiveTaskResults } from './CognitiveTaskResults';
 import { ImplicitAssociationForm } from './ImplicitAssociation';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
 import { SimpleEyeTrackingForm } from './EyeTracking/SimpleEyeTrackingForm';
+import { ResumeForm } from './Resume';
 import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
@@ -136,13 +137,6 @@ const DefaultPlaceholder = ({ researchId }: { researchId: string }) => (
   </div>
 );
 
-const ResumePlaceholder = ({ researchId }: { researchId: string }) => { // eslint-disable-line @typescript-eslint/no-unused-vars
-  return (
-    <div className="p-6 bg-white rounded-lg">
-      <p className="text-gray-600">Vista resumida de todos los resultados de la investigación.</p>
-    </div>
-  );
-};
 
 interface ResearchStageManagerProps {
   researchId: string;
@@ -163,7 +157,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
     SimpleEyeTrackingForm,
     RecruitEyeTrackingForm,
     ThankYouScreenForm,
-    ResumePlaceholder,
+    ResumeForm,
     SmartVOCResults,
     CognitiveTaskResults,
     ResearchInProgressPage,

@@ -86,7 +86,7 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
     id: 'resume',
     title: 'Resume',
     displayTitle: 'Resumen de Resultados',
-    component: 'ResumePlaceholder'
+    component: 'ResumeForm'
   },
   'smart-voc-results': {
     id: 'smart-voc-results',
