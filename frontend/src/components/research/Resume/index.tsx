@@ -8,7 +8,7 @@ interface ResumeFormProps {
 }
 
 export const ResumeForm: React.FC<ResumeFormProps> = ({
-  researchId // eslint-disable-line @typescript-eslint/no-unused-vars
+  researchId
 }) => {
   return (
     <div className="space-y-6">
