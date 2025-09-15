@@ -12,6 +12,7 @@ import { CognitiveTaskForm } from './CognitiveTask';
 
 import ResearchInProgressPage from '@/app/dashboard/research-in-progress/page';
 import { CognitiveTaskResults } from './CognitiveTaskResults';
+import { ImplicitAssociationForm } from './ImplicitAssociation';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
 import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults/index';
@@ -37,6 +38,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
   const componentMap = {
     ScreenerForm,
     WelcomeScreenForm,
+    ImplicitAssociationForm,
     SmartVOCForm,
     CognitiveTaskForm,
     DisabledEyeTrackingForm,
