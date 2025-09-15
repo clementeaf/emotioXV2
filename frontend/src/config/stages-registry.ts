@@ -116,7 +116,7 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
 // Auto-generated exports from STAGE_REGISTRY
 export const BUILD_STAGES = Object.fromEntries(
   Object.entries(STAGE_REGISTRY)
-    .filter(([key]) => ['screener', 'welcome-screen', 'implicit-association', 'smart-voc', 'cognitive', 'thank-you'].includes(key))
+    .filter(([key]) => ['screener', 'welcome-screen', 'implicit-association', 'smart-voc', 'cognitive', 'eye-tracking', 'thank-you'].includes(key))
     .map(([key, stage]) => [key, { id: stage.id, title: stage.title }])
 );
 
@@ -143,8 +143,8 @@ export const getStageById = (id: string): UnifiedStageConfig | undefined => {
 // Helper function to get stages by category
 export const getStagesByCategory = (category: 'build' | 'recruit' | 'results' | 'status'): UnifiedStageConfig[] => {
   const categoryRanges = {
-    build: ['screener', 'welcome-screen', 'implicit-association', 'smart-voc', 'cognitive', 'thank-you'],
-    recruit: ['eye-tracking', 'eye-tracking-recruit', 'configuration', 'participants'],
+    build: ['screener', 'welcome-screen', 'implicit-association', 'smart-voc', 'cognitive', 'eye-tracking', 'thank-you'],
+    recruit: ['eye-tracking-recruit', 'configuration', 'participants'],
     results: ['smart-voc-results', 'cognitive-task-results'],
     status: ['research-in-progress']
   };
