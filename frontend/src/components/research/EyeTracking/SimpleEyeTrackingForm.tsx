@@ -39,6 +39,11 @@ export const SimpleEyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
   // Priming display time
   const [primingTime, setPrimingTime] = useState('10 secs');
 
+  // Shelf configuration
+  const [randomizeOptions, setRandomizeOptions] = useState(false);
+  const [numberOfShelfs, setNumberOfShelfs] = useState(2);
+  const [itemsPerShelf, setItemsPerShelf] = useState(5);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,6 +296,77 @@ export const SimpleEyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
                     {option}
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Shelf Configuration Section */}
+        <div className="border-t pt-6 mt-6">
+          {/* For Shelf only */}
+          <div className="mb-6">
+            <h4 className="text-md font-medium text-gray-900 mb-3">For Shelf only:</h4>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={randomizeOptions}
+                onChange={(e) => setRandomizeOptions(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-700">Randomize options (images)</span>
+            </label>
+          </div>
+
+          {/* Shelf configuration */}
+          <div>
+            <h4 className="text-md font-medium text-gray-900 mb-4">Shelf configuration</h4>
+
+            {/* Shelf preview image */}
+            <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 mb-4 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gray-300 rounded mx-auto mb-2 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-500">Shelf preview</p>
+              </div>
+            </div>
+
+            {/* Shelf controls */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Number of Shelfs
+                </label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={numberOfShelfs}
+                    onChange={(e) => setNumberOfShelfs(parseInt(e.target.value) || 1)}
+                    className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-600">{numberOfShelfs}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Items per Shelf
+                </label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={itemsPerShelf}
+                    onChange={(e) => setItemsPerShelf(parseInt(e.target.value) || 1)}
+                    className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-600">{itemsPerShelf}</span>
+                </div>
               </div>
             </div>
           </div>
