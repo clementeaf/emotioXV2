@@ -31,9 +31,7 @@ interface ImplicitAssociationFormProps {
   researchId: string;
 }
 
-export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = ({
-  researchId
-}) => {
+export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = () => {
   const [isRequired, setIsRequired] = useState(false);
   const [targets, setTargets] = useState<Target[]>([
     {
@@ -54,28 +52,8 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
     { id: uuidv4(), order: 2, name: '' }
   ]);
 
-  const [exerciseInstructions, setExerciseInstructions] = useState(
-    `In this task, different objects will appear.
-
-Use the keyboard for this exercise if you take the test on a PC, tablet, or laptop.
-Press the left arrow key (←) if [[Object 1]] appears.
-And press the right arrow key (→) if you see [[Object 2]].
-
-If you make an occasional mistake, you will see 'X', correct your answer rapidly.
-
-Classify items as quickly as you can, but also be accurate.`
-  );
-
-  const [testInstructions, setTestInstructions] = useState(
-    `Now you will see a word or image before each object.
-Try to ignore this.
-
-Your task is the same: identify objects as quickly as possible.
-
-Use the keyboard for this exercise if you take the test on a PC, tablet, or laptop.
-Press the left arrow key (←) if [[Object 1]] appears.
-And press the right arrow key (→) if you see [[Object 2]].`
-  );
+  const [exerciseInstructions, setExerciseInstructions] = useState('');
+  const [testInstructions, setTestInstructions] = useState('');
 
   const [testConfiguration, setTestConfiguration] = useState('');
   const [showResults, setShowResults] = useState(false);
