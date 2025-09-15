@@ -122,7 +122,7 @@ export const SimpleEyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           {/* Left Column - Eye Tracking Stimuli */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Eye Tracking Stimuli</h3>
@@ -187,185 +187,185 @@ export const SimpleEyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
             </p>
           </div>
 
-          {/* Right Column - Task Configuration */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Task configuration</h3>
-              <span className="text-sm text-gray-500">Please select</span>
-            </div>
-
-            <div className="space-y-3">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={isShelfTask}
-                  onChange={(e) => setIsShelfTask(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">This is a Shelf Task</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={resizeImage}
-                  onChange={(e) => setResizeImage(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Resize image to fit screen</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={eyeTrackingDevice}
-                  onChange={(e) => setEyeTrackingDevice(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Eye tracking Device (Soon)</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={eyeTrackingWebcam}
-                  onChange={(e) => setEyeTrackingWebcam(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Eye tracking (Webcam based)</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={clickMeasurement}
-                  onChange={(e) => setClickMeasurement(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Click measurement</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={finishByKeyOrClick}
-                  onChange={(e) => setFinishByKeyOrClick(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Finish by pressing any key or mouse click</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={holdVertical}
-                  onChange={(e) => setHoldVertical(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Hold device in vertical position while testing</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={holdHorizontal}
-                  onChange={(e) => setHoldHorizontal(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Hold device in horizontal position while testing</span>
-              </label>
-            </div>
-
-            {/* Priming Display Time */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Priming display time:</span>
+          {/* Right Column - Task Configuration and Shelf Settings */}
+          <div className="space-y-8">
+            {/* Task Configuration */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Task configuration</h3>
+                <span className="text-sm text-gray-500">Please select</span>
               </div>
-              <div className="flex gap-2">
-                {primingOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setPrimingTime(option)}
-                    className={`px-3 py-1 text-xs rounded-full border ${
-                      primingTime === option
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Shelf Configuration Section */}
-        <div className="border-t pt-6 mt-6 max-w-2xl">
-          {/* For Shelf only */}
-          <div className="mb-6">
-            <h4 className="text-md font-medium text-gray-900 mb-3">For Shelf only:</h4>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={randomizeOptions}
-                onChange={(e) => setRandomizeOptions(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">Randomize options (images)</span>
-            </label>
-          </div>
-
-          {/* Shelf configuration */}
-          <div>
-            <h4 className="text-md font-medium text-gray-900 mb-4">Shelf configuration</h4>
-
-            {/* Shelf preview image */}
-            <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 mb-4 flex items-center justify-center max-w-md">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-gray-300 rounded mx-auto mb-2 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <p className="text-sm text-gray-500">Shelf preview</p>
-              </div>
-            </div>
-
-            {/* Shelf controls */}
-            <div className="flex gap-8 max-w-md">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Number of Shelfs
-                </label>
-                <div className="flex items-center">
+              <div className="space-y-3">
+                <label className="flex items-center">
                   <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={numberOfShelfs}
-                    onChange={(e) => setNumberOfShelfs(parseInt(e.target.value) || 1)}
-                    className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    type="checkbox"
+                    checked={isShelfTask}
+                    onChange={(e) => setIsShelfTask(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm text-gray-600">{numberOfShelfs}</span>
+                  <span className="ml-2 text-sm text-gray-700">This is a Shelf Task</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={resizeImage}
+                    onChange={(e) => setResizeImage(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Resize image to fit screen</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={eyeTrackingDevice}
+                    onChange={(e) => setEyeTrackingDevice(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Eye tracking Device (Soon)</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={eyeTrackingWebcam}
+                    onChange={(e) => setEyeTrackingWebcam(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Eye tracking (Webcam based)</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={clickMeasurement}
+                    onChange={(e) => setClickMeasurement(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Click measurement</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={finishByKeyOrClick}
+                    onChange={(e) => setFinishByKeyOrClick(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Finish by pressing any key or mouse click</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={holdVertical}
+                    onChange={(e) => setHoldVertical(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Hold device in vertical position while testing</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={holdHorizontal}
+                    onChange={(e) => setHoldHorizontal(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Hold device in horizontal position while testing</span>
+                </label>
+              </div>
+
+              {/* Priming Display Time */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Priming display time:</span>
+                </div>
+                <div className="flex gap-2">
+                  {primingOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setPrimingTime(option)}
+                      className={`px-3 py-1 text-xs rounded-full border ${
+                        primingTime === option
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* For Shelf only */}
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-3">For Shelf only:</h4>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={randomizeOptions}
+                  onChange={(e) => setRandomizeOptions(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Randomize options (images)</span>
+              </label>
+            </div>
+
+            {/* Shelf configuration */}
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-4">Shelf configuration</h4>
+
+              {/* Shelf preview image */}
+              <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 mb-4 flex items-center justify-center max-w-xs">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-gray-300 rounded mx-auto mb-2 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gray-500">Shelf preview</p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Items per Shelf
-                </label>
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    min="1"
-                    max="20"
-                    value={itemsPerShelf}
-                    onChange={(e) => setItemsPerShelf(parseInt(e.target.value) || 1)}
-                    className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-600">{itemsPerShelf}</span>
+              {/* Shelf controls */}
+              <div className="flex gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Shelfs
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={numberOfShelfs}
+                      onChange={(e) => setNumberOfShelfs(parseInt(e.target.value) || 1)}
+                      className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-600">{numberOfShelfs}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Items per Shelf
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={itemsPerShelf}
+                      onChange={(e) => setItemsPerShelf(parseInt(e.target.value) || 1)}
+                      className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-600">{itemsPerShelf}</span>
+                  </div>
                 </div>
               </div>
             </div>
