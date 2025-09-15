@@ -82,6 +82,12 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
   },
 
   // ========== RESULTS STAGES ==========
+  'resume': {
+    id: 'resume',
+    title: 'Resume',
+    displayTitle: 'Resumen de Resultados',
+    component: 'ResumePlaceholder'
+  },
   'smart-voc-results': {
     id: 'smart-voc-results',
     title: 'SmartVOC',
@@ -145,7 +151,7 @@ export const getStagesByCategory = (category: 'build' | 'recruit' | 'results' | 
   const categoryRanges = {
     build: ['screener', 'welcome-screen', 'implicit-association', 'smart-voc', 'cognitive', 'eye-tracking', 'thank-you'],
     recruit: ['eye-tracking-recruit', 'configuration', 'participants'],
-    results: ['smart-voc-results', 'cognitive-task-results'],
+    results: ['resume', 'smart-voc-results', 'cognitive-task-results'],
     status: ['research-in-progress']
   };
 

@@ -56,6 +56,24 @@ export const getBuildStages = (technique: string): StageConfig[] => {
   return stages.map((stageKey: string) => BUILD_STAGES[stageKey as keyof typeof BUILD_STAGES]).filter(Boolean);
 };
 
+// Function to get RESULTS stages based on research technique
+export const getResultsStages = (technique: string): StageConfig[] => {
+  const baseResults = [
+    { id: 'smart-voc-results', title: 'SmartVOC' },
+    { id: 'cognitive-task-results', title: 'Cognitive Task' }
+  ];
+
+  // Add Resume stage for biometric-cognitive technique
+  if (technique === 'biometric-cognitive') {
+    return [
+      { id: 'resume', title: 'Resume' },
+      ...baseResults
+    ];
+  }
+
+  return baseResults;
+};
+
 
 // Default values and constants
 export const DEFAULT_SECTION = 'welcome-screen';

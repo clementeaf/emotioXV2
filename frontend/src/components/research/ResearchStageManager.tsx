@@ -136,6 +136,13 @@ const DefaultPlaceholder = ({ researchId }: { researchId: string }) => (
   </div>
 );
 
+const ResumePlaceholder = ({ researchId }: { researchId: string }) => (
+  <div className="p-6 bg-gray-50 rounded-lg">
+    <h2 className="text-xl font-semibold mb-4">Resumen de Resultados</h2>
+    <p className="text-gray-600">Vista resumida de todos los resultados de la investigación {researchId}...</p>
+  </div>
+);
+
 interface ResearchStageManagerProps {
   researchId: string;
 }
@@ -155,6 +162,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
     SimpleEyeTrackingForm,
     RecruitEyeTrackingForm,
     ThankYouScreenForm,
+    ResumePlaceholder,
     SmartVOCResults,
     CognitiveTaskResults,
     ResearchInProgressPage,

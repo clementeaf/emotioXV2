@@ -10,7 +10,7 @@ import { useResearchList } from '@/hooks/useResearchList';
 import { ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import { BASE_SECTIONS, getBuildStages, DEFAULT_SECTION } from '@/config/research-stages.config';
+import { BASE_SECTIONS, getBuildStages, getResultsStages, DEFAULT_SECTION } from '@/config/research-stages.config';
 import { SidebarBase } from './SidebarBase';
 
 
@@ -84,7 +84,9 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const sections = useMemo(() => {
     const dynamicSections = [...BASE_SECTIONS];
     const buildSectionIndex = dynamicSections.findIndex(s => s.id === 'build');
+    const resultsSectionIndex = dynamicSections.findIndex(s => s.id === 'results');
 
+    // Handle BUILD section
     if (buildSectionIndex !== -1 && researchTechnique) {
       const buildStages = getBuildStages(researchTechnique);
       dynamicSections[buildSectionIndex] = {
@@ -97,6 +99,21 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
         stages: getBuildStages('')
       };
     }
+
+    // Handle RESULTS section
+    if (resultsSectionIndex !== -1 && researchTechnique) {
+      const resultsStages = getResultsStages(researchTechnique);
+      dynamicSections[resultsSectionIndex] = {
+        ...dynamicSections[resultsSectionIndex],
+        stages: resultsStages
+      };
+    } else if (resultsSectionIndex !== -1) {
+      dynamicSections[resultsSectionIndex] = {
+        ...dynamicSections[resultsSectionIndex],
+        stages: getResultsStages('')
+      };
+    }
+
     return dynamicSections;
   }, [researchTechnique, researchData]);
   const isLoadingName = false;
