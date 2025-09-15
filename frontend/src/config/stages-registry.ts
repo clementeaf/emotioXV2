@@ -60,7 +60,7 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
     id: 'eye-tracking',
     title: 'Eye Tracking',
     displayTitle: 'Configuración de seguimiento ocular',
-    component: 'DisabledEyeTrackingForm'
+    component: 'SimpleEyeTrackingForm'
   },
   'eye-tracking-recruit': {
     id: 'eye-tracking-recruit',
