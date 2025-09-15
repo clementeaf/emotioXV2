@@ -5,6 +5,8 @@ import { Plus, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Textarea';
+import { CustomSelect, Option } from '@/components/ui/CustomSelect';
 import { FileUploadQuestion } from '../CognitiveTask/components/questions/FileUploadQuestion';
 
 interface Target {
@@ -51,6 +53,40 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
     { id: uuidv4(), order: 1, name: '' },
     { id: uuidv4(), order: 2, name: '' }
   ]);
+
+  const [exerciseInstructions, setExerciseInstructions] = useState(
+    `In this task, different objects will appear.
+
+Use the keyboard for this exercise if you take the test on a PC, tablet, or laptop.
+Press the left arrow key (←) if [[Object 1]] appears.
+And press the right arrow key (→) if you see [[Object 2]].
+
+If you make an occasional mistake, you will see 'X', correct your answer rapidly.
+
+Classify items as quickly as you can, but also be accurate.`
+  );
+
+  const [testInstructions, setTestInstructions] = useState(
+    `Now you will see a word or image before each object.
+Try to ignore this.
+
+Your task is the same: identify objects as quickly as possible.
+
+Use the keyboard for this exercise if you take the test on a PC, tablet, or laptop.
+Press the left arrow key (←) if [[Object 1]] appears.
+And press the right arrow key (→) if you see [[Object 2]].`
+  );
+
+  const [testConfiguration, setTestConfiguration] = useState('');
+  const [showResults, setShowResults] = useState(false);
+
+  const testConfigOptions: Option[] = [
+    { value: '', label: 'Please select' },
+    { value: 'standard', label: 'Standard IAT' },
+    { value: 'brief', label: 'Brief IAT' },
+    { value: 'single-category', label: 'Single Category IAT' },
+    { value: 'custom', label: 'Custom Configuration' }
+  ];
 
   const handleTargetChange = (targetId: string, updates: Partial<Target>) => {
     setTargets(prev => {
@@ -261,13 +297,70 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
               Add Attribute
             </Button>
           </div>
+        </div>
+
+        {/* Instructions Section */}
+        <div className="border-t pt-8 space-y-6">
+          <h3 className="text-lg font-medium text-gray-900">Instructions</h3>
+
+          {/* Exercise Instructions */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Exercise instructions
+            </label>
+            <Textarea
+              value={exerciseInstructions}
+              onChange={(e) => setExerciseInstructions(e.target.value)}
+              rows={8}
+              className="w-full"
+              placeholder="Enter exercise instructions..."
+            />
+            <p className="text-xs text-gray-500 mt-1 text-right">
+              {exerciseInstructions.length} / 1000
+            </p>
+          </div>
+
+          {/* Test Instructions */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Test instructions
+            </label>
+            <Textarea
+              value={testInstructions}
+              onChange={(e) => setTestInstructions(e.target.value)}
+              rows={8}
+              className="w-full"
+              placeholder="Enter test instructions..."
+            />
+            <p className="text-xs text-gray-500 mt-1 text-right">
+              {testInstructions.length} / 1000
+            </p>
+          </div>
+        </div>
+
+        {/* Test Configuration Section */}
+        <div className="border-t pt-8 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Test configuration
+            </label>
+            <CustomSelect
+              value={testConfiguration}
+              onChange={setTestConfiguration}
+              options={testConfigOptions}
+              placeholder="Please select"
+              className="w-full"
+            />
+          </div>
 
           {/* Show Results Checkbox */}
-          <div className="mt-6 flex items-center space-x-3">
+          <div className="flex items-start space-x-3">
             <input
               id="show-results"
               type="checkbox"
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              checked={showResults}
+              onChange={(e) => setShowResults(e.target.checked)}
+              className="h-4 w-4 mt-0.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="show-results" className="text-sm text-gray-700">
               Show results to respondents
