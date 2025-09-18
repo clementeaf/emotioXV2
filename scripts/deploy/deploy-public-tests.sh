@@ -26,10 +26,6 @@ log_info "Limpiando bucket S3: $BUCKET ..."
 aws s3 rm s3://$BUCKET --recursive --region $REGION || { log_error "Error al limpiar el bucket S3"; exit 1; }
 log_success "Bucket S3 limpio."
 
-log_info "Borrando build anterior (dist/)..."
-rm -rf public-tests/$BUILD_DIR
-log_success "Directorio dist/ eliminado."
-
 # 🆕 SINCRONIZAR ENDPOINTS DINÁMICOS ANTES DEL BUILD
 log_info "🔄 Verificando endpoints dinámicos..."
 if [ -f "public-tests/src/config/endpoints.js" ]; then
@@ -38,10 +34,13 @@ else
     log_warning "⚠️ Endpoints dinámicos no encontrados, usando configuración por defecto"
 fi
 
-log_info "Construyendo public-tests (Vite)..."
-npm --prefix public-tests install
-npm --prefix public-tests run build || { log_error "Error en el build de Vite"; exit 1; }
-log_success "Build completado."
+# El build ya fue hecho por el workflow de GitHub Actions
+log_info "Verificando build existente..."
+if [ ! -d "public-tests/$BUILD_DIR" ]; then
+    log_error "Directorio de build no encontrado. El workflow debe hacer el build antes de este script."
+    exit 1
+fi
+log_success "Build encontrado y verificado."
 
 log_info "Subiendo archivos a S3..."
 aws s3 sync public-tests/$BUILD_DIR s3://$BUCKET --delete --region $REGION || { log_error "Error al subir archivos a S3"; exit 1; }
