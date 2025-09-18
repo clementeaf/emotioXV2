@@ -9,7 +9,7 @@
     "build:analyze": "esbuild src/index.ts --platform=node --target=node18 --bundle --outfile=dist/index.js --analyze",
     "start": "node dist/server.local.js",
     "lint": "eslint . --ext .ts",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "deploy": "npm run build && serverless deploy && npm run postdeploy",
