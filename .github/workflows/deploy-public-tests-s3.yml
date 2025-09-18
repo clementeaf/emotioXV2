@@ -21,7 +21,7 @@ env:
   NODE_VERSION: '20'
   BUCKET: emotioxv2-public-tests-041238861016
   REGION: us-east-1
-  CLOUDFRONT_DISTRIBUTION_ID: none
+  CLOUDFRONT_DISTRIBUTION_ID: E3KFNJVCTHRPO9
 
 jobs:
   deploy:
