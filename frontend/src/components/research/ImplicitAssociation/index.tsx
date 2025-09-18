@@ -32,7 +32,7 @@ interface ImplicitAssociationFormProps {
 }
 
 export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = ({
-  researchId // eslint-disable-line @typescript-eslint/no-unused-vars
+  researchId
 }) => {
   const [isRequired, setIsRequired] = useState(false);
   const [targets, setTargets] = useState<Target[]>([

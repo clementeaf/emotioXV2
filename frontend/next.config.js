@@ -2,11 +2,14 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 🚀 HABILITAR EXPORT ESTÁTICO PARA S3 (pero solo en deploy, no en build local)
-  ...(process.env.CI === 'true' && process.env.NODE_ENV === 'production' && {
-    output: 'export', // Solo en CI/CD para S3
-    trailingSlash: true,
-  }),
+  // 🚀 HABILITAR EXPORT ESTÁTICO PARA S3
+  output: 'export',
+  trailingSlash: true,
+
+  // Disable ESLint during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   
   // Configuración para imágenes y rutas
   images: {

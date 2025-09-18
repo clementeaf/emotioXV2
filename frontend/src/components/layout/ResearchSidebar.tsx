@@ -128,7 +128,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
       const isDevelopment = window.location.hostname === 'localhost';
       const baseUrl = isDevelopment
         ? 'http://localhost:5173'
-        : 'https://public-tests.emotioxv2.com';
+        : 'https://d35071761848hm.cloudfront.net';
       window.open(`${baseUrl}/?researchId=${researchId}`, '_blank');
     }
   }, [researchId]);

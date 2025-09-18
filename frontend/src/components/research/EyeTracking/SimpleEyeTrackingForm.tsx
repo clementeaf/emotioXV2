@@ -19,7 +19,7 @@ interface UploadedFile {
 }
 
 export const SimpleEyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
-  researchId // eslint-disable-line @typescript-eslint/no-unused-vars
+  researchId
 }) => {
   const [isRequired, setIsRequired] = useState(false);
   const [instructionText, setInstructionText] = useState('');

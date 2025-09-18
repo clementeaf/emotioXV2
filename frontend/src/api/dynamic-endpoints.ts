@@ -30,8 +30,8 @@ export const DYNAMIC_API_ENDPOINTS = {
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:5173",
-  "generatedAt": "2025-09-13T20:30:37.000Z"
+  "publicTests": "https://d35071761848hm.cloudfront.net",
+  "generatedAt": "2025-09-17T23:30:00.000Z"
 };
 
 // Constantes para uso más fácil

@@ -17,7 +17,7 @@ export const API_ENDPOINTS = {
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700"
+  "publicTests": "https://d35071761848hm.cloudfront.net"
 };
 
 // Constantes para uso más fácil
