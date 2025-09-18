@@ -5,7 +5,7 @@
 // Estos valores son establecidos por el script de build/deploy
 const NEXT_PUBLIC_API_URL = 'https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev';
 const NEXT_PUBLIC_WS_URL = 'wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev';
-const NEXT_PUBLIC_PUBLIC_TESTS_URL = 'http://localhost:5173';
+const NEXT_PUBLIC_PUBLIC_TESTS_URL = 'https://d35071761848hm.cloudfront.net';
 const NEXT_PUBLIC_ENV = 'development';
 
 // 🎯 DETECTAR ENTORNO DE DESARROLLO

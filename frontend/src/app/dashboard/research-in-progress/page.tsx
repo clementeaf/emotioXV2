@@ -313,7 +313,7 @@ function ResearchInProgressContent() {
                 <p className="text-xs text-gray-600">
                   <strong>Formato de URL:</strong><br />
                   <code className="text-xs">
-                    http://localhost:5173?researchId=XXX&userId=YYY
+                    https://d35071761848hm.cloudfront.net?researchId=XXX&userId=YYY
                   </code>
                 </p>
               </div>
