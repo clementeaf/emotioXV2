@@ -42,22 +42,12 @@ const nextConfig = {
   // Configuración específica para AWS Amplify
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
-  },
-  
-  // 🎯 CONFIGURAR REWRITES PARA USAR AWS LAMBDA
-  async rewrites() {
-    // Solo aplicar rewrites en desarrollo para evitar conflictos
-    if (process.env.NODE_ENV === 'development') {
-      return [
-        {
-          source: '/api/:path*',
-          destination: 'https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev/:path*',
-        },
-      ];
-    }
-    return [];
   }
-  // Las funciones headers y redirects han sido eliminadas para evitar warnings con output: 'export'.
+
+  // 🎯 REWRITES REMOVIDOS
+  // Con output: 'export', Next.js no soporta rewrites/redirects/headers
+  // Las llamadas API se manejan directamente desde client-config.ts
+  // que apunta a https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev/
 }
 
 module.exports = nextConfig
