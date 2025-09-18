@@ -45,6 +45,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const [isEmpty, setIsEmpty] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
   // Usar el hook centralizado para obtener datos
   const { data: existingScreen, isLoading, error } = useWelcomeScreenData(actualResearchId);
@@ -283,6 +284,19 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     setModalError(null);
   };
 
+  const showConfirmModal = () => {
+    setConfirmModalVisible(true);
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModalVisible(false);
+  };
+
+  const confirmDelete = async () => {
+    await handleDelete();
+    closeConfirmModal();
+  };
+
   return {
     formData,
     setFormData,
@@ -300,5 +314,9 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     handleDelete,
     isDeleting,
     showDelete: !!(existingScreen?.id),
+    confirmModalVisible,
+    showConfirmModal,
+    closeConfirmModal,
+    confirmDelete,
   };
 };

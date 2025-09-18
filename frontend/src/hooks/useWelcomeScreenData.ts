@@ -98,7 +98,7 @@ export function useCreateWelcomeScreen() {
 export function useUpdateWelcomeScreen() {
   const mutation = useRequest(
     ({ researchId, data }: { researchId: string; data: Partial<WelcomeScreenRecord> }) =>
-      alovaInstance.Put<ApiResponse<WelcomeScreenRecord>>(`/research/${researchId}/welcome-screen`, data),
+      alovaInstance.Post<ApiResponse<WelcomeScreenRecord>>(`/research/${researchId}/welcome-screen`, data),
     {
       immediate: false,
     }

@@ -1,5 +1,7 @@
-// <<< Eliminar la re-exportación >>>
-// Tipos importados desde shared/interfaces/welcome-screen.interface
+import React from 'react';
+
+// Importar los tipos correctos desde el servicio (con alias)
+import { WelcomeScreenRecord, WelcomeScreenFormData as WelcomeScreenServiceData } from '../../../../../shared/interfaces/welcome-screen.interface';
 
 // <<< Usar el alias importado abajo >>>
 export const DEFAULT_WELCOME_SCREEN_CONFIG: Partial<WelcomeScreenServiceData> = {
@@ -8,9 +10,6 @@ export const DEFAULT_WELCOME_SCREEN_CONFIG: Partial<WelcomeScreenServiceData> = 
   message: 'Gracias por tu interés en participar. Por favor, lee la información y haz clic en \'Continuar\' cuando estés listo/a.',
   startButtonText: 'Continuar'
 };
-
-// Importar los tipos correctos desde el servicio (con alias)
-import { WelcomeScreenRecord, WelcomeScreenFormData as WelcomeScreenServiceData } from '../../../../../shared/interfaces/welcome-screen.interface';
 
 export interface ErrorModalData {
   title: string;
@@ -27,7 +26,7 @@ export interface UseWelcomeScreenFormResult {
   existingScreen: WelcomeScreenRecord | null;
   modalError: ErrorModalData | null;
   modalVisible: boolean;
-  handleChange: (field: keyof WelcomeScreenServiceData, value: any) => void;
+  handleChange: (field: keyof WelcomeScreenServiceData, value: string | boolean) => void;
   handleSubmit: () => Promise<void>;
   closeModal: () => void;
   handlePreview: () => void;
@@ -35,6 +34,10 @@ export interface UseWelcomeScreenFormResult {
   handleDelete?: () => Promise<void>;
   isDeleting?: boolean;
   showDelete?: boolean;
+  confirmModalVisible: boolean;
+  showConfirmModal: () => void;
+  closeConfirmModal: () => void;
+  confirmDelete: () => Promise<void>;
 }
 
 /**

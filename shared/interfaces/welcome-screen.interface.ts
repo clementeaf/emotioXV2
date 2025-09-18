@@ -40,6 +40,11 @@ export interface WelcomeScreenConfig {
      * User who last modified the configuration
      */
     lastModifiedBy?: string;
+
+    /**
+     * Whether this is a default configuration
+     */
+    isDefault?: boolean;
   };
 }
 
@@ -131,6 +136,7 @@ export type WelcomeScreenFormData = Omit<WelcomeScreenConfig, 'metadata'> & {
     version: string;
     lastUpdated: Date;
     lastModifiedBy: string;
+    isDefault?: boolean;
   };
 };
 
