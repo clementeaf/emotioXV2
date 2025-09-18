@@ -107,7 +107,7 @@ export function useUpdateModuleResponseMutation(options?: UseMutationOptions<Par
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses'],
       });
-      options?.onSuccess?.(data, variables, undefined as unknown);
+      options?.onSuccess?.(data, variables, undefined);
     },
     ...options,
   });
@@ -135,7 +135,7 @@ export function useDeleteAllResponsesMutation(options?: UseMutationOptions<{ mes
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses', variables.researchId, variables.participantId],
       });
-      options?.onSuccess?.(data, variables, undefined as unknown);
+      options?.onSuccess?.(data, variables, undefined);
     },
     onError: (error, variables, context) => {
       console.error('[useDeleteAllResponsesMutation] ❌ Error:', error);
