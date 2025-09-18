@@ -1,11 +1,12 @@
 name: 🚀 Deploy Public Tests to S3/CloudFront
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'public-tests/**'
-      - '.github/workflows/deploy-public-tests.yml'
+  # Temporarily disabled - CloudFront distribution does not exist
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'public-tests/**'
+  #     - '.github/workflows/deploy-public-tests.yml'
   workflow_dispatch:
     inputs:
       force_deploy:
