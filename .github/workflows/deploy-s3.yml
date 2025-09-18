@@ -1,11 +1,12 @@
 name: Deploy to S3 + CloudFront
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/deploy-s3.yml'
+  # Disabled - redundant with Deploy Frontend to S3/CloudFront
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'frontend/**'
+  #     - '.github/workflows/deploy-s3.yml'
   workflow_dispatch:
 
 env:

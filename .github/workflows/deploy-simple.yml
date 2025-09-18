@@ -1,12 +1,13 @@
 name: Deploy Simple (Fixed)
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'frontend/**'
-      - 'public-tests/**'
-      - 'backendV2/**'
+  # Disabled - redundant with Deploy Frontend to S3/CloudFront
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'frontend/**'
+  #     - 'public-tests/**'
+  #     - 'backendV2/**'
   workflow_dispatch:
 
 env:
