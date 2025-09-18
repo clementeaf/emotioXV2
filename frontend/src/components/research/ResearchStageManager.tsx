@@ -22,28 +22,10 @@ import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
 import { WelcomeScreenForm } from './WelcomeScreen';
 import { ScreenerForm } from './forms/ScreenerForm';
+import { ConfigurationPlaceholder } from './placeholders/ConfigurationPlaceholder';
+import { ParticipantsPlaceholder } from './placeholders/ParticipantsPlaceholder';
+import { DefaultPlaceholder } from './placeholders/DefaultPlaceholder';
 import { STAGE_TITLES, STAGE_COMPONENTS, DEFAULT_SECTION } from '@/config/research-stages.config';
-
-const ConfigurationPlaceholder = ({ researchId }: { researchId: string }) => (
-  <div className="p-6 bg-gray-50 rounded-lg">
-    <h2 className="text-xl font-semibold mb-4">Configuration</h2>
-    <p className="text-gray-600">Configuration for research {researchId} coming soon...</p>
-  </div>
-);
-
-const ParticipantsPlaceholder = ({ researchId }: { researchId: string }) => (
-  <div className="p-6 bg-gray-50 rounded-lg">
-    <h2 className="text-xl font-semibold mb-4">Participants Management</h2>
-    <p className="text-gray-600">Participants management for research {researchId} coming soon...</p>
-  </div>
-);
-
-const DefaultPlaceholder = ({ researchId }: { researchId: string }) => (
-  <div className="p-6 bg-gray-50 rounded-lg">
-    <h2 className="text-xl font-semibold mb-4">Research Configuration</h2>
-    <p className="text-gray-600">Configuration for research {researchId} coming soon...</p>
-  </div>
-);
 
 
 interface ResearchStageManagerProps {
