@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-09-13T20:30:36.000Z
+// Generado: 2025-09-19T19:38:58.000Z
 // Stage: dev
 
 /**
@@ -23,15 +23,15 @@ export const DYNAMIC_API_ENDPOINTS = {
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-09-13T20:30:36.000Z",
+  syncedAt: "2025-09-19T19:38:58.000Z",
   syncedFromStage: "dev"
 };
 
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "https://d35071761848hm.cloudfront.net",
-  "generatedAt": "2025-09-17T23:30:00.000Z"
+  "publicTests": "http://localhost:5173",
+  "generatedAt": "2025-09-19T19:38:58.000Z"
 };
 
 // Constantes para uso más fácil

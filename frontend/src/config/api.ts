@@ -619,11 +619,12 @@ export class AlovaApiClient {
     params?: Record<string, string>
   ): Promise<T> {
     const url = this.getEndpoint(category, operation, params);
-    
+    console.log('DELETE URL generada:', url, 'params:', params);
+
     const method = alovaInstance.Delete<T>(url, undefined, {
       cacheFor: 0, // No cachear DELETE
     });
-    
+
     return method.send();
   }
   

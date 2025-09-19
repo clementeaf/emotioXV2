@@ -330,6 +330,28 @@ api:
         method: DELETE
         cors: true
 
+    # --- RUTAS DE EMPRESAS (COMPANIES) ---
+    - http:
+        path: /companies
+        method: GET
+        cors: true
+    - http:
+        path: /companies
+        method: POST
+        cors: true
+    - http:
+        path: /companies/{id}
+        method: GET
+        cors: true
+    - http:
+        path: /companies/{id}
+        method: PUT
+        cors: true
+    - http:
+        path: /companies/{id}
+        method: DELETE
+        cors: true
+
     # --- RUTAS DE ADMINISTRACIÓN ---
     - http:
         path: /admin/users

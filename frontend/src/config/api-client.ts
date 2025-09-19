@@ -88,6 +88,8 @@ export const companiesAPI = {
   },
   
   delete: async (id: string) => {
+    if (!id) throw new Error('Se requiere un ID para eliminar');
+    console.log('Eliminando empresa con ID:', id);
     return apiClient.delete('companies', 'delete', { id });
   }
 };
