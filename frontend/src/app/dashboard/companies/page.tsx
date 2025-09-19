@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { companiesAPI } from '@/config/api-client';
 import { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Plus, Edit2, Trash2, Building2 } from 'lucide-react';
+import { findSimilarStrings } from '@/utils/stringUtils';
+import { SmartSuggestions } from '@/components/ui/SmartSuggestions';
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -269,11 +271,80 @@ function CreateCompanyModal({
     status: 'active',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Cargar empresas existentes para verificar duplicados
+  useEffect(() => {
+    const loadCompanies = async () => {
+      try {
+        const response = await companiesAPI.getAll();
+        if (response.success) {
+          setCompanies(response.data || []);
+        }
+      } catch (error) {
+        console.error('Error loading companies for duplicate check:', error);
+      }
+    };
+    loadCompanies();
+  }, []);
+
+  // Verificar si el texto ingresado coincide exactamente con alguna empresa existente
+  const exactMatch = companies.find(company =>
+    company.name.toLowerCase() === formData.name.toLowerCase()
+  );
+
+  // Encontrar empresas similares usando el algoritmo de similitud
+  const similarCompanies = useMemo(() => {
+    if (!formData.name.trim() || exactMatch) return [];
+
+    const companyNames = companies.map(company => company.name);
+    const similarities = findSimilarStrings(formData.name, companyNames, 60);
+
+    return similarities.map(sim => ({
+      text: sim.text,
+      similarity: sim.similarity,
+      value: companies.find(company => company.name === sim.text)?.id || ''
+    }));
+  }, [formData.name, companies, exactMatch]);
+
+  // Verificar si hay empresas muy similares (posibles duplicados)
+  const hasSimilarCompanies = similarCompanies.length > 0;
+  const hasHighSimilarity = similarCompanies.some(company => company.similarity >= 85);
+
+  // Detectar automáticamente empresas similares mientras el usuario escribe
+  useEffect(() => {
+    if (hasSimilarCompanies && hasHighSimilarity && !showSuggestions) {
+      setShowSuggestions(true);
+    } else if (!hasSimilarCompanies && showSuggestions) {
+      setShowSuggestions(false);
+    }
+  }, [hasSimilarCompanies, hasHighSimilarity, showSuggestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
+    // Si hay coincidencia exacta, no permitir crear
+    if (exactMatch) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSelectSuggestion = () => {
+    // Cerrar modal ya que se está seleccionando una empresa existente
+    onClose();
+  };
+
+  const handleCreateAnyway = async () => {
+    setShowSuggestions(false);
     setSubmitting(true);
     try {
       await onSubmit(formData);
@@ -297,11 +368,29 @@ function CreateCompanyModal({
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  exactMatch ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="Ingresa el nombre de la empresa"
                 required
               />
+              {exactMatch && (
+                <p className="mt-1 text-sm text-red-600">
+                  Ya existe una empresa con este nombre exacto
+                </p>
+              )}
             </div>
+
+            {/* Smart suggestions */}
+            {showSuggestions && hasSimilarCompanies && (
+              <SmartSuggestions
+                searchText={formData.name}
+                similarCompanies={similarCompanies}
+                onSelectSuggestion={handleSelectSuggestion}
+                onCreateAnyway={handleCreateAnyway}
+                className="-mx-6 mb-4"
+              />
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -328,7 +417,7 @@ function CreateCompanyModal({
               </Button>
               <Button
                 type="submit"
-                disabled={!formData.name.trim() || submitting}
+                disabled={!formData.name.trim() || submitting || !!exactMatch || showSuggestions}
               >
                 {submitting ? 'Creando...' : 'Crear Empresa'}
               </Button>
