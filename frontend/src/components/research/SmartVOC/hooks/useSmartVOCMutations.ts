@@ -1,201 +1,144 @@
 // Hook para operaciones de API del formulario SmartVOC
-// Responsabilidad: Contener toda la lógica de TanStack Query (useQuery y useMutation)
+// Responsabilidad: Contener toda la lógica de AlovaJS (migrado desde TanStack Query)
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import toast from 'react-hot-toast';
-import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
-import { smartVocAPI } from '@/config/api-client';
-import { useAuth } from '@/providers/AuthProvider';
+import {
+  useSmartVOCData,
+  useCreateSmartVOC,
+  useUpdateSmartVOC,
+  useDeleteSmartVOC
+} from '@/hooks/useSmartVOCData';
 
-import { QUERY_KEYS, SUCCESS_MESSAGES, UI_TEXTS } from '../constants';
+import { SUCCESS_MESSAGES } from '../constants';
 import { ErrorModalData } from '../types';
 
 /**
  * Hook para operaciones de API del formulario SmartVOC
- * Responsabilidad: Contener toda la lógica de TanStack Query (useQuery y useMutation)
+ * Migrado para usar AlovaJS siguiendo patrón WelcomeScreen/ThankYouScreen
  */
 export const useSmartVOCMutations = (researchId: string, smartVocId?: string) => {
-  const queryClient = useQueryClient();
-  const { user, token, authLoading } = useAuth();
-  const isAuthenticated = !!user && !!token;
+  const actualResearchId = researchId === 'current' ? '' : researchId;
+
+  // Hooks centralizados AlovaJS
+  const { data: smartVocData, isLoading, refetch } = useSmartVOCData(actualResearchId);
+  const { create: createSmartVOC } = useCreateSmartVOC();
+  const { update: updateSmartVOC } = useUpdateSmartVOC();
+  const { delete: deleteSmartVOC } = useDeleteSmartVOC();
+
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Restaurar Handlers para el modal de error
-  const closeModal = useCallback(() => setModalVisible(false), []);
+  // Handlers para el modal de error
+  const closeModal = useCallback(() => {
+    setModalVisible(false);
+    setModalError(null);
+  }, []);
+
   const showModal = useCallback((errorData: ErrorModalData) => {
     setModalError(errorData);
     setModalVisible(true);
   }, []);
 
-  // Consulta para obtener datos existentes
-  const { data: smartVocData, isLoading } = useQuery({
-    queryKey: [QUERY_KEYS.SMART_VOC, researchId],
-    queryFn: async () => {
-      if (!isAuthenticated || !token) {
-        throw new Error('No autenticado');
+  // Mutación para guardar (crear o actualizar)
+  const saveMutation = {
+    mutateAsync: async (data: SmartVOCFormData) => {
+      if (!actualResearchId) {
+        throw new Error('Research ID is required');
       }
 
-      let currentToken = token;
-      if (!currentToken && typeof window !== 'undefined') {
-        const localStorageToken = localStorage.getItem('token');
-        if (localStorageToken) {
-          currentToken = localStorageToken;
+      setIsSaving(true);
+      try {
+        let result: SmartVOCFormData;
+
+        if (smartVocData || smartVocId) {
+          // Actualizar existente
+          result = await updateSmartVOC(actualResearchId, {
+            ...data,
+            researchId: actualResearchId
+          });
+        } else {
+          // Crear nuevo
+          result = await createSmartVOC({
+            ...data,
+            researchId: actualResearchId
+          });
         }
-      }
 
-      if (!currentToken) {
-        throw new Error('No se pudo recuperar un token válido');
-      }
+        // Mostrar mensaje de éxito
+        showModal({
+          title: 'Éxito',
+          message: smartVocData ? SUCCESS_MESSAGES.UPDATE_SUCCESS : SUCCESS_MESSAGES.CREATE_SUCCESS,
+          type: 'info'
+        });
 
-      const response = await smartVocAPI.getByResearch(researchId);
-      return response;
-    },
-    enabled: !!researchId && isAuthenticated && !authLoading,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
+        // Refresh data
+        await refetch();
 
-  // Mutación para guardar datos
-  const saveMutation = useMutation({
-    mutationFn: async (data: SmartVOCFormData & { smartVocId?: string | null }): Promise<SmartVOCFormData> => {
-      // Limpiar y preparar los datos para cumplir con la validación del backend
-      const cleanedData: SmartVOCFormData = {
-        ...data,
-        questions: data.questions.map((q) => {
-          // 1. Asegurar que 'description' no esté vacío
-          const description = q.description || q.title || ' ';
-          // 2. Añadir el campo 'required'
-          const required = q.type !== QuestionType.SMARTVOC_VOC;
-          // 3. Preservar configuración existente y limpiar solo companyName si está vacío (excepto para NPS que lo requiere)
-          const config = { ...q.config };
-          if ('companyName' in config && config.companyName === '' && q.type !== QuestionType.SMARTVOC_NPS) {
-            delete config.companyName;
-          }
-          // 4. Asegurar que CSAT tenga el tipo correcto
-          if (q.type === QuestionType.SMARTVOC_CSAT && (!config.type || config.type === 'scale')) {
-            config.type = 'stars';
-          }
-          // 5. Asegurar que CES tenga escala 1-5
-          if (q.type === QuestionType.SMARTVOC_CES && (!config.scaleRange || config.scaleRange.end !== 5)) {
-            config.scaleRange = { start: 1, end: 5 };
-          }
-          // 6. Asegurar que NPS tenga companyName
-          if (q.type === QuestionType.SMARTVOC_NPS && (!config.companyName || config.companyName === '')) {
-            config.companyName = 'Empresa';
-          }
-          return {
-            ...q,
-            description,
-            required,
-            config,
-          };
-        }),
-      };
-      // Lógica condicional: Si tenemos un smartVocId, actualizamos (PUT). Si no, creamos (POST).
-      if (data.smartVocId) {
-        return smartVocAPI.update(researchId, cleanedData);
-      } else {
-        return smartVocAPI.create(researchId, cleanedData);
+        return result;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error al guardar la configuración';
+        showModal({
+          title: 'Error al guardar',
+          message: errorMessage,
+          type: 'error'
+        });
+        throw error;
+      } finally {
+        setIsSaving(false);
       }
     },
-    onSuccess: (savedData) => {
-      toast.success(SUCCESS_MESSAGES.SAVE_SUCCESS);
+    isPending: isSaving
+  };
 
-      // Actualizar el cache local directamente para reflejar los cambios en la UI
-      queryClient.setQueryData([QUERY_KEYS.SMART_VOC, researchId], savedData);
-
-      // Invalidar la query también para asegurar consistencia a futuro
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
-
-      const responseWithId = savedData as SmartVOCFormData & { id?: string };
-      if (responseWithId?.id) {
+  // Mutación para eliminar
+  const deleteMutation = {
+    mutateAsync: async () => {
+      if (!actualResearchId) {
+        throw new Error('Research ID is required for deletion');
       }
 
-      showModal({
-        title: 'Éxito',
-        message: smartVocId ? SUCCESS_MESSAGES.UPDATE_SUCCESS : SUCCESS_MESSAGES.CREATE_SUCCESS,
-        type: 'info'
-      });
+      setIsDeleting(true);
+      try {
+        await deleteSmartVOC(actualResearchId);
+
+        showModal({
+          title: 'Eliminado',
+          message: 'La configuración SmartVOC fue eliminada correctamente.',
+          type: 'info'
+        });
+
+        // Refresh data
+        await refetch();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'No se pudo eliminar la configuración SmartVOC.';
+        showModal({
+          title: 'Error al eliminar',
+          message: errorMessage,
+          type: 'error'
+        });
+        throw error;
+      } finally {
+        setIsDeleting(false);
+      }
     },
-    onError: (error: any, data) => {
-      if (process.env.NODE_ENV === 'development') {
-      }
-
-      let displayMessage = 'Ocurrió un error al guardar los datos. Por favor, intenta de nuevo.';
-      const rawMessage = error?.message || '';
-
-      if (rawMessage.includes('Body:')) {
-        try {
-          const bodyString = rawMessage.substring(rawMessage.indexOf('Body: ') + 6);
-          const bodyJson = JSON.parse(bodyString);
-          const serverMessage = bodyJson.message || '';
-
-          if (serverMessage.includes('requiere companyName')) {
-            displayMessage = "Error de validación: Una o más preguntas (CSAT, NPS, NEV) requieren un 'Nombre de la empresa'. Por favor, completa ese campo para poder guardar.";
-          } else if (serverMessage.includes('INVALID_SMART_VOC_DATA')) {
-            displayMessage = 'Se encontraron errores de validación en el formulario. Por favor, revisa los datos de las preguntas.';
-          }
-        } catch (e) {
-        }
-      }
-
-      showModal({
-        title: UI_TEXTS.MODAL.ERROR_TITLE,
-        message: displayMessage,
-        type: 'error'
-      });
-    }
-  });
-
-  // Mutación para eliminar datos - SIN confirmación interna
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      // Usar deleteByResearchId que solo requiere researchId, no un formId específico
-      await smartVocAPI.delete(researchId);
-      const success = true;
-
-      if (!success) {
-        throw new Error('El recurso a eliminar no fue encontrado en el servidor (404).');
-      }
-      return success;
-    },
-    onSuccess: () => {
-      // Limpiar el cache para forzar la recarga y reflejar el estado "sin configuración"
-      queryClient.setQueryData([QUERY_KEYS.SMART_VOC, researchId], { notFound: true });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
-
-      toast.success('Datos SmartVOC eliminados correctamente.');
-    },
-    onError: (error: any) => {
-      showModal({
-        title: 'Error',
-        message: error.message || 'Error al eliminar los datos SmartVOC',
-        type: 'error'
-      });
-    }
-  });
+    isPending: isDeleting
+  };
 
   return {
-    // Datos de la consulta
     smartVocData,
     isLoading,
-
-    // Mutación de guardado
     saveMutation,
-    isSaving: saveMutation.isPending,
-
-    // Mutación de borrado
+    isSaving,
     deleteMutation,
-    isDeleting: deleteMutation.isPending,
-
-    // Modal handlers
+    isDeleting,
     modalError,
     modalVisible,
     closeModal,
-    showModal
+    showModal,
+    refetch
   };
 };

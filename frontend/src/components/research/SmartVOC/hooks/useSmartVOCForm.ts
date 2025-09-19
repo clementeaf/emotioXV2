@@ -41,9 +41,12 @@ export const useSmartVOCForm = (researchId: string) => {
     saveMutation,
     isSaving,
     deleteMutation,
+    isDeleting,
     modalError,
     modalVisible,
-    closeModal
+    closeModal,
+    showModal,
+    refetch
   } = useSmartVOCMutations(researchId, smartVocId || undefined);
 
   const { validateForm, filterEditedQuestions } = useSmartVOCValidation();
@@ -62,95 +65,40 @@ export const useSmartVOCForm = (researchId: string) => {
     }
   }, [isAuthenticated, token, researchId, authLoading]);
 
-  // Efecto para actualizar formData cuando lleguen datos de la API
+  // Efecto para cargar datos existentes siguiendo patrón ThankYouScreen/WelcomeScreen
   useEffect(() => {
-    //   hasData: !!smartVocData,
-    //   isNotFound: smartVocData && 'notFound' in smartVocData ? smartVocData.notFound : false,
-    //   dataType: typeof smartVocData,
-    //   questionCount: smartVocData && 'questions' in smartVocData && Array.isArray(smartVocData.questions) ? smartVocData.questions.length : 'No es array'
-    // });
+    const actualResearchId = researchId === 'current' ? '' : researchId;
 
-    if (smartVocData && !('notFound' in smartVocData) && smartVocData.questions && smartVocData.questions.length > 0) {
-      // Solo actualizar si hay preguntas reales de la API (configuración existente)
+    if (!actualResearchId) {
+      setIsEmpty(true);
+      return;
+    }
 
-      // Actualizar formData con los datos cargados, preservando configuraciones por defecto
+    if (smartVocData) {
+      // Actualizar formData con datos existentes
       setFormData({
-        researchId: smartVocData.researchId || researchId,
-        questions: smartVocData.questions.map((q: any) => {
-          // Preservar configuración por defecto para CSAT si no está definida
-          if (q.type === QuestionType.SMARTVOC_CSAT && (!q.config || !q.config.type)) {
-            return {
-              ...q,
-              config: {
-                ...q.config,
-                type: 'stars',
-                companyName: q.config?.companyName || ''
-              }
-            };
-          }
-          // Preservar configuración por defecto para NEV si no está definida
-          if (q.type === QuestionType.SMARTVOC_NEV && (!q.config || !q.config.type)) {
-            return {
-              ...q,
-              config: {
-                ...q.config,
-                type: 'emojis',
-                companyName: q.config?.companyName || ''
-              }
-            };
-          }
-          // Preservar configuración por defecto para CES si no está definida
-          if (q.type === QuestionType.SMARTVOC_CES && (!q.config || !q.config.scaleRange)) {
-            return {
-              ...q,
-              config: {
-                ...q.config,
-                type: 'scale',
-                scaleRange: { start: 1, end: 5 },
-                startLabel: q.config?.startLabel || '',
-                endLabel: q.config?.endLabel || ''
-              }
-            };
-          }
-          // Preservar configuración por defecto para NPS si no está definida
-          if (q.type === QuestionType.SMARTVOC_NPS && (!q.config || !q.config.companyName)) {
-            return {
-              ...q,
-              config: {
-                ...q.config,
-                type: 'scale',
-                scaleRange: q.config?.scaleRange || { start: 0, end: 10 },
-                startLabel: q.config?.startLabel || '',
-                endLabel: q.config?.endLabel || '',
-                companyName: q.config?.companyName || ''
-              }
-            };
-          }
-          return q;
-        }) || [],
-        randomizeQuestions: smartVocData.randomizeQuestions || false,
-        smartVocRequired: smartVocData.smartVocRequired !== undefined ? smartVocData.smartVocRequired : true,
+        researchId: actualResearchId,
+        questions: smartVocData.questions || [],
+        randomizeQuestions: smartVocData.randomizeQuestions ?? false,
+        smartVocRequired: smartVocData.smartVocRequired ?? true,
         metadata: smartVocData.metadata || {
           createdAt: new Date().toISOString(),
           estimatedCompletionTime: '5-10'
         }
       });
 
+      setIsEmpty(false);
 
-      // Extraer y configurar el ID si existe
+      // Configurar ID si existe
       const responseWithId = smartVocData as SmartVOCFormData & { id?: string };
-
-
       if (responseWithId?.id) {
         setSmartVocId(responseWithId.id);
-      } else {
       }
-    } else if (smartVocData && 'notFound' in smartVocData && smartVocData.notFound) {
-      // No hacer nada - mantener las preguntas plantilla para que el usuario pueda empezar a trabajar
+    } else if (!isLoading) {
+      // No hay datos y no está cargando - mantener estado actual (no interferir con delete manual)
       setIsEmpty(true);
-    } else {
     }
-  }, [smartVocData, researchId, setFormData, setSmartVocId]);
+  }, [smartVocData, researchId, isLoading, setFormData, setSmartVocId]);
 
   // Función para manejar el guardado
   const handleSave = useCallback(async () => {
@@ -169,7 +117,7 @@ export const useSmartVOCForm = (researchId: string) => {
     }
 
     // Validación dura: abortar si alguna pregunta no tiene type
-    const missingType = fixedQuestions.find((q, idx) => !q.type);
+    const missingType = fixedQuestions.find(q => !q.type);
     if (missingType) {
       toast.error('Hay preguntas sin tipo definido. Corrige antes de guardar.');
       return;
@@ -209,20 +157,22 @@ export const useSmartVOCForm = (researchId: string) => {
     // ENRIQUECER TODAS LAS PREGUNTAS ANTES DE ENVIAR
     const cleanedData: SmartVOCFormData = {
       ...formData,
-      questions: fixedQuestions.map((q, idx) => {
-        if (!q.type) {
-        }
+      questions: fixedQuestions.map(q => {
         return {
           ...q,
           questionKey: getSmartVOCQuestionType(q.type),
-          type: q.type as any, // Cast para evitar conflictos de tipos
+          type: q.type, // Type is already QuestionType
           description: q.description || q.title,
           required: q.type !== QuestionType.SMARTVOC_VOC,
         };
       }),
     };
 
-    saveMutation.mutate({ ...cleanedData, smartVocId });
+    try {
+      await saveMutation.mutateAsync(cleanedData);
+    } catch (error) {
+      // Error already handled by mutation hook
+    }
   }, [formData, filterEditedQuestions, validateForm, setValidationErrors, saveMutation, smartVocId]);
 
   // Abre el modal de confirmación
@@ -234,17 +184,107 @@ export const useSmartVOCForm = (researchId: string) => {
   const confirmDelete = useCallback(async () => {
     setDeleteModalOpen(false); // Cierra el modal primero
     try {
-      // La mutación se encarga de invalidar la query y el useEffect actualizará el estado
-      await deleteMutation.mutateAsync();
-      resetToDefaultQuestions();
-
-      // 🔧 AGREGADO: Resetear smartVocId para que el componente vuelva al estado "nuevo"
+      // Reset COMPLETO del formData al estado inicial PRIMERO
       setSmartVocId(null);
+      setIsEmpty(true);
+      const actualResearchId = researchId === 'current' ? '' : researchId;
+      setFormData({
+        researchId: actualResearchId,
+        questions: [
+          {
+            id: QuestionType.SMARTVOC_CSAT,
+            type: QuestionType.SMARTVOC_CSAT,
+            title: '',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: {
+              type: 'stars',
+              companyName: ''
+            }
+          },
+          {
+            id: QuestionType.SMARTVOC_CES,
+            type: QuestionType.SMARTVOC_CES,
+            title: '',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: {
+              type: 'scale',
+              scaleRange: { start: 1, end: 5 },
+              startLabel: '',
+              endLabel: ''
+            }
+          },
+          {
+            id: QuestionType.SMARTVOC_CV,
+            type: QuestionType.SMARTVOC_CV,
+            title: '',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: {
+              type: 'scale',
+              scaleRange: { start: 1, end: 5 },
+              startLabel: '',
+              endLabel: ''
+            }
+          },
+          {
+            id: QuestionType.SMARTVOC_NEV,
+            type: QuestionType.SMARTVOC_NEV,
+            title: '',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: {
+              type: 'emojis',
+              companyName: ''
+            }
+          },
+          {
+            id: QuestionType.SMARTVOC_NPS,
+            type: QuestionType.SMARTVOC_NPS,
+            title: '',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: {
+              type: 'scale',
+              scaleRange: { start: 0, end: 10 },
+              startLabel: '',
+              endLabel: '',
+              companyName: ''
+            }
+          },
+          {
+            id: QuestionType.SMARTVOC_VOC,
+            type: QuestionType.SMARTVOC_VOC,
+            title: '',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: {
+              type: 'text'
+            }
+          }
+        ],
+        randomizeQuestions: false,
+        smartVocRequired: true,
+        metadata: {
+          createdAt: new Date().toISOString(),
+          estimatedCompletionTime: '5-10'
+        }
+      });
+
+      // DESPUÉS eliminar del servidor
+      await deleteMutation.mutateAsync();
 
     } catch (error: unknown) {
       // El hook de mutación ya muestra un toast/modal en caso de error
     }
-  }, [deleteMutation, resetToDefaultQuestions, setSmartVocId]);
+  }, [deleteMutation, setFormData, setSmartVocId, researchId]);
 
   // Función para manejar la previsualización
   const handlePreview = useCallback(() => {
