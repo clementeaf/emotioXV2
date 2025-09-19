@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Check, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { companiesAPI } from '@/config/api-client';
+import { findSimilarStrings, areSimilarEnough } from '@/utils/stringUtils';
+import { SmartSuggestions } from './SmartSuggestions';
 
 export interface Option {
   value: string;
@@ -35,6 +37,7 @@ export const CompanySelectWithCreate: React.FC<CompanySelectWithCreateProps> = (
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -51,8 +54,26 @@ export const CompanySelectWithCreate: React.FC<CompanySelectWithCreateProps> = (
     option.label.toLowerCase() === searchText.toLowerCase()
   );
 
+  // Encontrar empresas similares usando el algoritmo de similitud
+  const similarCompanies = useMemo(() => {
+    if (!searchText.trim() || exactMatch) return [];
+
+    const companyNames = options.map(option => option.label);
+    const similarities = findSimilarStrings(searchText, companyNames, 60); // Umbral más bajo para mostrar más sugerencias
+
+    return similarities.map(sim => ({
+      text: sim.text,
+      similarity: sim.similarity,
+      value: options.find(opt => opt.label === sim.text)?.value || ''
+    }));
+  }, [searchText, options, exactMatch]);
+
+  // Verificar si hay empresas muy similares (posibles duplicados)
+  const hasSimilarCompanies = similarCompanies.length > 0;
+  const hasHighSimilarity = similarCompanies.some(company => company.similarity >= 85);
+
   // Determinar si mostrar la opción de crear empresa
-  const shouldShowCreateOption = searchText.trim() && !exactMatch && !isCreating;
+  const shouldShowCreateOption = searchText.trim() && !exactMatch && !isCreating && !showSuggestions;
 
   // Cerrar dropdown cuando se hace click fuera
   useEffect(() => {
@@ -60,6 +81,7 @@ export const CompanySelectWithCreate: React.FC<CompanySelectWithCreateProps> = (
       if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setSearchText('');
+        setShowSuggestions(false);
       }
     };
 
@@ -73,6 +95,15 @@ export const CompanySelectWithCreate: React.FC<CompanySelectWithCreateProps> = (
       inputRef.current.focus();
     }
   }, [isOpen]);
+
+  // Detectar automáticamente empresas similares mientras el usuario escribe
+  useEffect(() => {
+    if (hasSimilarCompanies && hasHighSimilarity && !showSuggestions) {
+      setShowSuggestions(true);
+    } else if (!hasSimilarCompanies && showSuggestions) {
+      setShowSuggestions(false);
+    }
+  }, [hasSimilarCompanies, hasHighSimilarity, showSuggestions]);
 
   const handleCreateCompany = async () => {
     if (!searchText.trim() || isCreating) return;
@@ -92,6 +123,7 @@ export const CompanySelectWithCreate: React.FC<CompanySelectWithCreateProps> = (
         onChange(newCompany.id);
         setIsOpen(false);
         setSearchText('');
+        setShowSuggestions(false);
       }
     } catch (error) {
       console.error('Error creating company:', error);
@@ -101,11 +133,24 @@ export const CompanySelectWithCreate: React.FC<CompanySelectWithCreateProps> = (
     }
   };
 
+  const handleSelectSuggestion = (suggestionValue: string) => {
+    onChange(suggestionValue);
+    setIsOpen(false);
+    setSearchText('');
+    setShowSuggestions(false);
+  };
+
+  const handleCreateAnyway = () => {
+    setShowSuggestions(false);
+    handleCreateCompany();
+  };
+
   const handleOptionClick = (optionValue: string) => {
     if (disabled) return;
     onChange(optionValue);
     setIsOpen(false);
     setSearchText('');
+    setShowSuggestions(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,58 +233,70 @@ export const CompanySelectWithCreate: React.FC<CompanySelectWithCreateProps> = (
             />
           </div>
 
-          {/* Options list */}
-          <div className="overflow-auto max-h-40">
-            {filteredOptions.length === 0 && !shouldShowCreateOption ? (
-              <div className="px-3 py-2 text-sm text-neutral-500">
-                No companies found
-              </div>
-            ) : (
-              <>
-                {filteredOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={cn(
-                      'w-full px-3 py-2 text-left hover:bg-neutral-50 focus:bg-neutral-50',
-                      'focus:outline-none text-sm transition-colors duration-150',
-                      'flex items-center justify-between',
-                      option.disabled && 'opacity-50 cursor-not-allowed',
-                      option.value === value && 'bg-blue-50 text-blue-900'
-                    )}
-                    onClick={() => !option.disabled && handleOptionClick(option.value)}
-                    disabled={option.disabled}
-                    role="option"
-                    aria-selected={option.value === value}
-                  >
-                    <span className="block truncate">{option.label}</span>
-                    {option.value === value && (
-                      <Check className="h-4 w-4 text-blue-600" />
-                    )}
-                  </button>
-                ))}
+          {/* Smart suggestions */}
+          {showSuggestions && hasSimilarCompanies && (
+            <SmartSuggestions
+              searchText={searchText}
+              similarCompanies={similarCompanies}
+              onSelectSuggestion={handleSelectSuggestion}
+              onCreateAnyway={handleCreateAnyway}
+            />
+          )}
 
-                {/* Create new company option */}
-                {shouldShowCreateOption && (
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left hover:bg-green-50 focus:bg-green-50 focus:outline-none text-sm transition-colors duration-150 flex items-center gap-2 border-t border-neutral-200"
-                    onClick={handleCreateCompany}
-                    disabled={isCreating}
-                  >
-                    {isCreating ? (
-                      <Loader2 className="h-4 w-4 text-green-600 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 text-green-600" />
-                    )}
-                    <span className="text-green-700">
-                      {isCreating ? 'Creating...' : `Create "${searchText}"`}
-                    </span>
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+          {/* Options list */}
+          {!showSuggestions && (
+            <div className="overflow-auto max-h-40">
+              {filteredOptions.length === 0 && !shouldShowCreateOption ? (
+                <div className="px-3 py-2 text-sm text-neutral-500">
+                  No companies found
+                </div>
+              ) : (
+                <>
+                  {filteredOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={cn(
+                        'w-full px-3 py-2 text-left hover:bg-neutral-50 focus:bg-neutral-50',
+                        'focus:outline-none text-sm transition-colors duration-150',
+                        'flex items-center justify-between',
+                        option.disabled && 'opacity-50 cursor-not-allowed',
+                        option.value === value && 'bg-blue-50 text-blue-900'
+                      )}
+                      onClick={() => !option.disabled && handleOptionClick(option.value)}
+                      disabled={option.disabled}
+                      role="option"
+                      aria-selected={option.value === value}
+                    >
+                      <span className="block truncate">{option.label}</span>
+                      {option.value === value && (
+                        <Check className="h-4 w-4 text-blue-600" />
+                      )}
+                    </button>
+                  ))}
+
+                  {/* Create new company option */}
+                  {shouldShowCreateOption && (
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-left hover:bg-green-50 focus:bg-green-50 focus:outline-none text-sm transition-colors duration-150 flex items-center gap-2 border-t border-neutral-200"
+                      onClick={handleCreateCompany}
+                      disabled={isCreating}
+                    >
+                      {isCreating ? (
+                        <Loader2 className="h-4 w-4 text-green-600 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4 text-green-600" />
+                      )}
+                      <span className="text-green-700">
+                        {isCreating ? 'Creating...' : `Create "${searchText}"`}
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
