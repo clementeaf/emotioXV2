@@ -11,7 +11,7 @@ import useCreateResearchForm from './CreateResearchForm/useCreateResearchForm';
 
 interface CreateResearchFormOptimizedProps {
   className?: string;
-  onResearchCreated?: (researchId: string) => void;
+  onResearchCreated?: (researchId: string, researchName: string) => void;
 }
 
 export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedProps> = memo(({
@@ -19,7 +19,7 @@ export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedPr
   onResearchCreated
 }) => {
   // Hooks personalizados
-  const { companies, loading: loadingCompanies, error: companiesError } = useCompanies();
+  const { companies, loading: loadingCompanies, error: companiesError, refreshCompanies } = useCompanies();
   const {
     formData,
     steps,
@@ -60,6 +60,11 @@ export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedPr
             loadingCompanies={loadingCompanies}
             companiesError={companiesError}
             onFieldChange={updateFormData}
+            onCompanyCreated={async (newCompany) => {
+              // Refrescar la lista de empresas para que aparezca la nueva
+              console.log('Nueva empresa creada:', newCompany);
+              await refreshCompanies();
+            }}
           />
         );
       case 2:

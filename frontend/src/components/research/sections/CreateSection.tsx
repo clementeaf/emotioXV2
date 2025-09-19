@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-import { CreateResearchForm } from '@/components/research/CreateResearchForm';
+import { CreateResearchFormOptimized as CreateResearchForm } from '@/components/research/CreateResearchFormOptimized';
 
 import { CreateSectionProps } from '../../../../../shared/interfaces/research-creation.interface';
 

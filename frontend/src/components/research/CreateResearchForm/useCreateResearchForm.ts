@@ -33,7 +33,7 @@ const initialFormState: FormState = {
   errors: {}
 };
 
-export default function useCreateResearchForm(onResearchCreated?: (researchId: string) => void) {
+export default function useCreateResearchForm(onResearchCreated?: (researchId: string, researchName: string) => void) {
   const router = useRouter();
   const { token } = useAuth();
   const { currentDraft, createDraft, updateDraft, clearDraft } = useResearch();
@@ -199,7 +199,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
         
         // ✅ Llamar al callback del parent si existe
         if (onResearchCreated) {
-          onResearchCreated(result.data.id);
+          onResearchCreated(result.data.id, formData.basic.name);
         } else {
           // Solo hacer el countdown si NO hay callback
           setShowSummary(true);

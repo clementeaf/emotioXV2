@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input } from '@/components/ui/Input';
-import { CustomSelect, Option } from '@/components/ui/CustomSelect';
+import { CompanySelectWithCreate, Option } from '@/components/ui/CompanySelectWithCreate';
 import { Company } from '../../../../../shared/interfaces/company.interface';
 
 interface BasicInfoStepProps {
@@ -13,6 +13,7 @@ interface BasicInfoStepProps {
   loadingCompanies: boolean;
   companiesError: string | null;
   onFieldChange: (field: string, value: string) => void;
+  onCompanyCreated?: (newCompany: { id: string; name: string }) => void;
 }
 
 export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
@@ -21,22 +22,16 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   companies,
   loadingCompanies,
   companiesError,
-  onFieldChange
+  onFieldChange,
+  onCompanyCreated
 }) => {
   // Preparar opciones para el selector personalizado
-  const companyOptions: Option[] = [
-    {
-      value: '',
-      label: loadingCompanies ? 'Loading companies...' : 'Select a company',
-      disabled: true
-    },
-    ...companies
-      .filter(company => company.status === 'active')
-      .map(company => ({
-        value: company.id,
-        label: company.name
-      }))
-  ];
+  const companyOptions: Option[] = companies
+    .filter(company => company.status === 'active')
+    .map(company => ({
+      value: company.id,
+      label: company.name
+    }));
 
   return (
     <div className="space-y-6">
@@ -67,15 +62,16 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             <label htmlFor="companyId" className="block text-sm font-medium text-neutral-900">
               It&apos;s made for
             </label>
-            <CustomSelect
+            <CompanySelectWithCreate
               id="companyId"
               value={formData.companyId}
               onChange={(value) => onFieldChange('companyId', value)}
               options={companyOptions}
-              placeholder={loadingCompanies ? 'Loading companies...' : 'Select a company'}
+              placeholder={loadingCompanies ? 'Loading companies...' : 'Select or create a company'}
               disabled={loadingCompanies}
               error={!!errors.companyId}
               className="bg-white"
+              onCompanyCreated={onCompanyCreated}
             />
             {companiesError && !loadingCompanies && (
               <p className="text-sm text-yellow-600">
