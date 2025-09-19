@@ -4,7 +4,7 @@
  */
 
 import { alovaInstance } from './alova.config';
-import { apiClient, alovaApiClient, API_ENDPOINTS } from './api';
+import { apiClient, API_ENDPOINTS } from './api';
 
 // ============================================
 // APIS USANDO ALOVA DIRECTAMENTE
@@ -15,21 +15,21 @@ import { apiClient, alovaApiClient, API_ENDPOINTS } from './api';
  */
 export const authAPI = {
   login: async (data: { email: string; password: string }) => {
-    return alovaApiClient.post('auth', 'login', data);
+    return apiClient.post('auth', 'login', data);
   },
   
   logout: async () => {
-    return alovaApiClient.post('auth', 'logout', {});
+    return apiClient.post('auth', 'logout', {});
   },
   
   refreshToken: async () => {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No hay token para refrescar');
-    return alovaApiClient.post('auth', 'refreshToken', { token: token.replace('Bearer ', '') });
+    return apiClient.post('auth', 'refreshToken', { token: token.replace('Bearer ', '') });
   },
   
   getProfile: async () => {
-    return alovaApiClient.get('auth', 'profile');
+    return apiClient.get('auth', 'profile');
   }
 };
 
@@ -38,32 +38,32 @@ export const authAPI = {
  */
 export const researchAPI = {
   create: async (data: any) => {
-    return alovaApiClient.post('research', 'create', data);
+    return apiClient.post('research', 'create', data);
   },
-  
+
   get: async (id: string) => {
-    return alovaApiClient.get('research', 'getById', { id });
+    return apiClient.get('research', 'getById', { id });
   },
-  
+
   list: async () => {
-    return alovaApiClient.get('research', 'getAll');
+    return apiClient.get('research', 'getAll');
   },
   
   update: async (id: string, data: any) => {
-    return alovaApiClient.put('research', 'update', data, { id });
+    return apiClient.put('research', 'update', data, { id });
   },
   
   delete: async (id: string) => {
     if (!id) throw new Error('Se requiere un ID para eliminar');
-    return alovaApiClient.delete('research', 'delete', { id });
+    return apiClient.delete('research', 'delete', { id });
   },
   
   updateStatus: async (id: string, status: string) => {
-    return alovaApiClient.put('research', 'updateStatus', { status }, { id });
+    return apiClient.put('research', 'updateStatus', { status }, { id });
   },
   
   updateStage: async (id: string, stage: string, progress: number) => {
-    return alovaApiClient.put('research', 'updateStage', { stage, progress }, { id });
+    return apiClient.put('research', 'updateStage', { stage, progress }, { id });
   }
 };
 
@@ -72,23 +72,23 @@ export const researchAPI = {
  */
 export const companiesAPI = {
   getAll: async () => {
-    return alovaApiClient.get('companies', 'getAll');
+    return apiClient.get('companies', 'getAll');
   },
   
   getById: async (id: string) => {
-    return alovaApiClient.get('companies', 'getById', { id });
+    return apiClient.get('companies', 'getById', { id });
   },
   
   create: async (data: any) => {
-    return alovaApiClient.post('companies', 'create', data);
+    return apiClient.post('companies', 'create', data);
   },
   
   update: async (id: string, data: any) => {
-    return alovaApiClient.put('companies', 'update', data, { id });
+    return apiClient.put('companies', 'update', data, { id });
   },
   
   delete: async (id: string) => {
-    return alovaApiClient.delete('companies', 'delete', { id });
+    return apiClient.delete('companies', 'delete', { id });
   }
 };
 
@@ -97,27 +97,27 @@ export const companiesAPI = {
  */
 export const researchInProgressAPI = {
   getParticipantsWithStatus: async (researchId: string) => {
-    return alovaApiClient.get('researchInProgress', 'getParticipantsWithStatus', { researchId });
+    return apiClient.get('researchInProgress', 'getParticipantsWithStatus', { researchId });
   },
   
   getOverviewMetrics: async (researchId: string) => {
-    return alovaApiClient.get('researchInProgress', 'getOverviewMetrics', { researchId });
+    return apiClient.get('researchInProgress', 'getOverviewMetrics', { researchId });
   },
   
   getParticipantsByResearch: async (researchId: string) => {
-    return alovaApiClient.get('researchInProgress', 'getParticipantsByResearch', { researchId });
+    return apiClient.get('researchInProgress', 'getParticipantsByResearch', { researchId });
   },
   
   getParticipantDetails: async (researchId: string, participantId: string) => {
-    return alovaApiClient.get('researchInProgress', 'getParticipantDetails', { researchId, participantId });
+    return apiClient.get('researchInProgress', 'getParticipantDetails', { researchId, participantId });
   },
   
   deleteParticipant: async (researchId: string, participantId: string) => {
-    return alovaApiClient.delete('researchInProgress', 'deleteParticipant', { researchId, participantId });
+    return apiClient.delete('researchInProgress', 'deleteParticipant', { researchId, participantId });
   },
 
   getResearchConfiguration: async (researchId: string) => {
-    return alovaApiClient.get('researchInProgress', 'getResearchConfiguration', { researchId });
+    return apiClient.get('researchInProgress', 'getResearchConfiguration', { researchId });
   }
 };
 
@@ -126,13 +126,13 @@ export const researchInProgressAPI = {
  */
 export const thankYouScreenAPI = {
   getByResearch: (researchId: string) =>
-    alovaApiClient.get('thankYouScreen', 'getByResearch', { researchId }),
+    apiClient.get('thankYouScreen', 'getByResearch', { researchId }),
 
   save: (researchId: string, data: Record<string, unknown>) =>
-    alovaApiClient.post('thankYouScreen', 'save', data, { researchId }),
+    apiClient.post('thankYouScreen', 'save', data, { researchId }),
 
   delete: (researchId: string) =>
-    alovaApiClient.delete('thankYouScreen', 'delete', { researchId })
+    apiClient.delete('thankYouScreen', 'delete', { researchId })
 };
 
 /**
@@ -141,22 +141,22 @@ export const thankYouScreenAPI = {
 export const eyeTrackingAPI = {
   create: async (researchId: string, data: any) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.post('eyeTracking', 'create', data, { researchId });
+    return apiClient.post('eyeTracking', 'create', data, { researchId });
   },
   
   getByResearch: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.get('eyeTracking', 'getByResearch', { researchId });
+    return apiClient.get('eyeTracking', 'getByResearch', { researchId });
   },
   
   update: async (researchId: string, data: any) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.put('eyeTracking', 'update', data, { researchId });
+    return apiClient.put('eyeTracking', 'update', data, { researchId });
   },
   
   delete: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.delete('eyeTracking', 'delete', { researchId });
+    return apiClient.delete('eyeTracking', 'delete', { researchId });
   }
 };
 
@@ -167,80 +167,80 @@ export const eyeTrackingRecruitAPI = {
   // Config operations
   createConfig: async (researchId: string, data: any) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.post('eyeTrackingRecruit', 'createConfig', data, { researchId });
+    return apiClient.post('eyeTrackingRecruit', 'createConfig', data, { researchId });
   },
   
   getConfigByResearch: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.get('eyeTrackingRecruit', 'getConfigByResearch', { researchId });
+    return apiClient.get('eyeTrackingRecruit', 'getConfigByResearch', { researchId });
   },
   
   updateConfig: async (researchId: string, data: any) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.put('eyeTrackingRecruit', 'updateConfig', data, { researchId });
+    return apiClient.put('eyeTrackingRecruit', 'updateConfig', data, { researchId });
   },
   
   delete: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.delete('eyeTrackingRecruit', 'delete', { researchId });
+    return apiClient.delete('eyeTrackingRecruit', 'delete', { researchId });
   },
 
   // Participant operations
   createParticipant: async (configId: string, data: any) => {
     if (!configId) throw new Error('Se requiere un ID de configuración');
-    return alovaApiClient.post('eyeTrackingRecruit', 'createParticipant', data, { configId });
+    return apiClient.post('eyeTrackingRecruit', 'createParticipant', data, { configId });
   },
 
   updateParticipantStatus: async (participantId: string, status: string) => {
     if (!participantId) throw new Error('Se requiere un ID de participante');
-    return alovaApiClient.put('eyeTrackingRecruit', 'updateParticipantStatus', { status }, { participantId });
+    return apiClient.put('eyeTrackingRecruit', 'updateParticipantStatus', { status }, { participantId });
   },
 
   getParticipants: async (configId: string) => {
     if (!configId) throw new Error('Se requiere un ID de configuración');
-    return alovaApiClient.get('eyeTrackingRecruit', 'getParticipants', { configId });
+    return apiClient.get('eyeTrackingRecruit', 'getParticipants', { configId });
   },
 
   getStats: async (configId: string) => {
     if (!configId) throw new Error('Se requiere un ID de configuración');
-    return alovaApiClient.get('eyeTrackingRecruit', 'getStats', { configId });
+    return apiClient.get('eyeTrackingRecruit', 'getStats', { configId });
   },
 
   // Link operations
   generateLink: async (configId: string, type?: string, expirationDays?: number) => {
     if (!configId) throw new Error('Se requiere un ID de configuración');
-    return alovaApiClient.post('eyeTrackingRecruit', 'generateLink', { type, expirationDays }, { configId });
+    return apiClient.post('eyeTrackingRecruit', 'generateLink', { type, expirationDays }, { configId });
   },
 
   getActiveLinks: async (configId: string) => {
     if (!configId) throw new Error('Se requiere un ID de configuración');
-    return alovaApiClient.get('eyeTrackingRecruit', 'getActiveLinks', { configId });
+    return apiClient.get('eyeTrackingRecruit', 'getActiveLinks', { configId });
   },
 
   deactivateLink: async (token: string) => {
     if (!token) throw new Error('Se requiere un token');
-    return alovaApiClient.put('eyeTrackingRecruit', 'deactivateLink', {}, { token });
+    return apiClient.put('eyeTrackingRecruit', 'deactivateLink', {}, { token });
   },
 
   validateLink: async (token: string) => {
     if (!token) throw new Error('Se requiere un token');
-    return alovaApiClient.get('eyeTrackingRecruit', 'validateLink', { token });
+    return apiClient.get('eyeTrackingRecruit', 'validateLink', { token });
   },
 
   // Summary operations
   getResearchSummary: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.get('eyeTrackingRecruit', 'getResearchSummary', { researchId });
+    return apiClient.get('eyeTrackingRecruit', 'getResearchSummary', { researchId });
   },
 
   // Public participant operations
   registerPublicParticipant: async (data: any) => {
-    return alovaApiClient.post('eyeTrackingRecruit', 'registerPublicParticipant', data);
+    return apiClient.post('eyeTrackingRecruit', 'registerPublicParticipant', data);
   },
 
   updatePublicParticipantStatus: async (participantId: string, status: string) => {
     if (!participantId) throw new Error('Se requiere un ID de participante');
-    return alovaApiClient.put('eyeTrackingRecruit', 'updatePublicParticipantStatus', { status }, { participantId });
+    return apiClient.put('eyeTrackingRecruit', 'updatePublicParticipantStatus', { status }, { participantId });
   }
 };
 
@@ -250,22 +250,22 @@ export const eyeTrackingRecruitAPI = {
 export const smartVocAPI = {
   create: async (researchId: string, data: any) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.post('smartVoc', 'create', data, { researchId });
+    return apiClient.post('smartVoc', 'create', data, { researchId });
   },
   
   getByResearch: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.get('smartVoc', 'getByResearch', { researchId });
+    return apiClient.get('smartVoc', 'getByResearch', { researchId });
   },
   
   update: async (researchId: string, data: any) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.put('smartVoc', 'update', data, { researchId });
+    return apiClient.put('smartVoc', 'update', data, { researchId });
   },
   
   delete: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.delete('smartVoc', 'delete', { researchId });
+    return apiClient.delete('smartVoc', 'delete', { researchId });
   }
 };
 
@@ -275,22 +275,22 @@ export const smartVocAPI = {
 export const cognitiveTaskAPI = {
   create: async (researchId: string, data: any) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.post('cognitiveTask', 'create', data, { researchId });
+    return apiClient.post('cognitiveTask', 'create', data, { researchId });
   },
   
   getByResearch: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.get('cognitiveTask', 'getByResearch', { researchId });
+    return apiClient.get('cognitiveTask', 'getByResearch', { researchId });
   },
   
   update: async (researchId: string, data: any) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.put('cognitiveTask', 'update', data, { researchId });
+    return apiClient.put('cognitiveTask', 'update', data, { researchId });
   },
   
   delete: async (researchId: string) => {
     if (!researchId) throw new Error('Se requiere un ID de investigación');
-    return alovaApiClient.delete('cognitiveTask', 'delete', { researchId });
+    return apiClient.delete('cognitiveTask', 'delete', { researchId });
   }
 };
 
@@ -299,30 +299,30 @@ export const cognitiveTaskAPI = {
  */
 export const adminAPI = {
   getAllUsers: async () => {
-    return alovaApiClient.get('admin', 'users');
+    return apiClient.get('admin', 'users');
   },
   
   getUserById: async (id: string) => {
     if (!id) throw new Error('Se requiere un ID de usuario');
-    return alovaApiClient.get('admin', 'user', { id });
+    return apiClient.get('admin', 'user', { id });
   },
   
   createUser: async (data: { email: string; password: string; role?: 'user' | 'admin' }) => {
-    return alovaApiClient.post('admin', 'users', data);
+    return apiClient.post('admin', 'users', data);
   },
   
   updateUser: async (id: string, data: { email?: string; password?: string; role?: 'user' | 'admin'; status?: 'active' | 'inactive' }) => {
     if (!id) throw new Error('Se requiere un ID de usuario');
-    return alovaApiClient.put('admin', 'user', data, { id });
+    return apiClient.put('admin', 'user', data, { id });
   },
   
   deleteUser: async (id: string) => {
     if (!id) throw new Error('Se requiere un ID de usuario');
-    return alovaApiClient.delete('admin', 'user', { id });
+    return apiClient.delete('admin', 'user', { id });
   },
   
   getUserStats: async () => {
-    return alovaApiClient.get('admin', 'stats');
+    return apiClient.get('admin', 'stats');
   }
 };
 
@@ -333,7 +333,7 @@ export const setupAuthToken = () => {
   const token = localStorage.getItem('token');
   if (token) {
     apiClient.setAuthToken(token);
-    alovaApiClient.setAuthToken?.(token);
+    apiClient.setAuthToken?.(token);
   }
 };
 
@@ -345,7 +345,7 @@ export const setupAuthToken = () => {
 export { alovaInstance };
 
 // Exportar clientes
-export { apiClient, alovaApiClient };
+export { apiClient };
 
 // Exportar configuración
 export { API_ENDPOINTS };

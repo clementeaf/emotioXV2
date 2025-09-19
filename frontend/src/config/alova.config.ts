@@ -24,7 +24,8 @@ if (typeof window !== 'undefined' && (API_BASE_URL.includes('localhost') || API_
 // Función para obtener el token de autenticación
 const getAuthToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
+    // Verificar primero localStorage, luego sessionStorage
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
   }
   return null;
 };

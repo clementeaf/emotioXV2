@@ -41,10 +41,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Configurar token en el cliente API cuando esté disponible
   useEffect(() => {
     if (token) {
-      setTimeout(() => {
-        apiClient.setAuthToken(token);
-      }, 100);
+      console.log('AuthProvider: Configurando token:', token.substring(0, 20) + '...');
+      apiClient.setAuthToken(token);
     } else {
+      console.log('AuthProvider: Limpiando token');
       apiClient.clearAuthToken();
     }
   }, [token]);
@@ -161,12 +161,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      const authType = localStorage.getItem('auth_type');
-      const storage = authType === 'session' ? sessionStorage : localStorage;
-      const storedToken = storage.getItem('token');
-      const storedUser = storage.getItem('user');
+      // Verificar primero localStorage
+      let storedToken = localStorage.getItem('token');
+      let storedUser = localStorage.getItem('user');
+
+      // Si no está en localStorage, verificar sessionStorage
+      if (!storedToken || !storedUser) {
+        storedToken = sessionStorage.getItem('token');
+        storedUser = sessionStorage.getItem('user');
+      }
 
       if (storedToken && storedUser) {
+        console.log('AuthProvider: Token restaurado del storage:', storedToken.substring(0, 20) + '...');
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       }

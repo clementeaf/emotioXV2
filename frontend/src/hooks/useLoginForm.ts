@@ -25,9 +25,9 @@ export const useLoginForm = () => {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [state, setState] = useState<LoginFormState>({
-    email: 'clemente@gmail.com',
-    password: 'clemente',
-    rememberMe: true
+    email: '',
+    password: '',
+    rememberMe: false
   });
 
   const [validation, setValidation] = useState<ValidationState>({
