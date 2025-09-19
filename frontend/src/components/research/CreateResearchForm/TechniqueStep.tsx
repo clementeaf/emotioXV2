@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 
 interface TechniqueStepProps {
   selectedTechnique?: string;
@@ -20,7 +21,12 @@ export const TechniqueStep: React.FC<TechniqueStepProps> = ({
 
         <div className="space-y-4">
           {/* Opción AIM Framework Stage 3 */}
-          <div className="flex items-center justify-between border border-neutral-200 rounded-lg p-4">
+          <div className={cn(
+            'flex items-center justify-between border rounded-lg p-4 transition-colors',
+            selectedTechnique === 'aim-framework'
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-neutral-200'
+          )}>
             <div className="flex-1">
               <div className="text-md font-medium mb-2">AIM Framework Stage 3</div>
               <p className="text-sm text-neutral-600">
@@ -40,7 +46,12 @@ export const TechniqueStep: React.FC<TechniqueStepProps> = ({
           </div>
 
           {/* Opción Biometric, Cognitive and Predictive */}
-          <div className="flex items-center justify-between border border-neutral-200 rounded-lg p-4">
+          <div className={cn(
+            'flex items-center justify-between border rounded-lg p-4 transition-colors',
+            selectedTechnique === 'biometric-cognitive'
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-neutral-200'
+          )}>
             <div className="flex-1">
               <div className="text-md font-medium mb-2">Biometric, Cognitive and Predictive</div>
               <p className="text-sm text-neutral-600">
