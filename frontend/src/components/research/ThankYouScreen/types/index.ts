@@ -85,7 +85,7 @@ export interface UseThankYouScreenFormResult {
   isSaving: boolean;
   modalError: ErrorModalData | null;
   modalVisible: boolean;
-  handleChange: (field: keyof ThankYouScreenConfig, value: any) => void;
+  handleChange: (field: string | number | symbol, value: string | boolean) => void;
   handleSave: () => void;
   handlePreview: () => void;
   validateForm: () => boolean;
@@ -95,6 +95,10 @@ export interface UseThankYouScreenFormResult {
   handleDelete?: () => Promise<void>;
   isDeleting?: boolean;
   showDelete?: boolean;
+  confirmModalVisible: boolean;
+  showConfirmModal: () => void;
+  closeConfirmModal: () => void;
+  confirmDelete: () => Promise<void>;
 }
 
 // Exportamos tipos y constantes para acceso más fácil

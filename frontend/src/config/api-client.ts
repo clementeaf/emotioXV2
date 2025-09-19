@@ -127,10 +127,10 @@ export const researchInProgressAPI = {
 export const thankYouScreenAPI = {
   getByResearch: (researchId: string) =>
     alovaApiClient.get('thankYouScreen', 'getByResearch', { researchId }),
-    
-  save: (researchId: string, data: any) =>
+
+  save: (researchId: string, data: Record<string, unknown>) =>
     alovaApiClient.post('thankYouScreen', 'save', data, { researchId }),
-    
+
   delete: (researchId: string) =>
     alovaApiClient.delete('thankYouScreen', 'delete', { researchId })
 };
