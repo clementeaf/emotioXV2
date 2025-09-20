@@ -5,9 +5,7 @@
  */
 
 import { useRequest, useWatcher } from 'alova/client';
-import React from 'react';
 import { researchMethods } from '../services/research.methods';
-import { invalidateCache } from '@/config/alova.config';
 import type {
   Research,
   ResearchListResponse,
@@ -207,12 +205,12 @@ export function useResearchById(researchId: string): UseResearchByIdReturn {
   // Si no hay researchId válido, no hacer la petición
   const shouldFetch = Boolean(researchId && researchId.trim());
 
-  // Clear any cached research data when the ID changes to prevent stale data
-  React.useEffect(() => {
-    if (shouldFetch) {
-      invalidateCache(/\/research\/.*$/);
-    }
-  }, [researchId, shouldFetch]);
+  // No invalidar cache automáticamente - confiar en invalidaciones explícitas
+  // React.useEffect(() => {
+  //   if (shouldFetch) {
+  //     invalidateCache(/\/research\/.*$/);
+  //   }
+  // }, [researchId, shouldFetch]);
 
   const query = useRequest(
     () => researchMethods.getById(researchId),

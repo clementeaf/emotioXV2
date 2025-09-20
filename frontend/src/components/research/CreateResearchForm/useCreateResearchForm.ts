@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { researchAPI, setupAuthToken } from '@/config/api-client';
 import { useResearchList } from '@/hooks/useResearchList';
+import { invalidateCache } from '@/config/alova.config';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
 import { getTechniqueStages } from '@/config/techniques-registry';
@@ -39,7 +40,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
   const router = useRouter();
   const { token } = useAuth();
   const { currentDraft, createDraft, updateDraft, clearDraft } = useResearch();
-  const { refetch } = useResearchList();
+  const { } = useResearchList();
 
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,11 +196,15 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
       const result = await researchAPI.create(createData);
       console.log('🔥 POST RESULT:', result);
 
+      // Invalidar el cache de la lista para que aparezca la nueva investigación
+      invalidateCache('fetchResearchList');
+
       toast.success(result.message);
 
       // Obtener la primera sección de BUILD según la técnica
       const techniqueStages = getTechniqueStages(result.data.technique || '');
       const firstSection = techniqueStages[0] || 'welcome-screen';
+
 
       // Redirigir con el ID y la primera sección
       if (result.data.technique === 'aim-framework') {

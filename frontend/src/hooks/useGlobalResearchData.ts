@@ -272,131 +272,20 @@ export const useGlobalResearchData = (researchId: string) => {
     };
   }, [researchId]);
 
-  // Cargar configuración de Cognitive Task
-  useEffect(() => {
-    if (!researchId) return;
+  // NO cargar automáticamente Cognitive Task para investigaciones nuevas
+  // useEffect(() => {
+  //   // Se cargará solo cuando sea específicamente requerido
+  // }, []);
 
-    const loadCognitiveTaskConfig = async () => {
-      // Si ya tenemos datos, no cargar de nuevo
-      if (globalStates.cognitiveTaskConfig.has(researchId)) {
-        setCognitiveTaskConfig(globalStates.cognitiveTaskConfig.get(researchId));
-        return;
-      }
+  // NO cargar automáticamente SmartVOC para investigaciones nuevas
+  // useEffect(() => {
+  //   // Se cargará solo cuando sea específicamente requerido
+  // }, []);
 
-      // Marcar como cargando globalmente
-      globalStates.cognitiveTaskConfigLoading.set(researchId, true);
-      setIsCognitiveTaskConfigLoading(true);
-      setCognitiveTaskConfigError(null);
-
-      try {
-        const data = await cognitiveTaskAPI.getByResearchId(researchId);
-        globalStates.cognitiveTaskConfig.set(researchId, data as any);
-        setCognitiveTaskConfig(data as any);
-      } catch (error) {
-        globalStates.cognitiveTaskConfigError.set(researchId, error as Error);
-        setCognitiveTaskConfigError(error as Error);
-        setCognitiveTaskConfig(null);
-      } finally {
-        globalStates.cognitiveTaskConfigLoading.set(researchId, false);
-        setIsCognitiveTaskConfigLoading(false);
-      }
-    };
-
-    loadCognitiveTaskConfig();
-  }, [researchId]);
-
-  // Cargar SmartVOC form usando solo singleton
-  useEffect(() => {
-    if (!researchId) return;
-
-    const smartVOCKey = `smartVOCForm-${researchId}`;
-
-    const loadSmartVOCForm = async () => {
-      // Si ya tenemos datos, no cargar de nuevo
-      if (globalStates.smartVOCFormData.has(researchId)) {
-        setSmartVOCFormData(globalStates.smartVOCFormData.get(researchId));
-        return;
-      }
-
-      // Marcar como cargando globalmente
-      globalStates.smartVOCFormLoading.set(researchId, true);
-      setIsSmartVOCFormLoading(true);
-      setSmartVOCFormError(null);
-
-      try {
-        const data = await globalAPISingleton.getSmartVOCForm(researchId);
-        globalStates.smartVOCFormData.set(researchId, data);
-        setSmartVOCFormData(data);
-      } catch (error) {
-        globalStates.smartVOCFormError.set(researchId, error as Error);
-        setSmartVOCFormError(error as Error);
-        setSmartVOCFormData(null);
-      } finally {
-        globalStates.smartVOCFormLoading.set(researchId, false);
-        setIsSmartVOCFormLoading(false);
-      }
-    };
-
-    // Agregar listener para cuando los datos cambien
-    const updateSmartVOCData = () => {
-      if (globalStates.smartVOCFormData.has(researchId)) {
-        setSmartVOCFormData(globalStates.smartVOCFormData.get(researchId));
-      }
-    };
-
-    globalAPISingleton.addListener(smartVOCKey, updateSmartVOCData);
-    loadSmartVOCForm();
-
-    return () => {
-      globalAPISingleton.removeListener(smartVOCKey, updateSmartVOCData);
-    };
-  }, [researchId]);
-
-  // Cargar grouped responses usando solo singleton
-  useEffect(() => {
-    if (!researchId) return;
-
-    const groupedResponsesKey = `groupedResponses-${researchId}`;
-
-    const loadGroupedResponses = async () => {
-      // Si ya tenemos datos, no cargar de nuevo
-      if (globalStates.groupedResponsesData.has(researchId)) {
-        setGroupedResponsesData(globalStates.groupedResponsesData.get(researchId));
-        return;
-      }
-
-      // Marcar como cargando globalmente
-      globalStates.groupedResponsesLoading.set(researchId, true);
-      setIsGroupedResponsesLoading(true);
-      setGroupedResponsesError(null);
-
-      try {
-        const data = await globalAPISingleton.getGroupedResponses(researchId);
-        globalStates.groupedResponsesData.set(researchId, data);
-        setGroupedResponsesData(data);
-      } catch (error) {
-        // No setear como error para research nuevos, esto es comportamiento normal
-        setGroupedResponsesData({ data: [], status: 200 });
-      } finally {
-        globalStates.groupedResponsesLoading.set(researchId, false);
-        setIsGroupedResponsesLoading(false);
-      }
-    };
-
-    // Agregar listener para cuando los datos cambien
-    const updateGroupedResponsesData = () => {
-      if (globalStates.groupedResponsesData.has(researchId)) {
-        setGroupedResponsesData(globalStates.groupedResponsesData.get(researchId));
-      }
-    };
-
-    globalAPISingleton.addListener(groupedResponsesKey, updateGroupedResponsesData);
-    loadGroupedResponses();
-
-    return () => {
-      globalAPISingleton.removeListener(groupedResponsesKey, updateGroupedResponsesData);
-    };
-  }, [researchId]);
+  // NO cargar automáticamente grouped responses para investigaciones nuevas
+  // useEffect(() => {
+  //   // Se cargará solo cuando sea específicamente requerido
+  // }, []);
 
   // Derivar SmartVOC data desde groupedResponses
   const smartVOCData = useQuery<SmartVOCResults>({
