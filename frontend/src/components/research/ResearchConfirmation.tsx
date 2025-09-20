@@ -9,31 +9,25 @@ interface ResearchConfirmationProps {
   onClose?: () => void;
 }
 
-export function ResearchConfirmation({ 
-  researchId, 
+export function ResearchConfirmation({
+  researchId,
   researchName,
-  onClose 
+  onClose
 }: ResearchConfirmationProps) {
   const router = useRouter();
-  
+
   const handleGoToDashboard = () => {
-    if (onClose) {
-      onClose();
-    }
+    console.log('🔴 handleGoToDashboard clicked');
     router.push('/dashboard');
   };
-  
+
   const handleGoToResearch = () => {
-    if (onClose) {
-      onClose();
-    }
+    console.log('🔴 handleGoToResearch clicked, researchId:', researchId);
     router.push(`/dashboard?research=${researchId}`);
   };
-  
+
   const handleGoToAimFramework = () => {
-    if (onClose) {
-      onClose();
-    }
+    console.log('🔴 handleGoToAimFramework clicked, researchId:', researchId);
     router.push(`/dashboard?research=${researchId}&aim=true&section=welcome-screen`);
   };
 
@@ -46,30 +40,28 @@ export function ResearchConfirmation({
       <p className="text-neutral-500 mb-6">
         Your research "{researchName}" has been created successfully.
       </p>
-      
+
       <div className="space-y-3 w-full">
-        <Button 
+        <button
           onClick={handleGoToResearch}
-          className="w-full"
+          className="w-full bg-black text-white py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors"
         >
           Continue to Research
-        </Button>
-        
-        <Button 
+        </button>
+
+        <button
           onClick={handleGoToAimFramework}
-          variant="outline"
-          className="w-full"
+          className="w-full border border-gray-300 py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors"
         >
           Go to AIM Framework
-        </Button>
-        
-        <Button 
+        </button>
+
+        <button
           onClick={handleGoToDashboard}
-          variant="ghost"
-          className="w-full"
+          className="w-full py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors"
         >
           Back to Dashboard
-        </Button>
+        </button>
       </div>
     </div>
   );

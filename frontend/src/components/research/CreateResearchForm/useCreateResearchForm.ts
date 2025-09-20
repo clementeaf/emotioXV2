@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { researchAPI, setupAuthToken } from '@/config/api-client';
+import { useResearchList } from '@/hooks/useResearchList';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
+import { getTechniqueStages } from '@/config/techniques-registry';
 import { ResearchBasicData, ResearchType } from '../../../../../shared/interfaces/research.model';
 
 interface Step {
@@ -37,6 +39,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
   const router = useRouter();
   const { token } = useAuth();
   const { currentDraft, createDraft, updateDraft, clearDraft } = useResearch();
+  const { refetch } = useResearchList();
 
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -170,7 +173,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
   // Envío del formulario
   const submitForm = async () => {
     const finalErrors = validateStep(formData.currentStep);
-    
+
     if (Object.keys(finalErrors).length > 0) {
       setFormData(prev => ({ ...prev, errors: finalErrors }));
       return;
@@ -190,44 +193,23 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
       };
 
       const result = await researchAPI.create(createData);
+      console.log('🔥 POST RESULT:', result);
 
-      if (result.success && result.data) {
-        setCreatedResearchId(result.data.id);
-        clearDraft();
-        
-        toast.success('Research created successfully!');
-        
-        // ✅ Llamar al callback del parent si existe
-        if (onResearchCreated) {
-          onResearchCreated(result.data.id, formData.basic.name);
-        } else {
-          // Solo hacer el countdown si NO hay callback
-          setShowSummary(true);
-          
-          let timeLeft = 3;
-          setCountdown(timeLeft);
-          
-          const countdownInterval = setInterval(() => {
-            timeLeft -= 1;
-            setCountdown(timeLeft);
-            
-            if (timeLeft <= 0) {
-              clearInterval(countdownInterval);
-              
-              if (formData.basic.technique === 'aim-framework') {
-                router.push(`/dashboard/research/${result.data.id}/new`);
-              } else {
-                router.push(`/dashboard/research/${result.data.id}`);
-              }
-            }
-          }, 1000);
-        }
+      toast.success(result.message);
+
+      // Obtener la primera sección de BUILD según la técnica
+      const techniqueStages = getTechniqueStages(result.data.technique || '');
+      const firstSection = techniqueStages[0] || 'welcome-screen';
+
+      // Redirigir con el ID y la primera sección
+      if (result.data.technique === 'aim-framework') {
+        router.push(`/dashboard?research=${result.data.id}&aim=true&section=${firstSection}`);
       } else {
-        throw new Error(result.message || 'Failed to create research');
+        router.push(`/dashboard?research=${result.data.id}&section=${firstSection}`);
       }
+
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error creating research';
-      toast.error(errorMessage);
+      console.log('🔥 POST ERROR:', error);
     } finally {
       setIsSubmitting(false);
     }

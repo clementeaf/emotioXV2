@@ -32,20 +32,20 @@ export function DeleteResearchButton({
 
     setIsDeleting(true);
 
+    // Notificar al componente padre INMEDIATAMENTE para actualización optimista
+    onDeleteSuccess?.(researchId);
+
     try {
       // Eliminar la investigación usando la API
       const result = await researchAPI.delete(researchId);
-      
+
       if (result.success) {
         toast.success(`Investigación "${researchName}" eliminada exitosamente`);
       } else {
         throw new Error(result.error || 'Error al eliminar la investigación');
       }
-
-      // Notificar al componente padre
-      onDeleteSuccess?.(researchId);
-
     } catch (error) {
+      // Si falla la API, revertir sería ideal pero por ahora solo mostramos error
       toast.error('Error al eliminar la investigación');
     } finally {
       setIsDeleting(false);

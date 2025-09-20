@@ -1,7 +1,8 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useState } from 'react';
+import { getTechniqueStages } from '@/config/techniques-registry';
 
-import { SuccessData } from '../../../../shared/interfaces/research-creation.interface';
+import { SuccessData } from '../../shared/interfaces/research-creation.interface';
 
 import { CreateSection, ErrorSection, StagesSection, SuccessSection } from './sections';
 
@@ -17,7 +18,9 @@ export const NewResearchContent: React.FC = () => {
   // Función para manejar creación exitosa
   const handleSuccess = useCallback((id: string, name: string) => {
     setSuccessData({ id, name });
-    router.push(`/dashboard/research/new?step=success&id=${id}`);
+    // La redirección será manejada por el hook useCreateResearchForm
+    // Este callback es solo para casos especiales
+    router.push(`/dashboard?research=${id}`);
   }, [router]);
 
   // Función para navegar al inicio

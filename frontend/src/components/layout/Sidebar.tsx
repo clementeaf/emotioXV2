@@ -116,14 +116,8 @@ function SidebarContent({ className }: SidebarProps) {
       return;
     }
     try {
-      try {
-        await researchAPI.delete(researchToDelete.id);
-      } catch (apiError) {
-        // Error handling silencioso
-      }
-      localStorage.setItem('research_list', JSON.stringify([]));
-      localStorage.removeItem(`research_${researchToDelete.id}`);
-      setRecentResearch([]);
+      await deleteResearch(researchToDelete.id);
+
       if (window.location.search.includes(`research=${researchToDelete.id}`)) {
         router.replace('/dashboard');
       }
@@ -135,7 +129,7 @@ function SidebarContent({ className }: SidebarProps) {
     }
   };
 
-  const { researches: allResearch = [], isLoading: isLoadingResearchData } = useResearchList();
+  const { researches: allResearch = [], isLoading: isLoadingResearchData, deleteResearch } = useResearchList();
 
   useEffect(() => {
     if (allResearch.length > 0) {

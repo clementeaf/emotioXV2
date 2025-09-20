@@ -274,21 +274,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
         const researchId = response.data.id;
         const researchName = response.data.name || formData.basic.name; // Usar el nombre del formulario si no viene en la respuesta
 
-        // Actualizar el localStorage con la nueva investigación
-        const currentResearchList = JSON.parse(localStorage.getItem('research_list') || '[]');
-        const newResearch = {
-          id: researchId,
-          name: researchName,
-          technique: formData.basic.technique,
-          type: formData.basic.type,
-          companyId: formData.basic.companyId,
-          createdAt: new Date().toISOString()
-        };
-
-        localStorage.setItem('research_list', JSON.stringify([...currentResearchList, newResearch]));
-
-        // También guardar los detalles específicos de la investigación
-        localStorage.setItem(`research_${researchId}`, JSON.stringify(newResearch));
+        // No usar localStorage - AlovaJS maneja toda la sincronización
 
         setCreatedResearchId(researchId);
         setShowSummary(true);
