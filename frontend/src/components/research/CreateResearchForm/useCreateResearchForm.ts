@@ -203,7 +203,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
     try {
       const result = await submitRequest(createData);
 
-      const resultData = result as any;
+      const resultData = result as { data?: any; id?: string; name?: string; message?: string; [key: string]: any };
 
       reconcileByClientId(clientId, {
         id: resultData.data?.id || resultData.id,
