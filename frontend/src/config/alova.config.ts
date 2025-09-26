@@ -49,6 +49,10 @@ export const alovaInstance = createAlova({
         Authorization: `Bearer ${token}`
       };
     }
+
+    if (method.url?.includes('/research') || method.url?.includes('/companies')) {
+      method.config.timeout = 0;
+    }
   },
   
   // Interceptor de response para manejar errores globales
@@ -91,9 +95,7 @@ export const alovaInstance = createAlova({
   
   // Configuración de caché
   cacheFor: {
-    // GET requests se cachean por 5 minutos por defecto
     GET: 1000 * 60 * 5,
-    // POST, PUT, DELETE no se cachean
     POST: 0,
     PUT: 0,
     DELETE: 0,

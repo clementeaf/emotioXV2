@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { memo, useMemo, useCallback } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { useResearchList } from '@/hooks/useResearchList';
+import { useResearchList, useResearchById } from '@/hooks/useResearchList';
 import { ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -19,8 +19,13 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const searchParams = useSearchParams();
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || DEFAULT_SECTION;
+  // Usar hook específico para obtener research por ID
+  const { data: specificResearchData, isLoading: isLoadingSpecific } = useResearchById(researchId || '');
   const { researches } = useResearchList();
-  const researchData = researches.find(r => r.id === researchId);
+
+  // Usar datos específicos si están disponibles, sino buscar en la lista
+  const researchData = specificResearchData || researches.find(r => r.id === researchId);
+
 
   const UserInfo = memo(() => {
     if (!user) {
@@ -116,7 +121,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
 
     return dynamicSections;
   }, [researchTechnique, researchData]);
-  const isLoadingName = false;
+  const isLoadingName = isLoadingSpecific && !researchData;
   const error = null;
 
   const handleBackToDashboard = useCallback(() => { 

@@ -71,8 +71,7 @@ function ResearchTableContent() {
 
   // Usar el hook centralizado para obtener research data
   const { researches: researchData = [], isLoading, error, refetch, deleteResearch } = useResearchList();
-  
-  // Cast del tipo para compatibilidad con la interfaz esperada
+
   const research = researchData as ResearchTableItem[];
 
   const handleRefresh = () => {

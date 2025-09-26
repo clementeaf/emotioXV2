@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { researchAPI, setupAuthToken } from '@/config/api-client';
-import { useResearchList } from '@/hooks/useResearchList';
-import { invalidateCache } from '@/config/alova.config';
+import { useRequest } from 'alova/client';
+import alovaInstance from '@/config/alova.config';
 import { useAuth } from '@/providers/AuthProvider';
-import { useResearch } from '@/stores/useResearchStore';
+import { useResearchStore, researchHelpers } from '@/stores/useResearchStore';
 import { getTechniqueStages } from '@/config/techniques-registry';
 import { ResearchBasicData, ResearchType } from '../../../../../shared/interfaces/research.model';
 
@@ -38,17 +37,16 @@ const initialFormState: FormState = {
 
 export default function useCreateResearchForm(onResearchCreated?: (researchId: string, researchName: string) => void) {
   const router = useRouter();
-  const { token } = useAuth();
-  const { currentDraft, createDraft, updateDraft, clearDraft } = useResearch();
-  const { } = useResearchList();
+  const { currentDraft, updateDraft, clearDraft, optimisticAdd, reconcileByClientId, rollback } = useResearchStore();
 
   const [formData, setFormData] = useState<FormState>(initialFormState);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createdResearchId, setCreatedResearchId] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
-  const [countdown, setCountdown] = useState(3);
-  
-  // Removed enterpriseSelectRef as we're using CustomSelect now
+  const [countdown] = useState(3);
+
+  const { loading: isSubmitting, send: submitRequest } = useRequest(
+    (payload: ResearchBasicData) => alovaInstance.Post('/research', payload),
+    { immediate: false }
+  );
 
   // Restaurar borrador si existe
   useEffect(() => {
@@ -171,7 +169,6 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
     updateFormData('technique', technique);
   };
 
-  // Envío del formulario
   const submitForm = async () => {
     const finalErrors = validateStep(formData.currentStep);
 
@@ -180,43 +177,67 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
       return;
     }
 
+    if (isSubmitting) return;
+
+    const clientId = researchHelpers.newClientId();
+    const createData: ResearchBasicData = {
+      name: formData.basic.name,
+      companyId: formData.basic.companyId,
+      type: formData.basic.type || ResearchType.BEHAVIOURAL,
+      technique: formData.basic.technique || '',
+      description: formData.basic.description || ''
+    };
+
+    optimisticAdd({
+      clientId,
+      name: createData.name,
+      description: createData.description,
+      companyId: createData.companyId,
+      type: createData.type,
+      technique: createData.technique,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
     try {
-      setIsSubmitting(true);
-      setupAuthToken();
+      const result = await submitRequest(createData);
 
-      // Preparar datos
-      const createData: ResearchBasicData = {
-        name: formData.basic.name,
-        companyId: formData.basic.companyId,
-        type: formData.basic.type || ResearchType.BEHAVIOURAL,
-        technique: formData.basic.technique || '',
-        description: formData.basic.description || ''
-      };
+      const resultData = result as any;
 
-      const result = await researchAPI.create(createData);
-      console.log('🔥 POST RESULT:', result);
+      reconcileByClientId(clientId, {
+        id: resultData.data?.id || resultData.id,
+        name: resultData.data?.name || resultData.name,
+        description: resultData.data?.description || resultData.description,
+        companyId: resultData.data?.companyId || resultData.companyId,
+        type: resultData.data?.type || resultData.type,
+        technique: resultData.data?.technique || resultData.technique,
+        status: resultData.data?.status || resultData.status || 'draft',
+        createdAt: resultData.data?.createdAt || resultData.createdAt,
+        updatedAt: resultData.data?.updatedAt || resultData.updatedAt,
+      });
 
-      // Invalidar el cache de la lista para que aparezca la nueva investigación
-      invalidateCache('fetchResearchList');
+      toast.success(resultData.message || 'Investigación creada correctamente');
+      clearDraft();
 
-      toast.success(result.message);
-
-      // Obtener la primera sección de BUILD según la técnica
-      const techniqueStages = getTechniqueStages(result.data.technique || '');
+      const techniqueStages = getTechniqueStages(resultData.data?.technique || resultData.technique || '');
       const firstSection = techniqueStages[0] || 'welcome-screen';
+      const researchId = resultData.data?.id || resultData.id;
 
-
-      // Redirigir con el ID y la primera sección
-      if (result.data.technique === 'aim-framework') {
-        router.push(`/dashboard?research=${result.data.id}&aim=true&section=${firstSection}`);
+      if ((resultData.data?.technique || resultData.technique) === 'aim-framework') {
+        router.push(`/dashboard?research=${researchId}&aim=true&section=${firstSection}`);
       } else {
-        router.push(`/dashboard?research=${result.data.id}&section=${firstSection}`);
+        router.push(`/dashboard?research=${researchId}&section=${firstSection}`);
+      }
+
+      if (onResearchCreated) {
+        onResearchCreated(researchId, resultData.data?.name || resultData.name);
       }
 
     } catch (error: unknown) {
-      console.log('🔥 POST ERROR:', error);
-    } finally {
-      setIsSubmitting(false);
+      rollback();
+      const errorMessage = error instanceof Error ? error.message : 'Error al crear la investigación';
+      toast.error(errorMessage);
     }
   };
 
