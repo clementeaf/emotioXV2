@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { authService } from '@/services/authService';
-import { DYNAMIC_API_ENDPOINTS } from '@/api/dynamic-endpoints';
+import { useAuth } from '@/providers/AuthProvider';
+import { apiClient } from '@/api/config/axios';
 
 export interface EducationalContent {
   id: string;
@@ -25,6 +25,7 @@ export interface UseEducationalContentReturn {
  * Hook para gestionar el contenido educativo desde la API
  */
 export const useEducationalContent = (): UseEducationalContentReturn => {
+  const { token } = useAuth();
   const [smartVocContent, setSmartVocContent] = useState<EducationalContent | null>(null);
   const [cognitiveTaskContent, setCognitiveTaskContent] = useState<EducationalContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,31 +36,19 @@ export const useEducationalContent = (): UseEducationalContentReturn => {
       setLoading(true);
       setError(null);
       
-      const token = authService.getToken();
       if (!token) {
         setError('No se pudo obtener el token de autenticación');
         return;
       }
 
-      const response = await fetch(`${DYNAMIC_API_ENDPOINTS.http}/educational-content`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiClient.get<{ data: EducationalContent[] }>('/educational-content');
+      const contents = response.data.data;
 
-      if (response.ok) {
-        const data = await response.json();
-        const contents = data.data as EducationalContent[];
-        
-        const smartVoc = contents.find((c) => c.contentType === 'smart_voc');
-        const cognitive = contents.find((c) => c.contentType === 'cognitive_task');
-        
-        setSmartVocContent(smartVoc || null);
-        setCognitiveTaskContent(cognitive || null);
-      } else {
-        setError('Error al cargar el contenido educativo');
-      }
+      const smartVoc = contents.find((c) => c.contentType === 'smart_voc');
+      const cognitive = contents.find((c) => c.contentType === 'cognitive_task');
+
+      setSmartVocContent(smartVoc || null);
+      setCognitiveTaskContent(cognitive || null);
     } catch (err) {
       console.error('Error loading educational content:', err);
       setError('Error al cargar el contenido educativo');

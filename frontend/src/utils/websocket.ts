@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { API_BASE_URL } from '../config/api';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '@/providers/AuthProvider';
 
 // Estado de la conexión
 export enum ConnectionStatus {

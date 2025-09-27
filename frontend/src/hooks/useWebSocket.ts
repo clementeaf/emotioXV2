@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-import { useAuth } from './useAuth';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface WebSocketMessage {
   action: string;

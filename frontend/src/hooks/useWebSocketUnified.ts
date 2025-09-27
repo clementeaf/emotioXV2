@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getWebsocketUrl } from '../config/api';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface WebSocketMessage {
   action?: string;

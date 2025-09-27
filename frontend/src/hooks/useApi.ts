@@ -1,13 +1,12 @@
 /**
- * Hook useApi migrado a AlovaJS
- * Mantiene la misma interfaz pero usa Alova internamente
+ * Hook useApi migrado a Axios + TanStack Query
+ * Mantiene la misma interfaz pero usa Axios internamente
  */
 
 import { useCallback, useState } from 'react';
-import { useFetcher } from 'alova/client';
-import { alovaInstance } from '../config/alova.config';
+import { apiClient } from '@/api/config/axios';
 import { API_ENDPOINTS } from '../config/api';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface ApiResponse<T> {
   data: T | null;
@@ -23,7 +22,6 @@ interface UseApiOptions {
 export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
   const [loading, setLoading] = useState(false);
   const { token } = useAuth();
-  const { fetch } = useFetcher();
 
   // Helper para construir URLs con parámetros
   const buildUrl = useCallback((url: string, params: Record<string, string> = {}) => {
@@ -44,49 +42,39 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
       setLoading(true);
 
       try {
-        let alovaMethod;
-        
-        // Crear el método de Alova apropiado
+        let response;
+
+        // Crear la petición Axios apropiada
         switch (method.toUpperCase()) {
           case 'GET':
-            alovaMethod = alovaInstance.Get<T>(url);
+            response = await apiClient.get<T>(url);
             break;
           case 'POST':
-            alovaMethod = alovaInstance.Post<T>(url, body);
+            response = await apiClient.post<T>(url, body);
             break;
           case 'PUT':
-            alovaMethod = alovaInstance.Put<T>(url, body);
+            response = await apiClient.put<T>(url, body);
             break;
           case 'DELETE':
-            alovaMethod = alovaInstance.Delete<T>(url);
+            response = await apiClient.delete<T>(url);
             break;
           default:
             throw new Error(`Método HTTP no soportado: ${method}`);
         }
 
-        // Agregar headers personalizados si existen
-        if (options.headers) {
-          alovaMethod.config.headers = {
-            ...alovaMethod.config.headers,
-            ...options.headers
-          };
-        }
-
-        // Ejecutar la petición
-        const data = await fetch(alovaMethod);
-        
-        return { data, error: null, loading: false };
-      } catch (error) {
+        return { data: response.data, error: null, loading: false };
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
         return {
           data: null,
-          error: error instanceof Error ? error.message : 'Error desconocido',
+          error: errorMessage,
           loading: false,
         };
       } finally {
         setLoading(false);
       }
     },
-    [fetch, token]
+    [token]
   );
 
   const get = useCallback(
@@ -231,13 +219,9 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
     post,
     put,
     delete: del,
-    // Funciones adicionales de Alova
+    // Cache invalidation - Sin caché específico, TanStack Query maneja esto automáticamente
     invalidateCache: (pattern?: string | RegExp) => {
-      if (pattern) {
-        alovaInstance.snapshots.match(pattern).forEach(method => method.abort());
-      } else {
-        alovaInstance.snapshots.match(/.*/g).forEach(method => method.abort());
-      }
+      console.warn('Cache invalidation not implemented - use TanStack Query directly');
     }
   };
 }

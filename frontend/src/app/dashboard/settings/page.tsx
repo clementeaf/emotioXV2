@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Settings, Loader2 } from 'lucide-react';
-import { authService } from '@/services/authService';
+import { useAuth } from '@/providers/AuthProvider';
 import { DYNAMIC_API_ENDPOINTS } from '@/api/dynamic-endpoints';
 
 interface EducationalContent {
@@ -20,6 +20,7 @@ interface EducationalContent {
  * Página de Configuraciones del Dashboard
  */
 export default function SettingsPage() {
+  const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +38,6 @@ export default function SettingsPage() {
   const loadEducationalContent = async () => {
     try {
       setLoading(true);
-      const token = authService.getToken();
       
       if (!token) {
         setError('No se pudo obtener el token de autenticación');
@@ -82,7 +82,6 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       setError(null);
-      const token = authService.getToken();
       
       if (!token) {
         setError('No se pudo obtener el token de autenticación');
