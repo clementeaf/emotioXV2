@@ -1,8 +1,5 @@
-import { authAPI } from '@/config/api-client';
-import { useAuth } from '@/providers/AuthProvider';
-import { DASHBOARD_ROUTES } from '@/routes';
+import { useLogin } from '@/api';
 import { validateEmail, validatePassword } from '@/utils/auth-validation';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface LoginFormState {
@@ -19,10 +16,8 @@ interface ValidationState {
 type LoginStatus = 'idle' | 'validating' | 'connecting' | 'authenticating' | 'success' | 'error';
 
 export const useLoginForm = () => {
-  const router = useRouter();
-  const { login, authLoading, authError } = useAuth();
+  const loginMutation = useLogin();
   const [status, setStatus] = useState<LoginStatus>('idle');
-  const [formError, setFormError] = useState<string | null>(null);
 
   const [state, setState] = useState<LoginFormState>({
     email: '',
@@ -50,7 +45,6 @@ export const useLoginForm = () => {
 
     if (status === 'error') {
       setStatus('idle');
-      setFormError(null);
     }
 
     if (field === 'email') {
@@ -69,36 +63,32 @@ export const useLoginForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus('validating');
-    setFormError(null);
+
+    // Validate fields
+    const emailValidation = validateEmail(state.email);
+    const passwordValidation = validatePassword(state.password);
+
+    if (!emailValidation.isValid || !passwordValidation.isValid) {
+      setValidation({ email: emailValidation, password: passwordValidation });
+      setStatus('error');
+      return;
+    }
+
+    setStatus('authenticating');
 
     try {
-      const response = await authAPI.login({
+      await loginMutation.mutateAsync({
         email: state.email,
         password: state.password
-      }).catch(error => {
-        if (error.message && error.message.includes('502')) {
-          throw new Error('Error 502: El servidor está caído. Por favor contacta al administrador.');
-        }
-        throw error;
       });
-
-      const token = (response as { token?: string }).token;
-
-      if (token) {
-        await login(token, state.rememberMe);
-        setStatus('success');
-        router.push(DASHBOARD_ROUTES.DASHBOARD);
-      } else {
-        throw new Error('Token no recibido en el formato esperado');
-      }
-    } catch (err) {
+      setStatus('success');
+    } catch (error) {
       setStatus('error');
-      setFormError(err instanceof Error ? err.message : 'Error al iniciar sesión');
     }
   };
 
-  const isLoading = status === 'validating' || status === 'connecting' || status === 'authenticating' || authLoading;
-  const error = formError || authError;
+  const isLoading = status === 'validating' || status === 'connecting' || status === 'authenticating' || loginMutation.isPending;
+  const error = loginMutation.error ? (loginMutation.error as any).response?.data?.message || 'Error al iniciar sesión' : null;
   const statusMessage = getStatusMessage(status);
 
   return {

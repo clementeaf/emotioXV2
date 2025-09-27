@@ -4,4 +4,4 @@
 
 export { authApi } from './auth.api';
 export * from './auth.types';
-// export * from './auth.hooks'; // Uncomment when hooks are created
+export * from './auth.hooks';
