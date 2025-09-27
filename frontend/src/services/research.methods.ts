@@ -1,106 +1,52 @@
 /**
  * Research service methods for API operations
+ * Migrated to use new architecture (TanStack Query + Axios)
  */
 
-import { alovaInstance } from '@/config/alova.config';
-import type { Research, CreateResearchRequest } from '@/types/research';
+import { researchApi } from '@/api/domains/research/research.api';
+import type { Research, CreateResearchRequest, UpdateResearchRequest } from '@/types/research';
 
 /**
  * Fetch all research
+ * @deprecated Use useResearchList hook instead
  */
-export const fetchResearchList = () =>
-  alovaInstance.Get<{ data: Research[] }>('/research', {
-    name: 'fetchResearchList'
-  });
+export const fetchResearchList = () => researchApi.getAll();
 
 /**
  * Fetch research by ID
+ * @deprecated Use useResearchById hook instead
  */
-export const fetchResearchById = (id: string) =>
-  alovaInstance.Get<{ data: Research }>(`/research/${id}`, {
-    name: 'fetchResearchById',
-    cacheFor: 1000 * 60 * 2, // Cache por 2 minutos
-  });
+export const fetchResearchById = (id: string) => researchApi.getById(id);
 
 /**
  * Create new research
+ * @deprecated Use useCreateResearch hook instead
  */
-export const createResearch = (researchData: CreateResearchRequest) =>
-  alovaInstance.Post<{ data: Research }>('/research', researchData, {
-    name: 'createResearch'
-  });
+export const createResearch = (data: CreateResearchRequest) => researchApi.create(data);
 
 /**
  * Update research
+ * @deprecated Use useUpdateResearch hook instead
  */
-export const updateResearch = (id: string, researchData: Partial<Research>) =>
-  alovaInstance.Put<{ data: Research }>(`/research/${id}`, researchData, {
-    name: 'updateResearch'
-  });
+export const updateResearch = (id: string, data: UpdateResearchRequest) => researchApi.update(id, data);
 
 /**
  * Delete research
+ * @deprecated Use useDeleteResearch hook instead
  */
-export const deleteResearch = (id: string) =>
-  alovaInstance.Delete(`/research/${id}`, {
-    name: 'deleteResearch'
-  });
+export const deleteResearch = (id: string) => researchApi.delete(id);
 
 /**
- * Get research results
+ * Update research status
+ * @deprecated Use useUpdateResearchStatus hook instead
  */
-export const getResearchResults = (id: string) =>
-  alovaInstance.Get<{ data: any }>(`/research/${id}/results`, {
-    name: 'getResearchResults'
-  });
+export const updateResearchStatus = (id: string, status: string) => researchApi.updateStatus(id, status);
 
-/**
- * Get by ID (alias for fetchResearchById)
- */
-export const getById = fetchResearchById;
-
-/**
- * Get SmartVOC form data
- */
-export const getSmartVOCForm = (id: string) =>
-  alovaInstance.Get<{ data: any }>(`/research/${id}/smartvoc-form`, {
-    name: 'getSmartVOCForm'
-  });
-
-/**
- * Get grouped responses
- */
-export const getGroupedResponses = (id: string) =>
-  alovaInstance.Get<{ questions: any[] }>(`/research/${id}/grouped-responses`, {
-    name: 'getGroupedResponses'
-  });
-
-/**
- * Research methods collection
- */
-export const researchMethods = {
-  fetchResearchList,
-  fetchResearchById,
-  createResearch,
-  updateResearch,
-  deleteResearch,
-  getResearchResults,
-  getById,
-  getSmartVOCForm,
-  getGroupedResponses,
-  // Aliases
-  getAll: fetchResearchList,
-  create: createResearch,
-  update: updateResearch,
-  delete: deleteResearch
-};
-
-/**
- * Research data methods collection
- */
-export const researchDataMethods = {
-  fetchResearchList,
-  getResearchResults,
-  getSmartVOCForm,
-  getGroupedResponses
+// Legacy compatibility exports
+export {
+  fetchResearchList as getAllResearch,
+  fetchResearchById as getResearchById,
+  createResearch as postResearch,
+  updateResearch as putResearch,
+  deleteResearch as removeResearch
 };

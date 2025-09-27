@@ -1,310 +1,99 @@
 /**
- * Hook para gestionar datos de investigación usando AlovaJS
- * Migrado de React Query a AlovaJS
+ * Hook para gestionar datos de investigación usando nueva arquitectura
+ * Migrado de Alova a TanStack Query + Axios
  */
 
-import { useRequest, useWatcher, useFetcher } from 'alova/client';
-import { alovaInstance } from '@/config/alova.config';
+import { useResearchById, useUpdateResearch, useDeleteResearch } from '@/api';
 import { ResearchRecord } from '../../../shared/interfaces/research.interface';
-import { useState, useEffect } from 'react';
+import type { ResearchAPIResponse } from '@/types/research';
 
 interface UseResearchDataReturn {
   research: ResearchRecord | null;
   loading: boolean;
   error: Error | null;
-  refetch: () => Promise<void>;
+  refetch: () => void;
   updateResearchRecord: (data: Partial<ResearchRecord>) => Promise<void>;
   deleteResearchRecord: () => Promise<void>;
 }
 
 /**
- * Hook principal para datos de investigación con Alova
+ * Hook principal para datos de investigación con nueva arquitectura
  */
 export const useResearchRecordData = (researchId: string | null): UseResearchDataReturn => {
-  const [localData, setLocalData] = useState<ResearchRecord | null>(null);
-  
-  // useRequest de Alova para cargar los datos iniciales
-  const {
-    loading,
-    data: research,
-    error,
-    send: refetch,
-    update
-  } = useRequest(
-    alovaInstance.Get<{ success: boolean; data: ResearchRecord }>(`/research/${researchId || 'null'}`),
-    {
-      initialData: undefined,
-      immediate: !!researchId, // Solo ejecutar si hay researchId
-    }
-  );
-  
-  // useFetcher para operaciones de mutación
-  const { fetch: fetchUpdate } = useFetcher();
-  
-  // Actualizar datos locales cuando cambie la respuesta
-  useEffect(() => {
-    if (research) {
-      setLocalData(research.data || research);
-    }
-  }, [research]);
-  
+  // Usar los hooks de la nueva arquitectura
+  const { data: research, isLoading: loading, error, refetch } = useResearchById(researchId || '');
+  const updateMutation = useUpdateResearch();
+  const deleteMutation = useDeleteResearch();
+
+  // Convertir formato si es necesario
+  const researchRecord: ResearchRecord | null = research ? {
+    ...research,
+    // Agregar campos requeridos por ResearchRecord que pueden faltar
+    userId: research.companyId, // Usar companyId como userId temporalmente
+    currentStage: 'welcome-screen',
+    stageProgress: {},
+    basic: {
+      name: research.name,
+      companyId: research.companyId,
+      type: research.type,
+      technique: research.technique,
+      description: research.description || '',
+      targetParticipants: research.targetParticipants || 0,
+      objectives: research.objectives || [],
+      tags: research.tags || []
+    },
+    stages: {}
+  } as ResearchRecord : null;
+
   // Función para actualizar investigación
   const updateResearchRecord = async (data: Partial<ResearchRecord>) => {
     if (!researchId) throw new Error('No research ID provided');
-    
-    try {
-      const response = await fetchUpdate(
-        alovaInstance.Put<{ success: boolean; data: ResearchRecord }>(
-          `/research/${researchId}`,
-          data
-        )
-      );
-      
-      if (response.success && response.data) {
-        // Actualizar datos locales optimistamente
-        setLocalData(response.data);
-        // Actualizar caché de Alova
-        update({
-          data: {
-            success: true,
-            data: response.data
-          }
-        });
-      }
-    } catch (err) {
-      console.error('Error updating research:', err);
-      throw err;
-    }
+
+    await updateMutation.mutateAsync({
+      id: researchId,
+      data: data as any // Convertir tipos si es necesario
+    });
   };
-  
+
   // Función para eliminar investigación
   const deleteResearchRecord = async () => {
     if (!researchId) throw new Error('No research ID provided');
-    
-    try {
-      await fetchUpdate(
-        alovaInstance.Delete(`/research/${researchId}`)
-      );
-      
-      // Limpiar datos locales
-      setLocalData(null);
-      // Invalidar caché
-      alovaInstance.snapshots.match(`/research/${researchId}`).forEach(method => {
-        method.abort();
-      });
-    } catch (err) {
-      console.error('Error deleting research:', err);
-      throw err;
-    }
-  };
-  
-  return {
-    research: localData,
-    loading,
-    error: error as Error | null,
-    refetch: async () => {
-      await refetch();
-    },
-    updateResearchRecord,
-    deleteResearchRecord,
-  };
-};
 
-/**
- * Hook para lista de investigaciones con Alova
- */
-export const useResearchRecordList = () => {
-  const {
-    loading,
-    data,
-    error,
-    send: refetch,
-  } = useRequest(
-    alovaInstance.Get<{ success: boolean; data: ResearchRecord[] }>('/research'),
-    {
-      initialData: { success: false, data: [] },
-      cacheFor: 1000 * 60 * 5, // Cache por 5 minutos
-    }
-  );
-  
+    await deleteMutation.mutateAsync(researchId);
+  };
+
   return {
-    researches: data?.data || [],
-    loading,
+    research: researchRecord,
+    loading: loading || updateMutation.isPending || deleteMutation.isPending,
     error: error as Error | null,
     refetch,
+    updateResearchRecord,
+    deleteResearchRecord
   };
 };
 
 /**
- * Hook reactivo para observar cambios en una investigación
- * Útil para actualizaciones en tiempo real
+ * Hook simplificado para obtener research por ID
  */
-export const useWatchResearchRecord = (researchId: string | null) => {
-  const {
-    loading,
-    data,
-    error,
-  } = useWatcher(
-    alovaInstance.Get<{ success: boolean; data: ResearchRecord }>(`/research/${researchId || 'null'}`),
-    [researchId], // Dependencias que disparan re-fetch
-    {
-      initialData: undefined,
-      immediate: !!researchId,
-      debounce: 500, // Debounce de 500ms para evitar múltiples llamadas
-    }
-  );
-  
+export const useResearchData = (researchId: string) => {
+  const { data, isLoading, error } = useResearchById(researchId);
+
   return {
-    research: data?.data || null,
-    loading,
-    error: error as Error | null,
+    research: data,
+    loading: isLoading,
+    error: error as Error | null
   };
 };
 
 /**
- * Hook para gestionar el estado de la investigación
+ * Hook para obtener lista de investigaciones
  */
-export const useResearchRecordStatus = (researchId: string | null) => {
-  const { fetch } = useFetcher();
-  
-  const updateStatus = async (status: string) => {
-    if (!researchId) throw new Error('No research ID provided');
-    
-    const response = await fetch(
-      alovaInstance.Put<{ success: boolean; data: ResearchRecord }>(
-        `/research/${researchId}/status`,
-        { status }
-      )
-    );
-    
-    // Invalidar caché para forzar actualización
-    alovaInstance.snapshots.match(`/research/${researchId}`).forEach(method => {
-      method.abort();
-    });
-    
-    return response;
-  };
-  
-  const updateStage = async (stage: string, progress: number) => {
-    if (!researchId) throw new Error('No research ID provided');
-    
-    const response = await fetch(
-      alovaInstance.Put<{ success: boolean; data: ResearchRecord }>(
-        `/research/${researchId}/stage`,
-        { stage, progress }
-      )
-    );
-    
-    // Invalidar caché
-    alovaInstance.snapshots.match(`/research/${researchId}`).forEach(method => {
-      method.abort();
-    });
-    
-    return response;
-  };
-  
-  return {
-    updateStatus,
-    updateStage,
-  };
+export const useResearchListData = () => {
+  // Ya tenemos esto en la nueva arquitectura como useResearchList
+  // Este hook es solo para compatibilidad con código existente
+  const { useResearchList } = require('@/api');
+  return useResearchList();
 };
 
-/**
- * Hook para gestionar módulos de investigación con Alova
- */
-export const useResearchRecordModules = (researchId: string | null) => {
-  // SmartVOC
-  const smartVoc = useRequest(
-    alovaInstance.Get(`/research/${researchId || 'null'}/smart-voc`),
-    {
-      initialData: undefined,
-      immediate: false, // Cargar bajo demanda
-    }
-  );
-  
-  // Eye Tracking
-  const eyeTracking = useRequest(
-    alovaInstance.Get(`/research/${researchId || 'null'}/eye-tracking`),
-    {
-      initialData: undefined,
-      immediate: false,
-    }
-  );
-  
-  // Cognitive Task
-  const cognitiveTask = useRequest(
-    alovaInstance.Get(`/research/${researchId || 'null'}/cognitive-task`),
-    {
-      initialData: undefined,
-      immediate: false,
-    }
-  );
-  
-  // ❌ ELIMINADO: Welcome Screen duplicado - usar useWelcomeScreenData() desde /hooks/useWelcomeScreenData.ts
-  const welcomeScreen = { 
-    data: null, 
-    loading: false, 
-    error: null, 
-    send: async () => Promise.resolve(null) 
-  }; // Placeholder para mantener compatibilidad
-  
-  // Thank You Screen
-  const thankYouScreen = useRequest(
-    alovaInstance.Get(`/research/${researchId || 'null'}/thank-you-screen`),
-    {
-      initialData: undefined,
-      immediate: false,
-    }
-  );
-  
-  // Función para cargar todos los módulos
-  const loadAllModules = async () => {
-    await Promise.all([
-      smartVoc.send(),
-      eyeTracking.send(),
-      cognitiveTask.send(),
-      welcomeScreen.send(),
-      thankYouScreen.send(),
-    ]);
-  };
-  
-  return {
-    modules: {
-      smartVoc: {
-        data: smartVoc.data,
-        loading: smartVoc.loading,
-        error: smartVoc.error,
-        load: smartVoc.send,
-      },
-      eyeTracking: {
-        data: eyeTracking.data,
-        loading: eyeTracking.loading,
-        error: eyeTracking.error,
-        load: eyeTracking.send,
-      },
-      cognitiveTask: {
-        data: cognitiveTask.data,
-        loading: cognitiveTask.loading,
-        error: cognitiveTask.error,
-        load: cognitiveTask.send,
-      },
-      welcomeScreen: {
-        data: welcomeScreen.data,
-        loading: welcomeScreen.loading,
-        error: welcomeScreen.error,
-        load: welcomeScreen.send,
-      },
-      thankYouScreen: {
-        data: thankYouScreen.data,
-        loading: thankYouScreen.loading,
-        error: thankYouScreen.error,
-        load: thankYouScreen.send,
-      },
-    },
-    loadAllModules,
-    isLoadingAny: smartVoc.loading || eyeTracking.loading || cognitiveTask.loading || 
-                  welcomeScreen.loading || thankYouScreen.loading,
-  };
-};
-
-export default useResearchRecordData;
+// Mantener exports para compatibilidad
+export { useResearchRecordData as default };
