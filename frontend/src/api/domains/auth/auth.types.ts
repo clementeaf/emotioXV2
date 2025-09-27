@@ -36,3 +36,12 @@ export interface RegisterResponse {
 export interface ProfileResponse {
   user: User;
 }
+
+export interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}

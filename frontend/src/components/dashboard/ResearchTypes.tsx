@@ -1,13 +1,13 @@
 'use client';
 
-import { useResearchList } from '@/hooks/useResearchList';
+import { useResearchList } from '@/api';
 import { ResearchTypesProps } from '@/interfaces/research';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import type { ResearchAPIResponse } from '@/types/research';
 
 function ResearchTypesContent() {
   // Usar el hook centralizado para obtener research data
-  const { researches: researchData = [], isLoading, error } = useResearchList();
+  const { data: researchData = [], isLoading, error } = useResearchList();
 
   // Extraer tipos únicos de investigación
   const researchTypes = Array.from(new Set(researchData.map((research: ResearchAPIResponse) => research.technique || 'unknown')));

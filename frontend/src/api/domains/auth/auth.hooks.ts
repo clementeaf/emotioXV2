@@ -4,11 +4,11 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { authApi } from './auth.api';
 import { updateApiToken } from '@/api/config/axios';
-import type { LoginRequest, RegisterRequest, User } from './auth.types';
+import type { LoginRequest, RegisterRequest, User, ApiError } from './auth.types';
 
 // Query keys
 export const authKeys = {
@@ -38,6 +38,9 @@ export function useLogin() {
       // Update axios token
       updateApiToken(data.token);
 
+      // Notify auth state change for same-tab updates
+      window.dispatchEvent(new CustomEvent('authStateChanged'));
+
       // Invalidate and refetch user queries
       queryClient.invalidateQueries({ queryKey: authKeys.all });
 
@@ -47,7 +50,7 @@ export function useLogin() {
       // Redirect to dashboard
       router.push('/dashboard');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.message || 'Error al iniciar sesión';
       toast.error(message);
     },
@@ -80,7 +83,7 @@ export function useRegister() {
       // Redirect to dashboard
       router.push('/dashboard');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.message || 'Error al registrarse';
       toast.error(message);
     },
@@ -156,7 +159,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const checkAuthState = useCallback(() => {
     // Check localStorage first
     let storedToken = localStorage.getItem('token');
     let storedUser = localStorage.getItem('user');
@@ -178,6 +181,30 @@ export function useAuth() {
     setUser(parsedUser);
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    checkAuthState();
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' || e.key === 'user') {
+        checkAuthState();
+      }
+    };
+
+    // Listen for custom events (for same-tab updates)
+    const handleAuthChange = () => {
+      checkAuthState();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('authStateChanged', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authStateChanged', handleAuthChange);
+    };
+  }, [checkAuthState]);
 
   return {
     isAuthenticated: token !== null,

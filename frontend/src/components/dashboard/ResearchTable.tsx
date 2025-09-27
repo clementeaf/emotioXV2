@@ -10,8 +10,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/Dialog';
-import { useResearchListQuery } from '@/hooks/useResearchListQuery';
-import { apiClient } from '@/config/api';
+import { useResearchList, useDeleteResearch } from '@/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -70,7 +69,8 @@ function ResearchTableContent() {
   const [projectToDelete, setProjectToDelete] = useState<ResearchTableItem | null>(null);
 
   // Usar el hook centralizado para obtener research data
-  const { researches: researchData = [], isLoading, error, refetch, deleteResearch } = useResearchListQuery();
+  const { data: researchData = [], isLoading, error, refetch } = useResearchList();
+  const deleteResearchMutation = useDeleteResearch();
 
   const research = researchData as ResearchTableItem[];
 
@@ -95,7 +95,7 @@ function ResearchTableContent() {
 
     try {
       // ✅ Usar el hook centralizado que ya maneja optimistic updates
-      await deleteResearch(projectToDelete.id);
+      await deleteResearchMutation.mutateAsync(projectToDelete.id);
 
       // El toast ya se muestra en el hook
       setShowDeleteModal(false);

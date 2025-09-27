@@ -8,7 +8,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { navigateToPublicTests } from '@/api/dynamic-endpoints';
 import { Button } from '@/components/ui/Button';
 import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
-import { useResearchListQuery } from '@/hooks/useResearchListQuery';
+import { useResearchList, useDeleteResearch } from '@/api';
 import { researchAPI } from '@/config/api-client';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -116,7 +116,7 @@ function SidebarContent({ className }: SidebarProps) {
       return;
     }
     try {
-      await deleteResearch(researchToDelete.id);
+      await deleteResearchMutation.mutateAsync(researchToDelete.id);
 
       if (window.location.search.includes(`research=${researchToDelete.id}`)) {
         router.replace('/dashboard');
@@ -129,7 +129,8 @@ function SidebarContent({ className }: SidebarProps) {
     }
   };
 
-  const { researches: allResearch = [], isLoading: isLoadingResearchData, deleteResearch } = useResearchListQuery();
+  const { data: allResearch = [], isLoading: isLoadingResearchData } = useResearchList();
+  const deleteResearchMutation = useDeleteResearch();
 
   useEffect(() => {
     if (allResearch.length > 0) {

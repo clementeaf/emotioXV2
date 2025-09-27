@@ -3,7 +3,8 @@
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
 import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { useDashboardResearch } from '@/hooks/useDashboardResearch';
-import { memo } from 'react';
+import { useResearchList } from '@/api';
+import { memo, useMemo } from 'react';
 import { DashboardMainContent } from './DashboardMainContent';
 import { DashboardStats } from './DashboardStats';
 
@@ -12,9 +13,21 @@ import { DashboardStats } from './DashboardStats';
  */
 export const DashboardContent = memo(() => {
   const { researchId, section, isAimFramework, activeResearch, isLoading } = useDashboardResearch();
+  const { data: researchList = [], isLoading: isLoadingResearch } = useResearchList();
+
+  // Calculate dashboard stats from research list
+  const dashboardStats = useMemo(() => {
+    const totalResearch = researchList.length;
+    const inProgress = researchList.filter(r => r.status === 'in-progress' || r.status === 'active').length;
+    const completed = researchList.filter(r => r.status === 'completed').length;
+    // For participants, we would need additional data - for now use 0
+    const participants = 0;
+
+    return { totalResearch, inProgress, completed, participants };
+  }, [researchList]);
 
   // Nuevo: loading explícito si el estado aún no está listo
-  if (isLoading) {
+  if (isLoading || isLoadingResearch) {
     return (
       <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)] overflow-y-auto">
         <div className="mx-auto px-6 py-8 w-full">
@@ -33,7 +46,7 @@ export const DashboardContent = memo(() => {
   return (
     <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)] flex flex-col justify-start overflow-y-auto">
       <div className="mx-auto px-6 py-8 w-full">
-        <DashboardStats />
+        <DashboardStats {...dashboardStats} />
         <DashboardMainContent />
       </div>
     </div>

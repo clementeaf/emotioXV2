@@ -59,8 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       storage.setItem('auth_type', rememberMe ? 'local' : 'session');
 
       setAuthError(null);
-      // Force reload to trigger the new auth hook
-      window.location.reload();
+      // The new auth hooks will automatically pick up the stored data
     } catch (error) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
