@@ -11,7 +11,6 @@ export { default as authService } from './authService';
 export { default as tokenService } from './tokenService';
 
 // Servicios de investigación
-export { default as researchService } from './researchService';
 export { companyService } from './companyService';
 
 // Servicios de pantallas y formularios
@@ -35,7 +34,6 @@ export * from './cognitiveTaskService';
 export * from './companyService';
 export * from './eyeTrackingRecruitService';
 export * from './eyeTrackingService';
-export * from './researchService';
 export * from './smartVOCFormService';
 export * from './thankYouScreenService';
 // ❌ ELIMINADO: welcomeScreen.service - usar hooks centralizados
