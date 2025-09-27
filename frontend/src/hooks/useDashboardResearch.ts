@@ -12,11 +12,13 @@ export const useDashboardResearch = () => {
 
   const researchId = searchParams?.get('research');
   const section = searchParams?.get('section') || null;
+
   const [isAimFramework, setIsAimFramework] = useState(searchParams?.get('aim') === 'true');
   const [activeResearch, setActiveResearch] = useState<ActiveResearch | undefined>(undefined);
 
   // Usar el hook centralizado solo si hay researchId
   const { researchData, isLoading } = useGlobalResearchData(researchId || '');
+
 
   // Si no hay researchId, no deberíamos estar loading
   const actualLoading = researchId ? isLoading : false;
@@ -28,19 +30,23 @@ export const useDashboardResearch = () => {
     }
 
     if (researchData) {
-      setActiveResearch({
-        id: researchData.id,
-        name: researchData.name
-      });
+      // Handle both array and single object response
+      const research = Array.isArray(researchData) ? researchData[0] : researchData;
 
-      // Detectar si es AIM Framework basado en la técnica
-      const researchWithTechnique = researchData as { technique?: string };
-      const isAim = researchWithTechnique.technique === 'aim-framework' || searchParams?.get('aim') === 'true';
-      setIsAimFramework(isAim);
+      if (research) {
+        setActiveResearch({
+          id: research.id,
+          name: research.name
+        });
 
-      // Redirigir a AIM Framework si es necesario
-      if (isAim && !searchParams?.get('section')) {
-        router.replace(`/dashboard?research=${researchId}&aim=true&section=welcome-screen`);
+        // Detectar si es AIM Framework basado en la técnica
+        const isAim = research.technique === 'aim-framework' || searchParams?.get('aim') === 'true';
+        setIsAimFramework(isAim);
+
+        // Redirigir a AIM Framework si es necesario
+        if (isAim && !searchParams?.get('section')) {
+          router.replace(`/dashboard?research=${researchId}&aim=true&section=welcome-screen`);
+        }
       }
     }
   }, [researchId, researchData, searchParams, router]);

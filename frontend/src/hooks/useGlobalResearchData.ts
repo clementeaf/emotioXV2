@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import cognitiveTaskAPI from '../services/cognitiveTaskService';
 import { moduleResponseService } from '../services/moduleResponseService';
-import { useResearchByIdQuery } from './useResearchListQuery';
+import { useResearchById } from '@/api';
 
 // Singleton global para evitar múltiples llamadas simultáneas
 class GlobalAPISingleton {
@@ -243,8 +243,8 @@ interface CombinedQuestionData {
  * Evita llamadas duplicadas usando singleton global y estados compartidos
  */
 export const useGlobalResearchData = (researchId: string) => {
-  // Query para datos básicos del research (reutiliza useResearchByIdQuery)
-  const researchQuery = useResearchByIdQuery(researchId);
+  // Query para datos básicos del research (usa nueva arquitectura)
+  const researchQuery = useResearchById(researchId);
 
   // Estados locales que se sincronizan con los globales
   const [smartVOCFormData, setSmartVOCFormData] = useState<any>(globalStates.smartVOCFormData.get(researchId) || null);

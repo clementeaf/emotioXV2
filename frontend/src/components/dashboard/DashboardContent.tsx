@@ -15,6 +15,7 @@ export const DashboardContent = memo(() => {
   const { researchId, section, isAimFramework, activeResearch, isLoading } = useDashboardResearch();
   const { data: researchList = [], isLoading: isLoadingResearch } = useResearchList();
 
+
   // Calculate dashboard stats from research list
   const dashboardStats = useMemo(() => {
     const totalResearch = researchList.length;

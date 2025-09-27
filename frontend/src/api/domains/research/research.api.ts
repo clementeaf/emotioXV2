@@ -16,8 +16,12 @@ export const researchApi = {
    * Get all research
    */
   getAll: async (params?: ResearchListParams): Promise<ResearchAPIResponse[]> => {
-    const response = await apiClient.get<{ data: ResearchAPIResponse[] }>('/research', { params });
-    return response.data.data || [];
+    const response = await apiClient.get<ResearchAPIResponse[] | { data: ResearchAPIResponse[] }>('/research', { params });
+    // Handle both direct array response and wrapped response
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    return (response.data as { data: ResearchAPIResponse[] }).data || [];
   },
 
   /**
