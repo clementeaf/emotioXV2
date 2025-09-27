@@ -1,12 +1,11 @@
 /**
- * Hook API Simple migrado a AlovaJS
- * Versión simplificada que evita problemas de tipos TypeScript
+ * Hook API Simple migrado a Axios + TanStack Query
+ * Versión simplificada que usa la nueva arquitectura
  */
 
 import { useCallback, useState } from 'react';
-import { useFetcher } from 'alova/client';
-import { alovaInstance } from '../config/alova.config';
-import { useAuth } from './useAuth';
+import { apiClient } from '@/api/config/axios';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface ApiResponse<T> {
   data: T | null;
@@ -52,13 +51,12 @@ interface S3UploadData {
 }
 
 /**
- * Hook simple para llamadas a la API usando AlovaJS
- * Mantiene la misma interfaz que useApiSimple pero usa Alova internamente
+ * Hook simple para llamadas a la API usando Axios
+ * Mantiene la misma interfaz que useApiSimple pero usa Axios internamente
  */
 export function useApiSimple() {
   const [loading, setLoading] = useState(false);
   const { token } = useAuth();
-  const { fetch } = useFetcher();
 
   const makeRequest = useCallback(
     async <T>(
@@ -69,32 +67,29 @@ export function useApiSimple() {
       setLoading(true);
 
       try {
-        let alovaMethod;
-        
-        // Crear el método de Alova apropiado
+        let response;
+
+        // Crear la petición Axios apropiada
         switch (method.toUpperCase()) {
           case 'GET':
-            alovaMethod = alovaInstance.Get<T>(url);
+            response = await apiClient.get<T>(url);
             break;
           case 'POST':
-            alovaMethod = alovaInstance.Post<T>(url, data);
+            response = await apiClient.post<T>(url, data);
             break;
           case 'PUT':
-            alovaMethod = alovaInstance.Put<T>(url, data);
+            response = await apiClient.put<T>(url, data);
             break;
           case 'DELETE':
-            alovaMethod = alovaInstance.Delete<T>(url);
+            response = await apiClient.delete<T>(url);
             break;
           default:
             throw new Error(`Método HTTP no soportado: ${method}`);
         }
 
-        // Ejecutar la petición usando el fetcher de Alova
-        const result = await fetch(alovaMethod);
-        
-        return { data: result, error: null, loading: false };
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        return { data: response.data, error: null, loading: false };
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
         return {
           data: null,
           error: errorMessage,
@@ -104,7 +99,7 @@ export function useApiSimple() {
         setLoading(false);
       }
     },
-    [fetch, token]
+    [token]
   );
 
   // Métodos HTTP simplificados
@@ -115,17 +110,14 @@ export function useApiSimple() {
     put: <T>(url: string, data?: unknown) => makeRequest<T>(url, 'PUT', data),
     delete: <T>(url: string) => makeRequest<T>(url, 'DELETE'),
 
-    // Endpoints específicos
+    // Endpoints específicos - Mantenemos para compatibilidad pero recomendamos usar dominios
     auth: {
       login: (data: { email: string; password: string }) =>
         api.post('/auth/login', data),
-
       register: (data: RegisterData) =>
         api.post('/auth/register', data),
-
       logout: () =>
         api.post('/auth/logout', {}),
-
       getProfile: () =>
         api.get('/auth/profile'),
     },
@@ -230,7 +222,6 @@ export function useApiSimple() {
 
     s3: {
       upload: (data: S3UploadData) => {
-        // Para FormData, Alova manejará automáticamente los headers
         if (data.file instanceof File) {
           const formData = new FormData();
           formData.append('file', data.file);
@@ -246,29 +237,18 @@ export function useApiSimple() {
     },
   };
 
-  // Funciones adicionales de Alova
+  // Utilidades simplificadas - Sin caché de Alova
   const utils = {
-    // Invalidar caché
+    // Sin caché específico - TanStack Query maneja esto automáticamente
     invalidateCache: (pattern?: string | RegExp) => {
-      if (pattern) {
-        alovaInstance.snapshots.match(pattern).forEach(method => method.abort());
-      } else {
-        alovaInstance.snapshots.match(/.*/g).forEach(method => method.abort());
-      }
+      console.warn('Cache invalidation not implemented - use TanStack Query directly');
     },
-    
-    // Obtener datos del caché sin hacer petición
+
     getCachedData: <T>(url: string): T | null => {
-      try {
-        // Usar el URL como filtro en lugar del objeto method
-        const matchedMethods = alovaInstance.snapshots.match(new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-        return matchedMethods.length > 0 ? (matchedMethods[0] as any).data : null;
-      } catch {
-        return null;
-      }
+      console.warn('Cache access not implemented - use TanStack Query directly');
+      return null;
     },
-    
-    // Pre-cargar datos en caché
+
     prefetch: async <T>(url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any) => {
       try {
         await makeRequest<T>(url, method, data);

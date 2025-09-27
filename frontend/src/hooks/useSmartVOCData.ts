@@ -14,6 +14,8 @@ interface UseSmartVOCDataReturn {
   error: Error | null;
   refetch: () => void;
   updateSmartVOC: (data: Partial<SmartVOCFormData>) => Promise<void>;
+  createSmartVOC: (data: SmartVOCFormData) => Promise<SmartVOCFormData>;
+  deleteSmartVOC: () => Promise<void>;
 }
 
 /**
@@ -53,12 +55,30 @@ export const useSmartVOCData = (researchId: string | null): UseSmartVOCDataRetur
     await updateMutation.mutateAsync(updateData);
   };
 
+  const createSmartVOC = async (createData: SmartVOCFormData) => {
+    if (!researchId) throw new Error('Research ID is required');
+    const response = await apiClient.post<ApiResponse<SmartVOCFormData>>(
+      `/research/${researchId}/smart-voc`,
+      createData
+    );
+    queryClient.invalidateQueries({ queryKey: ['smartVOC', researchId] });
+    return response.data.data || response.data;
+  };
+
+  const deleteSmartVOC = async () => {
+    if (!researchId) throw new Error('Research ID is required');
+    await apiClient.delete(`/research/${researchId}/smart-voc`);
+    queryClient.invalidateQueries({ queryKey: ['smartVOC', researchId] });
+  };
+
   return {
     data: data || null,
     isLoading: isLoading || updateMutation.isPending,
     error: error as Error | null,
     refetch,
-    updateSmartVOC
+    updateSmartVOC,
+    createSmartVOC,
+    deleteSmartVOC
   };
 };
 

@@ -1,9 +1,4 @@
-import { 
-  useWelcomeScreenData,
-  useCreateWelcomeScreen,
-  useUpdateWelcomeScreen,
-  useDeleteWelcomeScreen
-} from '@/hooks/useWelcomeScreenData';
+import { useWelcomeScreenData } from '@/hooks/useWelcomeScreenData';
 import { useCallback, useEffect, useState } from 'react';
 
 // ❌ ELIMINADO: No usar welcomeScreenService - todo debe venir del hook centralizado
@@ -32,10 +27,15 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
   const actualResearchId = researchId === 'current' ? '' : researchId;
   
-  // Hooks centralizados para mutaciones
-  const { create: createWelcomeScreen } = useCreateWelcomeScreen();
-  const { update: updateWelcomeScreen } = useUpdateWelcomeScreen();
-  const { delete: deleteWelcomeScreen } = useDeleteWelcomeScreen();
+  // Usar el hook centralizado para obtener datos y operaciones
+  const {
+    data: existingScreen,
+    isLoading,
+    error,
+    updateWelcomeScreen,
+    createWelcomeScreen,
+    deleteWelcomeScreen
+  } = useWelcomeScreenData(actualResearchId);
   const [formData, setFormData] = useState<WelcomeScreenServiceData>(INITIAL_FORM_DATA);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -47,8 +47,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
-  // Usar el hook centralizado para obtener datos
-  const { data: existingScreen, isLoading, error } = useWelcomeScreenData(actualResearchId);
 
   // Procesar datos cuando cambien
   useEffect(() => {

@@ -14,6 +14,8 @@ interface UseThankYouScreenDataReturn {
   error: Error | null;
   refetch: () => void;
   updateThankYouScreen: (data: Partial<ThankYouScreenData>) => Promise<void>;
+  createThankYouScreen: (data: ThankYouScreenData) => Promise<ThankYouScreenData>;
+  deleteThankYouScreen: () => Promise<void>;
 }
 
 /**
@@ -53,12 +55,30 @@ export const useThankYouScreenData = (researchId: string | null): UseThankYouScr
     await updateMutation.mutateAsync(updateData);
   };
 
+  const createThankYouScreen = async (createData: ThankYouScreenData) => {
+    if (!researchId) throw new Error('Research ID is required');
+    const response = await apiClient.post<ApiResponse<ThankYouScreenData>>(
+      `/research/${researchId}/thank-you-screen`,
+      createData
+    );
+    queryClient.invalidateQueries({ queryKey: ['thankYouScreen', researchId] });
+    return response.data.data || response.data;
+  };
+
+  const deleteThankYouScreen = async () => {
+    if (!researchId) throw new Error('Research ID is required');
+    await apiClient.delete(`/research/${researchId}/thank-you-screen`);
+    queryClient.invalidateQueries({ queryKey: ['thankYouScreen', researchId] });
+  };
+
   return {
     data: data || null,
     isLoading: isLoading || updateMutation.isPending,
     error: error as Error | null,
     refetch,
-    updateThankYouScreen
+    updateThankYouScreen,
+    createThankYouScreen,
+    deleteThankYouScreen
   };
 };
 

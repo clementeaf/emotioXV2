@@ -4,12 +4,7 @@
 import { useCallback, useState } from 'react';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
-import {
-  useSmartVOCData,
-  useCreateSmartVOC,
-  useUpdateSmartVOC,
-  useDeleteSmartVOC
-} from '@/hooks/useSmartVOCData';
+import { useSmartVOCData } from '@/hooks/useSmartVOCData';
 
 import { SUCCESS_MESSAGES } from '../constants';
 import { ErrorModalData } from '../types';
@@ -21,11 +16,8 @@ import { ErrorModalData } from '../types';
 export const useSmartVOCMutations = (researchId: string, smartVocId?: string) => {
   const actualResearchId = researchId === 'current' ? '' : researchId;
 
-  // Hooks centralizados AlovaJS
-  const { data: smartVocData, isLoading, refetch } = useSmartVOCData(actualResearchId);
-  const { create: createSmartVOC } = useCreateSmartVOC();
-  const { update: updateSmartVOC } = useUpdateSmartVOC();
-  const { delete: deleteSmartVOC } = useDeleteSmartVOC();
+  // Hooks centralizados TanStack Query
+  const { data: smartVocData, isLoading, refetch, updateSmartVOC, createSmartVOC, deleteSmartVOC } = useSmartVOCData(actualResearchId);
 
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -56,10 +48,11 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
 
         if (smartVocData || smartVocId) {
           // Actualizar existente
-          result = await updateSmartVOC(actualResearchId, {
+          await updateSmartVOC({
             ...data,
             researchId: actualResearchId
           });
+          result = { ...data, researchId: actualResearchId };
         } else {
           // Crear nuevo
           result = await createSmartVOC({
@@ -103,7 +96,7 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
 
       setIsDeleting(true);
       try {
-        await deleteSmartVOC(actualResearchId);
+        await deleteSmartVOC();
 
         showModal({
           title: 'Eliminado',

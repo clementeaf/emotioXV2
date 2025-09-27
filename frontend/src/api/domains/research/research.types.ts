@@ -9,14 +9,14 @@ export type {
   UpdateResearchRequest,
   ResearchAPIResponse,
   ResearchListResponse,
-  ResearchType,
-  ResearchStatus,
   ResearchRecord,
   ResearchConfig,
   ResearchFormData,
   ResearchCreationResponse,
   ResearchBasicData
 } from '@/types/research';
+
+export type { ResearchType, ResearchStatus } from '@/types/research';
 
 // Additional research-specific types for the domain
 export interface ResearchFilters {

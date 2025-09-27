@@ -14,6 +14,8 @@ interface UseWelcomeScreenDataReturn {
   error: Error | null;
   refetch: () => void;
   updateWelcomeScreen: (data: Partial<WelcomeScreenData>) => Promise<void>;
+  createWelcomeScreen: (data: WelcomeScreenData) => Promise<WelcomeScreenData>;
+  deleteWelcomeScreen: () => Promise<void>;
 }
 
 /**
@@ -53,12 +55,30 @@ export const useWelcomeScreenData = (researchId: string | null): UseWelcomeScree
     await updateMutation.mutateAsync(updateData);
   };
 
+  const createWelcomeScreen = async (createData: WelcomeScreenData) => {
+    if (!researchId) throw new Error('Research ID is required');
+    const response = await apiClient.post<ApiResponse<WelcomeScreenData>>(
+      `/research/${researchId}/welcome-screen`,
+      createData
+    );
+    queryClient.invalidateQueries({ queryKey: ['welcomeScreen', researchId] });
+    return response.data.data || response.data;
+  };
+
+  const deleteWelcomeScreen = async () => {
+    if (!researchId) throw new Error('Research ID is required');
+    await apiClient.delete(`/research/${researchId}/welcome-screen`);
+    queryClient.invalidateQueries({ queryKey: ['welcomeScreen', researchId] });
+  };
+
   return {
     data: data || null,
     isLoading: isLoading || updateMutation.isPending,
     error: error as Error | null,
     refetch,
-    updateWelcomeScreen
+    updateWelcomeScreen,
+    createWelcomeScreen,
+    deleteWelcomeScreen
   };
 };
 

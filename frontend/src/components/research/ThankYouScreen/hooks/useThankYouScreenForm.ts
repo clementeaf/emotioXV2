@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  useThankYouScreenData,
-  useCreateThankYouScreen,
-  useUpdateThankYouScreen,
-  useDeleteThankYouScreen
-} from '@/hooks/useThankYouScreenData';
+import { useThankYouScreenData } from '@/hooks/useThankYouScreenData';
 import { ThankYouScreenModel } from '@/shared/interfaces/thank-you-screen.interface';
 import {
   ErrorModalData,
@@ -30,10 +25,15 @@ const INITIAL_FORM_DATA: ThankYouScreenFormData = {
 export const useThankYouScreenForm = (researchId: string): UseThankYouScreenFormResult => {
   const actualResearchId = researchId === 'current' ? '' : researchId;
 
-  // Hooks centralizados para mutaciones
-  const { create: createThankYouScreen } = useCreateThankYouScreen();
-  const { update: updateThankYouScreen } = useUpdateThankYouScreen();
-  const { delete: deleteThankYouScreen } = useDeleteThankYouScreen();
+  // Usar el hook centralizado para obtener datos y operaciones
+  const {
+    data: existingScreen,
+    isLoading,
+    error,
+    updateThankYouScreen,
+    createThankYouScreen,
+    deleteThankYouScreen
+  } = useThankYouScreenData(actualResearchId);
 
   const [formData, setFormData] = useState<ThankYouScreenFormData>(INITIAL_FORM_DATA);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -44,9 +44,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
-
-  // Usar el hook centralizado para obtener datos
-  const { data: existingScreen, isLoading, error } = useThankYouScreenData(actualResearchId);
 
   // Procesar datos cuando cambien
   useEffect(() => {
