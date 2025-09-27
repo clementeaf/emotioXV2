@@ -1,10 +1,7 @@
 'use client';
 
-import { LoadingScreen } from '@/components/ui/LoadingScreen';
-import { apiClient } from '@/config/api';
-import { updateApiToken } from '@/api/config/axios';
-import { useAuth as useNewAuth } from '@/api';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useAuth as useNewAuth, useLogout as useNewLogout } from '@/api';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 
 interface User {
   id: string;
@@ -35,42 +32,16 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const newAuth = useNewAuth();
-  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const logoutMutation = useNewLogout();
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Initialize from the new auth hook
-  const { user, token, isAuthenticated } = newAuth;
+  const { user, token, isAuthenticated, isLoading } = newAuth;
 
-  // Configurar token en ambos clientes API cuando esté disponible
-  useEffect(() => {
-    if (token) {
-      console.log('AuthProvider: Configurando token:', token.substring(0, 20) + '...');
-      apiClient.setAuthToken(token);
-      updateApiToken(token);
-    } else {
-      console.log('AuthProvider: Limpiando token');
-      apiClient.clearAuthToken();
-      updateApiToken(null);
-    }
-  }, [token]);
-
-  const clearStorage = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('auth_type');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('auth_type');
-  };
-
-  const restoreSession = useCallback(async (): Promise<boolean> => {
-    return isAuthenticated;
-  }, [isAuthenticated]);
-
+  // This login method is kept for compatibility but the real login happens through useLogin hook
   const login = useCallback(async (newToken: string, rememberMe: boolean) => {
+    // This is mainly for legacy compatibility - the actual login should use useLogin hook
+    console.warn('AuthProvider login called - consider using useLogin hook directly');
     try {
-      setIsTransitioning(true);
       const tokenParts = newToken.split('.');
       if (tokenParts.length !== 3) throw new Error('Token inválido');
 
@@ -81,45 +52,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: payload.name
       };
 
-      // Save to storage
+      // Save to storage (the new auth hooks will pick this up)
       const storage = rememberMe ? localStorage : sessionStorage;
       storage.setItem('token', newToken);
       storage.setItem('user', JSON.stringify(userData));
       storage.setItem('auth_type', rememberMe ? 'local' : 'session');
 
-      // Update tokens
-      apiClient.setAuthToken(newToken);
-      updateApiToken(newToken);
-
       setAuthError(null);
-      window.location.href = '/dashboard';
+      // Force reload to trigger the new auth hook
+      window.location.reload();
     } catch (error) {
-      clearStorage();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       setAuthError('Error al procesar el login');
-      setIsTransitioning(false);
       throw error;
     }
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      setIsTransitioning(true);
-      clearStorage();
-      apiClient.clearAuthToken();
-      updateApiToken(null);
-      setAuthError(null);
-      window.location.href = '/login';
+      await logoutMutation.mutateAsync();
     } catch (error) {
-      clearStorage();
-      apiClient.clearAuthToken();
-      updateApiToken(null);
-      setIsTransitioning(false);
+      // The mutation handles cleanup even on error
     }
-  }, []);
+  }, [logoutMutation]);
 
-  useEffect(() => {
-    setAuthLoading(false);
-  }, []);
+  const restoreSession = useCallback(async (): Promise<boolean> => {
+    return isAuthenticated;
+  }, [isAuthenticated]);
 
   const clearError = useCallback(() => {
     setAuthError(null);
@@ -129,14 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={{
       user,
       token,
-      authLoading,
+      authLoading: isLoading,
       authError,
       login,
       logout,
       clearError,
       restoreSession
     }}>
-      {isTransitioning && <LoadingScreen />}
       {children}
     </AuthContext.Provider>
   );

@@ -202,9 +202,8 @@ function SidebarContent({ className }: SidebarProps) {
       try {
         await logout();
       } catch (error) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        // The logout hook handles cleanup even on error, but as fallback:
+        console.error('Logout error:', error);
       }
     };
     return (

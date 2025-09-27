@@ -10,7 +10,9 @@ export const authApi = {
    * Login user
    */
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
+    // Extract rememberMe since it's only for frontend use
+    const { rememberMe, ...loginData } = credentials;
+    const response = await apiClient.post<LoginResponse>('/auth/login', loginData);
     return response.data;
   },
 

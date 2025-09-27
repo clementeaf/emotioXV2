@@ -4,6 +4,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { authApi } from './auth.api';
 import { updateApiToken } from '@/api/config/axios';
@@ -25,10 +26,14 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (credentials: LoginRequest) => authApi.login(credentials),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      // Choose storage based on rememberMe preference
+      const storage = variables.rememberMe ? localStorage : sessionStorage;
+
       // Save token and user data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      storage.setItem('token', data.token);
+      storage.setItem('user', JSON.stringify(data.user));
+      storage.setItem('auth_type', variables.rememberMe ? 'local' : 'session');
 
       // Update axios token
       updateApiToken(data.token);
@@ -86,15 +91,18 @@ export function useRegister() {
  * Hook for logout
  */
 export function useLogout() {
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: () => authApi.logout(),
     onSuccess: () => {
-      // Clear local storage
+      // Clear all storage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('auth_type');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('auth_type');
 
       // Clear axios token
       updateApiToken(null);
@@ -105,18 +113,22 @@ export function useLogout() {
       // Show success message
       toast.success('Sesión cerrada');
 
-      // Redirect to login
-      router.push('/login');
+      // Force redirect using window.location to ensure clean navigation
+      window.location.href = '/login';
     },
-    onError: (error: any) => {
+    onError: () => {
       // Even if logout fails on backend, clear local session
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('auth_type');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('auth_type');
       updateApiToken(null);
       queryClient.clear();
 
-      // Redirect to login
-      router.push('/login');
+      // Force redirect using window.location
+      window.location.href = '/login';
     },
   });
 }
@@ -125,12 +137,14 @@ export function useLogout() {
  * Hook for getting user profile
  */
 export function useProfile() {
+  const { token } = useAuth();
+
   return useQuery({
     queryKey: authKeys.profile(),
     queryFn: () => authApi.getProfile(),
     retry: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!localStorage.getItem('token'), // Only fetch if token exists
+    enabled: token !== null, // Only fetch if token exists
   });
 }
 
@@ -138,20 +152,38 @@ export function useProfile() {
  * Hook for checking auth status
  */
 export function useAuth() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  let user: User | null = null;
-  try {
-    user = userStr ? JSON.parse(userStr) : null;
-  } catch {
-    user = null;
-  }
+  useEffect(() => {
+    // Check localStorage first
+    let storedToken = localStorage.getItem('token');
+    let storedUser = localStorage.getItem('user');
+
+    // If not in localStorage, check sessionStorage
+    if (!storedToken || !storedUser) {
+      storedToken = sessionStorage.getItem('token');
+      storedUser = sessionStorage.getItem('user');
+    }
+
+    let parsedUser: User | null = null;
+    try {
+      parsedUser = storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      parsedUser = null;
+    }
+
+    setToken(storedToken);
+    setUser(parsedUser);
+    setIsLoading(false);
+  }, []);
 
   return {
-    isAuthenticated: !!token,
+    isAuthenticated: token !== null,
     user,
     token,
+    isLoading,
   };
 }
 

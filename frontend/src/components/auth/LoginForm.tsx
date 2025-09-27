@@ -63,19 +63,13 @@ export function LoginForm({ className }: LoginFormProps) {
           required
         />
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <CheckboxField
             id="remember"
             label="Recordarme"
             checked={state.rememberMe}
             onChange={(checked) => handleInputChange('rememberMe', checked)}
           />
-          <Link
-            href={PUBLIC_ROUTES.FORGOT_PASSWORD}
-            className="text-sm text-blue-600 hover:text-blue-500"
-          >
-            ¿Olvidaste tu contraseña?
-          </Link>
         </div>
 
         <SubmitButton

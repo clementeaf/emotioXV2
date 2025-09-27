@@ -15,8 +15,11 @@ export const useDashboardResearch = () => {
   const [isAimFramework, setIsAimFramework] = useState(searchParams?.get('aim') === 'true');
   const [activeResearch, setActiveResearch] = useState<ActiveResearch | undefined>(undefined);
 
-  // Usar el hook centralizado en lugar de localStorage
+  // Usar el hook centralizado solo si hay researchId
   const { researchData, isLoading } = useGlobalResearchData(researchId || '');
+
+  // Si no hay researchId, no deberíamos estar loading
+  const actualLoading = researchId ? isLoading : false;
 
   useEffect(() => {
     if (!researchId) {
@@ -52,6 +55,6 @@ export const useDashboardResearch = () => {
     section,
     isAimFramework,
     activeResearch,
-    isLoading
+    isLoading: actualLoading
   };
 };

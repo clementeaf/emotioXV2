@@ -10,9 +10,7 @@ import { Suspense } from 'react';
 export default function DashboardPage() {
   const { user, authLoading } = useAuth();
 
-
-
-  if (!user) {
+  if (authLoading || !user) {
     return null;
   }
 

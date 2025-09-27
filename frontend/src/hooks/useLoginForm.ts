@@ -79,7 +79,8 @@ export const useLoginForm = () => {
     try {
       await loginMutation.mutateAsync({
         email: state.email,
-        password: state.password
+        password: state.password,
+        rememberMe: state.rememberMe
       });
       setStatus('success');
     } catch (error) {
