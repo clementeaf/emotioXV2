@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { useRequest } from 'alova/client';
-import alovaInstance from '@/config/alova.config';
+import { useCreateResearch } from '@/api';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearchStore, researchHelpers } from '@/stores/useResearchStore';
 import { getTechniqueStages } from '@/config/techniques-registry';
@@ -43,10 +42,8 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
   const [showSummary, setShowSummary] = useState(false);
   const [countdown] = useState(3);
 
-  const { loading: isSubmitting, send: submitRequest } = useRequest(
-    (payload: ResearchBasicData) => alovaInstance.Post('/research', payload),
-    { immediate: false }
-  );
+  const createResearchMutation = useCreateResearch();
+  const isSubmitting = createResearchMutation.isPending;
 
   // Restaurar borrador si existe
   useEffect(() => {
@@ -207,7 +204,10 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
 
     try {
       console.log('🚀 SENDING CREATE REQUEST TO BACKEND');
-      const result = await submitRequest(createData);
+      const result = await createResearchMutation.mutateAsync({
+        basic: createData,
+        status: 'draft' as const
+      });
       console.log('🚀 BACKEND CREATE SUCCESS:', result);
 
       const resultData = result as { data?: any; id?: string; name?: string; message?: string; [key: string]: any };
