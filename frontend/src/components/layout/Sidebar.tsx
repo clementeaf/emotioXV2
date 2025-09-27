@@ -8,7 +8,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { navigateToPublicTests } from '@/api/dynamic-endpoints';
 import { Button } from '@/components/ui/Button';
 import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
-import { useResearchList } from '@/hooks/useResearchList';
+import { useResearchListQuery } from '@/hooks/useResearchListQuery';
 import { researchAPI } from '@/config/api-client';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -129,7 +129,7 @@ function SidebarContent({ className }: SidebarProps) {
     }
   };
 
-  const { researches: allResearch = [], isLoading: isLoadingResearchData, deleteResearch } = useResearchList();
+  const { researches: allResearch = [], isLoading: isLoadingResearchData, deleteResearch } = useResearchListQuery();
 
   useEffect(() => {
     if (allResearch.length > 0) {

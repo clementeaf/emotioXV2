@@ -108,12 +108,16 @@ export const alovaInstance = createAlova({
 // Función helper para invalidar caché
 export const invalidateCache = (matcher?: string | RegExp) => {
   if (matcher) {
-    alovaInstance.snapshots.match(matcher).forEach(method => {
+    // Buscar y abortar los métodos que coincidan para forzar refetch
+    const methods = alovaInstance.snapshots.match(matcher);
+    methods.forEach(method => {
+      // Abortar y limpiar el snapshot
       method.abort();
     });
   } else {
-    // Invalidar toda la caché - match all and abort
-    alovaInstance.snapshots.match(/.*/g).forEach(method => {
+    // Abortar todos los métodos para forzar refetch
+    const allMethods = alovaInstance.snapshots.match(/.*/);
+    allMethods.forEach(method => {
       method.abort();
     });
   }

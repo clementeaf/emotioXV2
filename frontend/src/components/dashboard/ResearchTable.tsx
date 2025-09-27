@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/Dialog';
-import { useResearchList } from '@/hooks/useResearchList';
+import { useResearchListQuery } from '@/hooks/useResearchListQuery';
 import { apiClient } from '@/config/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -70,7 +70,7 @@ function ResearchTableContent() {
   const [projectToDelete, setProjectToDelete] = useState<ResearchTableItem | null>(null);
 
   // Usar el hook centralizado para obtener research data
-  const { researches: researchData = [], isLoading, error, refetch, deleteResearch } = useResearchList();
+  const { researches: researchData = [], isLoading, error, refetch, deleteResearch } = useResearchListQuery();
 
   const research = researchData as ResearchTableItem[];
 
@@ -96,14 +96,14 @@ function ResearchTableContent() {
     try {
       // ✅ Usar el hook centralizado que ya maneja optimistic updates
       await deleteResearch(projectToDelete.id);
-      
-      toast.success('Investigación eliminada correctamente');
+
+      // El toast ya se muestra en el hook
       setShowDeleteModal(false);
       setProjectToDelete(null);
-      // ✅ NO llamar refetch - el hook ya lo maneja automáticamente
+      // ✅ NO llamar refetch - TanStack Query lo maneja automáticamente
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al eliminar la investigación';
-      toast.error(errorMessage);
+      // El error ya se maneja en el hook
+      console.error('Delete error:', error);
     }
   };
 

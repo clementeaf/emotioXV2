@@ -5,6 +5,8 @@
  */
 
 import { useRequest, useWatcher } from 'alova/client';
+import { useEffect, useState, useRef } from 'react';
+import { invalidateCache } from '../config/alova.config';
 import { researchMethods } from '../services/research.methods';
 import type {
   Research,
@@ -72,6 +74,33 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
     immediate: autoRefresh,
   });
 
+  // Listen for research list updates from other components
+  useEffect(() => {
+    const handleResearchListUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { action, data, optimistic } = customEvent.detail;
+
+      if (action === 'delete' && optimistic) {
+        // Apply optimistic update to this instance
+        const filteredData = data || [];
+        listQuery.data = { data: filteredData } as any;
+      } else if (action === 'rollback') {
+        // Rollback to original data
+        listQuery.data = { data: data } as any;
+      } else {
+        // Force refetch for other actions
+        listQuery.send(true);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('research-list-updated', handleResearchListUpdate);
+      return () => {
+        window.removeEventListener('research-list-updated', handleResearchListUpdate);
+      };
+    }
+  }, [listQuery]);
+
   // Create research mutation
   const createMutation = useRequest(
     (data: CreateResearchRequest) => researchMethods.create(data),
@@ -99,19 +128,23 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
 
   // Handle create research
   const handleCreateResearch = async (data: CreateResearchRequest): Promise<Research> => {
+    console.log('🔥 CREATE RESEARCH CALLED FROM useResearchList:', data);
     try {
+      console.log('🔥 SENDING CREATE MUTATION');
       const response = await createMutation.send(data);
-      
+      console.log('🔥 CREATE MUTATION SUCCESS:', response);
+
       if (!response) {
         throw new Error('Invalid create response');
       }
 
       // Refresh list after creation
+      console.log('🔥 REFRESHING LIST AFTER CREATE');
       await listQuery.send();
-      
+
       return response.data || response;
     } catch (error) {
-      console.error('Failed to create research:', error);
+      console.error('🔥 CREATE FAILED IN useResearchList:', error);
       throw error;
     }
   };
@@ -145,26 +178,56 @@ export function useResearchList(params: UseResearchListParams = {}): UseResearch
       throw new Error('Research ID is required for deletion');
     }
 
-    // ✅ Optimistic update - remove from UI immediately
+    console.log('🔥 DELETE STARTED - ID:', id);
+
+    // ✅ Store original data for rollback
     const currentData = (listQuery.data as unknown as { data?: ResearchAPIResponse[] })?.data || [];
+    console.log('🔥 CURRENT DATA BEFORE DELETE:', currentData.length, 'items');
+
     const optimisticData = currentData.filter(research => research.id !== id);
-    
-    // Update UI immediately
+    console.log('🔥 OPTIMISTIC DATA AFTER FILTER:', optimisticData.length, 'items');
+
+    // ✅ Optimistic update - remove from UI immediately
     listQuery.data = { data: optimisticData } as any;
+    console.log('🔥 LISTQUERY.DATA UPDATED TO:', (listQuery.data as any)?.data?.length, 'items');
+
+    // ✅ Notify other instances immediately with optimistic update
+    if (typeof window !== 'undefined') {
+      console.log('🔥 DISPATCHING EVENT TO OTHER INSTANCES');
+      window.dispatchEvent(new CustomEvent('research-list-updated', {
+        detail: { action: 'delete', id, optimistic: true, data: optimisticData }
+      }));
+    }
 
     try {
+      // ✅ Execute deletion in background
+      console.log('🔥 SENDING DELETE REQUEST TO BACKEND');
       await deleteMutation.send(id);
-      // ✅ Success - no need to refetch, optimistic update was correct
+
+      // ✅ Success - the optimistic update was correct, no need to change anything
+      console.log('🔥 BACKEND DELETE SUCCESS - OPTIMISTIC UPDATE CONFIRMED');
     } catch (error) {
-      console.error('Failed to delete research:', error);
-      // ✅ Rollback on error - restore original data
+      console.error('🔥 BACKEND DELETE FAILED:', error);
+
+      // ✅ Rollback optimistic update on error
       listQuery.data = { data: currentData } as any;
+      console.log('🔥 ROLLBACK COMPLETED');
+
+      // ✅ Notify other instances to rollback
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('research-list-updated', {
+          detail: { action: 'rollback', id, data: currentData }
+        }));
+      }
+
       throw error;
     }
   };
 
   const apiResponse = listQuery.data as unknown as { data?: ResearchAPIResponse[] };
   const listData = apiResponse?.data || [];
+
+  console.log('🔥 HOOK RETURN - LISTDATA LENGTH:', listData.length);
 
   return {
     // Data

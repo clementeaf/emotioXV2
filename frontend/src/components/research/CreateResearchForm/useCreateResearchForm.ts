@@ -170,9 +170,12 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
   };
 
   const submitForm = async () => {
+    console.log('🚀 CREATE FORM SUBMIT STARTED');
+
     const finalErrors = validateStep(formData.currentStep);
 
     if (Object.keys(finalErrors).length > 0) {
+      console.log('🚀 VALIDATION ERRORS:', finalErrors);
       setFormData(prev => ({ ...prev, errors: finalErrors }));
       return;
     }
@@ -180,6 +183,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
     if (isSubmitting) return;
 
     const clientId = researchHelpers.newClientId();
+    console.log('🚀 GENERATED CLIENT ID:', clientId);
     const createData: ResearchBasicData = {
       name: formData.basic.name,
       companyId: formData.basic.companyId,
@@ -188,6 +192,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
       description: formData.basic.description || ''
     };
 
+    console.log('🚀 ADDING OPTIMISTIC RESEARCH:', createData);
     optimisticAdd({
       clientId,
       name: createData.name,
@@ -201,10 +206,13 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
     });
 
     try {
+      console.log('🚀 SENDING CREATE REQUEST TO BACKEND');
       const result = await submitRequest(createData);
+      console.log('🚀 BACKEND CREATE SUCCESS:', result);
 
       const resultData = result as { data?: any; id?: string; name?: string; message?: string; [key: string]: any };
 
+      console.log('🚀 RECONCILING OPTIMISTIC DATA WITH REAL ID');
       reconcileByClientId(clientId, {
         id: resultData.data?.id || resultData.id,
         name: resultData.data?.name || resultData.name,
@@ -235,6 +243,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
       }
 
     } catch (error: unknown) {
+      console.log('🚀 CREATE FAILED - ROLLING BACK:', error);
       rollback();
       const errorMessage = error instanceof Error ? error.message : 'Error al crear la investigación';
       toast.error(errorMessage);
