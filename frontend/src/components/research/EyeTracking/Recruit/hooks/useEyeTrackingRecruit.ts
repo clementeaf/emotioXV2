@@ -20,7 +20,7 @@ import {
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useEyeTrackingSharedData } from '@/hooks/useEyeTrackingSharedData';
-import { eyeTrackingRecruitAPI } from '@/config/api-client';
+import { eyeTrackingApi } from '@/api/domains/eye-tracking';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 
 
@@ -594,7 +594,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
 
       // Verificar si la respuesta contiene los datos necesarios
-      if (!eyeTrackingRecruitData.id) {
+      if (!(eyeTrackingRecruitData as any)?.id) {
         // Solo crear config por defecto si no hay datos optimistas locales
         if (!formData.id) {
           const defaultConfig = createDefaultConfig(actualResearchId);
@@ -609,7 +609,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       // El cache de React Query mantiene los datos optimistas persistentes
 
       // Procesar la respuesta para adaptarla a nuestra estructura
-      const configData = processApiResponse(eyeTrackingRecruitData);
+      const configData = processApiResponse(eyeTrackingRecruitData as any);
 
       // Asegurarnos de usar el researchId correcto
       configData.researchId = actualResearchId;
@@ -725,9 +725,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       const isUpdate = data.id && typeof data.id === 'string' && data.id.length > 0;
       
       if (isUpdate) {
-        return await eyeTrackingRecruitAPI.updateConfig(researchId, data);
+        return await eyeTrackingApi.recruit.updateConfig(researchId, data as any);
       } else {
-        return await eyeTrackingRecruitAPI.createConfig(researchId, data);
+        return await eyeTrackingApi.recruit.createConfig(researchId, data as any);
       }
     },
     // 🎯 CARGA OPTIMISTA: Actualizar inmediatamente múltiples caches
@@ -823,7 +823,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         if (result.id) {
           setFormData(prev => ({
             ...prev,
-            ...result,
+            ...(result as any),
             id: result.id
           }));
         }

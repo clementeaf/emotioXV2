@@ -134,8 +134,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         // Actualizar existente usando hook centralizado
         resultRecord = await updateThankYouScreen(actualResearchId, {
           ...dataToSubmit,
-          researchId: actualResearchId,
-          id: existingScreen.id
+          researchId: actualResearchId
         });
       } else if (actualResearchId) {
         // Crear nuevo usando hook centralizado
@@ -238,7 +237,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     if (!existingScreen?.id || !actualResearchId) return;
     setIsDeleting(true);
     try {
-      await deleteThankYouScreen(actualResearchId);
+      await deleteThankYouScreen();
       setFormData({ ...INITIAL_FORM_DATA });
       setHasBeenSaved(false);
       setModalError({

@@ -1,4 +1,4 @@
-import { eyeTrackingAPI, eyeTrackingRecruitAPI } from '@/config/api-client';
+import { eyeTrackingApi } from '@/api/domains/eye-tracking';
 import { useQuery } from '@tanstack/react-query';
 
 /**
@@ -17,7 +17,7 @@ export const useEyeTrackingSharedData = (researchId: string, options?: {
     queryFn: async () => {
       if (!researchId) return null;
       try {
-        const response = await eyeTrackingAPI.getByResearch(researchId);
+        const response = await eyeTrackingApi.build.getByResearchId(researchId);
         return response;
       } catch (error: any) {
         if (error?.statusCode === 404 || error?.message?.includes('not found')) {
@@ -41,7 +41,7 @@ export const useEyeTrackingSharedData = (researchId: string, options?: {
     queryFn: async () => {
       if (!researchId) return null;
       try {
-        const response = await eyeTrackingRecruitAPI.getConfigByResearch(researchId);
+        const response = await eyeTrackingApi.recruit.getConfigByResearch(researchId);
         return response;
       } catch (error: any) {
         if (error?.statusCode === 404 || error?.message?.includes('not found')) {

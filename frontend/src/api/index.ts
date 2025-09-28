@@ -28,6 +28,27 @@ export type {
   ResearchFilters
 } from './domains/research';
 
+// Eye-Tracking domain
+export {
+  eyeTrackingApi,
+  useEyeTrackingData,
+  useEyeTrackingBuild,
+  useEyeTrackingRecruit,
+  useEyeTrackingResults,
+  eyeTrackingKeys
+} from './domains/eye-tracking';
+export type {
+  EyeTrackingData,
+  EyeTrackingBuildConfig,
+  EyeTrackingResults,
+  EyeTrackingRecruitConfig,
+  EyeTrackingRecruitParticipant,
+  EyeTrackingRecruitStats,
+  RecruitmentLink,
+  EyeTrackingStage,
+  UseEyeTrackingDataReturn
+} from './domains/eye-tracking';
+
 // Future domains will be added here:
 // export { companiesApi } from './domains/companies';
 // export { participantsApi } from './domains/participants';

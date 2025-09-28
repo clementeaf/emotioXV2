@@ -19,7 +19,6 @@ export { default as thankYouScreenService } from './thankYouScreenService';
 // ❌ ELIMINADO: welcomeScreenService - usar hooks centralizados de useWelcomeScreenData
 
 // Servicios de eye tracking
-export { default as eyeTrackingRecruitService } from './eyeTrackingRecruitService';
 export { default as eyeTrackingService } from './eyeTrackingService';
 
 // Servicio de tareas cognitivas
@@ -32,7 +31,6 @@ export { default as s3Service } from './s3Service';
 export * from './authService';
 export * from './cognitiveTaskService';
 export * from './companyService';
-export * from './eyeTrackingRecruitService';
 export * from './eyeTrackingService';
 export * from './smartVOCFormService';
 export * from './thankYouScreenService';

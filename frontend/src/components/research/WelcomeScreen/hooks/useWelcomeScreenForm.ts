@@ -64,9 +64,9 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         startButtonText: existingScreen.startButtonText ?? '',
         metadata: {
           version: existingScreen.metadata?.version || '1.0.0',
-          lastUpdated: existingScreen.metadata?.lastUpdated || new Date(),
+          lastUpdated: existingScreen.metadata?.lastUpdated || new Date().toISOString(),
           lastModifiedBy: existingScreen.metadata?.lastModifiedBy || 'user'
-        }
+        } as any
       };
       setFormData(formDataToSet);
       setIsEmpty(false);
@@ -146,16 +146,17 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         resultRecord = await updateWelcomeScreen(actualResearchId, {
           ...dataToSubmit,
           researchId: actualResearchId,
-          id: existingScreen.id
-        });
+          questionKey: 'WELCOME_SCREEN'
+        } as any) as any;
       } else if (actualResearchId) {
         // Crear nuevo usando hook centralizado
         const payload = {
           ...INITIAL_FORM_DATA,
           ...dataToSubmit,
-          researchId: actualResearchId
+          researchId: actualResearchId,
+          questionKey: 'WELCOME_SCREEN'
         };
-        resultRecord = await createWelcomeScreen(payload);
+        resultRecord = await createWelcomeScreen(payload as any) as any;
       } else {
         throw new Error('No hay researchId válido para guardar.');
       }
@@ -254,7 +255,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     setIsDeleting(true);
     try {
       // Usar hook centralizado para eliminar
-      await deleteWelcomeScreen(actualResearchId);
+      await deleteWelcomeScreen();
       setFormData({ ...INITIAL_FORM_DATA }); // No agregues researchId ni questionKey
       setHasBeenSaved(false); // Resetear el estado de guardado
       setModalError({
@@ -301,7 +302,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     validationErrors,
     isLoading,
     isSaving,
-    existingScreen: existingScreen || null,
+    existingScreen: (existingScreen || null) as any,
     modalError,
     modalVisible,
     handleChange,

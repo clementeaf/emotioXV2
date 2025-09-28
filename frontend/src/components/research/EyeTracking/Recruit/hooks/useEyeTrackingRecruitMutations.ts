@@ -1,91 +1,97 @@
-import { useRequest } from 'alova/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import { eyeTrackingApi, eyeTrackingKeys } from '@/api/domains/eye-tracking';
 import { transformFormDataToAPI } from '../utils/formHelpers';
 import { EyeTrackingRecruitFormData } from '../types/formData.types';
-import { alovaInstance } from '@/config/alova.config';
 
 export function useEyeTrackingRecruitMutations(
   researchId: string,
   onError: (error: { visible: boolean; title: string; message: string }) => void
 ) {
+  const queryClient = useQueryClient();
   const actualResearchId = researchId === 'current' ? '1234' : researchId;
 
   // Save configuration mutation
-  const saveConfigMutation = useRequest(
-    (data: EyeTrackingRecruitFormData) => {
+  const saveConfigMutation = useMutation({
+    mutationFn: async (data: EyeTrackingRecruitFormData) => {
       const apiData = transformFormDataToAPI(data);
-      return alovaInstance.Post('/eye-tracking-recruit/config', { ...apiData, researchId: actualResearchId });
-    },
-    {
-      immediate: false,
-      onSuccess: () => {
-        toast.success('Configuración guardada exitosamente');
-      },
-      onError: (error: unknown) => {
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        onError({
-          visible: true,
-          title: 'Error al guardar',
-          message: errorMessage
-        });
+
+      // Check if config exists
+      const existingConfig = await eyeTrackingApi.recruit.getConfigByResearch(actualResearchId);
+
+      if (existingConfig) {
+        return eyeTrackingApi.recruit.updateConfig(actualResearchId, apiData as any);
+      } else {
+        return eyeTrackingApi.recruit.createConfig(actualResearchId, apiData as any);
       }
+    },
+    onSuccess: () => {
+      toast.success('Configuración guardada exitosamente');
+      queryClient.invalidateQueries({ queryKey: eyeTrackingKeys.recruit(actualResearchId) });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error.message || 'Error desconocido';
+      onError({
+        visible: true,
+        title: 'Error al guardar',
+        message: errorMessage
+      });
     }
-  );
+  });
 
   // Generate link mutation
-  const generateLinkMutation = useRequest(
-    (configId: string) => 
-      alovaInstance.Get(`/eye-tracking-recruit/config/${configId}`),
-    {
-      immediate: false,
-      onSuccess: (data: unknown) => {
-        toast.success('Enlace generado exitosamente');
-        return data;
-      },
-      onError: (error: unknown) => {
-        const errorMessage = error instanceof Error ? error.message : 'Error al generar enlace';
-        onError({
-          visible: true,
-          title: 'Error',
-          message: errorMessage
-        });
-      }
+  const generateLinkMutation = useMutation({
+    mutationFn: async (configId: string) => {
+      const result = await eyeTrackingApi.recruit.generateLink(configId);
+      return result;
+    },
+    onSuccess: () => {
+      toast.success('Enlace generado exitosamente');
+      queryClient.invalidateQueries({ queryKey: eyeTrackingKeys.recruit(actualResearchId) });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error.message || 'Error al generar enlace';
+      onError({
+        visible: true,
+        title: 'Error',
+        message: errorMessage
+      });
     }
-  );
+  });
 
   // Delete configuration mutation
-  const deleteConfigMutation = useRequest(
-    (configId: string) => 
-      alovaInstance.Delete(`/eye-tracking-recruit/config/${configId}`),
-    {
-      immediate: false,
-      onSuccess: () => {
-        toast.success('Configuración eliminada');
-      },
-      onError: (error: unknown) => {
-        const errorMessage = error instanceof Error ? error.message : 'Error al eliminar';
-        onError({
-          visible: true,
-          title: 'Error',
-          message: errorMessage
-        });
-      }
+  const deleteConfigMutation = useMutation({
+    mutationFn: async (configId: string) => {
+      await eyeTrackingApi.recruit.deleteConfig(actualResearchId);
+      return configId;
+    },
+    onSuccess: () => {
+      toast.success('Configuración eliminada');
+      queryClient.invalidateQueries({ queryKey: eyeTrackingKeys.recruit(actualResearchId) });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error.message || 'Error al eliminar';
+      onError({
+        visible: true,
+        title: 'Error',
+        message: errorMessage
+      });
     }
-  );
+  });
 
   return {
     saveConfigMutation: {
-      mutate: saveConfigMutation.send,
-      isPending: saveConfigMutation.loading
+      mutate: saveConfigMutation.mutate,
+      isPending: saveConfigMutation.isPending
     },
     generateLinkMutation: {
-      mutate: generateLinkMutation.send,
-      isPending: generateLinkMutation.loading
+      mutate: generateLinkMutation.mutate,
+      isPending: generateLinkMutation.isPending
     },
     deleteConfigMutation: {
-      mutate: deleteConfigMutation.send,
-      isPending: deleteConfigMutation.loading
+      mutate: deleteConfigMutation.mutate,
+      isPending: deleteConfigMutation.isPending
     },
-    isLoading: saveConfigMutation.loading || generateLinkMutation.loading || deleteConfigMutation.loading,
+    isLoading: saveConfigMutation.isPending || generateLinkMutation.isPending || deleteConfigMutation.isPending,
   };
 }

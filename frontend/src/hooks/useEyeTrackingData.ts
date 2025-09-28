@@ -1,14 +1,14 @@
 /**
- * 👁️ EYE TRACKING DATA HOOK - AlovaJS Clean Implementation
- * Centralized eye tracking data management with strict typing
+ * 👁️ EYE TRACKING DATA HOOK - WRAPPER FOR NEW ARCHITECTURE
+ * This file now acts as a compatibility layer that redirects to the new domain hooks
  */
 
-import { useRequest } from 'alova/client';
-import { 
-  eyeTrackingBuildMethods, 
-  eyeTrackingRecruitMethods,
-  eyeTrackingResultsMethods 
-} from '../services/eye-tracking.methods';
+import {
+  useEyeTrackingData as useEyeTrackingDataDomain,
+  useEyeTrackingBuild as useEyeTrackingBuildDomain,
+  useEyeTrackingRecruit as useEyeTrackingRecruitDomain,
+  useEyeTrackingResults as useEyeTrackingResultsDomain
+} from '@/api/domains/eye-tracking';
 import type {
   EyeTrackingBuildConfig,
   EyeTrackingRecruitFormDataLocal,
@@ -19,209 +19,129 @@ import type {
   EyeTrackingData
 } from '../types/eye-tracking';
 import type { EyeTrackingFormData } from '../../../shared/interfaces/eye-tracking.interface';
-import type { ApiResponse } from '../types/research';
 
 /**
  * Hook for eye tracking data (build and recruit configurations)
+ * Now wraps the new domain hook for backward compatibility
  */
 export function useEyeTrackingData(
   researchId: string,
   options: UseEyeTrackingDataOptions = {}
 ): UseEyeTrackingDataReturn {
-  if (!researchId) {
-    throw new Error('Research ID is required for eye tracking data');
-  }
+  const { enabled = true } = options;
 
-  const { enabled = true, type = 'both' } = options;
+  // Use the new domain hook
+  return useEyeTrackingDataDomain(researchId, { enabled });
+}
 
-  // Build configuration query
-  const buildQuery = useRequest(
-    () => eyeTrackingBuildMethods.getByResearchId(researchId),
-    {
-      initialData: undefined,
-      immediate: enabled && (type === 'build' || type === 'both'),
-    }
-  );
+/**
+ * Hook for eye tracking build configuration only
+ * Now wraps the new domain hook
+ */
+export function useEyeTrackingBuildData(researchId: string) {
+  const buildResult = useEyeTrackingBuildDomain(researchId);
 
-  // Recruit configuration query
-  const recruitQuery = useRequest(
-    () => eyeTrackingRecruitMethods.getByResearchId(researchId),
-    {
-      initialData: undefined,
-      immediate: enabled && (type === 'recruit' || type === 'both'),
-    }
-  );
-
-  // Process combined data
-  const combinedData = useCombinedEyeTrackingData(
-    (buildQuery.data as { data?: EyeTrackingBuildConfig })?.data,
-    (recruitQuery.data as { data?: EyeTrackingRecruitFormDataLocal })?.data,
-    type
-  );
-
-  const handleRefetch = async (): Promise<void> => {
-    try {
-      if (type === 'build' || type === 'both') {
-        await buildQuery.send();
-      }
-      if (type === 'recruit' || type === 'both') {
-        await recruitQuery.send();
-      }
-    } catch (error) {
-      console.error('Failed to refetch eye tracking data:', error);
-      throw error;
-    }
-  };
-
-  const handleRefetchBuild = async (): Promise<void> => {
-    try {
-      await buildQuery.send();
-    } catch (error) {
-      console.error('Failed to refetch build config:', error);
-      throw error;
-    }
-  };
-
-  const handleRefetchRecruit = async (): Promise<void> => {
-    try {
-      await recruitQuery.send();
-    } catch (error) {
-      console.error('Failed to refetch recruit config:', error);
-      throw error;
-    }
-  };
-
+  // Transform to match expected interface
   return {
-    // Data fields
-    data: combinedData || undefined,
-    eyeTrackingData: combinedData,
-    buildConfig: (buildQuery.data as { data?: EyeTrackingBuildConfig })?.data || null,
-    recruitConfig: (recruitQuery.data as { data?: EyeTrackingRecruitFormDataLocal })?.data || null,
+    data: buildResult.data ? {
+      id: `build-${Date.now()}`,
+      researchId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      build: buildResult.data
+    } as EyeTrackingData : undefined,
+    eyeTrackingData: null,
+    buildConfig: buildResult.data,
+    recruitConfig: null,
     results: null,
-    
-    // State fields  
-    isLoading: buildQuery.loading || recruitQuery.loading,
-    isLoadingBuild: buildQuery.loading,
-    isLoadingRecruit: recruitQuery.loading,
+    isLoading: buildResult.isLoading,
+    isLoadingBuild: buildResult.isLoading,
+    isLoadingRecruit: false,
     isLoadingResults: false,
-    error: buildQuery.error?.message || recruitQuery.error?.message || null,
-    
-    // Action fields
-    saveBuildConfig: async () => {},
+    error: buildResult.error ? String(buildResult.error) : null,
+    saveBuildConfig: async (config: Partial<EyeTrackingBuildConfig>) => {
+      if (config.id) {
+        buildResult.update({ id: config.id, data: config });
+      } else {
+        buildResult.create({ ...config, researchId } as any);
+      }
+    },
     saveRecruitConfig: async () => {},
     generateRecruitmentLink: async () => '',
     exportResults: async () => {},
-    refreshData: handleRefetch,
-    
-    // Validation fields
+    refreshData: async () => {},
     validateBuildConfig: () => [],
     validateRecruitConfig: () => []
   };
 }
 
 /**
- * Hook for eye tracking build configuration only
- */
-export function useEyeTrackingBuildData(researchId: string) {
-  return useEyeTrackingData(researchId, { type: 'build' });
-}
-
-/**
  * Hook for eye tracking recruit configuration only
+ * Now wraps the new domain hook
  */
 export function useEyeTrackingRecruitData(researchId: string) {
-  return useEyeTrackingData(researchId, { type: 'recruit' });
+  const recruitResult = useEyeTrackingRecruitDomain(researchId);
+
+  // Transform to match expected interface
+  return {
+    data: recruitResult.config ? {
+      id: `recruit-${Date.now()}`,
+      researchId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      recruit: recruitResult.config as any
+    } as EyeTrackingData : undefined,
+    eyeTrackingData: null,
+    buildConfig: null,
+    recruitConfig: recruitResult.config as any,
+    results: null,
+    isLoading: recruitResult.isLoading,
+    isLoadingBuild: false,
+    isLoadingRecruit: recruitResult.isLoading,
+    isLoadingResults: false,
+    error: recruitResult.error ? String(recruitResult.error) : null,
+    saveBuildConfig: async () => {},
+    saveRecruitConfig: async (config: Partial<EyeTrackingRecruitFormDataLocal>) => {
+      recruitResult.updateConfig(config as any);
+    },
+    generateRecruitmentLink: async () => {
+      const result = await recruitResult.generateLink({});
+      return result.link;
+    },
+    exportResults: async () => {},
+    refreshData: async () => {},
+    validateBuildConfig: () => [],
+    validateRecruitConfig: () => []
+  };
 }
 
 /**
  * Hook for eye tracking results
+ * Now wraps the new domain hook
  */
 export function useEyeTrackingResults(researchId: string) {
-  if (!researchId) {
-    throw new Error('Research ID is required for eye tracking results');
-  }
-
-  const query = useRequest(
-    () => eyeTrackingResultsMethods.getResults(researchId),
-    {
-      initialData: [],
-      immediate: true,
-    }
-  );
+  const resultsData = useEyeTrackingResultsDomain(researchId);
 
   return {
-    results: (query.data as { data?: EyeTrackingResults[] })?.data || [],
-    isLoading: query.loading,
-    error: query.error?.message || null,
-    refetch: query.send,
+    results: resultsData.data ? [resultsData.data] : [],
+    isLoading: resultsData.isLoading,
+    error: resultsData.error ? String(resultsData.error) : null,
+    refetch: async () => {},
   };
 }
 
 /**
  * Hook for specific participant eye tracking results
+ * For now, returns empty data as this needs specific implementation
  */
 export function useParticipantEyeTrackingResults(researchId: string, participantId: string) {
-  if (!researchId || !participantId) {
-    throw new Error('Research ID and Participant ID are required');
-  }
-
-  const query = useRequest(
-    () => eyeTrackingResultsMethods.getParticipantResults(researchId, participantId),
-    {
-      initialData: undefined,
-      immediate: true,
-    }
-  );
-
+  // TODO: Implement participant-specific results in the domain
   return {
-    results: (query.data as { data?: EyeTrackingParticipantResult })?.data || null,
-    isLoading: query.loading,
-    error: query.error?.message || null,
-    refetch: query.send,
+    results: null,
+    isLoading: false,
+    error: null,
+    refetch: async () => {},
   };
-}
-
-// Helper functions
-function useCombinedEyeTrackingData(
-  buildData: EyeTrackingBuildConfig | null | undefined,
-  recruitData: EyeTrackingRecruitFormDataLocal | null | undefined,
-  type: UseEyeTrackingDataOptions['type']
-): EyeTrackingData | null {
-  if (type === 'build') {
-    return buildData ? {
-      id: `build-${Date.now()}`,
-      researchId: 'unknown',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      build: buildData
-    } : null;
-  }
-
-  if (type === 'recruit') {
-    return recruitData ? {
-      id: `recruit-${Date.now()}`,
-      researchId: 'unknown',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      recruit: recruitData
-    } : null;
-  }
-
-  // type === 'both'
-  if (!buildData && !recruitData) {
-    return null;
-  }
-
-  const result: EyeTrackingData = {
-    id: `combined-${Date.now()}`,
-    researchId: 'unknown',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  if (buildData) result.build = buildData;
-  if (recruitData) result.recruit = recruitData;
-
-  return result;
 }
 
 /**

@@ -5,16 +5,16 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/config/axios';
-import type { ThankYouScreenFormData as ThankYouScreenData } from '../../../shared/interfaces/thank-you-screen.interface';
+import type { ThankYouScreenModel, ThankYouScreenFormData } from '../../../shared/interfaces/thank-you-screen.interface';
 import type { ApiResponse } from '../types/research';
 
 interface UseThankYouScreenDataReturn {
-  data: ThankYouScreenData | null;
+  data: ThankYouScreenModel | null;
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
-  updateThankYouScreen: (data: Partial<ThankYouScreenData>) => Promise<void>;
-  createThankYouScreen: (data: ThankYouScreenData) => Promise<ThankYouScreenData>;
+  updateThankYouScreen: (researchId: string, data: Partial<ThankYouScreenFormData>) => Promise<ThankYouScreenModel>;
+  createThankYouScreen: (data: ThankYouScreenFormData) => Promise<ThankYouScreenModel>;
   deleteThankYouScreen: () => Promise<void>;
 }
 
@@ -29,7 +29,7 @@ export const useThankYouScreenData = (researchId: string | null): UseThankYouScr
     queryKey: ['thankYouScreen', researchId],
     queryFn: async () => {
       if (!researchId) return null;
-      const response = await apiClient.get<ApiResponse<ThankYouScreenData>>(`/research/${researchId}/thank-you-screen`);
+      const response = await apiClient.get<ApiResponse<ThankYouScreenModel>>(`/research/${researchId}/thank-you-screen`);
       return response.data.data || response.data;
     },
     enabled: !!researchId,
@@ -38,9 +38,9 @@ export const useThankYouScreenData = (researchId: string | null): UseThankYouScr
 
   // Mutation para actualizar Thank You Screen
   const updateMutation = useMutation({
-    mutationFn: async (updateData: Partial<ThankYouScreenData>) => {
+    mutationFn: async (updateData: Partial<ThankYouScreenFormData>) => {
       if (!researchId) throw new Error('Research ID is required');
-      const response = await apiClient.put<ApiResponse<ThankYouScreenData>>(
+      const response = await apiClient.put<ApiResponse<ThankYouScreenModel>>(
         `/research/${researchId}/thank-you-screen`,
         updateData
       );
@@ -51,13 +51,14 @@ export const useThankYouScreenData = (researchId: string | null): UseThankYouScr
     },
   });
 
-  const updateThankYouScreen = async (updateData: Partial<ThankYouScreenData>) => {
-    await updateMutation.mutateAsync(updateData);
+  const updateThankYouScreen = async (researchId: string, updateData: Partial<ThankYouScreenFormData>): Promise<ThankYouScreenModel> => {
+    const result = await updateMutation.mutateAsync(updateData);
+    return result.data || result;
   };
 
-  const createThankYouScreen = async (createData: ThankYouScreenData) => {
+  const createThankYouScreen = async (createData: ThankYouScreenFormData) => {
     if (!researchId) throw new Error('Research ID is required');
-    const response = await apiClient.post<ApiResponse<ThankYouScreenData>>(
+    const response = await apiClient.post<ApiResponse<ThankYouScreenModel>>(
       `/research/${researchId}/thank-you-screen`,
       createData
     );

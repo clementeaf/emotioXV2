@@ -5,7 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/config/axios';
-import type { WelcomeScreenFormData as WelcomeScreenData } from '../../../shared/interfaces/welcome-screen.interface';
+import type { WelcomeScreenData } from '@/components/research/WelcomeScreen/types/index';
 import type { ApiResponse } from '../types/research';
 
 interface UseWelcomeScreenDataReturn {
@@ -13,7 +13,7 @@ interface UseWelcomeScreenDataReturn {
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
-  updateWelcomeScreen: (data: Partial<WelcomeScreenData>) => Promise<void>;
+  updateWelcomeScreen: (researchId: string, data: Partial<WelcomeScreenData>) => Promise<WelcomeScreenData>;
   createWelcomeScreen: (data: WelcomeScreenData) => Promise<WelcomeScreenData>;
   deleteWelcomeScreen: () => Promise<void>;
 }
@@ -51,8 +51,9 @@ export const useWelcomeScreenData = (researchId: string | null): UseWelcomeScree
     },
   });
 
-  const updateWelcomeScreen = async (updateData: Partial<WelcomeScreenData>) => {
-    await updateMutation.mutateAsync(updateData);
+  const updateWelcomeScreen = async (researchId: string, updateData: Partial<WelcomeScreenData>): Promise<WelcomeScreenData> => {
+    const result = await updateMutation.mutateAsync(updateData);
+    return result.data || result;
   };
 
   const createWelcomeScreen = async (createData: WelcomeScreenData) => {

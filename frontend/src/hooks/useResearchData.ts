@@ -4,7 +4,7 @@
  */
 
 import { useResearchById, useUpdateResearch, useDeleteResearch } from '@/api';
-import { ResearchRecord } from '../../../shared/interfaces/research.interface';
+import { ResearchRecord, ResearchStage } from '../../../shared/interfaces/research.interface';
 import type { ResearchAPIResponse } from '@/types/research';
 
 interface UseResearchDataReturn {
@@ -26,24 +26,7 @@ export const useResearchRecordData = (researchId: string | null): UseResearchDat
   const deleteMutation = useDeleteResearch();
 
   // Convertir formato si es necesario
-  const researchRecord: ResearchRecord | null = research ? {
-    ...research,
-    // Agregar campos requeridos por ResearchRecord que pueden faltar
-    userId: research.companyId, // Usar companyId como userId temporalmente
-    currentStage: 'welcome-screen',
-    stageProgress: {},
-    basic: {
-      name: research.name,
-      companyId: research.companyId,
-      type: research.type,
-      technique: research.technique,
-      description: research.description || '',
-      targetParticipants: research.targetParticipants || 0,
-      objectives: research.objectives || [],
-      tags: research.tags || []
-    },
-    stages: {}
-  } as ResearchRecord : null;
+  const researchRecord: ResearchRecord | null = research as unknown as ResearchRecord | null;
 
   // Función para actualizar investigación
   const updateResearchRecord = async (data: Partial<ResearchRecord>) => {
