@@ -18,7 +18,7 @@ export const useEyeTrackingSharedData = (researchId: string, options?: {
       if (!researchId) return null;
       try {
         const response = await eyeTrackingApi.build.getByResearchId(researchId);
-        return response;
+        return response || null;
       } catch (error: any) {
         if (error?.statusCode === 404 || error?.message?.includes('not found')) {
           return null;
@@ -42,7 +42,7 @@ export const useEyeTrackingSharedData = (researchId: string, options?: {
       if (!researchId) return null;
       try {
         const response = await eyeTrackingApi.recruit.getConfigByResearch(researchId);
-        return response;
+        return response || null;
       } catch (error: any) {
         if (error?.statusCode === 404 || error?.message?.includes('not found')) {
           return null;
