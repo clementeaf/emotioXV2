@@ -155,10 +155,12 @@ interface UseClientsOptions {
 export function useClients(options: UseClientsOptions = {}) {
   const { useResearchData = true } = options;
 
-  // Use research data by default (as the app currently does)
-  const query = useResearchData
-    ? useClientsFromResearch()
-    : useClientsList(options as ClientsListParams);
+  // Always call both hooks to avoid conditional hook calls
+  const researchQuery = useClientsFromResearch();
+  const listQuery = useClientsList(options as ClientsListParams);
+
+  // Use the appropriate query based on the option
+  const query = useResearchData ? researchQuery : listQuery;
 
   // Apply client-side filtering and sorting
   const processedClients = useProcessClients(query.data || [], options);

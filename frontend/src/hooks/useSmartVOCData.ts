@@ -1,12 +1,12 @@
 /**
- * 🎯 SMART VOC DATA HOOK - TanStack Query Implementation
- * Smart VOC management migrated from Alova to TanStack Query + Axios
+ * 🎯 SMART VOC DATA HOOK - Domain Architecture Implementation
+ * Smart VOC management using domain-based TanStack Query + Axios
+ * Migrated from direct hooks to domain architecture
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/api/config/axios';
-import type { SmartVOCFormData } from '../../../shared/interfaces/smart-voc.interface';
-import type { ApiResponse } from '../types/research';
+import { useSmartVOCData as useSmartVOCDataFromDomain } from '@/api/domains/smart-voc';
+
+import type { SmartVOCFormData } from '@/api/domains/smart-voc';
 
 interface UseSmartVOCDataReturn {
   data: SmartVOCFormData | null;
@@ -20,67 +20,31 @@ interface UseSmartVOCDataReturn {
 
 /**
  * Hook para gestionar datos de SmartVOC
+ * Now uses the domain architecture for consistency
  */
 export const useSmartVOCData = (researchId: string | null): UseSmartVOCDataReturn => {
-  const queryClient = useQueryClient();
-
-  // Query para obtener datos de SmartVOC
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['smartVOC', researchId],
-    queryFn: async () => {
-      if (!researchId) return null;
-      const response = await apiClient.get<ApiResponse<SmartVOCFormData>>(`/research/${researchId}/smart-voc`);
-      return response.data.data || response.data;
-    },
-    enabled: !!researchId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Mutation para actualizar SmartVOC
-  const updateMutation = useMutation({
-    mutationFn: async (updateData: Partial<SmartVOCFormData>) => {
-      if (!researchId) throw new Error('Research ID is required');
-      const response = await apiClient.put<ApiResponse<SmartVOCFormData>>(
-        `/research/${researchId}/smart-voc`,
-        updateData
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['smartVOC', researchId] });
-    },
-  });
-
-  const updateSmartVOC = async (updateData: Partial<SmartVOCFormData>) => {
-    await updateMutation.mutateAsync(updateData);
-  };
-
-  const createSmartVOC = async (createData: SmartVOCFormData) => {
-    if (!researchId) throw new Error('Research ID is required');
-    const response = await apiClient.post<ApiResponse<SmartVOCFormData>>(
-      `/research/${researchId}/smart-voc`,
-      createData
-    );
-    queryClient.invalidateQueries({ queryKey: ['smartVOC', researchId] });
-    return response.data.data || response.data;
-  };
-
-  const deleteSmartVOC = async () => {
-    if (!researchId) throw new Error('Research ID is required');
-    await apiClient.delete(`/research/${researchId}/smart-voc`);
-    queryClient.invalidateQueries({ queryKey: ['smartVOC', researchId] });
-  };
+  const result = useSmartVOCDataFromDomain(researchId);
 
   return {
-    data: data || null,
-    isLoading: isLoading || updateMutation.isPending,
-    error: error as Error | null,
-    refetch,
-    updateSmartVOC,
-    createSmartVOC,
-    deleteSmartVOC
+    data: result.data,
+    isLoading: result.isLoading,
+    error: result.error,
+    refetch: result.refetch,
+    updateSmartVOC: result.updateSmartVOC,
+    createSmartVOC: result.createSmartVOC,
+    deleteSmartVOC: result.deleteSmartVOC,
   };
 };
+
+/**
+ * Re-export domain hooks for direct access
+ */
+export {
+  useSmartVOCValidation,
+  useCreateSmartVOC,
+  useUpdateSmartVOC,
+  useDeleteSmartVOC
+} from '@/api/domains/smart-voc';
 
 // Export por defecto para compatibilidad
 export default useSmartVOCData;

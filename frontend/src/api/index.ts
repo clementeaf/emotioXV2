@@ -70,6 +70,62 @@ export type {
   ClientResearchData
 } from './domains/clients';
 
+// Welcome Screen domain
+export {
+  welcomeScreenApi,
+  useWelcomeScreenData,
+  useWelcomeScreenValidation,
+  useCreateWelcomeScreen,
+  useUpdateWelcomeScreen,
+  useDeleteWelcomeScreen,
+  welcomeScreenKeys
+} from './domains/welcome-screen';
+export type {
+  WelcomeScreenData,
+  WelcomeScreenResponse,
+  WelcomeScreenRecord,
+  WelcomeScreenFormData,
+  CreateWelcomeScreenRequest,
+  UpdateWelcomeScreenRequest
+} from './domains/welcome-screen';
+
+// Thank You Screen domain
+export {
+  thankYouScreenApi,
+  useThankYouScreenData,
+  useThankYouScreenValidation,
+  useCreateThankYouScreen,
+  useUpdateThankYouScreen,
+  useDeleteThankYouScreen,
+  thankYouScreenKeys
+} from './domains/thank-you-screen';
+export type {
+  ThankYouScreenModel,
+  ThankYouScreenFormData,
+  ThankYouScreenConfig,
+  CreateThankYouScreenRequest,
+  UpdateThankYouScreenRequest
+} from './domains/thank-you-screen';
+
+// Smart VOC domain
+export {
+  smartVocApi,
+  useSmartVOCData,
+  useSmartVOCValidation,
+  useCreateSmartVOC,
+  useUpdateSmartVOC,
+  useDeleteSmartVOC,
+  smartVocKeys
+} from './domains/smart-voc';
+export type {
+  SmartVOCFormData,
+  SmartVOCFormResponse,
+  SmartVOCQuestion,
+  QuestionConfig,
+  CreateSmartVOCRequest,
+  UpdateSmartVOCRequest
+} from './domains/smart-voc';
+
 // Future domains will be added here:
 // export { companiesApi } from './domains/companies';
 // export { participantsApi } from './domains/participants';
