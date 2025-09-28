@@ -49,6 +49,27 @@ export type {
   UseEyeTrackingDataReturn
 } from './domains/eye-tracking';
 
+// Clients domain
+export {
+  clientsApi,
+  useClients,
+  useClientsFromResearch,
+  useClientById,
+  useCreateClient,
+  useUpdateClient,
+  useDeleteClient,
+  useActiveClients,
+  useClientStats,
+  clientsKeys
+} from './domains/clients';
+export type {
+  Client,
+  CreateClientRequest,
+  UpdateClientRequest,
+  ClientsListParams,
+  ClientResearchData
+} from './domains/clients';
+
 // Future domains will be added here:
 // export { companiesApi } from './domains/companies';
 // export { participantsApi } from './domains/participants';
