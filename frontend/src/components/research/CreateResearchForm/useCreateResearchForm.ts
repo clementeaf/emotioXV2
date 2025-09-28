@@ -205,7 +205,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
     try {
       console.log('🚀 SENDING CREATE REQUEST TO BACKEND');
       const result = await createResearchMutation.mutateAsync({
-        basic: createData,
+        ...createData,
         status: ResearchStatus.DRAFT
       });
       console.log('🚀 BACKEND CREATE SUCCESS:', result);

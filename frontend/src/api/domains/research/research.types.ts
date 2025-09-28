@@ -5,7 +5,6 @@
 // Re-export types from existing research types
 export type {
   Research,
-  CreateResearchRequest,
   UpdateResearchRequest,
   ResearchAPIResponse,
   ResearchListResponse,
@@ -15,6 +14,9 @@ export type {
   ResearchCreationResponse,
   ResearchBasicData
 } from '@/types/research';
+
+// Import the correct backend type for API calls
+export type { CreateResearchRequest } from '../../../../../shared/types/backend-core.types';
 
 export type { ResearchType, ResearchStatus } from '@/types/research';
 
