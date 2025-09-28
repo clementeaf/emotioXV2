@@ -79,14 +79,14 @@ export function useCreateResearch() {
       if (previousResearch) {
         const optimisticResearch: ResearchAPIResponse = {
           id: `temp-${Date.now()}`,
-          name: newResearch.basic?.name || '',
-          companyId: newResearch.basic?.companyId || '',
-          type: newResearch.basic?.type || '',
-          technique: newResearch.basic?.technique || '',
-          description: newResearch.basic?.description || '',
-          targetParticipants: newResearch.basic?.targetParticipants || 0,
-          objectives: newResearch.basic?.objectives || [],
-          tags: newResearch.basic?.tags || [],
+          name: newResearch.name || '',
+          companyId: newResearch.companyId || '',
+          type: newResearch.type || '',
+          technique: newResearch.technique || '',
+          description: newResearch.description || '',
+          targetParticipants: newResearch.targetParticipants || 0,
+          objectives: newResearch.objectives || [],
+          tags: newResearch.tags || [],
           status: newResearch.status || 'draft',
           createdAt: new Date().toISOString(),
         };
