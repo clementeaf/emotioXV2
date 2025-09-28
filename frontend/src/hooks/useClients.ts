@@ -1,7 +1,6 @@
 /**
- * 🏢 CLIENTS HOOK - TanStack Query Clean Implementation
+ * 🏢 CLIENTS HOOK - TanStack Query Implementation
  * Client management with strict TypeScript and SOLID principles
- * Migrated from Alova to TanStack Query
  */
 
 import { useClients as useClientsFromDomain } from '@/api/domains/clients';

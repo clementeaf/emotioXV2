@@ -1,5 +1,5 @@
 // Hook para operaciones de API del formulario SmartVOC
-// Responsabilidad: Contener toda la lógica de AlovaJS (migrado desde TanStack Query)
+// Responsabilidad: Contener toda la lógica de mutaciones y estado
 
 import { useCallback, useState } from 'react';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
@@ -11,7 +11,7 @@ import { ErrorModalData } from '../types';
 
 /**
  * Hook para operaciones de API del formulario SmartVOC
- * Migrado para usar AlovaJS siguiendo patrón WelcomeScreen/ThankYouScreen
+ * Implementa mutaciones siguiendo patrón WelcomeScreen/ThankYouScreen
  */
 export const useSmartVOCMutations = (researchId: string, smartVocId?: string) => {
   const actualResearchId = researchId === 'current' ? '' : researchId;

@@ -1,6 +1,6 @@
 /**
  * Configuración de Axios para EmotioXV2
- * Reemplaza a Alova para mayor compatibilidad con TanStack Query
+ * Cliente HTTP principal con TanStack Query
  */
 
 import axios, { AxiosError, AxiosInstance } from 'axios';

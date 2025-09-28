@@ -29,7 +29,7 @@ export const ClientsContent = () => {
     }
   }, [clientId]);
 
-  // Use AlovaJS hook for clients data
+  // Use TanStack Query hook for clients data
   const { clients, isLoading: isLoadingClients, error } = useClients();
   
   // Filter research by selected client
@@ -56,12 +56,12 @@ export const ClientsContent = () => {
   };
 
   const handleDuplicateSuccess = () => {
-    // Since we're using AlovaJS, the cache will automatically update
+    // Since we're using TanStack Query, the cache will automatically update
     toast.success('Lista de investigaciones actualizada');
   };
 
   const handleDeleteSuccess = () => {
-    // Since we're using AlovaJS, the cache will automatically update  
+    // Since we're using TanStack Query, the cache will automatically update  
     toast.success('Investigación eliminada de la lista');
   };
 

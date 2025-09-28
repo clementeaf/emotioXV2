@@ -1,6 +1,6 @@
 /**
- * Hook para gestionar datos de investigación usando nueva arquitectura
- * Migrado de Alova a TanStack Query + Axios
+ * Hook para gestionar datos de investigación usando TanStack Query
+ * Implementación con nueva arquitectura de dominios
  */
 
 import { useResearchById, useUpdateResearch, useDeleteResearch } from '@/api';
