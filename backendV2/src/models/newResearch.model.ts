@@ -128,20 +128,20 @@ export class NewResearchModel {
       structuredLog('info', 'NewResearchModel.create', 'Intentando guardar en DynamoDB', { params });
       await this.dynamoClient.send(params);
       structuredLog('info', 'NewResearchModel.create', 'Operación put completada exitosamente');
-      
-      // Devolver el objeto creado con su ID
-      return {
-        id: researchId,
-        name: data.name,
-        companyId: data.companyId,
-        type: data.type,
-        technique: data.technique,
-        description: data.description || '',
-        targetParticipants: data.targetParticipants || 100,
-        objectives: data.objectives || [],
-        tags: data.tags || [],
-        status: 'draft'
-      };
+
+      // VERIFICACIÓN: Confirmar que la investigación realmente se guardó
+      structuredLog('info', 'NewResearchModel.create', 'Verificando que la investigación se guardó correctamente');
+      const savedResearch = await this.getById(researchId);
+
+      if (!savedResearch) {
+        structuredLog('error', 'NewResearchModel.create', 'FALLO CRÍTICO: La investigación no se encontró después del save', { researchId });
+        throw new Error('Critical error: Research was not saved to database despite successful put operation');
+      }
+
+      structuredLog('info', 'NewResearchModel.create', 'Verificación exitosa: La investigación se guardó correctamente', { savedResearchId: savedResearch.id });
+
+      // Devolver la investigación tal como se guardó en la base de datos
+      return savedResearch;
     } catch (error) {
       console.error('Error detallado al crear nueva investigación en DynamoDB:', error);
       throw new Error('Failed to create new research');

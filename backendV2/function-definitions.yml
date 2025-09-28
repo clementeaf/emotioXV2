@@ -293,6 +293,12 @@ api:
         method: GET
         cors: true
 
+    # --- RUTA: Obtener investigación por ID ---
+    - http:
+        path: /research/{researchId}
+        method: GET
+        cors: true
+
     # --- RUTA: Eliminar investigación por ID ---
     - http:
         path: /research/{researchId}
