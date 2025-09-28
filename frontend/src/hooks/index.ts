@@ -4,7 +4,7 @@
 
 // Hook para la carga de archivos
 export * from './useApi';
-export * from './useAuth';
+// ❌ ELIMINADO: useAuth legacy - usar AuthProvider de contexts/AuthContext
 export * from './useWebSocket';
 export * from './useProtectedRoute';
 export * from './useFileUpload';

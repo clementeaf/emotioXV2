@@ -7,7 +7,7 @@
 export { apiClient } from '../config/api';
 
 // Servicios de autenticación y usuario
-export { default as authService } from './authService';
+// ❌ ELIMINADO: authService - usar AuthProvider y /api/domains/auth/
 export { default as tokenService } from './tokenService';
 
 // Servicios de investigación
@@ -28,7 +28,7 @@ export { default as cognitiveTaskService } from './cognitiveTaskService';
 export { default as s3Service } from './s3Service';
 
 // Exportar también los tipos
-export * from './authService';
+// ❌ ELIMINADO: authService types - usar tipos de /api/domains/auth/
 export * from './cognitiveTaskService';
 export * from './companyService';
 export * from './eyeTrackingService';
