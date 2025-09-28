@@ -1,8 +1,8 @@
-import { thankYouScreenAPI } from '@/config/api-client';
-import {
+import { thankYouScreenApi } from '@/api/domains/thank-you-screen';
+import type {
   ThankYouScreenFormData,
   ThankYouScreenModel
-} from '../../../shared/interfaces/thank-you-screen.interface';
+} from '@/api/domains/thank-you-screen';
 
 /**
  * Servicio para manejar operaciones relacionadas con pantallas de agradecimiento
@@ -14,8 +14,7 @@ export const thankYouScreenService = {
    * @returns Pantalla de agradecimiento
    */
   async getByResearchId(researchId: string): Promise<ThankYouScreenModel | null> {
-    const response = await thankYouScreenAPI.getByResearch(researchId);
-    return response as ThankYouScreenModel | null;
+    return thankYouScreenApi.getByResearchId(researchId);
   },
 
   /**
@@ -24,8 +23,11 @@ export const thankYouScreenService = {
    * @returns Pantalla creada
    */
   async create(data: ThankYouScreenFormData): Promise<ThankYouScreenModel> {
-    const response = await thankYouScreenAPI.save(data.researchId!, data as unknown as Record<string, unknown>);
-    return response as ThankYouScreenModel;
+    if (!data.researchId) throw new Error('Research ID is required');
+    return thankYouScreenApi.create({
+      ...data,
+      researchId: data.researchId
+    });
   },
 
   /**
@@ -36,8 +38,7 @@ export const thankYouScreenService = {
    */
   async update(id: string, data: Partial<ThankYouScreenFormData>): Promise<ThankYouScreenModel> {
     const researchId = data.researchId || id;
-    const response = await thankYouScreenAPI.save(researchId, data);
-    return response as ThankYouScreenModel;
+    return thankYouScreenApi.update(researchId, data);
   },
 
   /**
@@ -46,7 +47,7 @@ export const thankYouScreenService = {
    * @param researchId ID de la investigación
    */
   async delete(id: string, researchId: string): Promise<void> {
-    await thankYouScreenAPI.delete(researchId);
+    await thankYouScreenApi.delete(researchId);
   },
 
   /**
@@ -60,11 +61,10 @@ export const thankYouScreenService = {
     data: Omit<ThankYouScreenFormData, 'researchId'>
   ): Promise<ThankYouScreenModel> {
     try {
-      const response = await thankYouScreenAPI.save(researchId, {
+      return thankYouScreenApi.create({
         ...data,
         researchId
-      } as unknown as Record<string, unknown>);
-      return response as ThankYouScreenModel;
+      });
     } catch (error) {
       throw error;
     }

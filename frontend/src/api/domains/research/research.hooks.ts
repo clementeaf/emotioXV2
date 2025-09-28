@@ -134,18 +134,66 @@ export function useUpdateResearch() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateResearchRequest }) =>
       researchApi.update(id, data),
+    onMutate: async ({ id, data }) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: researchKeys.detail(id) });
+      await queryClient.cancelQueries({ queryKey: researchKeys.lists() });
+
+      // Snapshot previous values
+      const previousResearch = queryClient.getQueryData<ResearchAPIResponse>(researchKeys.detail(id));
+      const previousList = queryClient.getQueryData<ResearchAPIResponse[]>(researchKeys.lists());
+
+      // Optimistically update detail
+      if (previousResearch) {
+        const optimisticResearch: ResearchAPIResponse = {
+          ...previousResearch,
+          // Merge updates (using any for type safety during optimistic update)
+          ...(data as any),
+          name: (data as any).name || previousResearch.name,
+          description: (data as any).description || previousResearch.description,
+          status: (data as any).status || previousResearch.status,
+        };
+
+        queryClient.setQueryData(researchKeys.detail(id), optimisticResearch);
+
+        // Optimistically update in lists too
+        if (previousList) {
+          queryClient.setQueryData<ResearchAPIResponse[]>(
+            researchKeys.lists(),
+            previousList.map(research =>
+              research.id === id ? optimisticResearch : research
+            )
+          );
+        }
+      }
+
+      return { previousResearch, previousList };
+    },
     onSuccess: (data, variables) => {
-      // Update specific research in cache
+      // Update specific research in cache with real data
       queryClient.setQueryData(researchKeys.detail(variables.id), data);
 
-      // Invalidate lists to refetch
+      // Invalidate lists to ensure consistency
       queryClient.invalidateQueries({ queryKey: researchKeys.lists() });
 
       toast.success('Investigación actualizada exitosamente');
     },
-    onError: (error: ApiError) => {
+    onError: (error: ApiError, variables, context) => {
+      // Rollback on error
+      if (context?.previousResearch) {
+        queryClient.setQueryData(researchKeys.detail(variables.id), context.previousResearch);
+      }
+      if (context?.previousList) {
+        queryClient.setQueryData(researchKeys.lists(), context.previousList);
+      }
+
       const message = error.response?.data?.message || 'Error al actualizar investigación';
       toast.error(message);
+    },
+    onSettled: (data, error, variables) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: researchKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: researchKeys.lists() });
     },
   });
 }
@@ -206,18 +254,62 @@ export function useUpdateResearchStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       researchApi.updateStatus(id, status),
+    onMutate: async ({ id, status }) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: researchKeys.detail(id) });
+      await queryClient.cancelQueries({ queryKey: researchKeys.lists() });
+
+      // Snapshot previous values
+      const previousResearch = queryClient.getQueryData<ResearchAPIResponse>(researchKeys.detail(id));
+      const previousList = queryClient.getQueryData<ResearchAPIResponse[]>(researchKeys.lists());
+
+      // Optimistically update status
+      if (previousResearch) {
+        const optimisticResearch: ResearchAPIResponse = {
+          ...previousResearch,
+          status,
+        };
+
+        queryClient.setQueryData(researchKeys.detail(id), optimisticResearch);
+
+        // Optimistically update in lists too
+        if (previousList) {
+          queryClient.setQueryData<ResearchAPIResponse[]>(
+            researchKeys.lists(),
+            previousList.map(research =>
+              research.id === id ? optimisticResearch : research
+            )
+          );
+        }
+      }
+
+      return { previousResearch, previousList };
+    },
     onSuccess: (data, variables) => {
-      // Update specific research in cache
+      // Update specific research in cache with real data
       queryClient.setQueryData(researchKeys.detail(variables.id), data);
 
-      // Invalidate lists to refetch
+      // Invalidate lists to ensure consistency
       queryClient.invalidateQueries({ queryKey: researchKeys.lists() });
 
       toast.success('Estado actualizado exitosamente');
     },
-    onError: (error: ApiError) => {
+    onError: (error: ApiError, variables, context) => {
+      // Rollback on error
+      if (context?.previousResearch) {
+        queryClient.setQueryData(researchKeys.detail(variables.id), context.previousResearch);
+      }
+      if (context?.previousList) {
+        queryClient.setQueryData(researchKeys.lists(), context.previousList);
+      }
+
       const message = error.response?.data?.message || 'Error al actualizar estado';
       toast.error(message);
+    },
+    onSettled: (data, error, variables) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: researchKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: researchKeys.lists() });
     },
   });
 }

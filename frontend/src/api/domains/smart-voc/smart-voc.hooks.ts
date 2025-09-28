@@ -37,12 +37,53 @@ export function useSmartVOCData(researchId: string | null) {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data: CreateSmartVOCRequest) => smartVocApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(researchId!) });
-      toast.success('Smart VOC created successfully');
+    onMutate: async (newSmartVOC) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: smartVocKeys.byResearch(newSmartVOC.researchId) });
+
+      // Snapshot previous value
+      const previousSmartVOC = queryClient.getQueryData<SmartVOCFormData | null>(
+        smartVocKeys.byResearch(newSmartVOC.researchId)
+      );
+
+      // Optimistically update
+      const optimisticSmartVOC: SmartVOCFormData = {
+        researchId: newSmartVOC.researchId,
+        questions: newSmartVOC.questions || [],
+        randomizeQuestions: newSmartVOC.randomizeQuestions || false,
+        smartVocRequired: newSmartVOC.smartVocRequired || false,
+        metadata: {
+          ...newSmartVOC.metadata,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      };
+
+      queryClient.setQueryData(
+        smartVocKeys.byResearch(newSmartVOC.researchId),
+        optimisticSmartVOC
+      );
+
+      return { previousSmartVOC };
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create smart VOC');
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
+      toast.success('Smart VOC creado exitosamente');
+    },
+    onError: (error: any, variables, context) => {
+      // Rollback on error
+      if (context?.previousSmartVOC !== undefined) {
+        queryClient.setQueryData(
+          smartVocKeys.byResearch(variables.researchId),
+          context.previousSmartVOC
+        );
+      }
+
+      toast.error(error.response?.data?.message || 'Error al crear Smart VOC');
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
     }
   });
 
@@ -50,24 +91,96 @@ export function useSmartVOCData(researchId: string | null) {
   const updateMutation = useMutation({
     mutationFn: ({ researchId, data }: { researchId: string; data: UpdateSmartVOCRequest }) =>
       smartVocApi.update(researchId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(researchId!) });
-      toast.success('Smart VOC updated successfully');
+    onMutate: async ({ researchId, data }) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: smartVocKeys.byResearch(researchId) });
+
+      // Snapshot previous value
+      const previousSmartVOC = queryClient.getQueryData<SmartVOCFormData | null>(
+        smartVocKeys.byResearch(researchId)
+      );
+
+      // Optimistically update
+      if (previousSmartVOC) {
+        const optimisticSmartVOC: SmartVOCFormData = {
+          ...previousSmartVOC,
+          questions: data.questions || previousSmartVOC.questions,
+          randomizeQuestions: data.randomizeQuestions ?? previousSmartVOC.randomizeQuestions,
+          smartVocRequired: data.smartVocRequired ?? previousSmartVOC.smartVocRequired,
+          metadata: {
+            ...previousSmartVOC.metadata,
+            ...data.metadata,
+            updatedAt: new Date().toISOString(),
+          },
+        };
+
+        queryClient.setQueryData(
+          smartVocKeys.byResearch(researchId),
+          optimisticSmartVOC
+        );
+      }
+
+      return { previousSmartVOC };
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update smart VOC');
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
+      toast.success('Smart VOC actualizado exitosamente');
+    },
+    onError: (error: any, variables, context) => {
+      // Rollback on error
+      if (context?.previousSmartVOC !== undefined) {
+        queryClient.setQueryData(
+          smartVocKeys.byResearch(variables.researchId),
+          context.previousSmartVOC
+        );
+      }
+
+      toast.error(error.response?.data?.message || 'Error al actualizar Smart VOC');
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
     }
   });
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (researchId: string) => smartVocApi.delete(researchId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(researchId!) });
-      toast.success('Smart VOC deleted successfully');
+    onMutate: async (researchId) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: smartVocKeys.byResearch(researchId) });
+
+      // Snapshot previous value
+      const previousSmartVOC = queryClient.getQueryData<SmartVOCFormData | null>(
+        smartVocKeys.byResearch(researchId)
+      );
+
+      // Optimistically update (set to null to indicate deletion)
+      queryClient.setQueryData(
+        smartVocKeys.byResearch(researchId),
+        null
+      );
+
+      return { previousSmartVOC };
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete smart VOC');
+    onSuccess: (_, researchId) => {
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(researchId) });
+      toast.success('Smart VOC eliminado exitosamente');
+    },
+    onError: (error: any, researchId, context) => {
+      // Rollback on error
+      if (context?.previousSmartVOC !== undefined) {
+        queryClient.setQueryData(
+          smartVocKeys.byResearch(researchId),
+          context.previousSmartVOC
+        );
+      }
+
+      toast.error(error.response?.data?.message || 'Error al eliminar Smart VOC');
+    },
+    onSettled: (_, __, researchId) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(researchId) });
     }
   });
 
@@ -128,25 +241,66 @@ export function useSmartVOCValidation(researchId: string | null) {
 }
 
 /**
- * Hook for creating smart VOC
+ * Hook for creating smart VOC with optimistic updates
  */
 export function useCreateSmartVOC() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: CreateSmartVOCRequest) => smartVocApi.create(data),
+    onMutate: async (newSmartVOC) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: smartVocKeys.byResearch(newSmartVOC.researchId) });
+
+      // Snapshot previous value
+      const previousSmartVOC = queryClient.getQueryData<SmartVOCFormData | null>(
+        smartVocKeys.byResearch(newSmartVOC.researchId)
+      );
+
+      // Optimistically update
+      const optimisticSmartVOC: SmartVOCFormData = {
+        researchId: newSmartVOC.researchId,
+        questions: newSmartVOC.questions || [],
+        randomizeQuestions: newSmartVOC.randomizeQuestions || false,
+        smartVocRequired: newSmartVOC.smartVocRequired || false,
+        metadata: {
+          ...newSmartVOC.metadata,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      };
+
+      queryClient.setQueryData(
+        smartVocKeys.byResearch(newSmartVOC.researchId),
+        optimisticSmartVOC
+      );
+
+      return { previousSmartVOC };
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
-      toast.success('Smart VOC created successfully');
+      toast.success('Smart VOC creado exitosamente');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create smart VOC');
+    onError: (error: any, variables, context) => {
+      // Rollback on error
+      if (context?.previousSmartVOC !== undefined) {
+        queryClient.setQueryData(
+          smartVocKeys.byResearch(variables.researchId),
+          context.previousSmartVOC
+        );
+      }
+
+      toast.error(error.response?.data?.message || 'Error al crear Smart VOC');
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
     }
   });
 }
 
 /**
- * Hook for updating smart VOC
+ * Hook for updating smart VOC with optimistic updates
  */
 export function useUpdateSmartVOC() {
   const queryClient = useQueryClient();
@@ -154,30 +308,102 @@ export function useUpdateSmartVOC() {
   return useMutation({
     mutationFn: ({ researchId, data }: { researchId: string; data: UpdateSmartVOCRequest }) =>
       smartVocApi.update(researchId, data),
+    onMutate: async ({ researchId, data }) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: smartVocKeys.byResearch(researchId) });
+
+      // Snapshot previous value
+      const previousSmartVOC = queryClient.getQueryData<SmartVOCFormData | null>(
+        smartVocKeys.byResearch(researchId)
+      );
+
+      // Optimistically update
+      if (previousSmartVOC) {
+        const optimisticSmartVOC: SmartVOCFormData = {
+          ...previousSmartVOC,
+          questions: data.questions || previousSmartVOC.questions,
+          randomizeQuestions: data.randomizeQuestions ?? previousSmartVOC.randomizeQuestions,
+          smartVocRequired: data.smartVocRequired ?? previousSmartVOC.smartVocRequired,
+          metadata: {
+            ...previousSmartVOC.metadata,
+            ...data.metadata,
+            updatedAt: new Date().toISOString(),
+          },
+        };
+
+        queryClient.setQueryData(
+          smartVocKeys.byResearch(researchId),
+          optimisticSmartVOC
+        );
+      }
+
+      return { previousSmartVOC };
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
-      toast.success('Smart VOC updated successfully');
+      toast.success('Smart VOC actualizado exitosamente');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update smart VOC');
+    onError: (error: any, variables, context) => {
+      // Rollback on error
+      if (context?.previousSmartVOC !== undefined) {
+        queryClient.setQueryData(
+          smartVocKeys.byResearch(variables.researchId),
+          context.previousSmartVOC
+        );
+      }
+
+      toast.error(error.response?.data?.message || 'Error al actualizar Smart VOC');
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
     }
   });
 }
 
 /**
- * Hook for deleting smart VOC
+ * Hook for deleting smart VOC with optimistic updates
  */
 export function useDeleteSmartVOC() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (researchId: string) => smartVocApi.delete(researchId),
+    onMutate: async (researchId) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: smartVocKeys.byResearch(researchId) });
+
+      // Snapshot previous value
+      const previousSmartVOC = queryClient.getQueryData<SmartVOCFormData | null>(
+        smartVocKeys.byResearch(researchId)
+      );
+
+      // Optimistically update (set to null to indicate deletion)
+      queryClient.setQueryData(
+        smartVocKeys.byResearch(researchId),
+        null
+      );
+
+      return { previousSmartVOC };
+    },
     onSuccess: (_, researchId) => {
       queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(researchId) });
-      toast.success('Smart VOC deleted successfully');
+      toast.success('Smart VOC eliminado exitosamente');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete smart VOC');
+    onError: (error: any, researchId, context) => {
+      // Rollback on error
+      if (context?.previousSmartVOC !== undefined) {
+        queryClient.setQueryData(
+          smartVocKeys.byResearch(researchId),
+          context.previousSmartVOC
+        );
+      }
+
+      toast.error(error.response?.data?.message || 'Error al eliminar Smart VOC');
+    },
+    onSettled: (_, __, researchId) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(researchId) });
     }
   });
 }

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useMonitoringReceiver } from '@/hooks/useMonitoringReceiver';
-import { researchInProgressAPI, setupAuthToken } from '@/config/api-client';
+import { researchInProgressApi } from '@/api/domains/research-in-progress';
 import { useAuth } from '@/providers/AuthProvider';
 import { Activity, CheckCircle, Clock, Info, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -77,16 +77,16 @@ function ResearchInProgressContent() {
       if (!researchId || authLoading || !token) return;
 
       // Configurar el token de autenticación
-      setupAuthToken();
+      
 
       setIsLoading(true);
       setError(null);
 
       try {
         const [metricsResponse, participantsResponse, configResponse] = await Promise.all([
-          researchInProgressAPI.getOverviewMetrics(researchId),
-          researchInProgressAPI.getParticipantsWithStatus(researchId),
-          researchInProgressAPI.getResearchConfiguration(researchId)
+          researchInProgressApi.getOverviewMetrics(researchId),
+          researchInProgressApi.getParticipantsWithStatus(researchId),
+          researchInProgressApi.getResearchConfiguration(researchId)
         ]);
 
         // Handle metrics

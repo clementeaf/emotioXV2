@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Check, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { companiesAPI } from '@/config/api-client';
+import { companiesApi } from '@/api/domains/companies';
 import { findSimilarStrings, areSimilarEnough } from '@/utils/stringUtils';
 import { SmartSuggestions } from './SmartSuggestions';
 
@@ -110,7 +110,7 @@ export const CompanySelectWithCreate: React.FC<CompanySelectWithCreateProps> = (
 
     try {
       setIsCreating(true);
-      const response = await companiesAPI.create({
+      const response = await companiesApi.create({
         name: searchText.trim(),
         status: 'active'
       });

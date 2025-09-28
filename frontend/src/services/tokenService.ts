@@ -210,14 +210,14 @@ const refreshTokenIfNeeded = async (): Promise<boolean> => {
     }
 
     try {
-      // Importación dinámica para evitar dependencia circular
-      const { authAPI } = await import('@/config/api-client');
-      const response = await authAPI.refreshToken();
-      if (!response?.data?.token) {
+      // Use domain API instead of legacy api-client
+      const { authApi } = await import('@/api/domains/auth');
+      const response = await authApi.refreshToken();
+      if (!response?.token) {
         throw new Error('No se recibió token en la respuesta');
       }
 
-      const newToken = response.data.token;
+      const newToken = response.token;
       if (!newToken.includes('.') || newToken.split('.').length !== 3) {
         throw new Error('Token recibido tiene formato inválido');
       }
@@ -253,14 +253,14 @@ const forceTokenRefresh = async (): Promise<boolean> => {
     }
 
     logService.info('Forzando renovación de token...');
-    // Importación dinámica para evitar dependencia circular
-    const { authAPI } = await import('@/config/api-client');
-    const response = await authAPI.refreshToken();
+    // Use domain API instead of legacy api-client
+    const { authApi } = await import('@/api/domains/auth');
+    const response = await authApi.refreshToken();
 
-    if (response.data && response.data.token) {
+    if (response && response.token) {
       // Guardar siempre el token renovado
       logService.info('Token renovado forzosamente con éxito');
-      saveToken(response.data.token);
+      saveToken(response.token);
       return true;
     } else {
       logService.warn('Respuesta de renovación forzada inválida:', response);

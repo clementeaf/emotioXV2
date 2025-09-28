@@ -6,7 +6,7 @@ import { QuestionType } from '../../../../../../shared/interfaces/question-types
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useFileUpload } from '@/hooks';
 import { useEyeTrackingData } from '@/hooks/useEyeTrackingData';
-import { eyeTrackingAPI } from '@/config/api-client';
+import { eyeTrackingApi } from '@/api/domains/eye-tracking';
 
 // Interfaz extendida que incluye propiedades de UI para la experiencia de carga
 interface EyeTrackingStimulusWithUI extends EyeTrackingStimulus {
@@ -605,7 +605,7 @@ export function useEyeTrackingForm({
 
       // Enviar solicitud al backend solo si autoSync está activado
       let response;
-      const api = eyeTrackingAPI;
+      const api = eyeTrackingApi.build;
 
       if (eyeTrackingId) {
         // Actualizar existente

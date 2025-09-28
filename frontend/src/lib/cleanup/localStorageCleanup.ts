@@ -1,4 +1,4 @@
-import { researchAPI } from '@/config/api-client';
+import { researchApi } from '@/api/domains/research';
 
 /**
  * Limpia todas las entradas de localStorage relacionadas con una investigación
@@ -69,7 +69,7 @@ export function cleanAllResearchFromLocalStorage(): void {
  */
 export async function validateResearchBeforeCleanup(researchId: string): Promise<boolean> {
   try {
-    await researchAPI.get(researchId);
+    await researchApi.get(researchId);
     return true;
   } catch (error) {
     // Si falla la petición, la investigación no existe

@@ -126,7 +126,42 @@ export type {
   UpdateSmartVOCRequest
 } from './domains/smart-voc';
 
+// Cognitive Task domain
+export {
+  cognitiveTaskApi,
+  useCognitiveTaskData,
+  useCognitiveTaskValidation,
+  useCreateCognitiveTask,
+  useUpdateCognitiveTask,
+  useDeleteCognitiveTask,
+  cognitiveTaskKeys
+} from './domains/cognitive-task';
+export type {
+  CognitiveTaskFormData,
+  CognitiveTaskModel,
+  CognitiveTaskFormResponse,
+  Question,
+  QuestionType,
+  CreateCognitiveTaskRequest,
+  UpdateCognitiveTaskRequest
+} from './domains/cognitive-task';
+
+// Companies domain
+export {
+  companiesApi,
+  useCompanies,
+  useCompanyById,
+  useCreateCompany,
+  useUpdateCompany,
+  useDeleteCompany,
+  companiesKeys
+} from './domains/companies';
+export type {
+  Company,
+  CreateCompanyRequest,
+  UpdateCompanyRequest
+} from './domains/companies';
+
 // Future domains will be added here:
-// export { companiesApi } from './domains/companies';
 // export { participantsApi } from './domains/participants';
 // etc.

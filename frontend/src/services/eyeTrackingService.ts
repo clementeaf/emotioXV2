@@ -1,5 +1,5 @@
-import { eyeTrackingAPI } from '@/config/api-client';
-import type { EyeTrackingFormData } from 'shared/interfaces/eye-tracking.interface';
+import { eyeTrackingApi } from '@/api/domains/eye-tracking';
+import type { EyeTrackingFormData } from '@/api/domains/eye-tracking';
 
 /**
  * Interfaz que extiende los datos del formulario con campos adicionales del servidor
@@ -12,6 +12,7 @@ export interface EyeTrackingRecord extends EyeTrackingFormData {
 
 /**
  * Servicio para manejar operaciones relacionadas con el seguimiento ocular
+ * Migrated to use domain architecture while maintaining same interface
  */
 export const eyeTrackingService = {
   /**
@@ -30,8 +31,8 @@ export const eyeTrackingService = {
    */
   async getByResearchId(researchId: string): Promise<EyeTrackingFormData | null> {
     try {
-      const response = await eyeTrackingAPI.getByResearch(researchId);
-      return response;
+      const data = await eyeTrackingApi.getByResearchId(researchId);
+      return data as any; // Type conversion for backward compatibility
     } catch (error) {
       if (error && typeof error === 'object' && 'statusCode' in error && (error as any).statusCode === 404) {
         return null;
@@ -47,8 +48,11 @@ export const eyeTrackingService = {
    * @returns Configuración creada
    */
   async create(researchId: string, data: EyeTrackingFormData): Promise<EyeTrackingFormData> {
-    const response = await eyeTrackingAPI.create(researchId, data);
-    return response;
+    const buildData = await eyeTrackingApi.build.create({
+      ...data,
+      researchId
+    } as any);
+    return buildData as any;
   },
 
   /**
@@ -58,8 +62,8 @@ export const eyeTrackingService = {
    * @returns Configuración actualizada
    */
   async update(researchId: string, data: Partial<EyeTrackingFormData>): Promise<EyeTrackingFormData> {
-    const response = await eyeTrackingAPI.update(researchId, data);
-    return response;
+    const buildData = await eyeTrackingApi.build.update(researchId, data as any);
+    return buildData as any;
   },
 
   /**
@@ -69,8 +73,8 @@ export const eyeTrackingService = {
    * @returns Configuración actualizada o creada
    */
   async updateByResearchId(researchId: string, data: EyeTrackingFormData): Promise<EyeTrackingRecord> {
-    const response = await eyeTrackingAPI.update(researchId, data);
-    return response;
+    const buildData = await eyeTrackingApi.build.update(researchId, data as any);
+    return buildData as any;
   },
 
   /**
@@ -79,7 +83,7 @@ export const eyeTrackingService = {
    * @returns Confirmación de eliminación
    */
   async deleteByResearchId(researchId: string): Promise<void> {
-    await eyeTrackingAPI.delete(researchId);
+    await eyeTrackingApi.build.delete(researchId);
   },
 
   /**
@@ -88,8 +92,8 @@ export const eyeTrackingService = {
    * @returns Configuración para participantes
    */
   async getForParticipant(researchId: string): Promise<EyeTrackingRecord> {
-    const response = await eyeTrackingAPI.getByResearch(researchId);
-    return response;
+    const data = await eyeTrackingApi.getByResearchId(researchId);
+    return data as any;
   }
 };
 

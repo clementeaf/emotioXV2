@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useApi } from '@/hooks/useApi';
+// useApi removed - migrated to domain architecture
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -32,7 +32,7 @@ interface UserProfileComponentProps {
 }
 
 export function UserProfileComponent({ className }: UserProfileComponentProps) {
-  const { api, loading: apiLoading } = useApi();
+  // Legacy useApi removed - using domain architecture
   const { token } = useAuth();
   const isAuthenticated = !!token;
   const [user, setUser] = useState<User | null>(null);

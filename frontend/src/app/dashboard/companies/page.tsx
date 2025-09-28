@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { companiesAPI } from '@/config/api-client';
+import { companiesApi } from '@/api/domains/companies';
 import { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Plus, Edit2, Trash2, Building2 } from 'lucide-react';
@@ -22,7 +22,7 @@ export default function CompaniesPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await companiesAPI.getAll();
+      const response = await companiesApi.getAll();
       if (response.success) {
         setCompanies(response.data || []);
       } else {
@@ -43,7 +43,7 @@ export default function CompaniesPage() {
   // Crear empresa
   const handleCreateCompany = async (data: CreateCompanyRequest) => {
     try {
-      const response = await companiesAPI.create(data);
+      const response = await companiesApi.create(data);
       if (response.success) {
         await loadCompanies();
         setShowCreateModal(false);
@@ -60,7 +60,7 @@ export default function CompaniesPage() {
   // Actualizar empresa
   const handleUpdateCompany = async (id: string, data: UpdateCompanyRequest) => {
     try {
-      const response = await companiesAPI.update(id, data);
+      const response = await companiesApi.update(id, data);
       if (response.success) {
         await loadCompanies();
         setShowEditModal(false);
@@ -78,7 +78,7 @@ export default function CompaniesPage() {
   // Eliminar empresa
   const handleDeleteCompany = async (id: string) => {
     try {
-      await companiesAPI.delete(id);
+      await companiesApi.delete(id);
       await loadCompanies();
       setShowDeleteModal(false);
       setSelectedCompany(null);
@@ -278,7 +278,7 @@ function CreateCompanyModal({
   useEffect(() => {
     const loadCompanies = async () => {
       try {
-        const response = await companiesAPI.getAll();
+        const response = await companiesApi.getAll();
         if (response.success) {
           setCompanies(response.data || []);
         }

@@ -1,5 +1,5 @@
-import { companiesAPI } from '@/config/api-client';
-import { Company } from '../../../shared/interfaces/company.interface';
+import { companiesApi } from '@/api/domains/companies';
+import type { Company } from '@/api/domains/companies';
 
 /**
  * Servicio para manejar operaciones con empresas
@@ -10,7 +10,7 @@ export class CompanyService {
    */
   async getActiveCompanies(): Promise<Company[]> {
     try {
-      const response = await companiesAPI.getAll();
+      const response = await companiesApi.getAll();
       
       if (response.success && response.data) {
         // Filtrar solo empresas activas
@@ -28,7 +28,7 @@ export class CompanyService {
    */
   async getCompanyById(id: string): Promise<Company | null> {
     try {
-      const response = await companiesAPI.getById(id);
+      const response = await companiesApi.getById(id);
       
       if (response.success && response.data) {
         return response.data;
@@ -45,7 +45,7 @@ export class CompanyService {
    */
   async createCompany(name: string, status: 'active' | 'inactive' = 'active'): Promise<Company | null> {
     try {
-      const response = await companiesAPI.create({ name, status });
+      const response = await companiesApi.create({ name, status });
       
       if (response.success && response.data) {
         return response.data;
@@ -62,7 +62,7 @@ export class CompanyService {
    */
   async updateCompany(id: string, updates: { name?: string; status?: 'active' | 'inactive' }): Promise<Company | null> {
     try {
-      const response = await companiesAPI.update(id, updates);
+      const response = await companiesApi.update(id, updates);
       
       if (response.success && response.data) {
         return response.data;
@@ -79,8 +79,8 @@ export class CompanyService {
    */
   async deleteCompany(id: string): Promise<boolean> {
     try {
-      const response = await companiesAPI.delete(id);
-      return response.success;
+      const response = await companiesApi.delete(id);
+      return response.success || false;
     } catch (error) {
       return false;
     }

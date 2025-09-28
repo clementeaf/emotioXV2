@@ -9,7 +9,7 @@ import { navigateToPublicTests } from '@/api/dynamic-endpoints';
 import { Button } from '@/components/ui/Button';
 import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { useResearchList, useDeleteResearch } from '@/api';
-import { researchAPI } from '@/config/api-client';
+import { researchApi } from '@/api/domains/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import type { ResearchAPIResponse } from '@/types/research';

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Company } from '../../../shared/interfaces/company.interface';
 import { companyService } from '@/services/companyService';
 import { companiesCache } from '@/lib/cache/CacheManager';
-import { setupAuthToken } from '@/config/api-client';
 
 interface UseCachedCompaniesResult {
   companies: Company[];
@@ -27,8 +26,7 @@ export const useCachedCompanies = (autoLoad: boolean = true): UseCachedCompanies
       setLoading(true);
       setError(null);
       
-      // Configurar token antes de la llamada
-      setupAuthToken();
+      // Token is now handled automatically by axios interceptors
 
       // Usar cache con función de fallback
       const fetchedCompanies = await companiesCache.getOrSet(

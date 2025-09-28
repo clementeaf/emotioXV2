@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { researchAPI, setupAuthToken } from '@/config/api-client';
+import { useCreateResearch } from '@/api/domains/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
@@ -71,6 +71,9 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
 
   // Hook para manejar empresas
   const { companies, loading: loadingCompanies, error: companiesError } = useCompanies();
+
+  // Hook para crear investigaciones con actualización optimista
+  const createResearchMutation = useCreateResearch();
 
   // Mover la inicialización a un estado básico primero
   const [formData, setFormData] = useState<FormState>(initialFormState);
@@ -251,30 +254,26 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      // Preparar los datos para la API
-      const createData: ResearchBasicData = {
+    // Preparar los datos para la API
+    const createData = {
+      basic: {
         name: formData.basic.name,
         companyId: formData.basic.companyId,
         type: formData.basic.type || ResearchType.BEHAVIOURAL,
         technique: formData.basic.technique || '',
         description: formData.basic.description || ''
-      };
+      }
+    };
 
-      // Llamar a la API real
-      const response = await researchAPI.create(createData);
-
-      if (response.data) {
+    // Usar el hook optimista
+    createResearchMutation.mutate(createData as any, {
+      onSuccess: (response) => {
         // Limpiar el borrador ya que se creó exitosamente
         clearDraft();
 
         // Guardar el ID de la investigación creada
-        const researchId = response.data.id;
-        const researchName = response.data.name || formData.basic.name; // Usar el nombre del formulario si no viene en la respuesta
-
-        // No usar localStorage - AlovaJS maneja toda la sincronización
+        const researchId = response.id;
+        const researchName = response.name || formData.basic.name;
 
         setCreatedResearchId(researchId);
         setShowSummary(true);
@@ -302,14 +301,8 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
             }
           }
         }, 1000);
-      } else {
-        throw new Error('Error al crear la investigación: No se recibió respuesta del servidor');
       }
-    } catch (error) {
-      toast.error('Error al crear la investigación. Por favor, inténtalo de nuevo.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
   const toggleResearchType = (type: ResearchType) => {
@@ -636,7 +629,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                     <Button
                       type="button"
                       onClick={handleSubmit}
-                      loading={isSubmitting && !showSummary}
+                      loading={createResearchMutation.isPending && !showSummary}
                       disabled={!formData.basic.technique}
                     >
                       {formData.basic.technique === 'aim-framework'

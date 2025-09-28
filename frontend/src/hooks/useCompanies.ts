@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Company } from '../../../shared/interfaces/company.interface';
 import { companyService } from '@/services/companyService';
-import { setupAuthToken } from '@/config/api-client';
 
 interface UseCompaniesResult {
   companies: Company[];
@@ -23,8 +22,7 @@ export const useCompanies = (autoLoad: boolean = true): UseCompaniesResult => {
       setLoading(true);
       setError(null);
       
-      // Configurar token antes de la llamada
-      setupAuthToken();
+      // Token is now handled automatically by axios interceptors
       
       const fetchedCompanies = await companyService.getActiveCompanies();
       setCompanies(fetchedCompanies);

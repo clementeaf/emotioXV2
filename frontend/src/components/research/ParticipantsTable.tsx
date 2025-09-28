@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { researchInProgressAPI } from '@/config/api-client';
+import { researchInProgressApi } from '@/api/domains/research-in-progress';
 import { getPublicTestsUrl } from '../../api/client-config';
 import {
   AlertCircle,
@@ -96,7 +96,7 @@ export function ParticipantsTable({
     setIsModalOpen(true);
 
     try {
-      const response = await researchInProgressAPI.getParticipantDetails(researchId, participant.id);
+      const response = await researchInProgressApi.getParticipantDetails(researchId, participant.id);
 
       // Fix: Check for success OR status 200
       if (response.success || response.status === 200) {
@@ -124,7 +124,7 @@ export function ParticipantsTable({
     setIsDeleting(true);
 
     try {
-      const response = await researchInProgressAPI.deleteParticipant(researchId, participantToDelete.id);
+      const response = await researchInProgressApi.deleteParticipant(researchId, participantToDelete.id);
 
       if (response.success) {
         onParticipantDeleted?.(participantToDelete.id);

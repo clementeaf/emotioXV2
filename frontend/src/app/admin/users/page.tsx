@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { adminAPI } from '@/config/api-client';
+import { adminApi } from '@/api/domains/admin';
 import { useAdmin } from '@/contexts/AdminContext';
 
 interface UserData {
@@ -144,7 +144,7 @@ export default function AdminUsersPage() {
     try {
       if (!silent) setLoading(true);
       
-      const response = await adminAPI.getAllUsers();
+      const response = await adminApi.getAllUsers();
       
       // Check if response is a Response object that needs to be parsed
       let data = response;
@@ -262,7 +262,7 @@ export default function AdminUsersPage() {
     toast.success('Usuario creado exitosamente');
 
     try {
-      await adminAPI.createUser({
+      await adminApi.createUser({
         email: previousNewUser.email,
         password: previousNewUser.password,
         role: previousNewUser.role
@@ -318,7 +318,7 @@ export default function AdminUsersPage() {
     toast.success('Usuario actualizado exitosamente');
 
     try {
-      await adminAPI.updateUser(userId, {
+      await adminApi.updateUser(userId, {
         email: updates.email,
         password: updates.password,
         role: updates.role,
@@ -379,7 +379,7 @@ export default function AdminUsersPage() {
     toast.success('Usuario eliminado exitosamente');
 
     try {
-      await adminAPI.deleteUser(userIdToDelete);
+      await adminApi.deleteUser(userIdToDelete);
       
       // ✅ NO llamar loadUsers - el optimistic update ya actualizó la UI correctamente
       endOptimisticOperation(operationId);
@@ -461,7 +461,7 @@ export default function AdminUsersPage() {
 
     for (const userId of usersToDelete) {
       try {
-        await adminAPI.deleteUser(userId);
+        await adminApi.deleteUser(userId);
         successCount++;
       } catch (error) {
         failCount++;
