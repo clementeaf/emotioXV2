@@ -1,6 +1,6 @@
 /**
- * Configuración de AlovaJS para EmotioXV2
- * Reemplaza el sistema de fetch y React Query con AlovaJS
+ * TEMPORARY: Legacy Alova configuration for Cognitive Task
+ * Will be removed after Cognitive Task migration to domain architecture
  */
 
 import { createAlova } from 'alova';
@@ -33,13 +33,13 @@ const getAuthToken = (): string | null => {
 // Crear instancia global de Alova
 export const alovaInstance = createAlova({
   baseURL: API_BASE_URL,
-  
+
   // Configurar para React
   statesHook: ReactHook,
-  
+
   // Usar el adaptador nativo de Alova para fetch
   requestAdapter: adapterFetch(),
-  
+
   // Interceptor de request para agregar token
   beforeRequest: (method) => {
     const token = getAuthToken();
@@ -54,7 +54,7 @@ export const alovaInstance = createAlova({
       method.config.timeout = 0;
     }
   },
-  
+
   // Interceptor de response para manejar errores globales
   responded: {
     onSuccess: async (response) => {
@@ -87,12 +87,12 @@ export const alovaInstance = createAlova({
           window.location.href = '/login';
         }
       }
-      
+
       // Re-lanzar el error para que sea manejado por el componente
       throw error;
     }
   },
-  
+
   // Configuración de caché
   cacheFor: {
     GET: 1000 * 60 * 5,
@@ -100,7 +100,7 @@ export const alovaInstance = createAlova({
     PUT: 0,
     DELETE: 0,
   },
-  
+
   // Configuración de timeout
   timeout: 30000, // 30 segundos
 });
@@ -122,18 +122,5 @@ export const invalidateCache = (matcher?: string | RegExp) => {
     });
   }
 };
-
-// Función para actualizar el token en Alova
-export const updateAlovaToken = (token: string | null) => {
-  if (token) {
-    localStorage.setItem('token', token);
-  } else {
-    localStorage.removeItem('token');
-  }
-};
-
-// Exportar tipos útiles
-export type AlovaMethod<T = any> = ReturnType<typeof alovaInstance.Get<T>>;
-export type AlovaResponse<T = any> = T;
 
 export default alovaInstance;
