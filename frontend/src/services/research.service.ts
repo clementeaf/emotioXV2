@@ -3,7 +3,7 @@
  * Métodos HTTP para gestionar research con Axios
  */
 
-import axiosInstance from '../config/axios.config';
+import { apiClient } from '@/api/config/axios';
 import type {
   Research,
   ResearchListResponse,
@@ -17,7 +17,7 @@ export const researchService = {
    * Obtener todas las investigaciones
    */
   async getAll(): Promise<ResearchAPIResponse[]> {
-    const response = await axiosInstance.get<{ data: ResearchAPIResponse[] }>('/research');
+    const response = await apiClient.get<{ data: ResearchAPIResponse[] }>('/research');
     return response.data.data || [];
   },
 
@@ -26,7 +26,7 @@ export const researchService = {
    */
   async getById(id: string): Promise<ResearchAPIResponse | null> {
     try {
-      const response = await axiosInstance.get<{ data: ResearchAPIResponse }>(`/research/${id}`);
+      const response = await apiClient.get<{ data: ResearchAPIResponse }>(`/research/${id}`);
       return response.data.data || null;
     } catch (error) {
       console.error('Error fetching research by ID:', error);
@@ -38,7 +38,7 @@ export const researchService = {
    * Crear una nueva investigación
    */
   async create(data: CreateResearchRequest): Promise<Research> {
-    const response = await axiosInstance.post<{ data: Research }>('/research', data);
+    const response = await apiClient.post<{ data: Research }>('/research', data);
     return response.data.data;
   },
 
@@ -46,7 +46,7 @@ export const researchService = {
    * Actualizar una investigación existente
    */
   async update(id: string, data: UpdateResearchRequest): Promise<Research> {
-    const response = await axiosInstance.put<{ data: Research }>(`/research/${id}`, data);
+    const response = await apiClient.put<{ data: Research }>(`/research/${id}`, data);
     return response.data.data;
   },
 
@@ -54,7 +54,7 @@ export const researchService = {
    * Eliminar una investigación
    */
   async delete(id: string): Promise<void> {
-    await axiosInstance.delete(`/research/${id}`);
+    await apiClient.delete(`/research/${id}`);
   }
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { moduleResponsesAPI, apiClient } from '@/config/api';
+import { moduleResponsesAPI, apiClient } from '@/api/config';
 import { useEffect, useState } from 'react';
 
 export type CognitiveQuestionType =

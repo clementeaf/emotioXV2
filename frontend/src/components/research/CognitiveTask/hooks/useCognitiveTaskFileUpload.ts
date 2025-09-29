@@ -4,7 +4,7 @@ import type { HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.int
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAuth } from '@/providers/AuthProvider';
-import { apiClient } from '@/config/api';
+import { apiClient } from '@/api/config';
 
 import type { Question, UICognitiveTaskFormData } from '../types'; // Usar tipos locales
 

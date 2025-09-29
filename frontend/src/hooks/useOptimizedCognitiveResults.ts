@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { moduleResponsesAPI } from '@/config/api';
+import { moduleResponsesAPI } from '@/api/config';
 
 // Tipos de preguntas cognitivas
 export type CognitiveQuestionType =

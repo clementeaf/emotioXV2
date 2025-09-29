@@ -4,7 +4,7 @@
  * Prioriza endpoints dinámicos sincronizados desde AWS Lambda
  */
 
-import { DYNAMIC_API_ENDPOINTS, isEndpointsSynced } from '../api/dynamic-endpoints';
+import { DYNAMIC_API_ENDPOINTS, isEndpointsSynced } from '../dynamic-endpoints';
 
 // URLs base - Priorizar endpoints dinámicos, fallback a variables de entorno
 export const API_BASE_URL = isEndpointsSynced()
@@ -487,6 +487,29 @@ export function getWebsocketUrl(): string {
   }
 
   return WS_BASE_URL;
+}
+
+/**
+ * Función para validar que la configuración es segura
+ */
+/**
+ * Función helper para obtener URL de Public Tests
+ */
+export function getPublicTestsUrl(researchId?: string, participantId?: string): string {
+  // URL base de public tests desde endpoints dinámicos
+  const PUBLIC_TESTS_URL = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+
+  let url = PUBLIC_TESTS_URL;
+  if (researchId && participantId) {
+    url += `?researchId=${researchId}&userId=${participantId}`;
+  }
+
+  // Debug log en desarrollo
+  if (typeof window !== 'undefined' && !validateApiConfiguration()) {
+    console.log('[api-config] Public Tests URL:', url);
+  }
+
+  return url;
 }
 
 /**

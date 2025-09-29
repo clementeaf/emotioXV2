@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from '../api/config';
 import { useAuth } from '@/providers/AuthProvider';
 
 // Estado de la conexión

@@ -1,4 +1,4 @@
-import { moduleResponsesAPI } from '@/config/api';
+import { moduleResponsesAPI } from '@/api/config';
 import { useEffect, useState } from 'react';
 
 interface SmartVOCResults {

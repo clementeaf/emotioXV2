@@ -6,6 +6,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useResearchStore, researchHelpers } from '@/stores/useResearchStore';
 import { getTechniqueStages } from '@/config/techniques-registry';
 import { ResearchBasicData, ResearchType, ResearchStatus } from '../../../../../shared/interfaces/research.model';
+import { CreateResearchRequest } from '@/api/domains/research/research.types';
 
 interface Step {
   id: number;
@@ -181,7 +182,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
 
     const clientId = researchHelpers.newClientId();
     console.log('🚀 GENERATED CLIENT ID:', clientId);
-    const createData: ResearchBasicData = {
+    const createData: CreateResearchRequest = {
       name: formData.basic.name,
       companyId: formData.basic.companyId,
       type: formData.basic.type || ResearchType.BEHAVIOURAL,
@@ -204,10 +205,7 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
 
     try {
       console.log('🚀 SENDING CREATE REQUEST TO BACKEND');
-      const result = await createResearchMutation.mutateAsync({
-        ...createData,
-        status: ResearchStatus.DRAFT
-      });
+      const result = await createResearchMutation.mutateAsync(createData);
       console.log('🚀 BACKEND CREATE SUCCESS:', result);
 
       const resultData = result as { data?: any; id?: string; name?: string; message?: string; [key: string]: any };

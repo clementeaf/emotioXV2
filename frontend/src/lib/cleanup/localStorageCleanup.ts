@@ -69,7 +69,7 @@ export function cleanAllResearchFromLocalStorage(): void {
  */
 export async function validateResearchBeforeCleanup(researchId: string): Promise<boolean> {
   try {
-    await researchApi.get(researchId);
+    await researchApi.getById(researchId);
     return true;
   } catch (error) {
     // Si falla la petición, la investigación no existe

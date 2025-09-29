@@ -87,7 +87,7 @@ export function useCreateResearch() {
           targetParticipants: newResearch.targetParticipants || 0,
           objectives: newResearch.objectives || [],
           tags: newResearch.tags || [],
-          status: newResearch.status || 'draft',
+          status: 'draft',
           createdAt: new Date().toISOString(),
         };
 

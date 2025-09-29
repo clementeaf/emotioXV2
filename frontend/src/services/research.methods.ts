@@ -4,7 +4,8 @@
  */
 
 import { researchApi } from '@/api/domains/research/research.api';
-import type { Research, CreateResearchRequest, UpdateResearchRequest } from '@/types/research';
+import type { CreateResearchRequest, UpdateResearchRequest } from '@/api/domains/research/research.types';
+import type { Research } from '@/types/research';
 
 /**
  * Fetch all research

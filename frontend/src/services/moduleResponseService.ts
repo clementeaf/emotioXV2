@@ -1,6 +1,6 @@
 
 
-import { apiClient, moduleResponsesAPI } from '../config/api';
+import { apiClient, moduleResponsesAPI } from '../api/config';
 import {
   CreateModuleResponseDto,
   ParticipantResponsesDocument,

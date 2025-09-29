@@ -4,7 +4,7 @@
  */
 
 // Servicios de API
-export { apiClient } from '../config/api';
+export { apiClient } from '../api/config';
 
 // Servicios de autenticación y usuario
 // ❌ ELIMINADO: authService - usar AuthProvider y /api/domains/auth/

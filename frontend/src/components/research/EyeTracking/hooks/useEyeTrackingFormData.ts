@@ -10,7 +10,7 @@ import {
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useEyeTrackingData } from '@/hooks/useEyeTrackingData';
-import { eyeTrackingAPI } from '@/api/domains/eye-tracking';
+import { eyeTrackingApi } from '@/api/domains/eye-tracking';
 
 // Interfaz para los datos de la API
 interface ApiResponse {
@@ -27,7 +27,8 @@ const api = {
   get: async (url: string): Promise<ApiResponse> => {
     try {
       const researchId = url.split('/').pop() || '';
-      return await eyeTrackingApi.getByResearchId(researchId);
+      const result = await eyeTrackingApi.getByResearchId(researchId);
+      return { data: result };
     } catch (error) {
       throw error;
     }
@@ -43,7 +44,8 @@ const api = {
   put: async (url: string, data: any): Promise<ApiResponse> => {
     try {
       const id = url.split('/').pop() || '';
-      return await eyeTrackingApi.build.update(id, data);
+      const result = await eyeTrackingApi.build.update(id, data);
+      return { data: result };
     } catch (error) {
       throw error;
     }

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { researchInProgressApi } from '@/api/domains/research-in-progress';
-import { getPublicTestsUrl } from '../../api/client-config';
+import { getPublicTestsUrl } from '@/api/config';
 import {
   AlertCircle,
   AlertTriangle,

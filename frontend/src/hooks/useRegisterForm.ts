@@ -1,5 +1,5 @@
 import { validateConfirmPassword, validateEmail, validateName, validatePassword } from '@/utils/auth-validation';
-import { apiClient } from '@/config/api';
+import { apiClient } from '@/api/config';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

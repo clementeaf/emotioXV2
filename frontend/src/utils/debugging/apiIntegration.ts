@@ -1,7 +1,7 @@
 /**
  * Integración del debugger de API con la clase ApiClient
  */
-import { apiClient } from '../../config/api';
+import { apiClient } from '../../api/config';
 
 // Función para parchear los métodos HTTP de apiClient
 export const patchApiClientWithDebugger = () => {

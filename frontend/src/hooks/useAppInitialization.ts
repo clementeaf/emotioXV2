@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { apiClient } from '../config/api';
+import { apiClient } from '../api/config';
 
 export const useAppInitialization = () => {
   useEffect(() => {

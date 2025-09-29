@@ -607,12 +607,23 @@ export function useEyeTrackingForm({
       let response;
       const api = eyeTrackingApi.build;
 
+      // Transform stimuli data to match API expectations
+      const apiData = {
+        ...dataToSave,
+        researchId, // Include researchId for create requests
+        stimuli: dataToSave.stimuli?.items?.map(stimulus => ({
+          url: stimulus.fileUrl,
+          type: stimulus.fileType,
+          duration: dataToSave.stimuli?.durationPerStimulus
+        })) || []
+      };
+
       if (eyeTrackingId) {
         // Actualizar existente
-        response = await api.update(researchId, dataToSave);
+        response = await api.update(researchId, apiData);
       } else {
         // Crear nuevo
-        response = await api.create(researchId, dataToSave);
+        response = await api.create(apiData);
 
         if (response && response.id) {
           setEyeTrackingId(response.id);
