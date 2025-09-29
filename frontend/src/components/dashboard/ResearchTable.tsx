@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/Dialog';
-import { useResearchList, useDeleteResearch } from '@/api';
+import { useResearchList, useDeleteResearch } from '@/api/domains/research';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useState } from 'react';

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import cognitiveTaskAPI from '../services/cognitiveTaskService';
 import { moduleResponseService } from '../services/moduleResponseService';
-import { useResearchById } from '@/api';
+import { useResearchById } from '@/api/domains/research';
 
 // Singleton global para evitar múltiples llamadas simultáneas
 class GlobalAPISingleton {

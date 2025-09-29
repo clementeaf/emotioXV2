@@ -8,7 +8,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { updateApiToken } from '@/api/config/axios';
-import type { User } from '@/api';
+import type { User } from '@/api/domains/auth';
 
 interface AuthContextType {
   user: User | null;

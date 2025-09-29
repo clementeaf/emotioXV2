@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth as useNewAuth, useLogout as useNewLogout } from '@/api';
+import { useAuth as useNewAuth, useLogout as useNewLogout } from '@/api/domains/auth';
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
 interface User {

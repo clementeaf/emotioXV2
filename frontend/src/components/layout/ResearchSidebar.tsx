@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { memo, useMemo, useCallback } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { useResearchList, useResearchById } from '@/api';
+import { useResearchList, useResearchById } from '@/api/domains/research';
 import { ResearchSidebarProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';

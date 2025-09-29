@@ -8,7 +8,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { navigateToPublicTests } from '@/api/dynamic-endpoints';
 import { Button } from '@/components/ui/Button';
 import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
-import { useResearchList, useDeleteResearch } from '@/api';
+import { useResearchList, useDeleteResearch } from '@/api/domains/research';
 import { researchApi } from '@/api/domains/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';

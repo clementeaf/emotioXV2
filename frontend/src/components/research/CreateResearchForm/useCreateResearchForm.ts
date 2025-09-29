@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { useCreateResearch } from '@/api';
+import { useCreateResearch } from '@/api/domains/research';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearchStore, researchHelpers } from '@/stores/useResearchStore';
 import { getTechniqueStages } from '@/config/techniques-registry';

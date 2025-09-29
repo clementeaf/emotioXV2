@@ -1,6 +1,6 @@
 'use client';
 
-import { useResearchList } from '@/api';
+import { useResearchList } from '@/api/domains/research';
 import { ResearchTypesProps } from '@/interfaces/research';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import type { ResearchAPIResponse } from '@/types/research';

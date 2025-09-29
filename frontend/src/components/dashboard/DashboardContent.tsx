@@ -3,7 +3,7 @@
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
 import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { useDashboardResearch } from '@/hooks/useDashboardResearch';
-import { useResearchList } from '@/api';
+import { useResearchList } from '@/api/domains/research';
 import { memo, useMemo } from 'react';
 import { DashboardMainContent } from './DashboardMainContent';
 import { DashboardStats } from './DashboardStats';

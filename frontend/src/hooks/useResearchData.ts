@@ -3,7 +3,7 @@
  * Implementación con nueva arquitectura de dominios
  */
 
-import { useResearchById, useUpdateResearch, useDeleteResearch } from '@/api';
+import { useResearchById, useUpdateResearch, useDeleteResearch } from '@/api/domains/research';
 import { ResearchRecord, ResearchStage } from '../../../shared/interfaces/research.interface';
 import type { ResearchAPIResponse } from '@/types/research';
 
@@ -74,7 +74,7 @@ export const useResearchData = (researchId: string) => {
 export const useResearchListData = () => {
   // Ya tenemos esto en la nueva arquitectura como useResearchList
   // Este hook es solo para compatibilidad con código existente
-  const { useResearchList } = require('@/api');
+  const { useResearchList } = require('@/api/domains/research');
   return useResearchList();
 };
 

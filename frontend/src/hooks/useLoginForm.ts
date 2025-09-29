@@ -1,4 +1,4 @@
-import { useLogin } from '@/api';
+import { useLogin } from '@/api/domains/auth';
 import { validateEmail, validatePassword } from '@/utils/auth-validation';
 import { useState } from 'react';
 
