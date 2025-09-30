@@ -94,6 +94,7 @@ export interface DemographicQuestions {
     required: boolean;
     options?: string[]; // Lista de países o "all"
     disqualifyingCountries?: string[]; // Países que descalifican
+    priorityCountries?: string[]; // Países con prioridad en el reclutamiento
     // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
     quotas?: CountryQuota[];
     quotasEnabled?: boolean;

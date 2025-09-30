@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Edit2, Globe, Save, Search, Target, Trash2, Users, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit2, Globe, Save, Search, Star, Target, Trash2, Users, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 interface Country {
@@ -6,6 +6,7 @@ interface Country {
   name: string;
   continent: string;
   isDisqualifying: boolean;
+  isPriority?: boolean;
   isEditing?: boolean;
 }
 
@@ -32,12 +33,13 @@ interface ContinentSection {
 interface CountryConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (validCountries: string[], disqualifyingCountries: string[]) => void;
+  onSave: (validCountries: string[], disqualifyingCountries: string[], priorityCountries: string[]) => void;
   // 🎯 NUEVAS PROPS PARA CUOTAS
   onQuotasSave?: (quotas: CountryQuota[]) => void;
   onQuotasToggle?: (enabled: boolean) => void;
   initialValidCountries?: string[];
   initialDisqualifyingCountries?: string[];
+  initialPriorityCountries?: string[];
   // 🎯 NUEVAS PROPS PARA CUOTAS
   initialQuotas?: CountryQuota[];
   quotasEnabled?: boolean;
@@ -79,6 +81,7 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
   onQuotasToggle,
   initialValidCountries = [],
   initialDisqualifyingCountries = [],
+  initialPriorityCountries = [],
   initialQuotas = [],
   quotasEnabled = false
 }) => {
@@ -99,6 +102,7 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
         name: countryName,
         continent: continent.name,
         isDisqualifying: initialDisqualifyingCountries.includes(countryName),
+        isPriority: initialPriorityCountries.includes(countryName),
         isEditing: false
       }));
 
@@ -113,7 +117,7 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
         isExpanded: true
       };
     });
-  }, [initialDisqualifyingCountries]);
+  }, [initialDisqualifyingCountries, initialPriorityCountries]);
 
   useEffect(() => {
     if (isOpen) {
@@ -162,6 +166,23 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
             countries: section.countries.map(country =>
               country.id === countryId
                 ? { ...country, isDisqualifying: !country.isDisqualifying }
+                : country
+            )
+          }
+          : section
+      )
+    );
+  };
+
+  const handleToggleCountryPriority = (continentName: string, countryId: string) => {
+    setContinentSections(prev =>
+      prev.map(section =>
+        section.name === continentName
+          ? {
+            ...section,
+            countries: section.countries.map(country =>
+              country.id === countryId
+                ? { ...country, isPriority: !country.isPriority }
                 : country
             )
           }
@@ -289,7 +310,11 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
       .filter(country => country.isDisqualifying)
       .map(country => country.name);
 
-    onSave(validCountries, disqualifyingCountries);
+    const priorityCountries = allCountries
+      .filter(country => country.isPriority && !country.isDisqualifying)
+      .map(country => country.name);
+
+    onSave(validCountries, disqualifyingCountries, priorityCountries);
 
     // 🎯 GUARDAR CUOTAS SI ESTÁN HABILITADAS
     if (quotasEnabledState && onQuotasSave) {
@@ -302,6 +327,10 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
   const validCountriesCount = continentSections
     .flatMap(section => section.countries)
     .filter(country => !country.isDisqualifying).length;
+
+  const priorityCountriesCount = continentSections
+    .flatMap(section => section.countries)
+    .filter(country => country.isPriority && !country.isDisqualifying).length;
 
   const totalCountries = continentSections
     .flatMap(section => section.countries).length;
@@ -371,7 +400,7 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
             </div>
 
             {/* Estadísticas */}
-            <div className="mb-6 grid grid-cols-3 gap-4 text-sm">
+            <div className="mb-6 grid grid-cols-4 gap-4 text-sm">
               <div className="bg-blue-50 p-3 rounded-lg">
                 <div className="font-medium text-blue-800">Total países</div>
                 <div className="text-blue-600">{totalCountries}</div>
@@ -379,6 +408,10 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
               <div className="bg-green-50 p-3 rounded-lg">
                 <div className="font-medium text-green-800">Países válidos</div>
                 <div className="text-green-600">{validCountriesCount}</div>
+              </div>
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <div className="font-medium text-purple-800">Prioritarios</div>
+                <div className="text-purple-600">{priorityCountriesCount}</div>
               </div>
               <div className="bg-orange-50 p-3 rounded-lg">
                 <div className="font-medium text-orange-800">Continentes excluidos</div>
@@ -480,21 +513,40 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
                               </div>
                             )}
 
-                            {/* Toggle Switch */}
-                            <div className="flex items-center space-x-2">
-                              <span className={`text-sm ${country.isDisqualifying ? 'text-orange-600' : 'text-green-600'}`}>
-                                {country.isDisqualifying ? 'Desclasifica' : 'Clasifica'}
-                              </span>
-                              <button
-                                onClick={() => handleToggleCountryDisqualifying(section.name, country.id)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${country.isDisqualifying ? 'bg-orange-500' : 'bg-green-500'
-                                  }`}
-                              >
-                                <span
-                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${country.isDisqualifying ? 'translate-x-6' : 'translate-x-1'
+                            {/* Toggle Switches */}
+                            <div className="flex items-center space-x-4">
+                              {/* Toggle Clasifica/Desclasifica */}
+                              <div className="flex items-center space-x-2">
+                                <span className={`text-sm ${country.isDisqualifying ? 'text-orange-600' : 'text-green-600'}`}>
+                                  {country.isDisqualifying ? 'Desclasifica' : 'Clasifica'}
+                                </span>
+                                <button
+                                  onClick={() => handleToggleCountryDisqualifying(section.name, country.id)}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${country.isDisqualifying ? 'bg-orange-500' : 'bg-green-500'
                                     }`}
-                                />
-                              </button>
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${country.isDisqualifying ? 'translate-x-6' : 'translate-x-1'
+                                      }`}
+                                  />
+                                </button>
+                              </div>
+
+                              {/* Toggle Prioritario */}
+                              {!country.isDisqualifying && (
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => handleToggleCountryPriority(section.name, country.id)}
+                                    className={`p-1 rounded transition-colors ${country.isPriority
+                                        ? 'text-purple-600 bg-purple-100'
+                                        : 'text-gray-400 hover:text-purple-400 hover:bg-purple-50'
+                                      }`}
+                                    title={country.isPriority ? 'Quitar prioridad' : 'Marcar como prioritario'}
+                                  >
+                                    <Star size={18} fill={country.isPriority ? 'currentColor' : 'none'} />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -547,11 +599,12 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
             {/* Nota importante */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <h4 className="font-semibold text-blue-800 mb-2">Nota:</h4>
-              <p className="text-blue-700 text-sm">
-                Los países marcados como "Clasifica" se mostrarán a los participantes para seleccionar.
-                Los países marcados como "Desclasifica" excluirán automáticamente a los participantes de esos países.
-                Puedes excluir continentes completos y luego exceptuar países específicos dentro de ellos.
-                Debes mantener al menos un país que clasifique.
+              <p className="text-blue-700 text-sm space-y-1">
+                <span className="block">• Los países marcados como "Clasifica" se mostrarán a los participantes para seleccionar.</span>
+                <span className="block">• Los países marcados como "Desclasifica" excluirán automáticamente a los participantes de esos países.</span>
+                <span className="block">• Los países con <Star size={14} className="inline text-purple-600" fill="currentColor" /> <strong>estrella (prioritarios)</strong> tendrán preferencia en el reclutamiento.</span>
+                <span className="block">• Puedes excluir continentes completos y luego exceptuar países específicos dentro de ellos.</span>
+                <span className="block">• Debes mantener al menos un país que clasifique.</span>
               </p>
             </div>
 

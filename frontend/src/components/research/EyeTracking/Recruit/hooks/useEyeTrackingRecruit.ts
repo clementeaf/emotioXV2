@@ -171,6 +171,7 @@ interface UseEyeTrackingRecruitResult {
   updateDisqualifyingAges: (disqualifyingAges: string[]) => void;
   updateCountryOptions: (options: string[]) => void;
   updateDisqualifyingCountries: (disqualifyingCountries: string[]) => void;
+  updatePriorityCountries: (priorityCountries: string[]) => void;
   updateGenderOptions: (options: string[]) => void;
   updateDisqualifyingGenders: (disqualifyingGenders: string[]) => void;
   updateEducationOptions: (options: string[]) => void;
@@ -1141,6 +1142,20 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
 
+  // Función para actualizar los países prioritarios
+  const updatePriorityCountries = useCallback((priorityCountries: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        country: {
+          ...prevData.demographicQuestions.country,
+          priorityCountries: priorityCountries
+        }
+      }
+    }));
+  }, []);
+
   // Función para actualizar las opciones de géneros
   const updateGenderOptions = useCallback((options: string[]) => {
     setFormData(prevData => ({
@@ -1765,6 +1780,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     updateDisqualifyingAges,
     updateCountryOptions,
     updateDisqualifyingCountries,
+    updatePriorityCountries,
     updateGenderOptions,
     updateDisqualifyingGenders,
     updateEducationOptions,
