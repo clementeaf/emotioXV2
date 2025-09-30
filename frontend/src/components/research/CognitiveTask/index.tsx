@@ -51,8 +51,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     closeJsonModal,
     jsonToSend,
     pendingAction,
-    continueWithAction,
-    isEmpty
+    continueWithAction
   } = useCognitiveTaskForm(researchId, onSave);
 
   // Hook para el contenido educativo
@@ -125,14 +124,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
       {/* Columna izquierda - Contenido principal con scroll */}
       <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4">
         <div className={cn('space-y-4', className)}>
-          {/* Mensaje amigable si no hay configuración previa */}
-          {isEmpty && (
-            <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
-              <strong>¡Aún no has configurado la tarea cognitiva!</strong><br />
-              Agrega preguntas y guarda para comenzar a recolectar datos de los participantes.
-            </div>
-          )}
-
           {/* Campos del formulario */}
           <CognitiveTaskFields
             questions={formData.questions}

@@ -40,8 +40,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     isExisting,
     isDeleteModalOpen,
     confirmDelete,
-    closeDeleteModal,
-    isEmpty
+    closeDeleteModal
   } = useSmartVOCForm(researchId);
 
   // Hook para el contenido educativo
@@ -92,13 +91,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     <div className="flex gap-6 min-w-[1200px]">
       {/* Columna izquierda - Contenido principal con scroll */}
       <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4">
-        {/* Mensaje amigable si no hay configuración previa */}
-        {isEmpty && (
-          <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
-            <strong>¡Aún no has configurado el formulario SmartVOC!</strong><br />
-            Agrega preguntas y guarda para comenzar a recolectar feedback de los participantes.
-          </div>
-        )}
 
         {/* Gestión de preguntas */}
         <SmartVOCQuestions
