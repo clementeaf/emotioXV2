@@ -5,8 +5,8 @@ import { useCallback, useState } from 'react';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
 import { useSmartVOCData } from '@/hooks/useSmartVOCData';
+import { toastHelpers } from '@/utils/toast';
 
-import { SUCCESS_MESSAGES } from '../constants';
 import { ErrorModalData } from '../types';
 
 /**
@@ -61,12 +61,8 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
           });
         }
 
-        // Mostrar mensaje de éxito
-        showModal({
-          title: 'Éxito',
-          message: smartVocData ? SUCCESS_MESSAGES.UPDATE_SUCCESS : SUCCESS_MESSAGES.CREATE_SUCCESS,
-          type: 'info'
-        });
+        // Usar toast en lugar de modal para éxito
+        toastHelpers.saveSuccess('SmartVOC');
 
         // Refresh data
         await refetch();
@@ -98,11 +94,8 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
       try {
         await deleteSmartVOC();
 
-        showModal({
-          title: 'Eliminado',
-          message: 'La configuración SmartVOC fue eliminada correctamente.',
-          type: 'info'
-        });
+        // Usar toast en lugar de modal para éxito
+        toastHelpers.deleteSuccess('SmartVOC');
 
         // Refresh data
         await refetch();

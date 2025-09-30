@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useThankYouScreenData } from '@/hooks/useThankYouScreenData';
 import { ThankYouScreenModel } from '@/shared/interfaces/thank-you-screen.interface';
+import { toastHelpers } from '@/utils/toast';
 import {
   ErrorModalData,
   UseThankYouScreenFormResult,
@@ -164,12 +165,9 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       setFormData(formDataFromResult);
       setHasBeenSaved(true);
       setIsEmpty(false);
-      setModalError({
-        title: 'Éxito',
-        message: 'Pantalla de agradecimiento guardada correctamente.',
-        type: 'success'
-      });
-      setModalVisible(true);
+
+      // Usar toast en lugar de modal para éxito
+      toastHelpers.saveSuccess('Pantalla de agradecimiento');
 
     } catch (error) {
       setModalError({
@@ -240,13 +238,10 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       await deleteThankYouScreen();
       setFormData({ ...INITIAL_FORM_DATA });
       setHasBeenSaved(false);
-      setModalError({
-        title: 'Eliminado',
-        message: 'La pantalla de agradecimiento fue eliminada correctamente.',
-        type: 'success' as any
-      });
-      setModalVisible(true);
       setIsEmpty(true);
+
+      // Usar toast en lugar de modal para éxito
+      toastHelpers.deleteSuccess('Pantalla de agradecimiento');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'No se pudo eliminar la pantalla de agradecimiento.';
       setModalError({

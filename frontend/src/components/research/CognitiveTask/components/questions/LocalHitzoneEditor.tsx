@@ -136,14 +136,16 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
         className="relative w-[80vw] max-w-4xl max-h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden"
         style={{ aspectRatio: imgNatural ? `${imgNatural.width} / ${imgNatural.height}` : undefined }}
       >
-        <img
-          src={imageUrl}
-          alt="Imagen base"
-          className="w-full h-auto max-h-[80vh] object-contain bg-white"
-          draggable={false}
-          onLoad={handleImgLoad}
-          style={{ display: 'block' }}
-        />
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt="Imagen base"
+            className="w-full h-auto max-h-[80vh] object-contain bg-white"
+            draggable={false}
+            onLoad={handleImgLoad}
+            style={{ display: 'block' }}
+          />
+        )}
         {imgSize && imgNatural && (
           <svg
             ref={svgRef}
@@ -217,12 +219,27 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
           </>
         ) : (
           <>
-            <div className="mb-4 text-sm text-neutral-600">Zona dibujada. Puedes guardarla, eliminarla o probarla.</div>
+            <div className="mb-4 text-sm text-neutral-600">
+              {selectedIdx !== null
+                ? `Zona ${selectedIdx + 1} seleccionada. Puedes guardarla, eliminarla o probarla.`
+                : 'Zona dibujada. Selecciona una zona para eliminarla, o puedes guardarla o probarla.'
+              }
+            </div>
             <div className="flex flex-row items-center justify-center gap-4">
               <button onClick={() => {
                 onSave(areas);
               }} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zona</button>
-              <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
+              <button
+                onClick={handleDelete}
+                disabled={selectedIdx === null}
+                className={`px-4 py-2 rounded ${
+                  selectedIdx === null
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-red-500 text-white hover:bg-red-600'
+                }`}
+              >
+                Eliminar zona
+              </button>
               <button onClick={() => setTestMode(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Probar hitzone</button>
               <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
             </div>

@@ -99,7 +99,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   };
 
   const getQuestionTypeLabel = () => {
-    switch (question.type) {
+    // Normalizar el tipo para el label también
+    const normalizedType = typeof question.type === 'string' && question.type.startsWith('cognitive_')
+      ? question.type.replace('cognitive_', '')
+      : question.type;
+
+    switch (normalizedType) {
       case 'short_text': return 'Texto Corto';
       case 'long_text': return 'Texto Largo';
       case 'single_choice': return 'Opción Única';

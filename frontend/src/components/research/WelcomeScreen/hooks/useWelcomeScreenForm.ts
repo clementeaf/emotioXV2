@@ -1,5 +1,6 @@
 import { useWelcomeScreenData } from '@/hooks/useWelcomeScreenData';
 import { useCallback, useEffect, useState } from 'react';
+import { toastHelpers } from '@/utils/toast';
 
 // ❌ ELIMINADO: No usar welcomeScreenService - todo debe venir del hook centralizado
 import { WelcomeScreenRecord, WelcomeScreenFormData as WelcomeScreenServiceData } from '../../../../../../shared/interfaces/welcome-screen.interface';
@@ -178,12 +179,9 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       setHasBeenSaved(true); // Marcar que se ha guardado para que isExisting sea true
       setIsEmpty(false); // Ya no está vacío
       // setExistingScreen(resultRecord); // Ya no es necesario, el hook centralizado maneja esto
-      setModalError({
-        title: 'Éxito',
-        message: 'Pantalla de bienvenida guardada correctamente.',
-        type: 'info'
-      });
-      setModalVisible(true);
+
+      // Usar toast en lugar de modal para éxito
+      toastHelpers.saveSuccess('Pantalla de bienvenida');
 
     } catch (error) {
       setModalError({
@@ -258,13 +256,10 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       await deleteWelcomeScreen();
       setFormData({ ...INITIAL_FORM_DATA }); // No agregues researchId ni questionKey
       setHasBeenSaved(false); // Resetear el estado de guardado
-      setModalError({
-        title: 'Eliminado',
-        message: 'La pantalla de bienvenida fue eliminada correctamente.',
-        type: 'success' as any
-      });
-      setModalVisible(true);
       setIsEmpty(true);
+
+      // Usar toast en lugar de modal para éxito
+      toastHelpers.deleteSuccess('Pantalla de bienvenida');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'No se pudo eliminar la pantalla de bienvenida.';
       setModalError({

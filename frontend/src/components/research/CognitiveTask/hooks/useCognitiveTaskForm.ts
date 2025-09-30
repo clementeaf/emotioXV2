@@ -7,6 +7,7 @@ import {
 
 import { useAuth } from '@/providers/AuthProvider';
 import { cognitiveTaskService } from '@/services/cognitiveTaskService';
+import { toastHelpers } from '@/utils/toast';
 
 import {
   logFormDebugInfo
@@ -278,11 +279,8 @@ export const useCognitiveTaskForm = (
 
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
       modals.closeModal();
-      modals.showErrorModal({
-        title: 'Éxito',
-        message: 'La configuración se guardó correctamente.',
-        type: 'success'
-      });
+      // Usar toast en lugar de modal para éxito
+      toastHelpers.saveSuccess('Configuración de tareas cognitivas');
       if (onSave) { onSave(data); }
     },
     onError: (error) => {
@@ -299,11 +297,8 @@ export const useCognitiveTaskForm = (
       return cognitiveTaskService.deleteByResearchId(id);
     },
     onSuccess: (_, deletedResearchId) => {
-      modals.showErrorModal({
-        title: 'Configuración eliminada',
-        message: `La configuración de la tarea cognitiva para la investigación ${deletedResearchId} ha sido eliminada.`,
-        type: 'success'
-      });
+      // Usar toast en lugar de modal para éxito
+      toastHelpers.deleteSuccess('Configuración de tareas cognitivas');
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, deletedResearchId] });
       setFormData({
         ...DEFAULT_COGNITIVE_TASK_STATE,
@@ -321,25 +316,28 @@ export const useCognitiveTaskForm = (
   });
 
   const handleAddQuestion = useCallback((type: string) => {
+    // Normalizar el tipo: remover prefijo cognitive_ si existe
+    const normalizedType = type.startsWith('cognitive_') ? type.replace('cognitive_', '') : type;
+
     const newQuestion = {
       id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type,
+      type: normalizedType,
       title: '',
       description: '',
       required: true,
       showConditionally: false,
       deviceFrame: false,
-      questionKey: `${getCognitiveQuestionType(type)}_q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      ...(type === 'single_choice' || type === 'multiple_choice' || type === 'ranking' ? {
+      questionKey: `${getCognitiveQuestionType(normalizedType)}_q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      ...(normalizedType === 'single_choice' || normalizedType === 'multiple_choice' || normalizedType === 'ranking' ? {
         choices: [
           { id: '1', text: '', isQualify: false, isDisqualify: false },
           { id: '2', text: '', isQualify: false, isDisqualify: false }
         ]
       } : {}),
-      ...(type === 'linear_scale' ? {
+      ...(normalizedType === 'linear_scale' ? {
         scaleConfig: { startValue: 1, endValue: 5 }
       } : {}),
-      ...(type === 'navigation_flow' || type === 'preference_test' ? {
+      ...(normalizedType === 'navigation_flow' || normalizedType === 'preference_test' ? {
         files: []
       } : {})
     };
