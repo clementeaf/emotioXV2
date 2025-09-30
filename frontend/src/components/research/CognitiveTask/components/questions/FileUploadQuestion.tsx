@@ -330,6 +330,48 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
         )}
       </div>
 
+      {/* VISTA PREVIA: No editable */}
+      {filesToShow.length > 0 && (
+        <div className="bg-neutral-50 p-3 border border-gray-300 rounded-md">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Vista previa - Así verán esta pregunta los participantes
+            <span className="ml-2 text-xs font-normal text-red-500">(NO EDITABLE)</span>
+          </label>
+          <div className="mt-2 text-sm text-gray-700 font-medium">{question.title || 'Título de la pregunta'}</div>
+          {question.description && <div className="mt-1 text-xs text-gray-500">{question.description}</div>}
+
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {filesToShow.map((file) => {
+              const imageUrl = presignedUrls[file.id] || (file as any).fileUrl || file.url;
+              return (
+                <div key={file.id} className="relative">
+                  {file.type?.startsWith('image/') && imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={file.name}
+                      className="w-full h-48 object-cover rounded border border-gray-200"
+                      onError={(e) => {
+                        e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23f0f0f0"/><text x="100" y="100" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="%23999">Imagen no disponible</text></svg>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                      <span className="text-xs text-gray-400">Archivo: {file.name}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {question.type === 'preference_test' && filesToShow.length === 2 && (
+            <div className="mt-3 text-center">
+              <p className="text-xs text-gray-500 italic">Los participantes seleccionarán una de estas opciones</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Modal de edición de hitzones */}
       {hitzoneModalOpen && hitzoneFile && (typeof window !== 'undefined' ? ReactDOM.createPortal(
         <div className="fixed inset-0 w-screen h-screen top-0 left-0 z-50 flex items-center justify-center bg-black bg-opacity-40 m-0 p-0">

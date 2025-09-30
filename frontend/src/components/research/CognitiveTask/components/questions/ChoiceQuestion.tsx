@@ -101,16 +101,16 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
             // <<< Buscar error específico para el texto de esta opción >>>
             const choiceTextErrorKey = `choices.${index}.text`;
             const choiceTextError = validationErrors ? validationErrors[choiceTextErrorKey] : null;
-            
+
             return (
               <div key={choice.id} className="flex items-center gap-2">
                 <Input
                   value={choice.text || ''}
-                  onChange={(e) => 
+                  onChange={(e) =>
                     onQuestionChange({
-                      choices: question.choices?.map(c => 
-                        c.id === choice.id 
-                          ? { ...c, text: e.target.value } 
+                      choices: question.choices?.map(c =>
+                        c.id === choice.id
+                          ? { ...c, text: e.target.value }
                           : c
                       )
                     })
@@ -133,6 +133,40 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* VISTA PREVIA: No editable */}
+      <div className="bg-neutral-50 p-3 border border-gray-300 rounded-md">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Vista previa - Así verán esta pregunta los participantes
+          <span className="ml-2 text-xs font-normal text-red-500">(NO EDITABLE)</span>
+        </label>
+        <div className="mt-2 text-sm text-gray-700 font-medium">{question.title || 'Título de la pregunta'}</div>
+        {question.description && <div className="mt-1 text-xs text-gray-500">{question.description}</div>}
+        <div className="mt-3 space-y-2">
+          {question.choices && question.choices.length > 0 ? (
+            question.choices.map((choice, index) => (
+              <div key={choice.id} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+                {question.type === 'single_choice' ? (
+                  <input
+                    type="radio"
+                    disabled
+                    className="w-4 h-4 text-blue-600 cursor-not-allowed"
+                  />
+                ) : (
+                  <input
+                    type="checkbox"
+                    disabled
+                    className="w-4 h-4 text-blue-600 cursor-not-allowed"
+                  />
+                )}
+                <span className="text-sm text-gray-700">{choice.text || `Opción ${index + 1}`}</span>
+              </div>
+            ))
+          ) : (
+            <div className="text-xs text-gray-400 italic">No hay opciones configuradas</div>
+          )}
         </div>
       </div>
     </div>

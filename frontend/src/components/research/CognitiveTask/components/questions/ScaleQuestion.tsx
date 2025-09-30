@@ -165,6 +165,38 @@ export const ScaleQuestion: React.FC<ScaleQuestionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* VISTA PREVIA: No editable */}
+      <div className="bg-neutral-50 p-3 border border-gray-300 rounded-md">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Vista previa - Así verán esta pregunta los participantes
+          <span className="ml-2 text-xs font-normal text-red-500">(NO EDITABLE)</span>
+        </label>
+        <div className="mt-2 text-sm text-gray-700 font-medium">{question.title || 'Título de la pregunta'}</div>
+        {question.description && <div className="mt-1 text-xs text-gray-500">{question.description}</div>}
+
+        <div className="mt-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs text-gray-600">{scaleConfig.startLabel || DEFAULT_TEXTS.SCALE_START_LABEL_PLACEHOLDER}</span>
+            <span className="text-xs text-gray-600">{scaleConfig.endLabel || DEFAULT_TEXTS.SCALE_END_LABEL_PLACEHOLDER}</span>
+          </div>
+          <div className="flex justify-between items-center gap-2">
+            {Array.from(
+              { length: (scaleConfig.endValue ?? 5) - (scaleConfig.startValue ?? 1) + 1 },
+              (_, i) => (scaleConfig.startValue ?? 1) + i
+            ).map((value) => (
+              <div key={value} className="flex flex-col items-center">
+                <input
+                  type="radio"
+                  disabled
+                  className="w-4 h-4 text-blue-600 cursor-not-allowed mb-1"
+                />
+                <span className="text-xs text-gray-600">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }; 
