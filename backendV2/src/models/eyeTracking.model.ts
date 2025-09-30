@@ -50,6 +50,7 @@ export const DEFAULT_EYE_TRACKING_CONFIG: EyeTrackingFormData = {
       enabled: false,
       required: false,
       options: ['ES', 'MX', 'AR', 'CO', 'CL', 'PE'],
+      priorityCountries: [],
       // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
       quotas: [],
       quotasEnabled: false

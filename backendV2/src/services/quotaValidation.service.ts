@@ -160,6 +160,7 @@ export class QuotaValidationService {
 
   /**
    * Analiza cuota de país (SOLO PARA ANÁLISIS)
+   * Las cuotas solo se aplican a países prioritarios
    */
   private async analyzeCountryQuota(
     researchId: string,
@@ -170,6 +171,16 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
+    // 🎯 NUEVO: Verificar si el país está en la lista de prioritarios
+    const priorityCountries = (countryConfig as any)?.priorityCountries || [];
+    const isPriorityCountry = priorityCountries.includes(country);
+
+    // Si NO es un país prioritario, permitir entrada por "caída natural"
+    if (!isPriorityCountry) {
+      return { isValid: true };
+    }
+
+    // Solo para países prioritarios: validar cuota
     const quota = (countryConfig as any)?.quotas?.find((q: CountryQuota) =>
       q.country === country && q.isActive
     );
@@ -183,7 +194,7 @@ export class QuotaValidationService {
     if (counter && counter.currentCount >= quota.quota) {
       return {
         isValid: false,
-        reason: `Cuota de país alcanzada para ${country}`,
+        reason: `Cuota de país prioritario alcanzada para ${country}`,
         quotaInfo: {
           demographicType: 'country',
           value: country,
