@@ -175,20 +175,32 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
   };
 
   const handleToggleCountryPriority = (continentName: string, countryId: string) => {
-    setContinentSections(prev =>
-      prev.map(section =>
+    setContinentSections(prev => {
+      const newSections = prev.map(section =>
         section.name === continentName
           ? {
             ...section,
-            countries: section.countries.map(country =>
-              country.id === countryId
-                ? { ...country, isPriority: !country.isPriority }
-                : country
-            )
+            countries: section.countries.map(country => {
+              if (country.id === countryId) {
+                const newPriorityState = !country.isPriority;
+
+                // Si se quita la prioridad, eliminar la cuota asociada
+                if (!newPriorityState) {
+                  setQuotas(prevQuotas =>
+                    prevQuotas.filter(quota => quota.country !== country.name)
+                  );
+                }
+
+                return { ...country, isPriority: newPriorityState };
+              }
+              return country;
+            })
           }
           : section
-      )
-    );
+      );
+
+      return newSections;
+    });
   };
 
   const handleToggleContinentExpansion = (continentName: string) => {
@@ -270,11 +282,28 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
     );
   };
 
+  // 🎯 OBTENER LISTA DE PAÍSES PRIORITARIOS
+  const priorityCountries = useMemo(() => {
+    return continentSections
+      .flatMap(section => section.countries)
+      .filter(country => country.isPriority && !country.isDisqualifying);
+  }, [continentSections]);
+
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS
   const handleAddQuota = () => {
+    // Solo permitir agregar cuotas para países prioritarios que aún no tienen cuota
+    const countriesWithQuotas = quotas.map(q => q.country);
+    const availablePriorityCountries = priorityCountries.filter(
+      country => !countriesWithQuotas.includes(country.name)
+    );
+
+    if (availablePriorityCountries.length === 0) {
+      return; // No hay países prioritarios disponibles
+    }
+
     const newQuota: CountryQuota = {
       id: `quota-${Date.now()}`,
-      country: '',
+      country: availablePriorityCountries[0].name,
       quota: 1,
       isActive: true
     };
@@ -640,101 +669,136 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
 
               {quotasEnabledState ? (
                 <>
-                  <p className="text-gray-600 mb-4">
-                    Configura cuotas específicas por país. Cuando se alcance la cuota de un país,
-                    los participantes de ese país serán descalificados automáticamente.
-                  </p>
+                  {priorityCountries.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Star className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <p className="font-medium mb-2">No hay países prioritarios seleccionados</p>
+                      <p className="text-sm">Marca países como prioritarios en la pestaña "Opciones de País" para configurar sus cuotas</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-gray-600 mb-4">
+                        Configura cuotas específicas para los <strong>{priorityCountries.length} países prioritarios</strong> seleccionados.
+                        Cuando se alcance la cuota de un país, los participantes de ese país serán descalificados automáticamente.
+                      </p>
 
-                  {/* Lista de cuotas */}
-                  <div className="space-y-3 mb-4">
-                    {quotas.map((quota) => (
-                      <div
-                        key={quota.id}
-                        className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border"
-                      >
-                        <div className="flex-1 grid grid-cols-2 gap-4">
-                          {/* País */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              País
-                            </label>
-                            <input
-                              type="text"
-                              value={quota.country}
-                              onChange={(e) => handleUpdateQuota(quota.id, 'country', e.target.value)}
-                              placeholder="ej: España"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
+                      {/* Lista de cuotas */}
+                      <div className="space-y-3 mb-4">
+                        {quotas.map((quota) => {
+                          const countriesWithQuotas = quotas.map(q => q.country);
+                          const availableCountries = priorityCountries.filter(
+                            country => !countriesWithQuotas.includes(country.name) || country.name === quota.country
+                          );
 
-                          {/* Cuota */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Cuota
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={quota.quota}
-                              onChange={(e) => handleUpdateQuota(quota.id, 'quota', parseInt(e.target.value) || 1)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                        </div>
+                          return (
+                            <div
+                              key={quota.id}
+                              className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border"
+                            >
+                              <div className="flex-1 grid grid-cols-2 gap-4">
+                                {/* País */}
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <Star size={14} className="inline text-purple-600 mr-1" fill="currentColor" />
+                                    País prioritario
+                                  </label>
+                                  <select
+                                    value={quota.country}
+                                    onChange={(e) => handleUpdateQuota(quota.id, 'country', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    <option value="">Seleccionar país</option>
+                                    {availableCountries.map(country => (
+                                      <option key={country.id} value={country.name}>
+                                        {country.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
 
-                        {/* Estado activo/inactivo */}
-                        <div className="flex items-center space-x-2">
-                          <span className={`text-sm ${quota.isActive ? 'text-green-600' : 'text-gray-500'}`}>
-                            {quota.isActive ? 'Activa' : 'Inactiva'}
-                          </span>
-                          <button
-                            onClick={() => handleUpdateQuota(quota.id, 'isActive', !quota.isActive)}
-                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${quota.isActive ? 'bg-green-500' : 'bg-gray-300'
-                              }`}
-                          >
-                            <span
-                              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${quota.isActive ? 'translate-x-5' : 'translate-x-1'
-                                }`}
-                            />
-                          </button>
-                        </div>
+                                {/* Cuota */}
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Cuota de participantes
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={quota.quota}
+                                    onChange={(e) => handleUpdateQuota(quota.id, 'quota', parseInt(e.target.value) || 1)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                </div>
+                              </div>
 
-                        {/* Botón eliminar */}
-                        <button
-                          onClick={() => handleDeleteQuota(quota.id)}
-                          className="p-2 text-red-600 hover:text-red-800"
-                          title="Eliminar cuota"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                              {/* Estado activo/inactivo */}
+                              <div className="flex items-center space-x-2">
+                                <span className={`text-sm ${quota.isActive ? 'text-green-600' : 'text-gray-500'}`}>
+                                  {quota.isActive ? 'Activa' : 'Inactiva'}
+                                </span>
+                                <button
+                                  onClick={() => handleUpdateQuota(quota.id, 'isActive', !quota.isActive)}
+                                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${quota.isActive ? 'bg-green-500' : 'bg-gray-300'
+                                    }`}
+                                >
+                                  <span
+                                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${quota.isActive ? 'translate-x-5' : 'translate-x-1'
+                                      }`}
+                                  />
+                                </button>
+                              </div>
+
+                              {/* Botón eliminar */}
+                              <button
+                                onClick={() => handleDeleteQuota(quota.id)}
+                                className="p-2 text-red-600 hover:text-red-800"
+                                title="Eliminar cuota"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
 
-                  {/* Agregar nueva cuota */}
-                  <button
-                    onClick={handleAddQuota}
-                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <Globe size={16} />
-                    <span>Agregar nueva cuota</span>
-                  </button>
+                      {/* Agregar nueva cuota */}
+                      <button
+                        onClick={handleAddQuota}
+                        disabled={quotas.length >= priorityCountries.length}
+                        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-purple-400 hover:text-purple-600 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-600"
+                        title={quotas.length >= priorityCountries.length ? 'Ya agregaste cuotas para todos los países prioritarios' : 'Agregar nueva cuota'}
+                      >
+                        <Star size={16} fill="currentColor" />
+                        <span>Agregar cuota para país prioritario</span>
+                      </button>
 
-                  {/* Información sobre cuotas */}
-                  <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-yellow-800 mb-2">💡 Cómo funcionan las cuotas:</h4>
-                    <ul className="text-yellow-700 text-sm space-y-1">
-                      <li>• Cada país puede tener su propia cuota</li>
-                      <li>• El sistema automáticamente contará los participantes que se registren</li>
-                      <li>• Cuando se alcance la cuota, los participantes de ese país serán descalificados automáticamente</li>
-                      <li>• Las cuotas inactivas no afectan la descalificación</li>
-                    </ul>
-                  </div>
+                      {quotas.length >= priorityCountries.length && (
+                        <p className="text-center text-sm text-gray-500 mt-2">
+                          Has configurado cuotas para todos los países prioritarios
+                        </p>
+                      )}
+
+                      {/* Información sobre cuotas */}
+                      <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-purple-800 mb-2">
+                          <Star size={16} className="inline mr-1" fill="currentColor" />
+                          Cuotas para países prioritarios:
+                        </h4>
+                        <ul className="text-purple-700 text-sm space-y-1">
+                          <li>• Las cuotas solo se aplican a países marcados como prioritarios</li>
+                          <li>• El sistema contará automáticamente los participantes que se registren por país</li>
+                          <li>• Cuando se alcance la cuota, nuevos participantes de ese país serán descalificados</li>
+                          <li>• Las cuotas inactivas no afectan la descalificación</li>
+                          <li>• Si quitas la prioridad de un país, su cuota se mantendrá pero no se aplicará</li>
+                        </ul>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Globe className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p>Habilita el sistema de cuotas para configurar límites por país</p>
+                  <p>Habilita el sistema de cuotas para configurar límites por país prioritario</p>
                 </div>
               )}
             </div>

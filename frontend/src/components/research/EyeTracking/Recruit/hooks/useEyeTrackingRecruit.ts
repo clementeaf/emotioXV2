@@ -58,6 +58,7 @@ interface EyeTrackingRecruitFormData {
       required: boolean;
       options: string[];
       disqualifyingCountries?: string[];
+      priorityCountries?: string[];
       // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
       quotas?: CountryQuota[];
       quotasEnabled?: boolean;

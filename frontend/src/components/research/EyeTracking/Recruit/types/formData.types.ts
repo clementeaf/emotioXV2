@@ -28,6 +28,7 @@ export interface EyeTrackingRecruitFormData {
       required: boolean;
       options: string[];
       disqualifyingCountries?: string[];
+      priorityCountries?: string[];
       quotas?: CountryQuota[];
       quotasEnabled?: boolean;
     };
