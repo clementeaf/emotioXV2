@@ -806,11 +806,19 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
                       <span className="mr-2">⚠️</span>
                       Importante: Distribución por "caída natural"
                     </h4>
-                    <p className="text-amber-700 text-sm">
-                      Si <strong>no habilitas esta sección</strong>, la distribución de participantes por país será por
-                      <strong> "caída natural"</strong> (orden de llegada), lo que <strong>no garantiza</strong> que cada
-                      criterio se complete con cuotas específicas definidas. Para asegurar una distribución controlada
-                      por país, habilita el sistema de cuotas dinámicas.
+                    <p className="text-amber-700 text-sm space-y-2">
+                      <span className="block">
+                        Los <strong>filtros previos de país</strong> (países válidos y descalificantes) configurados en la pestaña
+                        "Opciones de País" <strong>seguirán activos</strong>.
+                      </span>
+                      <span className="block">
+                        Sin embargo, si <strong>no habilitas esta sección</strong>, la distribución de participantes
+                        <strong> dentro de los países válidos</strong> será por <strong>"caída natural"</strong> (orden de llegada),
+                        lo que <strong>no garantiza</strong> que se completen cuotas específicas por país.
+                      </span>
+                      <span className="block">
+                        Para asegurar una distribución controlada con cuotas específicas por país, habilita el sistema de cuotas dinámicas.
+                      </span>
                     </p>
                   </div>
                 </div>
