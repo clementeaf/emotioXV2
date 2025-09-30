@@ -200,21 +200,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
         );
 
       case QuestionType.SMARTVOC_VOC:
-        return (
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-neutral-900">Texto largo</span>
-            <select
-              className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              value={question.config.type}
-              onChange={(e) => onUpdateQuestion(question.id, {
-                config: { ...question.config, type: e.target.value as any }
-              })}
-              disabled={disabled}
-            >
-              <option value="text">Texto libre</option>
-            </select>
-          </div>
-        );
+        return null;
 
       default:
         return null;
