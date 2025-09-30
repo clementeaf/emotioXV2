@@ -242,18 +242,18 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
       )}
 
       {questionsForUI.map((question, index) => (
-        <div key={question.id || index} className="p-4 border border-neutral-200 rounded-lg bg-white">
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="font-semibold text-neutral-900">{`Pregunta ${index + 1}: ${question.title}`}</h4>
+        <div key={question.id || index} className="p-6 border border-neutral-200 rounded-lg bg-white shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="font-semibold text-neutral-900 text-base">{`Pregunta ${index + 1}: ${question.title}`}</h4>
             {questions.length > 1 && (
               <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => onRemoveQuestion(question.id)} disabled={disabled}>
                 Eliminar
               </Button>
             )}
           </div>
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="text-sm font-medium text-neutral-900 block mb-1.5">Texto de la pregunta</label>
+              <label className="text-sm font-medium text-neutral-900 block mb-2">Texto de la pregunta</label>
               <input
                 type="text"
                 value={question.title}
@@ -264,7 +264,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-neutral-900 block mb-1.5">Instrucciones (opcional)</label>
+              <label className="text-sm font-medium text-neutral-900 block mb-2">Instrucciones (opcional)</label>
               <textarea
                 value={question.instructions || ''}
                 onChange={(e) => onUpdateQuestion(question.id, { instructions: e.target.value })}

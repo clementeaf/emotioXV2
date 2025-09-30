@@ -111,38 +111,20 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     };
   }, [saveForm]);
 
-  // Estilo restrictivo para el formulario
-  const containerStyle = {
-    maxWidth: '768px',
-    width: '100%',
-    marginLeft: '0',
-    marginRight: '0',
-    overflowX: 'hidden' as const
-  };
-
-  // Estilo para el contenedor secundario
-  const innerContainerStyle = {
-    width: '100%',
-    maxWidth: '768px',
-    boxSizing: 'border-box' as const
-  };
-
   // Mientras carga, mostrar un esqueleto de carga
   if (isLoading) {
-    // Usar el mismo estilo de container para el skeleton
     return (
-      <div style={containerStyle}>
-        <div style={innerContainerStyle}>
-          <FormsSkeleton />
-        </div>
+      <div className={className}>
+        <FormsSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="relative">
-      <div style={containerStyle}>
-        <div className={cn('space-y-4', className)} style={innerContainerStyle}>
+    <div className="flex gap-6 min-w-[1200px]">
+      {/* Columna izquierda - Contenido principal con scroll */}
+      <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4">
+        <div className={cn('space-y-4', className)}>
           {/* Mensaje amigable si no hay configuración previa */}
           {isEmpty && (
             <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
@@ -176,39 +158,43 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
             cognitiveTaskId={cognitiveTaskId}
             researchId={researchId}
           />
+        </div>
+      </div>
 
-          {/* Modal para mostrar errores y mensajes */}
-          <ErrorModal
-            isOpen={modalVisible}
-            onClose={closeModal}
-            error={modalError}
-          />
-
-          {/* Modal para la vista previa del JSON */}
-          <JsonPreviewModal
-            isOpen={showJsonPreview}
-            onClose={closeJsonModal}
-            onContinue={continueWithAction}
-            jsonData={jsonToSend}
-            pendingAction={pendingAction}
-            hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
-          />
-          <ConfirmationModal
-            isOpen={showDeleteModal}
-            onClose={() => setShowDeleteModal(false)}
-            onConfirm={handleConfirmDelete}
-            title="Confirmar Eliminación"
-            message="¿Estás seguro de que quieres eliminar TODOS los datos Cognitive Tasks de esta investigación? Esta acción no se puede deshacer."
+      {/* Columna derecha - Sidebar fijo con contenido educativo */}
+      <div className="flex-[1] min-w-[400px]">
+        <div className="sticky top-6">
+          <EducationalContentSidebar
+            content={cognitiveTaskContent}
+            loading={educationalLoading}
+            error={educationalError}
+            title="Configuración Avanzada"
           />
         </div>
       </div>
 
-      {/* Columna lateral con contenido educativo */}
-      <EducationalContentSidebar
-        content={cognitiveTaskContent}
-        loading={educationalLoading}
-        error={educationalError}
-        title="Configuración Avanzada"
+      {/* Modales */}
+      <ErrorModal
+        isOpen={modalVisible}
+        onClose={closeModal}
+        error={modalError}
+      />
+
+      <JsonPreviewModal
+        isOpen={showJsonPreview}
+        onClose={closeJsonModal}
+        onContinue={continueWithAction}
+        jsonData={jsonToSend}
+        pendingAction={pendingAction}
+        hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title="Confirmar Eliminación"
+        message="¿Estás seguro de que quieres eliminar TODOS los datos Cognitive Tasks de esta investigación? Esta acción no se puede deshacer."
       />
     </div>
   );

@@ -7,8 +7,8 @@ import { QuestionType, SmartVOCQuestion } from '../types';
 export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuestion, 'id'>>> = {
   [QuestionType.SMARTVOC_CSAT]: {
     type: QuestionType.SMARTVOC_CSAT,
-    title: '',
-    description: '',
+    title: 'CSAT',
+    description: 'Mide satisfacción general',
     instructions: '',
     showConditionally: false,
     config: {
@@ -18,8 +18,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   },
   [QuestionType.SMARTVOC_CES]: {
     type: QuestionType.SMARTVOC_CES,
-    title: '',
-    description: '',
+    title: 'CES',
+    description: 'Mide facilidad de uso',
     instructions: '',
     showConditionally: false,
     config: {
@@ -29,8 +29,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   },
   [QuestionType.SMARTVOC_CV]: {
     type: QuestionType.SMARTVOC_CV,
-    title: '',
-    description: '',
+    title: 'CV',
+    description: 'Captura valor percibido',
     instructions: '',
     showConditionally: false,
     config: {
@@ -43,7 +43,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   [QuestionType.SMARTVOC_NPS]: {
     type: QuestionType.SMARTVOC_NPS,
     title: 'NPS',
-    description: '',
+    description: 'Evalúa lealtad y recomendación',
     instructions: '',
     showConditionally: false,
     config: {
@@ -57,7 +57,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   [QuestionType.SMARTVOC_NEV]: {
     type: QuestionType.SMARTVOC_NEV,
     title: 'NEV',
-    description: '',
+    description: 'Analiza valor emocional',
     instructions: '',
     showConditionally: false,
     config: {
@@ -68,7 +68,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   [QuestionType.SMARTVOC_VOC]: {
     type: QuestionType.SMARTVOC_VOC,
     title: 'VOC',
-    description: '',
+    description: 'Recolecta comentarios abiertos',
     instructions: '',
     showConditionally: false,
     config: {

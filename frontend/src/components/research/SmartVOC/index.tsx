@@ -63,11 +63,11 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         ...(formData.metadata || {}), // Sobrescribir con valores existentes si existen
       };
       // Asegurar que createdAt es string
-      if(typeof metadataToSend.createdAt !== 'string') {
+      if (typeof metadataToSend.createdAt !== 'string') {
         metadataToSend.createdAt = new Date().toISOString();
       }
       // Asegurar que estimatedCompletionTime es string
-      if(typeof metadataToSend.estimatedCompletionTime !== 'string'){
+      if (typeof metadataToSend.estimatedCompletionTime !== 'string') {
         metadataToSend.estimatedCompletionTime = 'unknown';
       }
 
@@ -89,9 +89,9 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   }
 
   return (
-    <div className={`${className} relative`}>
-      {/* Contenido principal con ancho fijo */}
-      <div className="max-w-4xl">
+    <div className="flex gap-6 min-w-[1200px]">
+      {/* Columna izquierda - Contenido principal con scroll */}
+      <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4">
         {/* Mensaje amigable si no hay configuración previa */}
         {isEmpty && (
           <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
@@ -99,7 +99,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
             Agrega preguntas y guarda para comenzar a recolectar feedback de los participantes.
           </div>
         )}
-        
+
         {/* Gestión de preguntas */}
         <SmartVOCQuestions
           questions={questions}
@@ -121,14 +121,18 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         />
       </div>
 
-      {/* Columna lateral con contenido educativo */}
-      <EducationalContentSidebar
-        content={smartVocContent}
-        loading={educationalLoading}
-        error={educationalError}
-        title="Configuración Avanzada"
-      />
-      
+      {/* Columna derecha - Sidebar fijo con contenido educativo */}
+      <div className="flex-[1] min-w-[400px]">
+        <div className="sticky top-6">
+          <EducationalContentSidebar
+            content={smartVocContent}
+            loading={educationalLoading}
+            error={educationalError}
+            title="Configuración Avanzada"
+          />
+        </div>
+      </div>
+
       {/* Modales */}
       <ErrorModal
         isOpen={modalVisible}
