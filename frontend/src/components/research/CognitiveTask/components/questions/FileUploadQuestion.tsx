@@ -1,5 +1,5 @@
 import { Trash2, Upload } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { UploadedFile } from 'shared/interfaces/cognitive-task.interface';
 
@@ -41,7 +41,7 @@ const DEFAULT_TEXTS = {
 /**
  * Componente que maneja la configuración de preguntas con carga de archivos
  */
-export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
+const FileUploadQuestionComponent: React.FC<FileUploadQuestionProps> = ({
   question,
   onQuestionChange,
   onFileUpload,
@@ -67,33 +67,50 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   const isThisQuestionUploading = isUploading &&
     question.files?.some(file => (file as UIFile).isLoading);
 
-  // Filtrar archivos con status 'error' antes de renderizar
-  const validFiles: UIFile[] = question.files ? (question.files as UIFile[]).filter(f => f.status !== 'error') : [];
+  // Filtrar archivos con status 'error' antes de renderizar - memoizado
+  const validFiles: UIFile[] = useMemo(
+    () => question.files ? (question.files as UIFile[]).filter(f => f.status !== 'error') : [],
+    [question.files]
+  );
+
+  // Generar un string estable de s3Keys para las dependencias
+  const s3KeysString = useMemo(
+    () => validFiles.map(f => f.s3Key || '').sort().join(','),
+    [validFiles]
+  );
 
   // Effect para obtener URLs presignadas para archivos con s3Key
   useEffect(() => {
     const fetchPresignedUrls = async () => {
       const newUrls: Record<string, string> = {};
-      
-      for (const file of validFiles) {
-        if (file.s3Key && file.type?.startsWith('image/')) {
-          try {
-            const url = await s3Service.getDownloadUrl(file.s3Key);
-            newUrls[file.id] = url;
-          } catch (error) {
-          }
+
+      // Cargar URLs solo para archivos que no están en el estado de presignedUrls
+      const filesToFetch = validFiles.filter(
+        file => file.s3Key && file.type?.startsWith('image/') && !presignedUrls[file.id]
+      );
+
+      if (filesToFetch.length === 0) {
+        return;
+      }
+
+      for (const file of filesToFetch) {
+        try {
+          const url = await s3Service.getDownloadUrl(file.s3Key!);
+          newUrls[file.id] = url;
+        } catch (error) {
+          // Silenciar errores de carga de URLs
         }
       }
-      
+
       if (Object.keys(newUrls).length > 0) {
-        setPresignedUrls(newUrls);
+        setPresignedUrls(prev => ({ ...prev, ...newUrls }));
       }
     };
 
     if (validFiles.length > 0) {
       fetchPresignedUrls();
     }
-  }, [validFiles.length, validFiles.map(f => f.s3Key).join(',')]) // Dependencias más específicas
+  }, [s3KeysString]) // Usar string estable memoizado
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -134,18 +151,18 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     setHitzoneModalOpen(true);
   };
 
-  // Antes de mapear los archivos para renderizar - evitar duplicados
-  const filesToShow: UIFile[] = (() => {
+  // Antes de mapear los archivos para renderizar - evitar duplicados (memoizado)
+  const filesToShow: UIFile[] = useMemo(() => {
     const fileMap = new Map<string, UIFile>();
-    
+
     // Procesar archivos en orden de prioridad
     validFiles.forEach(file => {
       const key = `${file.name}_${file.size}`;
-      
+
       // Si ya existe un archivo con esta clave
       if (fileMap.has(key)) {
         const existing = fileMap.get(key)!;
-        
+
         // Priorizar: uploaded > uploading > otros estados
         if (file.status === 'uploaded' && existing.status !== 'uploaded') {
           fileMap.set(key, file);
@@ -158,9 +175,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
         fileMap.set(key, file);
       }
     });
-    
+
     return Array.from(fileMap.values());
-  })();
+  }, [validFiles]);
 
   return (
     <div className="space-y-4">
@@ -240,6 +257,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                           <img
                             src={imageUrl}
                             alt={file.name}
+                            loading="lazy"
                             className={`w-10 h-10 object-cover rounded ${file.isLoading ? 'opacity-50' : ''}`}
                             onError={(e) => {
                               e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23f0f0f0"/><text x="20" y="20" font-family="Arial" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
@@ -343,17 +361,26 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           <div className="mt-3 grid grid-cols-2 gap-3">
             {filesToShow.map((file) => {
               const imageUrl = presignedUrls[file.id] || (file as any).fileUrl || file.url;
+              const needsPresignedUrl = file.s3Key && file.type?.startsWith('image/') && !presignedUrls[file.id];
+
               return (
                 <div key={file.id} className="relative">
                   {file.type?.startsWith('image/') && imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt={file.name}
-                      className="w-full h-48 object-cover rounded border border-gray-200"
-                      onError={(e) => {
-                        e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23f0f0f0"/><text x="100" y="100" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="%23999">Imagen no disponible</text></svg>';
-                      }}
-                    />
+                    needsPresignedUrl ? (
+                      <div className="w-full h-48 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    ) : (
+                      <img
+                        src={imageUrl}
+                        alt={file.name}
+                        loading="lazy"
+                        className="w-full h-48 object-cover rounded border border-gray-200"
+                        onError={(e) => {
+                          e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23f0f0f0"/><text x="100" y="100" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="%23999">Imagen no disponible</text></svg>';
+                        }}
+                      />
+                    )
                   ) : (
                     <div className="w-full h-48 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
                       <span className="text-xs text-gray-400">Archivo: {file.name}</span>
@@ -431,3 +458,20 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     </div>
   );
 };
+
+// Exportar el componente memoizado con comparación personalizada
+export const FileUploadQuestion = React.memo(FileUploadQuestionComponent, (prevProps, nextProps) => {
+  // Comparar solo las propiedades que realmente afectan el render
+  return (
+    prevProps.question.id === nextProps.question.id &&
+    prevProps.question.title === nextProps.question.title &&
+    prevProps.question.description === nextProps.question.description &&
+    prevProps.question.type === nextProps.question.type &&
+    prevProps.disabled === nextProps.disabled &&
+    prevProps.isUploading === nextProps.isUploading &&
+    prevProps.uploadProgress === nextProps.uploadProgress &&
+    JSON.stringify(prevProps.question.files?.map(f => ({ id: f.id, s3Key: f.s3Key, status: (f as any).status }))) ===
+    JSON.stringify(nextProps.question.files?.map(f => ({ id: f.id, s3Key: f.s3Key, status: (f as any).status }))) &&
+    JSON.stringify(prevProps.validationErrors) === JSON.stringify(nextProps.validationErrors)
+  );
+});
