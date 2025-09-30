@@ -9,7 +9,6 @@ import { navigateToPublicTests } from '@/api/dynamic-endpoints';
 import { Button } from '@/components/ui/Button';
 import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { useResearchList, useDeleteResearch } from '@/api/domains/research';
-import { researchApi } from '@/api/domains/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import type { ResearchAPIResponse } from '@/types/research';
@@ -223,17 +222,31 @@ function SidebarContent({ className }: SidebarProps) {
     return (
       <nav className="space-y-1">
         {mainNavItems.map((item) => {
-          const isActive = pathname === item.href;
+          // Normalize pathname by removing trailing slash
+          const normalizedPathname = pathname.endsWith('/') && pathname !== '/'
+            ? pathname.slice(0, -1)
+            : pathname;
+
+          // Check if current path matches this nav item
+          let isActive = false;
+
+          if (item.href === '/dashboard') {
+            // Dashboard is active when pathname is exactly /dashboard
+            isActive = normalizedPathname === '/dashboard';
+          } else {
+            // For other items, check if pathname matches exactly or starts with the href
+            isActive = normalizedPathname === item.href || normalizedPathname.startsWith(item.href + '/');
+          }
 
           return (
             <Link
               key={item.id}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-4 py-2 text-[15px] font-medium rounded-lg transition-colors',
+                'flex items-center gap-3 px-4 py-2 text-[15px] rounded-lg transition-colors',
                 isActive
-                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                  : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'
+                  ? 'bg-blue-100 text-blue-700 font-semibold border border-blue-200'
+                  : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 font-medium'
               )}
             >
               {item.label}

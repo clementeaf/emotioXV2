@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { CompanySelectWithCreate, Option } from '@/components/ui/CompanySelectWithCreate';
 import { Company } from '../../../../../shared/interfaces/company.interface';
@@ -54,7 +55,13 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
               error={!!errors.name}
             />
             {errors.name && (
-              <p className="text-sm text-red-500">{errors.name}</p>
+              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-900">Cannot continue</p>
+                  <p className="text-sm text-red-700">{errors.name}. Please choose a different name to proceed to the next step.</p>
+                </div>
+              </div>
             )}
           </div>
 

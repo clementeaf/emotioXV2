@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { useCreateResearch } from '@/api/domains/research';
+import { useCreateResearch, useResearchList } from '@/api/domains/research';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearchStore, researchHelpers } from '@/stores/useResearchStore';
 import { getTechniqueStages } from '@/config/techniques-registry';
@@ -46,6 +46,71 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
   const createResearchMutation = useCreateResearch();
   const isSubmitting = createResearchMutation.isPending;
 
+  // Get existing research to validate duplicate names
+  const { data: existingResearch = [] } = useResearchList();
+
+  // Debounce timer for real-time validation
+  const [validationTimer, setValidationTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Real-time validation for research name
+  useEffect(() => {
+    // Clear existing timer
+    if (validationTimer) {
+      clearTimeout(validationTimer);
+    }
+
+    // Only validate if there's a name and it's at least 3 characters
+    if (formData.basic.name && formData.basic.name.length >= 3) {
+      const timer = setTimeout(() => {
+        // Check for duplicate names
+        const isDuplicate = existingResearch.some(
+          research => research.name.toLowerCase().trim() === formData.basic.name.toLowerCase().trim()
+        );
+
+        if (isDuplicate) {
+          setFormData(prev => ({
+            ...prev,
+            errors: {
+              ...prev.errors,
+              name: 'A research with this name already exists'
+            }
+          }));
+        } else {
+          // Clear the name error if it exists
+          setFormData(prev => {
+            const newErrors = { ...prev.errors };
+            delete newErrors.name;
+            return {
+              ...prev,
+              errors: newErrors
+            };
+          });
+        }
+      }, 1000); // 1 second debounce
+
+      setValidationTimer(timer);
+    } else if (formData.basic.name && formData.basic.name.length > 0 && formData.basic.name.length < 3) {
+      // Show error for names too short
+      const timer = setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          errors: {
+            ...prev.errors,
+            name: 'Name must be at least 3 characters'
+          }
+        }));
+      }, 1000);
+      setValidationTimer(timer);
+    }
+
+    // Cleanup
+    return () => {
+      if (validationTimer) {
+        clearTimeout(validationTimer);
+      }
+    };
+  }, [formData.basic.name, existingResearch]);
+
   // Restaurar borrador si existe
   useEffect(() => {
     if (currentDraft && currentDraft.data && currentDraft.data.basic) {
@@ -73,6 +138,14 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
       case 1:
         if (!formData.basic.name || formData.basic.name.length < 3) {
           newErrors.name = 'Name must be at least 3 characters';
+        } else {
+          // Check for duplicate names (case insensitive)
+          const isDuplicate = existingResearch.some(
+            research => research.name.toLowerCase().trim() === formData.basic.name.toLowerCase().trim()
+          );
+          if (isDuplicate) {
+            newErrors.name = 'A research with this name already exists';
+          }
         }
         if (!formData.basic.companyId) {
           newErrors.companyId = 'Company is required';
@@ -103,6 +176,14 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
       [field]: value
     };
 
+    // Clear error for this field when user starts typing
+    if (currentFormData.errors[field]) {
+      currentFormData.errors = {
+        ...currentFormData.errors,
+        [field]: ''
+      };
+    }
+
     setFormData(currentFormData);
 
     // Actualizar borrador
@@ -127,19 +208,21 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
   // Navegación
   const goToNextStep = () => {
     const errors = validateStep(formData.currentStep);
-    
+
     if (Object.keys(errors).length > 0) {
       setFormData(prev => ({ ...prev, errors }));
-      
+
       // Focus en el primer campo con error
-      if (errors.name) {
-        const nameInput = document.getElementById('name');
-        nameInput?.focus();
-      } else if (errors.companyId) {
-        const companySelect = document.getElementById('companyId');
-        companySelect?.focus();
-      }
-      
+      setTimeout(() => {
+        if (errors.name) {
+          const nameInput = document.getElementById('name');
+          nameInput?.focus();
+        } else if (errors.companyId) {
+          const companySelect = document.getElementById('companyId');
+          companySelect?.focus();
+        }
+      }, 0);
+
       return;
     }
 
