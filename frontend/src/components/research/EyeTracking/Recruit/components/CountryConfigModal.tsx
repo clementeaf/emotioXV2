@@ -796,9 +796,23 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
                   )}
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8">
                   <Globe className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p>Habilita el sistema de cuotas para configurar límites por país prioritario</p>
+                  <p className="text-gray-600 mb-4">Habilita el sistema de cuotas para configurar límites por país prioritario</p>
+
+                  {/* Mensaje informativo sobre caída natural */}
+                  <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                    <h4 className="font-semibold text-amber-800 mb-2 flex items-center">
+                      <span className="mr-2">⚠️</span>
+                      Importante: Distribución por "caída natural"
+                    </h4>
+                    <p className="text-amber-700 text-sm">
+                      Si <strong>no habilitas esta sección</strong>, la distribución de participantes por país será por
+                      <strong> "caída natural"</strong> (orden de llegada), lo que <strong>no garantiza</strong> que cada
+                      criterio se complete con cuotas específicas definidas. Para asegurar una distribución controlada
+                      por país, habilita el sistema de cuotas dinámicas.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
