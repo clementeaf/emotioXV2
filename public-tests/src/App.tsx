@@ -11,6 +11,8 @@ import './index.css';
 import NoResearchIdError from './pages/NoResearchIdError';
 // ✅ TEMPORAL - Solo para testing AlovaJS (invisible)
 import { TestAlova } from './components/TestAlova';
+import { useParticipantStore } from './stores/useParticipantStore';
+import { usePreviewModeStore } from './stores/usePreviewModeStore';
 
 // Crear el cliente de Query
 const queryClient = new QueryClient({
@@ -27,17 +29,34 @@ function App() {
   const [researchId, setResearchId] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
 
-  // Obtener researchId de la URL o localStorage
+  // Obtener researchId y participantId de la URL o localStorage
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlResearchId = urlParams.get('researchId');
+    const urlParticipantId = urlParams.get('participantId');
     const storedResearchId = localStorage.getItem('researchId');
 
+    // Configurar researchId
     if (urlResearchId) {
       setResearchId(urlResearchId);
       localStorage.setItem('researchId', urlResearchId);
     } else if (storedResearchId) {
       setResearchId(storedResearchId);
+    }
+
+    // 🎯 CONFIGURAR MODO PREVIEW Y PARTICIPANT ID
+    const { setParticipantId } = useParticipantStore.getState();
+    const { setPreviewMode } = usePreviewModeStore.getState();
+
+    if (urlParticipantId) {
+      // Modo producción: viene participantId en URL
+      setParticipantId(urlParticipantId);
+      setPreviewMode(false);
+      console.log('[App] 🎬 MODO PRODUCCIÓN - ParticipantId:', urlParticipantId);
+    } else {
+      // Modo preview: NO viene participantId
+      setPreviewMode(true);
+      console.log('[App] 👁️ MODO PREVIEW - Las respuestas no se guardarán');
     }
   }, []);
 

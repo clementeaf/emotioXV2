@@ -12,6 +12,7 @@ import {
   UpdateModuleResponseDto,
 } from '../lib/types';
 import { useFormDataStore } from '../stores/useFormDataStore';
+import { usePreviewModeStore } from '../stores/usePreviewModeStore';
 
 export function useAvailableFormsQuery(researchId: string, options?: UseQueryOptions<AvailableFormsResponse, Error>) {
   return useQuery<AvailableFormsResponse, Error>({
@@ -81,14 +82,40 @@ export function useModuleResponsesQuery(researchId: string, participantId: strin
 export function useSaveModuleResponseMutation(options?: UseMutationOptions<ParticipantResponsesDocument, Error, CreateModuleResponseDto>) {
   const queryClient = useQueryClient();
   return useMutation<ParticipantResponsesDocument, Error, CreateModuleResponseDto>({
-    mutationFn: (data) => saveModuleResponse(data),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['moduleResponses', variables.researchId, variables.participantId],
-      });
+    mutationFn: async (data) => {
+      // 🎯 MODO PREVIEW: NO GUARDAR RESPUESTAS
+      const { isPreviewMode } = usePreviewModeStore.getState();
 
-      // 🎯 GUARDAR RESULTADO DE CUOTA EN EL STORE SI EXISTE
-      if (data.quotaResult && variables.questionKey === 'thank_you_screen') {
+      if (isPreviewMode) {
+        console.log('[useSaveModuleResponseMutation] 👁️ MODO PREVIEW - Omitiendo guardado:', data.questionKey);
+
+        // Retornar un mock response para que el flujo continúe
+        return {
+          id: 'preview-mock-id',
+          researchId: data.researchId,
+          participantId: data.participantId,
+          questionKey: data.questionKey,
+          responses: data.responses,
+          quotaResult: null, // No hay validación de cuotas en preview
+        } as ParticipantResponsesDocument;
+      }
+
+      // Modo producción: guardar normalmente
+      console.log('[useSaveModuleResponseMutation] 💾 MODO PRODUCCIÓN - Guardando:', data.questionKey);
+      return saveModuleResponse(data);
+    },
+    onSuccess: (data, variables) => {
+      const { isPreviewMode } = usePreviewModeStore.getState();
+
+      // Solo invalidar queries si NO es modo preview
+      if (!isPreviewMode) {
+        queryClient.invalidateQueries({
+          queryKey: ['moduleResponses', variables.researchId, variables.participantId],
+        });
+      }
+
+      // 🎯 GUARDAR RESULTADO DE CUOTA EN EL STORE SI EXISTE (solo en producción)
+      if (!isPreviewMode && data.quotaResult && variables.questionKey === 'thank_you_screen') {
         const { setQuotaResult } = useFormDataStore.getState();
         setQuotaResult(data.quotaResult);
         console.log('[useSaveModuleResponseMutation] 🎯 Cuota verificada:', data.quotaResult);

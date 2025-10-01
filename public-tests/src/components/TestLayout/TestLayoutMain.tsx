@@ -2,24 +2,40 @@ import React, { useCallback, useState } from 'react';
 import TestLayoutRenderer from './TestLayoutRenderer';
 import TestLayoutSidebar from './sidebar/TestLayoutSidebar';
 import { SidebarStep } from './types';
+import { usePreviewModeStore } from '../../stores/usePreviewModeStore';
 
 const TestLayoutMain: React.FC = () => {
   const [, setSidebarSteps] = useState<SidebarStep[]>([]);
+  const isPreviewMode = usePreviewModeStore((state) => state.isPreviewMode);
 
   const handleStepsReady = useCallback((steps: SidebarStep[]) => {
     setSidebarSteps(steps);
   }, []);
 
   return (
-    <main className="flex-1 w-full flex flex-col items-center justify-center md:flex-row items-stretch px-2 sm:px-4 py-20">
-      <TestLayoutSidebar
-        onStepsReady={handleStepsReady}
-        onNavigateToStep={() => { }}
-      />
-      <div className="bg-white shadow-lg rounded-lg p-2 sm:px-4 md:p-6 w-[95vw] sm:w-[90vw] md:w-[80vw] lg:w-[75vw] max-w-xs sm:max-w-md md:max-w-2xl lg:max-w-4xl max-h-[90vh] sm:max-h-[85vh] md:max-h-[80vh] flex-1 flex flex-col justify-center mx-auto">
-        <TestLayoutRenderer />
-      </div>
-    </main>
+    <>
+      {/* Banner de modo preview */}
+      {isPreviewMode && (
+        <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white px-4 py-2 text-center font-medium shadow-md z-50">
+          <div className="flex items-center justify-center gap-2">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <span>MODO PREVIEW - Las respuestas no se guardarán</span>
+          </div>
+        </div>
+      )}
+
+      <main className="flex-1 w-full flex flex-col items-center justify-center md:flex-row items-stretch px-2 sm:px-4 py-20">
+        <TestLayoutSidebar
+          onStepsReady={handleStepsReady}
+          onNavigateToStep={() => { }}
+        />
+        <div className="bg-white shadow-lg rounded-lg p-2 sm:px-4 md:p-6 w-[95vw] sm:w-[90vw] md:w-[80vw] lg:w-[75vw] max-w-xs sm:max-w-md md:max-w-2xl lg:max-w-4xl max-h-[90vh] sm:max-h-[85vh] md:max-h-[80vh] flex-1 flex flex-col justify-center mx-auto">
+          <TestLayoutRenderer />
+        </div>
+      </main>
+    </>
   );
 };
 
