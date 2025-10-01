@@ -8,23 +8,20 @@ const NoResearchIdError: React.FC = () => {
           ⚠️ Enlace de Acceso Inválido
         </h2>
         <p className="text-gray-600 mb-4">
-          Para participar en esta investigación, necesitas un enlace único con tu identificación de participante.
+          No se encontró un identificador de investigación válido.
         </p>
         <div className="text-sm text-gray-500 mb-4">
-          <p className="font-medium mb-2">Tu enlace debe contener:</p>
+          <p className="font-medium mb-2">El enlace debe contener al menos:</p>
+          <code className="bg-gray-100 px-2 py-1 rounded block">
+            ?researchId=XXX
+          </code>
+          <p className="text-xs mt-3 text-gray-400 mb-2">
+            Para participantes reales (con guardado de respuestas):
+          </p>
           <code className="bg-gray-100 px-2 py-1 rounded block">
             ?researchId=XXX&participantId=YYY
           </code>
-          <p className="text-xs mt-2 text-gray-400">
-            o alternativamente:
-          </p>
-          <code className="bg-gray-100 px-2 py-1 rounded block mt-1">
-            ?researchId=XXX&userId=YYY
-          </code>
         </div>
-        <p className="text-sm text-gray-600 mb-2">
-          Este enlace es personal e intransferible.
-        </p>
         <p className="text-xs text-gray-400">
           Si no tienes tu enlace, contacta al investigador o administrador del estudio.
         </p>

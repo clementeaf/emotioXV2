@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTestStore } from '../../stores/useTestStore';
+import { useParticipantStore } from '../../stores/useParticipantStore';
+import { usePreviewModeStore } from '../../stores/usePreviewModeStore';
 
 const LoginRedirect: React.FC = () => {
   const navigate = useNavigate();
@@ -13,25 +15,38 @@ const LoginRedirect: React.FC = () => {
     const pathResearchId = params.researchId;
     const pathParticipantId = params.participantId;
 
-    // 🎯 INTENTO 2: Obtener parámetros desde query string (?researchId=X&userId=Y)
+    // 🎯 INTENTO 2: Obtener parámetros desde query string (?researchId=X&userId=Y o ?researchId=X&participantId=Y)
     const urlParams = new URLSearchParams(location.search);
     const queryResearchId = urlParams.get('researchId');
+    const queryParticipantId = urlParams.get('participantId');
     const queryUserId = urlParams.get('userId');
 
     // 🎯 PRIORIDAD: Path params > Query params
     const researchId = pathResearchId || queryResearchId;
-    const participantId = pathParticipantId || queryUserId;
+    const participantId = pathParticipantId || queryParticipantId || queryUserId;
 
+    // Obtener stores de modo preview y participant
+    const { setParticipantId } = useParticipantStore.getState();
+    const { setPreviewMode } = usePreviewModeStore.getState();
 
-    if (researchId && participantId) {
-      // 🎯 AMBOS PARÁMETROS ESTÁN PRESENTES - PROCEDER DIRECTAMENTE
-      // 🎯 NO MÁS LOCALSTORAGE - Solo memoria en runtime
+    if (!researchId) {
+      // Sin researchId → Error
+      console.error('[LoginRedirect] ❌ No researchId provided');
+      navigate('/error-no-research-id');
+      return;
+    }
+
+    if (participantId) {
+      // 🎬 MODO PRODUCCIÓN: Ambos parámetros presentes
+      console.log('[LoginRedirect] 🎬 MODO PRODUCCIÓN - ParticipantId:', participantId);
+
+      setPreviewMode(false);
+      setParticipantId(participantId);
 
       // Configurar participante con participantId
-      // Generar un nombre más descriptivo basado en el ID
       const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
       const participantEmail = `${participantId.slice(-8)}@participant.study`;
-      
+
       setParticipant(
         participantId,
         participantName,
@@ -39,12 +54,28 @@ const LoginRedirect: React.FC = () => {
         researchId
       );
 
-
-      // Redirigir al test directamente
       navigate('/test');
     } else {
-      // Faltan parámetros - redirigir a error
-      navigate('/error-no-research-id');
+      // 👁️ MODO PREVIEW: Solo researchId (QR code de testing)
+      console.log('[LoginRedirect] 👁️ MODO PREVIEW - Solo researchId:', researchId);
+
+      setPreviewMode(true);
+
+      // Auto-generar participantId para modo preview
+      const previewParticipantId = `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setParticipantId(previewParticipantId);
+
+      const participantName = `Preview User`;
+      const participantEmail = `preview@test.local`;
+
+      setParticipant(
+        previewParticipantId,
+        participantName,
+        participantEmail,
+        researchId
+      );
+
+      navigate('/test');
     }
   }, [location, navigate, setParticipant, params]);
 
