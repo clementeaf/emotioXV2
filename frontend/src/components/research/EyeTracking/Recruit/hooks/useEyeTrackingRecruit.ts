@@ -567,8 +567,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const generateRecruitmentLink = useCallback(() => {
     const actualResearchId = researchId === 'current' ? '1234' : researchId;
     // Usar el mismo formato que en el sidebar unificado para asegurar consistencia
-    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://useremotion.com';
-    return `${publicTestsBaseUrl}/link/${actualResearchId}`;
+    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+    return `${publicTestsBaseUrl}/?researchId=${actualResearchId}`;
   }, [researchId]);
 
   // Usar el hook compartido para obtener datos de eye-tracking recruit
