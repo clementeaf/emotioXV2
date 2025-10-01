@@ -1,28 +1,25 @@
 /**
  * 🔄 CONFIGURACIÓN CENTRALIZADA DE ENDPOINTS - EmotioXV2
  *
- * Este archivo es generado automáticamente por el script post-deploy.
- * NO MODIFICAR MANUALMENTE - Los cambios se sobrescribirán en el próximo deploy.
+ * Este archivo es generado automáticamente por el script de sincronización.
+ * NO MODIFICAR MANUALMENTE - Los cambios se sobrescribirán en la próxima sincronización.
  *
- * Generado: 2025-10-01T11:26:47.000Z
- * Etapa: dev
- * Backend Deployed: https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev
+ * Generado: 2025-10-01T19:51:46.000Z
+ * Etapa: prod
  */
 
 export const CENTRALIZED_API_CONFIG = {
-  http: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
-  ws: "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
-  stage: "dev",
+  http: "http://localhost:3000/dev",
+  ws: "ws://localhost:3001/dev",
+  stage: "prod",
   frontend: "http://localhost:3000",
   publicTests: "http://localhost:4700",
-  generatedAt: "2025-10-01T11:26:47.000Z",
-  deployedEndpoint: "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
-  syncMethod: "post-deploy-script"
+  generatedAt: "2025-10-01T19:51:46.000Z"
 };
 
-export const API_HTTP_ENDPOINT = "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev";
-export const API_WEBSOCKET_ENDPOINT = "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev";
-export const API_STAGE = "dev";
+export const API_HTTP_ENDPOINT = "http://localhost:3000/dev";
+export const API_WEBSOCKET_ENDPOINT = "ws://localhost:3001/dev";
+export const API_STAGE = "prod";
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path: string): string {
@@ -32,13 +29,7 @@ export function getApiUrl(path: string): string {
 
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
-  const wsUrl = API_WEBSOCKET_ENDPOINT;
-  
-  if (typeof window !== 'undefined') {
-    console.log('🔌 WebSocket URL configurada:', wsUrl);
-  }
-  
-  return wsUrl;
+  return API_WEBSOCKET_ENDPOINT;
 }
 
 // Función para obtener URL de public-tests
@@ -50,11 +41,6 @@ export function getPublicTestsUrl(): string {
 export function navigateToPublicTests(researchID: string): void {
   const url = `${getPublicTestsUrl()}/${researchID}`;
   window.open(url, '_blank');
-}
-
-// Función para verificar sincronización
-export function isEndpointsSynced(): boolean {
-  return API_HTTP_ENDPOINT.includes('execute-api.us-east-1.amazonaws.com');
 }
 
 export default CENTRALIZED_API_CONFIG;
