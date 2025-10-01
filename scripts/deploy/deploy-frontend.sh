@@ -7,7 +7,7 @@ set -e
 
 # Configuración
 BUCKET="emotioxv2-frontend-041238861016"
-DISTRIBUTION_ID="E3MCIWNMF6ES2R"
+DISTRIBUTION_ID="E3QO9HAYZYNV45"
 REGION="us-east-1"
 BUILD_DIR=".next"
 
@@ -70,13 +70,13 @@ fi
 
 log_info "Verificando deployment..."
 sleep 10
-if curl -s -o /dev/null -w "%{http_code}" "https://d2s9nr0bm47yl1.cloudfront.net" | grep -q "200\|302"; then
+if curl -s -o /dev/null -w "%{http_code}" "https://d1scg5rkfgbs59.cloudfront.net" | grep -q "200\|302"; then
     log_success "✅ Deployment verificado - Frontend accesible"
 else
     log_warning "⚠️ Deployment puede estar propagándose - Verificar en unos minutos"
 fi
 
 log_success "🎉 Deployment de frontend completado exitosamente!"
-log_info "🌐 URL: https://d2s9nr0bm47yl1.cloudfront.net"
+log_info "🌐 URL: https://d1scg5rkfgbs59.cloudfront.net"
 log_info "📁 Bucket: s3://$BUCKET"
 log_info "🔄 CloudFront Distribution: $DISTRIBUTION_ID"

@@ -2,9 +2,9 @@
   "deployment_date": "2025-07-06T00:20:00Z",
   "stage": "prod",
   "s3_bucket": "emotioxv2-frontend-bucket",
-  "cloudfront_id": "E3MCIWNMF6ES2R",
-  "cloudfront_domain": "d2s9nr0bm47yl1.cloudfront.net",
-  "url": "https://d2s9nr0bm47yl1.cloudfront.net",
+  "cloudfront_id": "E3QO9HAYZYNV45",
+  "cloudfront_domain": "d1scg5rkfgbs59.cloudfront.net",
+  "url": "https://d1scg5rkfgbs59.cloudfront.net",
   "region": "us-east-1",
   "status": "deployed_with_spa_fixes",
   "issues_resolved": [
