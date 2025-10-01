@@ -1,11 +1,15 @@
 'use client';
 
+import { useState, useRef } from 'react';
+import QRCode from 'react-qr-code';
+import { Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/Dialog';
 
 interface QRCodeModalProps {
@@ -15,53 +19,120 @@ interface QRCodeModalProps {
 }
 
 export function QRCodeModal({ open, onOpenChange, researchUrl }: QRCodeModalProps) {
+  const [copied, setCopied] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyUrl = async () => {
+    if (!researchUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(researchUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  };
+
   const handleDownload = () => {
-    // Esta función se implementaría para descargar el código QR como imagen
+    if (!qrRef.current) return;
+
+    const svg = qrRef.current.querySelector('svg');
+    if (!svg) return;
+
+    // Convert SVG to canvas for download
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    canvas.width = 512;
+    canvas.height = 512;
+
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0, 512, 512);
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = 'research-qr-code.png';
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Research link QR Code</DialogTitle>
+          <DialogTitle>Código QR generado</DialogTitle>
+          <DialogDescription>
+            Este código QR contiene el enlace de reclutamiento para su investigación.
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="p-6">
-          <div className="text-center mb-4">
-            <p className="text-sm text-neutral-600">
-              This is your Public QR Code
-            </p>
-            <p className="text-xs text-neutral-500 mt-1">
-              Please, download and print in your documents to get responses
-            </p>
-          </div>
-          
-          <div className="flex justify-center mb-6">
-            <div className="w-60 h-60 bg-white border rounded-lg p-3 flex items-center justify-center">
-              <svg className="w-full h-full" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Simplified QR code SVG */}
-                <rect x="20" y="20" width="15" height="15" fill="black" />
-                <rect x="35" y="20" width="15" height="15" fill="black" />
-                <rect x="50" y="20" width="15" height="15" fill="black" />
-                <rect x="20" y="35" width="15" height="15" fill="black" />
-                <rect x="50" y="35" width="15" height="15" fill="black" />
-                <rect x="65" y="35" width="15" height="15" fill="black" />
-                <rect x="20" y="50" width="15" height="15" fill="black" />
-                <rect x="50" y="50" width="15" height="15" fill="black" />
-                <rect x="20" y="65" width="15" height="15" fill="black" />
-                <rect x="35" y="65" width="15" height="15" fill="black" />
-                <rect x="50" y="65" width="15" height="15" fill="black" />
-                <rect x="65" y="50" width="15" height="15" fill="black" />
-              </svg>
+          {/* QR Code */}
+          <div className="flex justify-center mb-6" ref={qrRef}>
+            <div className="bg-white border-4 border-blue-500 rounded-lg p-4">
+              {researchUrl ? (
+                <QRCode
+                  value={researchUrl}
+                  size={256}
+                  level="H"
+                />
+              ) : (
+                <div className="w-64 h-64 flex items-center justify-center text-neutral-400 text-sm">
+                  No URL provided
+                </div>
+              )}
             </div>
           </div>
-          
-          <div className="flex justify-center">
-            <Button 
-              className="w-full bg-blue-500 text-white hover:bg-blue-600"
+
+          {/* URL Display with Copy Button */}
+          {researchUrl && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+                <input
+                  type="text"
+                  value={researchUrl}
+                  readOnly
+                  className="flex-1 bg-transparent text-sm text-neutral-700 outline-none"
+                />
+                <button
+                  onClick={handleCopyUrl}
+                  className="p-2 hover:bg-neutral-200 rounded transition-colors"
+                  title="Copiar URL"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-neutral-600" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
               onClick={handleDownload}
+              disabled={!researchUrl}
             >
-              Download QR Code
+              Descargar QR
+            </Button>
+            <Button
+              className="flex-1 bg-blue-500 text-white hover:bg-blue-600"
+              onClick={() => onOpenChange(false)}
+            >
+              Cerrar
             </Button>
           </div>
         </div>

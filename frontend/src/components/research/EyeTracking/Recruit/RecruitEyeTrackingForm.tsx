@@ -26,6 +26,7 @@ import { GenderConfigModal } from './components/GenderConfigModal';
 import { HouseholdIncomeConfigModal } from './components/HouseholdIncomeConfigModal';
 import { TechnicalProficiencyConfigModal } from './components/TechnicalProficiencyConfigModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
+import { QRCodeModal } from '@/components/research/QRCodeModal';
 
 interface CheckboxProps {
   id?: string;
@@ -146,7 +147,9 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     modalError,
     modalVisible,
     closeModal,
-    setFormData
+    setFormData,
+    showQRModal,
+    closeQRModal
   } = useEyeTrackingRecruit({ researchId });
 
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -1066,6 +1069,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* Modal de código QR */}
+      <QRCodeModal
+        open={showQRModal}
+        onOpenChange={closeQRModal}
+        researchUrl={formData.researchUrl}
       />
     </>
   );
