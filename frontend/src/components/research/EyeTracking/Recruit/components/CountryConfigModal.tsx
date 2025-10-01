@@ -15,6 +15,7 @@ interface CountryQuota {
   id: string;
   country: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
@@ -122,8 +123,13 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setContinentSections(createContinentSections);
-      // 🎯 INICIALIZAR CUOTAS
-      setQuotas(initialQuotas);
+      // 🎯 INICIALIZAR CUOTAS con migración automática para retrocompatibilidad
+      const migratedQuotas = initialQuotas.map(quota => ({
+        ...quota,
+        // Migración: Si no tiene quotaType, asignar 'absolute' por defecto
+        quotaType: quota.quotaType || 'absolute'
+      }));
+      setQuotas(migratedQuotas);
       setQuotasEnabledState(quotasEnabled);
     }
   }, [isOpen, createContinentSections, initialQuotas, quotasEnabled]);
@@ -305,6 +311,7 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
       id: `quota-${Date.now()}`,
       country: availablePriorityCountries[0].name,
       quota: 1,
+      quotaType: 'absolute',
       isActive: true
     };
     setQuotas(prev => [...prev, newQuota]);
@@ -695,7 +702,7 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
                               key={quota.id}
                               className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border"
                             >
-                              <div className="flex-1 grid grid-cols-2 gap-4">
+                              <div className="flex-1 grid grid-cols-3 gap-4">
                                 {/* País */}
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -716,18 +723,57 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
                                   </select>
                                 </div>
 
+                                {/* Tipo de cuota */}
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Tipo
+                                  </label>
+                                  <select
+                                    value={quota.quotaType}
+                                    onChange={(e) => {
+                                      const newType = e.target.value as 'absolute' | 'percentage';
+                                      handleUpdateQuota(quota.id, 'quotaType', newType);
+                                      // Si cambia a porcentaje y el valor es mayor a 100, ajustarlo
+                                      if (newType === 'percentage' && quota.quota > 100) {
+                                        handleUpdateQuota(quota.id, 'quota', 50);
+                                      }
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    <option value="absolute">Número</option>
+                                    <option value="percentage">Porcentaje</option>
+                                  </select>
+                                </div>
+
                                 {/* Cuota */}
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Cuota de participantes
+                                    {quota.quotaType === 'percentage' ? 'Porcentaje (%)' : 'Cantidad'}
                                   </label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={quota.quota}
-                                    onChange={(e) => handleUpdateQuota(quota.id, 'quota', parseInt(e.target.value) || 1)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  />
+                                  <div className="relative">
+                                    <input
+                                      type="number"
+                                      min={quota.quotaType === 'percentage' ? '0' : '1'}
+                                      max={quota.quotaType === 'percentage' ? '100' : undefined}
+                                      value={quota.quota}
+                                      onChange={(e) => {
+                                        let value = parseInt(e.target.value) || 1;
+                                        // Validar rangos según el tipo
+                                        if (quota.quotaType === 'percentage') {
+                                          value = Math.max(0, Math.min(100, value));
+                                        } else {
+                                          value = Math.max(1, value);
+                                        }
+                                        handleUpdateQuota(quota.id, 'quota', value);
+                                      }}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    {quota.quotaType === 'percentage' && (
+                                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                                        %
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
 
@@ -786,8 +832,11 @@ const CountryConfigModal: React.FC<CountryConfigModalProps> = ({
                         </h4>
                         <ul className="text-purple-700 text-sm space-y-1">
                           <li>• Las cuotas solo se aplican a países marcados como prioritarios</li>
+                          <li>• Cada país puede tener su propia cuota (número absoluto o porcentaje)</li>
+                          <li>• <strong>Porcentajes:</strong> Se calculan sobre el total de participantes esperados</li>
                           <li>• El sistema contará automáticamente los participantes que se registren por país</li>
                           <li>• Cuando se alcance la cuota, nuevos participantes de ese país serán descalificados</li>
+                          <li>• <strong className="text-orange-800">⚠️ Países sin cuota asignada:</strong> Si un país prioritario no tiene cuota configurada, <strong>NO se le aplicará ningún límite</strong> y podrá recibir participantes sin restricción</li>
                           <li>• Las cuotas inactivas no afectan la descalificación</li>
                           <li>• Si quitas la prioridad de un país, su cuota se mantendrá pero no se aplicará</li>
                         </ul>

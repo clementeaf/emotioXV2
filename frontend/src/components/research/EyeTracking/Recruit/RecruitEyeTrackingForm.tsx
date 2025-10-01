@@ -7,6 +7,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 
 import { cn } from '@/lib/utils';
 import { DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
+import { AgeQuota } from '@/types/eye-tracking';
 
 // Definir BacklinkKeys localmente ya que no está exportado
 type BacklinkKeys = 'complete' | 'disqualified' | 'overquota';
@@ -25,15 +26,6 @@ import { GenderConfigModal } from './components/GenderConfigModal';
 import { HouseholdIncomeConfigModal } from './components/HouseholdIncomeConfigModal';
 import { TechnicalProficiencyConfigModal } from './components/TechnicalProficiencyConfigModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
-
-// 🎯 IMPORTAR TIPO PARA CUOTAS DE EDAD
-type AgeQuotaConfig = {
-  id: string;
-  ageRange: string;
-  quota: number;
-  isActive: boolean;
-};
-
 
 interface CheckboxProps {
   id?: string;
@@ -245,7 +237,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   };
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE EDAD
-  const handleAgeQuotasSaveLocal = (quotas: AgeQuotaConfig[]) => {
+  const handleAgeQuotasSaveLocal = (quotas: AgeQuota[]) => {
     handleAgeQuotasSave(quotas);
     showSuccessToast('Cuotas de edad guardadas correctamente');
   };

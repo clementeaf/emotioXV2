@@ -15,6 +15,7 @@ interface AgeQuota {
   id: string;
   ageRange: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
@@ -84,8 +85,13 @@ const AgeConfigModal: React.FC<AgeConfigModalProps> = ({
 
       setAgeOptions([...initialOptions, ...customOptions]);
 
-      // 🎯 INICIALIZAR CUOTAS
-      setQuotas(initialQuotas);
+      // 🎯 INICIALIZAR CUOTAS con migración automática para retrocompatibilidad
+      const migratedQuotas = initialQuotas.map(quota => ({
+        ...quota,
+        // Migración: Si no tiene quotaType, asignar 'absolute' por defecto
+        quotaType: quota.quotaType || 'absolute'
+      }));
+      setQuotas(migratedQuotas);
       setQuotasEnabledState(quotasEnabled);
     }
   }, [isOpen, initialValidAges, initialDisqualifyingAges, initialQuotas, quotasEnabled]);
@@ -150,10 +156,21 @@ const AgeConfigModal: React.FC<AgeConfigModalProps> = ({
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS
   const handleAddQuota = () => {
+    // Solo permitir agregar cuotas para opciones que no están descalificando y que aún no tienen cuota
+    const agesWithQuotas = quotas.map(q => q.ageRange);
+    const availableAges = ageOptions.filter(
+      option => !option.isDisqualifying && !agesWithQuotas.includes(option.label)
+    );
+
+    if (availableAges.length === 0) {
+      return; // No hay rangos de edad disponibles
+    }
+
     const newQuota: AgeQuota = {
       id: `quota-${Date.now()}`,
-      ageRange: '',
+      ageRange: availableAges[0].label,
       quota: 1,
+      quotaType: 'absolute',
       isActive: true
     };
     setQuotas(prev => [...prev, newQuota]);
@@ -403,38 +420,88 @@ const AgeConfigModal: React.FC<AgeConfigModalProps> = ({
 
                   {/* Lista de cuotas */}
                   <div className="space-y-3 mb-4">
-                    {quotas.map((quota) => (
-                      <div
-                        key={quota.id}
-                        className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border"
-                      >
-                        <div className="flex-1 grid grid-cols-2 gap-4">
-                          {/* Rango de edad */}
+                    {quotas.map((quota) => {
+                      const agesWithQuotas = quotas.map(q => q.ageRange);
+                      const availableAges = ageOptions.filter(
+                        option => !option.isDisqualifying && (!agesWithQuotas.includes(option.label) || option.label === quota.ageRange)
+                      );
+
+                      return (
+                        <div
+                          key={quota.id}
+                          className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border"
+                        >
+                          <div className="flex-1 grid grid-cols-3 gap-4">
+                            {/* Rango de edad */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Rango de Edad
+                              </label>
+                              <select
+                                value={quota.ageRange}
+                                onChange={(e) => handleUpdateQuota(quota.id, 'ageRange', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Seleccionar rango</option>
+                                {availableAges.map(option => (
+                                  <option key={option.id} value={option.label}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                          {/* Tipo de cuota */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Rango de Edad
+                              Tipo
                             </label>
-                            <input
-                              type="text"
-                              value={quota.ageRange}
-                              onChange={(e) => handleUpdateQuota(quota.id, 'ageRange', e.target.value)}
-                              placeholder="ej: 18-24"
+                            <select
+                              value={quota.quotaType}
+                              onChange={(e) => {
+                                const newType = e.target.value as 'absolute' | 'percentage';
+                                handleUpdateQuota(quota.id, 'quotaType', newType);
+                                // Si cambia a porcentaje y el valor es mayor a 100, ajustarlo
+                                if (newType === 'percentage' && quota.quota > 100) {
+                                  handleUpdateQuota(quota.id, 'quota', 50);
+                                }
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                            >
+                              <option value="absolute">Número</option>
+                              <option value="percentage">Porcentaje</option>
+                            </select>
                           </div>
 
                           {/* Cuota */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Cuota
+                              {quota.quotaType === 'percentage' ? 'Porcentaje (%)' : 'Cantidad'}
                             </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={quota.quota}
-                              onChange={(e) => handleUpdateQuota(quota.id, 'quota', parseInt(e.target.value) || 1)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min={quota.quotaType === 'percentage' ? '0' : '1'}
+                                max={quota.quotaType === 'percentage' ? '100' : undefined}
+                                value={quota.quota}
+                                onChange={(e) => {
+                                  let value = parseInt(e.target.value) || 1;
+                                  // Validar rangos según el tipo
+                                  if (quota.quotaType === 'percentage') {
+                                    value = Math.max(0, Math.min(100, value));
+                                  } else {
+                                    value = Math.max(1, value);
+                                  }
+                                  handleUpdateQuota(quota.id, 'quota', value);
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              {quota.quotaType === 'percentage' && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                                  %
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -464,33 +531,66 @@ const AgeConfigModal: React.FC<AgeConfigModalProps> = ({
                           <Trash2 size={16} />
                         </button>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Agregar nueva cuota */}
                   <button
                     onClick={handleAddQuota}
-                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center space-x-2"
+                    disabled={quotas.length >= ageOptions.filter(o => !o.isDisqualifying).length}
+                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-600"
+                    title={quotas.length >= ageOptions.filter(o => !o.isDisqualifying).length ? 'Ya agregaste cuotas para todos los rangos de edad habilitados' : 'Agregar nueva cuota'}
                   >
                     <Plus size={16} />
                     <span>Agregar nueva cuota</span>
                   </button>
 
+                  {quotas.length >= ageOptions.filter(o => !o.isDisqualifying).length && (
+                    <p className="text-center text-sm text-gray-500 mt-2">
+                      Has configurado cuotas para todos los rangos de edad habilitados
+                    </p>
+                  )}
+
                   {/* Información sobre cuotas */}
                   <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <h4 className="font-semibold text-yellow-800 mb-2">💡 Cómo funcionan las cuotas:</h4>
                     <ul className="text-yellow-700 text-sm space-y-1">
-                      <li>• Cada rango de edad puede tener su propia cuota</li>
+                      <li>• Cada rango de edad puede tener su propia cuota (número absoluto o porcentaje)</li>
+                      <li>• <strong>Porcentajes:</strong> Se calculan sobre el total de participantes esperados</li>
                       <li>• El sistema automáticamente contará los participantes que se registren</li>
                       <li>• Cuando se alcance la cuota, los participantes de esa edad serán descalificados automáticamente</li>
+                      <li>• <strong className="text-orange-800">⚠️ Rangos sin cuota asignada:</strong> Si un rango habilitado no tiene cuota configurada, <strong>NO se le aplicará ningún límite</strong> y podrá recibir participantes sin restricción</li>
                       <li>• Las cuotas inactivas no afectan la descalificación</li>
                     </ul>
                   </div>
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8">
                   <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p>Habilita el sistema de cuotas para configurar límites por rango de edad</p>
+                  <p className="text-gray-600 mb-4">Habilita el sistema de cuotas para configurar límites por rango de edad</p>
+
+                  {/* Mensaje informativo sobre caída natural */}
+                  <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                    <h4 className="font-semibold text-amber-800 mb-2 flex items-center">
+                      <span className="mr-2">⚠️</span>
+                      Importante: Distribución por "caída natural"
+                    </h4>
+                    <p className="text-amber-700 text-sm space-y-2">
+                      <span className="block">
+                        Los <strong>filtros previos de edad</strong> (rangos válidos y descalificantes) configurados en la pestaña
+                        "Opciones de Edad" <strong>seguirán activos</strong>.
+                      </span>
+                      <span className="block">
+                        Sin embargo, si <strong>no habilitas esta sección</strong>, la distribución de participantes
+                        <strong> dentro de los rangos de edad válidos</strong> será por <strong>"caída natural"</strong> (orden de llegada),
+                        lo que <strong>no garantiza</strong> que se completen cuotas específicas por rango de edad.
+                      </span>
+                      <span className="block">
+                        Para asegurar una distribución controlada con cuotas específicas por rango de edad, habilita el sistema de cuotas dinámicas.
+                      </span>
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

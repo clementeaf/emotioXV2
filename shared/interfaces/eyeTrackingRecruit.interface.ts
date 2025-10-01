@@ -31,50 +31,66 @@ export type ParameterOptionKeys =
 
 // 🎯 NUEVAS INTERFACES PARA SISTEMA DE CUOTAS DINÁMICAS
 export interface AgeQuota {
+  id: string;
   ageRange: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
 export interface CountryQuota {
+  id: string;
   country: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
 export interface GenderQuota {
+  id: string;
   gender: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
 export interface EducationLevelQuota {
+  id: string;
   educationLevel: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
 export interface HouseholdIncomeQuota {
+  id: string;
   incomeLevel: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
 export interface EmploymentStatusQuota {
+  id: string;
   employmentStatus: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
 export interface DailyHoursOnlineQuota {
+  id: string;
   hoursRange: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
 export interface TechnicalProficiencyQuota {
+  id: string;
   proficiencyLevel: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 

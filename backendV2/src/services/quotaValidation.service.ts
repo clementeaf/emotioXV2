@@ -72,6 +72,25 @@ export class QuotaValidationService {
   }
 
   /**
+   * Convierte una cuota de porcentaje a número absoluto
+   * @param quota - Valor de la cuota
+   * @param quotaType - Tipo de cuota ('absolute' | 'percentage')
+   * @param totalParticipants - Total de participantes esperados
+   * @returns Número absoluto de participantes
+   */
+  private calculateAbsoluteQuota(
+    quota: number,
+    quotaType: 'absolute' | 'percentage',
+    totalParticipants: number
+  ): number {
+    if (quotaType === 'percentage') {
+      // Convertir porcentaje a número absoluto
+      return Math.ceil((quota / 100) * totalParticipants);
+    }
+    return quota;
+  }
+
+  /**
    * Analiza cuotas para investigación (SOLO ANÁLISIS, NO LIMITA)
    */
   async analyzeParticipantQuotas(
@@ -90,16 +109,27 @@ export class QuotaValidationService {
 
       const demographicQuestions = config.demographicQuestions as DemographicQuestions;
 
+      // Obtener el total de participantes esperados para calcular porcentajes
+      const linkConfig = config.linkConfig as Record<string, unknown> | undefined;
+      const participantLimit = linkConfig?.participantLimit as { enabled?: boolean; value?: number } | undefined;
+      const totalParticipants = participantLimit?.enabled ? (participantLimit.value || 100) : 100;
+
+      structuredLog('debug', `${this.modelName}.${context}`, 'Analyzing quotas with participant limit', {
+        researchId,
+        totalParticipants,
+        participantLimitEnabled: participantLimit?.enabled
+      });
+
       // Analizar cada criterio demográfico (SOLO PARA ANÁLISIS)
       const validations = await Promise.all([
-        this.analyzeAgeQuota(researchId, demographics.age, demographicQuestions.age),
-        this.analyzeCountryQuota(researchId, demographics.country, demographicQuestions.country),
-        this.analyzeGenderQuota(researchId, demographics.gender, demographicQuestions.gender),
-        this.analyzeEducationLevelQuota(researchId, demographics.educationLevel, demographicQuestions.educationLevel),
-        this.analyzeHouseholdIncomeQuota(researchId, demographics.householdIncome, demographicQuestions.householdIncome),
-        this.analyzeEmploymentStatusQuota(researchId, demographics.employmentStatus, demographicQuestions.employmentStatus),
-        this.analyzeDailyHoursOnlineQuota(researchId, demographics.dailyHoursOnline, demographicQuestions.dailyHoursOnline),
-        this.analyzeTechnicalProficiencyQuota(researchId, demographics.technicalProficiency, demographicQuestions.technicalProficiency)
+        this.analyzeAgeQuota(researchId, demographics.age, demographicQuestions.age, totalParticipants),
+        this.analyzeCountryQuota(researchId, demographics.country, demographicQuestions.country, totalParticipants),
+        this.analyzeGenderQuota(researchId, demographics.gender, demographicQuestions.gender, totalParticipants),
+        this.analyzeEducationLevelQuota(researchId, demographics.educationLevel, demographicQuestions.educationLevel, totalParticipants),
+        this.analyzeHouseholdIncomeQuota(researchId, demographics.householdIncome, demographicQuestions.householdIncome, totalParticipants),
+        this.analyzeEmploymentStatusQuota(researchId, demographics.employmentStatus, demographicQuestions.employmentStatus, totalParticipants),
+        this.analyzeDailyHoursOnlineQuota(researchId, demographics.dailyHoursOnline, demographicQuestions.dailyHoursOnline, totalParticipants),
+        this.analyzeTechnicalProficiencyQuota(researchId, demographics.technicalProficiency, demographicQuestions.technicalProficiency, totalParticipants)
       ]);
 
       // Si alguna validación falla, retornar el primer error (SOLO PARA ANÁLISIS)
@@ -126,7 +156,8 @@ export class QuotaValidationService {
   private async analyzeAgeQuota(
     researchId: string,
     age?: string,
-    ageConfig?: Record<string, unknown>
+    ageConfig?: Record<string, unknown>,
+    totalParticipants: number = 100
   ): Promise<QuotaValidationResult> {
     if (!age || !ageConfig?.quotasEnabled || !ageConfig?.quotas) {
       return { isValid: true };
@@ -140,17 +171,24 @@ export class QuotaValidationService {
       return { isValid: true }; // Sin cuota configurada para esta edad
     }
 
+    // Calcular cuota absoluta (convierte porcentajes a números)
+    const absoluteQuota = this.calculateAbsoluteQuota(
+      quota.quota,
+      quota.quotaType || 'absolute',
+      totalParticipants
+    );
+
     const counter = await this.getQuotaCounter(researchId, 'age', age);
 
-    if (counter && counter.currentCount >= quota.quota) {
+    if (counter && counter.currentCount >= absoluteQuota) {
       return {
         isValid: false,
-        reason: `Cuota de edad alcanzada para el rango ${age}`,
+        reason: `Cuota de edad alcanzada para el rango ${age} (${quota.quotaType === 'percentage' ? `${quota.quota}%` : quota.quota} = ${absoluteQuota} participantes)`,
         quotaInfo: {
           demographicType: 'age',
           value: age,
           currentCount: counter.currentCount,
-          maxQuota: quota.quota
+          maxQuota: absoluteQuota
         }
       };
     }
@@ -165,7 +203,8 @@ export class QuotaValidationService {
   private async analyzeCountryQuota(
     researchId: string,
     country?: string,
-    countryConfig?: Record<string, unknown>
+    countryConfig?: Record<string, unknown>,
+    totalParticipants: number = 100
   ): Promise<QuotaValidationResult> {
     if (!country || !countryConfig?.quotasEnabled || !countryConfig?.quotas) {
       return { isValid: true };
@@ -189,17 +228,24 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
+    // Calcular cuota absoluta (convierte porcentajes a números)
+    const absoluteQuota = this.calculateAbsoluteQuota(
+      quota.quota,
+      quota.quotaType || 'absolute',
+      totalParticipants
+    );
+
     const counter = await this.getQuotaCounter(researchId, 'country', country);
 
-    if (counter && counter.currentCount >= quota.quota) {
+    if (counter && counter.currentCount >= absoluteQuota) {
       return {
         isValid: false,
-        reason: `Cuota de país prioritario alcanzada para ${country}`,
+        reason: `Cuota de país prioritario alcanzada para ${country} (${quota.quotaType === 'percentage' ? `${quota.quota}%` : quota.quota} = ${absoluteQuota} participantes)`,
         quotaInfo: {
           demographicType: 'country',
           value: country,
           currentCount: counter.currentCount,
-          maxQuota: quota.quota
+          maxQuota: absoluteQuota
         }
       };
     }
@@ -213,7 +259,8 @@ export class QuotaValidationService {
   private async analyzeGenderQuota(
     researchId: string,
     gender?: string,
-    genderConfig?: Record<string, unknown>
+    genderConfig?: Record<string, unknown>,
+    totalParticipants: number = 100
   ): Promise<QuotaValidationResult> {
     if (!gender || !genderConfig?.quotasEnabled || !genderConfig?.quotas) {
       return { isValid: true };
@@ -227,17 +274,24 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
+    // Calcular cuota absoluta (convierte porcentajes a números)
+    const absoluteQuota = this.calculateAbsoluteQuota(
+      quota.quota,
+      quota.quotaType || 'absolute',
+      totalParticipants
+    );
+
     const counter = await this.getQuotaCounter(researchId, 'gender', gender);
 
-    if (counter && counter.currentCount >= quota.quota) {
+    if (counter && counter.currentCount >= absoluteQuota) {
       return {
         isValid: false,
-        reason: `Cuota de género alcanzada para ${gender}`,
+        reason: `Cuota de género alcanzada para ${gender} (${quota.quotaType === 'percentage' ? `${quota.quota}%` : quota.quota} = ${absoluteQuota} participantes)`,
         quotaInfo: {
           demographicType: 'gender',
           value: gender,
           currentCount: counter.currentCount,
-          maxQuota: quota.quota
+          maxQuota: absoluteQuota
         }
       };
     }
@@ -251,7 +305,8 @@ export class QuotaValidationService {
   private async analyzeEducationLevelQuota(
     researchId: string,
     educationLevel?: string,
-    educationConfig?: Record<string, unknown>
+    educationConfig?: Record<string, unknown>,
+    totalParticipants: number = 100
   ): Promise<QuotaValidationResult> {
     if (!educationLevel || !educationConfig?.quotasEnabled || !educationConfig?.quotas) {
       return { isValid: true };
@@ -265,17 +320,24 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
+    // Calcular cuota absoluta (convierte porcentajes a números)
+    const absoluteQuota = this.calculateAbsoluteQuota(
+      quota.quota,
+      quota.quotaType || 'absolute',
+      totalParticipants
+    );
+
     const counter = await this.getQuotaCounter(researchId, 'educationLevel', educationLevel);
 
-    if (counter && counter.currentCount >= quota.quota) {
+    if (counter && counter.currentCount >= absoluteQuota) {
       return {
         isValid: false,
-        reason: `Cuota de nivel educativo alcanzada para ${educationLevel}`,
+        reason: `Cuota de nivel educativo alcanzada para ${educationLevel} (${quota.quotaType === 'percentage' ? `${quota.quota}%` : quota.quota} = ${absoluteQuota} participantes)`,
         quotaInfo: {
           demographicType: 'educationLevel',
           value: educationLevel,
           currentCount: counter.currentCount,
-          maxQuota: quota.quota
+          maxQuota: absoluteQuota
         }
       };
     }
@@ -289,7 +351,8 @@ export class QuotaValidationService {
   private async analyzeHouseholdIncomeQuota(
     researchId: string,
     householdIncome?: string,
-    incomeConfig?: Record<string, unknown>
+    incomeConfig?: Record<string, unknown>,
+    totalParticipants: number = 100
   ): Promise<QuotaValidationResult> {
     if (!householdIncome || !incomeConfig?.quotasEnabled || !incomeConfig?.quotas) {
       return { isValid: true };
@@ -303,17 +366,24 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
+    // Calcular cuota absoluta (convierte porcentajes a números)
+    const absoluteQuota = this.calculateAbsoluteQuota(
+      quota.quota,
+      quota.quotaType || 'absolute',
+      totalParticipants
+    );
+
     const counter = await this.getQuotaCounter(researchId, 'householdIncome', householdIncome);
 
-    if (counter && counter.currentCount >= quota.quota) {
+    if (counter && counter.currentCount >= absoluteQuota) {
       return {
         isValid: false,
-        reason: `Cuota de ingresos familiares alcanzada para ${householdIncome}`,
+        reason: `Cuota de ingresos familiares alcanzada para ${householdIncome} (${quota.quotaType === 'percentage' ? `${quota.quota}%` : quota.quota} = ${absoluteQuota} participantes)`,
         quotaInfo: {
           demographicType: 'householdIncome',
           value: householdIncome,
           currentCount: counter.currentCount,
-          maxQuota: quota.quota
+          maxQuota: absoluteQuota
         }
       };
     }
@@ -327,7 +397,8 @@ export class QuotaValidationService {
   private async analyzeEmploymentStatusQuota(
     researchId: string,
     employmentStatus?: string,
-    employmentConfig?: Record<string, unknown>
+    employmentConfig?: Record<string, unknown>,
+    totalParticipants: number = 100
   ): Promise<QuotaValidationResult> {
     if (!employmentStatus || !employmentConfig?.quotasEnabled || !employmentConfig?.quotas) {
       return { isValid: true };
@@ -341,17 +412,24 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
+    // Calcular cuota absoluta (convierte porcentajes a números)
+    const absoluteQuota = this.calculateAbsoluteQuota(
+      quota.quota,
+      quota.quotaType || 'absolute',
+      totalParticipants
+    );
+
     const counter = await this.getQuotaCounter(researchId, 'employmentStatus', employmentStatus);
 
-    if (counter && counter.currentCount >= quota.quota) {
+    if (counter && counter.currentCount >= absoluteQuota) {
       return {
         isValid: false,
-        reason: `Cuota de situación laboral alcanzada para ${employmentStatus}`,
+        reason: `Cuota de situación laboral alcanzada para ${employmentStatus} (${quota.quotaType === 'percentage' ? `${quota.quota}%` : quota.quota} = ${absoluteQuota} participantes)`,
         quotaInfo: {
           demographicType: 'employmentStatus',
           value: employmentStatus,
           currentCount: counter.currentCount,
-          maxQuota: quota.quota
+          maxQuota: absoluteQuota
         }
       };
     }
@@ -365,7 +443,8 @@ export class QuotaValidationService {
   private async analyzeDailyHoursOnlineQuota(
     researchId: string,
     dailyHoursOnline?: string,
-    hoursConfig?: Record<string, unknown>
+    hoursConfig?: Record<string, unknown>,
+    totalParticipants: number = 100
   ): Promise<QuotaValidationResult> {
     if (!dailyHoursOnline || !hoursConfig?.quotasEnabled || !hoursConfig?.quotas) {
       return { isValid: true };
@@ -379,17 +458,24 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
+    // Calcular cuota absoluta (convierte porcentajes a números)
+    const absoluteQuota = this.calculateAbsoluteQuota(
+      quota.quota,
+      quota.quotaType || 'absolute',
+      totalParticipants
+    );
+
     const counter = await this.getQuotaCounter(researchId, 'dailyHoursOnline', dailyHoursOnline);
 
-    if (counter && counter.currentCount >= quota.quota) {
+    if (counter && counter.currentCount >= absoluteQuota) {
       return {
         isValid: false,
-        reason: `Cuota de horas diarias en línea alcanzada para ${dailyHoursOnline}`,
+        reason: `Cuota de horas diarias en línea alcanzada para ${dailyHoursOnline} (${quota.quotaType === 'percentage' ? `${quota.quota}%` : quota.quota} = ${absoluteQuota} participantes)`,
         quotaInfo: {
           demographicType: 'dailyHoursOnline',
           value: dailyHoursOnline,
           currentCount: counter.currentCount,
-          maxQuota: quota.quota
+          maxQuota: absoluteQuota
         }
       };
     }
@@ -403,7 +489,8 @@ export class QuotaValidationService {
   private async analyzeTechnicalProficiencyQuota(
     researchId: string,
     technicalProficiency?: string,
-    proficiencyConfig?: Record<string, unknown>
+    proficiencyConfig?: Record<string, unknown>,
+    totalParticipants: number = 100
   ): Promise<QuotaValidationResult> {
     if (!technicalProficiency || !proficiencyConfig?.quotasEnabled || !proficiencyConfig?.quotas) {
       return { isValid: true };
@@ -417,17 +504,24 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
+    // Calcular cuota absoluta (convierte porcentajes a números)
+    const absoluteQuota = this.calculateAbsoluteQuota(
+      quota.quota,
+      quota.quotaType || 'absolute',
+      totalParticipants
+    );
+
     const counter = await this.getQuotaCounter(researchId, 'technicalProficiency', technicalProficiency);
 
-    if (counter && counter.currentCount >= quota.quota) {
+    if (counter && counter.currentCount >= absoluteQuota) {
       return {
         isValid: false,
-        reason: `Cuota de competencia técnica alcanzada para ${technicalProficiency}`,
+        reason: `Cuota de competencia técnica alcanzada para ${technicalProficiency} (${quota.quotaType === 'percentage' ? `${quota.quota}%` : quota.quota} = ${absoluteQuota} participantes)`,
         quotaInfo: {
           demographicType: 'technicalProficiency',
           value: technicalProficiency,
           currentCount: counter.currentCount,
-          maxQuota: quota.quota
+          maxQuota: absoluteQuota
         }
       };
     }

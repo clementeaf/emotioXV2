@@ -13,6 +13,7 @@ interface EducationLevelQuota {
   id: string;
   educationLevel: string;
   quota: number;
+  quotaType: 'absolute' | 'percentage';
   isActive: boolean;
 }
 
@@ -63,8 +64,13 @@ export const EducationConfigModal: React.FC<EducationConfigModalProps> = ({
     if (isOpen) {
       setOptions(currentOptions);
       setDisqualified(currentDisqualified);
-      // 🎯 INICIALIZAR CUOTAS
-      setQuotas(initialQuotas);
+      // 🎯 INICIALIZAR CUOTAS con migración automática para retrocompatibilidad
+      const migratedQuotas = initialQuotas.map(quota => ({
+        ...quota,
+        // Migración: Si no tiene quotaType, asignar 'absolute' por defecto
+        quotaType: quota.quotaType || 'absolute'
+      }));
+      setQuotas(migratedQuotas);
       setQuotasEnabledState(quotasEnabled);
     }
   }, [isOpen, currentOptions, currentDisqualified, initialQuotas, quotasEnabled]);
@@ -129,10 +135,12 @@ export const EducationConfigModal: React.FC<EducationConfigModalProps> = ({
 
   // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS
   const handleAddQuota = () => {
+
     const newQuota: EducationLevelQuota = {
       id: `quota-${Date.now()}`,
       educationLevel: '',
       quota: 1,
+      quotaType: 'absolute',
       isActive: true
     };
     setQuotas(prev => [...prev, newQuota]);
@@ -364,38 +372,86 @@ export const EducationConfigModal: React.FC<EducationConfigModalProps> = ({
 
                   {/* Lista de cuotas */}
                   <div className="space-y-3 mb-4">
-                    {quotas.map((quota) => (
-                      <div
-                        key={quota.id}
-                        className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border"
-                      >
-                        <div className="flex-1 grid grid-cols-2 gap-4">
-                          {/* Nivel de Educación */}
+                    {quotas.map((quota) => {
+                      const levelsWithQuotas = quotas.map(q => q.educationLevel);
+                      const availableLevels = options.filter(
+                        option => option.isQualified && (!levelsWithQuotas.includes(option.name) || option.name === quota.educationLevel)
+                      );
+
+                      return (
+                        <div
+                          key={quota.id}
+                          className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border"
+                        >
+                          <div className="flex-1 grid grid-cols-3 gap-4">
+                            {/* Nivel de Educación */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Nivel de Educación
+                              </label>
+                              <select
+                                value={quota.educationLevel}
+                                onChange={(e) => handleUpdateQuota(quota.id, 'educationLevel', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Seleccionar nivel educativo</option>
+                                {availableLevels.map(option => (
+                                  <option key={option.id} value={option.name}>
+                                    {option.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                          {/* Tipo de cuota */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Nivel de Educación
+                              Tipo
                             </label>
-                            <input
-                              type="text"
-                              value={quota.educationLevel}
-                              onChange={(e) => handleUpdateQuota(quota.id, 'educationLevel', e.target.value)}
-                              placeholder="ej: Universitaria"
+                            <select
+                              value={quota.quotaType}
+                              onChange={(e) => {
+                                const newType = e.target.value as 'absolute' | 'percentage';
+                                handleUpdateQuota(quota.id, 'quotaType', newType);
+                                if (newType === 'percentage' && quota.quota > 100) {
+                                  handleUpdateQuota(quota.id, 'quota', 50);
+                                }
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                            >
+                              <option value="absolute">Número</option>
+                              <option value="percentage">Porcentaje</option>
+                            </select>
                           </div>
 
                           {/* Cuota */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Cuota
+                              {quota.quotaType === 'percentage' ? 'Porcentaje (%)' : 'Cantidad'}
                             </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={quota.quota}
-                              onChange={(e) => handleUpdateQuota(quota.id, 'quota', parseInt(e.target.value) || 1)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min={quota.quotaType === 'percentage' ? '0' : '1'}
+                                max={quota.quotaType === 'percentage' ? '100' : undefined}
+                                value={quota.quota}
+                                onChange={(e) => {
+                                  let value = parseInt(e.target.value) || 1;
+                                  if (quota.quotaType === 'percentage') {
+                                    value = Math.max(0, Math.min(100, value));
+                                  } else {
+                                    value = Math.max(1, value);
+                                  }
+                                  handleUpdateQuota(quota.id, 'quota', value);
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              {quota.quotaType === 'percentage' && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                                  %
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -425,7 +481,8 @@ export const EducationConfigModal: React.FC<EducationConfigModalProps> = ({
                           <XIcon size={16} />
                         </button>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Agregar nueva cuota */}
@@ -441,17 +498,41 @@ export const EducationConfigModal: React.FC<EducationConfigModalProps> = ({
                   <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <h4 className="font-semibold text-yellow-800 mb-2">💡 Cómo funcionan las cuotas:</h4>
                     <ul className="text-yellow-700 text-sm space-y-1">
-                      <li>• Cada nivel educativo puede tener su propia cuota</li>
+                      <li>• Cada nivel educativo puede tener su propia cuota (número absoluto o porcentaje)</li>
+                      <li>• <strong>Porcentajes:</strong> Se calculan sobre el total de participantes esperados</li>
                       <li>• El sistema automáticamente contará los participantes que se registren</li>
                       <li>• Cuando se alcance la cuota, los participantes de ese nivel serán descalificados automáticamente</li>
+                      <li>• <strong className="text-orange-800">⚠️ Niveles sin cuota asignada:</strong> Si un nivel habilitado no tiene cuota configurada, <strong>NO se le aplicará ningún límite</strong> y podrá recibir participantes sin restricción</li>
                       <li>• Las cuotas inactivas no afectan la descalificación</li>
                     </ul>
                   </div>
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8">
                   <GraduationCap className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p>Habilita el sistema de cuotas para configurar límites por nivel de educación</p>
+                  <p className="text-gray-600 mb-4">Habilita el sistema de cuotas para configurar límites por nivel de educación</p>
+
+                  {/* Mensaje informativo sobre caída natural */}
+                  <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                    <h4 className="font-semibold text-amber-800 mb-2 flex items-center">
+                      <span className="mr-2">⚠️</span>
+                      Importante: Distribución por "caída natural"
+                    </h4>
+                    <p className="text-amber-700 text-sm space-y-2">
+                      <span className="block">
+                        Los <strong>filtros previos de nivel educativo</strong> (opciones válidas y descalificantes) configurados en la pestaña
+                        "Opciones de Educación" <strong>seguirán activos</strong>.
+                      </span>
+                      <span className="block">
+                        Sin embargo, si <strong>no habilitas esta sección</strong>, la distribución de participantes
+                        <strong> dentro de los niveles educativos válidos</strong> será por <strong>"caída natural"</strong> (orden de llegada),
+                        lo que <strong>no garantiza</strong> que se completen cuotas específicas por nivel educativo.
+                      </span>
+                      <span className="block">
+                        Para asegurar una distribución controlada con cuotas específicas por nivel educativo, habilita el sistema de cuotas dinámicas.
+                      </span>
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
