@@ -3,6 +3,13 @@ node_modules/
 .pnp
 .pnp.js
 
+# lockfiles en subdirectorios (usar solo el lockfile raíz en monorepo)
+frontend/package-lock.json
+shared/package-lock.json
+backendV2/package-lock.json
+researchLinks/package-lock.json
+public-tests/package-lock.json
+
 # testing
 coverage/
 

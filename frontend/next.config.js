@@ -6,6 +6,9 @@ const nextConfig = {
   output: 'export',
   trailingSlash: true,
 
+  // 🔧 Configurar workspace root para monorepo
+  outputFileTracingRoot: path.join(__dirname, '..'),
+
   // Disable ESLint during build
   eslint: {
     ignoreDuringBuilds: true,

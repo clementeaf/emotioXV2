@@ -35,34 +35,39 @@ export function QRCodeModal({ open, onOpenChange, researchUrl }: QRCodeModalProp
   };
 
   const handleDownload = () => {
-    if (!qrRef.current) return;
+    // Validar que estamos en el browser
+    if (typeof window === 'undefined' || !qrRef.current) return;
 
     const svg = qrRef.current.querySelector('svg');
     if (!svg) return;
 
-    // Convert SVG to canvas for download
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
+    try {
+      // Convert SVG to canvas for download
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
 
-    canvas.width = 512;
-    canvas.height = 512;
+      canvas.width = 512;
+      canvas.height = 512;
 
-    img.onload = () => {
-      ctx?.drawImage(img, 0, 0, 512, 512);
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = 'research-qr-code.png';
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-      });
-    };
+      img.onload = () => {
+        ctx?.drawImage(img, 0, 0, 512, 512);
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = 'research-qr-code.png';
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+        });
+      };
 
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+      img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+    } catch (error) {
+      console.error('Error al descargar QR:', error);
+    }
   };
 
   return (
