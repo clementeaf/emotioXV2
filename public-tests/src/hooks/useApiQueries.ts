@@ -96,7 +96,11 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Parti
           participantId: data.participantId,
           questionKey: data.questionKey,
           responses: data.responses,
-          quotaResult: null, // No hay validación de cuotas en preview
+          quotaResult: undefined, // No hay validación de cuotas en preview
+          metadata: data.metadata || {},
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isCompleted: false,
         } as ParticipantResponsesDocument;
       }
 
