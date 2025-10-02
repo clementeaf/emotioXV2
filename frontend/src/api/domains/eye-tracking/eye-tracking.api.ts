@@ -121,7 +121,9 @@ export const eyeTrackingRecruitApi = {
       const response = await apiClient.get<ApiResponse<EyeTrackingRecruitConfig>>(
         `/eye-tracking-recruit/research/${researchId}`
       );
-      return response.data.data;
+      // El backend devuelve los datos directamente en response.data, no en response.data.data
+      const result = response.data.data || response.data;
+      return result as EyeTrackingRecruitConfig;
     } catch (error) {
       if ((error as any)?.response?.status === 404) {
         return null;

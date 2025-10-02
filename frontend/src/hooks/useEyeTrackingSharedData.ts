@@ -51,10 +51,10 @@ export const useEyeTrackingSharedData = (researchId: string, options?: {
       }
     },
     enabled: (type === 'recruit' || type === 'both') && options?.enabled !== false && !!researchId,
-    staleTime: 10 * 60 * 1000, // 10 minutos - datos que no cambian frecuentemente
-    gcTime: 60 * 60 * 1000, // 1 hora - mantener en cache más tiempo
+    staleTime: 5 * 60 * 1000, // 5 minutos - reducido para mayor frescura de datos
+    gcTime: 30 * 60 * 1000, // 30 minutos - reducido
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true, // Cambio: refetch cuando se monta para asegurar datos frescos
     refetchOnReconnect: false,
     retry: false, // No reintentar en caso de error
   });

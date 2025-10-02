@@ -484,10 +484,10 @@ const processApiResponse = (response: ApiResponse | null | undefined): EyeTracki
     // Configuración de enlaces
     if (response.linkConfig) {
       safeResponse.linkConfig = {
-        allowMobile: response.linkConfig.allowMobile || false,
-        trackLocation: response.linkConfig.trackLocation || false,
-        allowMultipleAttempts: response.linkConfig.allowMultipleAttempts || false,
-        showProgressBar: response.linkConfig.showProgressBar || false
+        allowMobile: Boolean(response.linkConfig.allowMobile),
+        trackLocation: Boolean(response.linkConfig.trackLocation),
+        allowMultipleAttempts: Boolean(response.linkConfig.allowMultipleAttempts),
+        showProgressBar: Boolean(response.linkConfig.showProgressBar)
       };
     }
 
@@ -619,19 +619,19 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       // Actualizar el estado del formulario solo si no hay datos optimistas
       setFormData(configData);
 
-      // 🎯 SOLO calcular estados de switches en carga inicial, no después de guardar
-      if (isInitialLoad) {
-        // Determinar si hay preguntas demográficas habilitadas
-        const hasDemographics = Object.values(configData.demographicQuestions).some(
-          (q) => q.enabled
-        );
-        setDemographicQuestionsEnabledState(hasDemographics);
+      // 🎯 CALCULAR estados de switches basado en datos cargados
+      // Determinar si hay preguntas demográficas habilitadas
+      const hasDemographics = Object.values(configData.demographicQuestions).some(
+        (q) => q.enabled
+      );
+      setDemographicQuestionsEnabledState(hasDemographics);
 
-        // Determinar si hay opciones de configuración de enlace habilitadas
-        const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
-        setLinkConfigEnabledState(hasLinkConfig);
-        
-        // Marcar que ya no es carga inicial
+      // Determinar si hay opciones de configuración de enlace habilitadas
+      const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
+      setLinkConfigEnabledState(hasLinkConfig);
+
+      // Marcar que ya no es carga inicial después de procesar datos
+      if (isInitialLoad) {
         setIsInitialLoad(false);
       }
     } catch (error: unknown) {
@@ -647,7 +647,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
       toast.error(`Error al cargar configuración: ${(error as Error)?.message || 'Error desconocido'}`);
     }
-  }, [eyeTrackingRecruitData, isLoadingConfig, actualResearchId, formData.id, formData.lastUpdated]);
+  }, [eyeTrackingRecruitData, isLoadingConfig, actualResearchId, isInitialLoad]);
 
   // Actualizar estado de carga cuando termina la consulta y asignar URL automáticamente
   useEffect(() => {
@@ -820,15 +820,16 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         //   exact: false
         // });
         
-        // 4. Actualizar el estado local del formulario preservando los estados de switches
-        // 🎯 PRESERVAR ESTADOS DE SWITCHES - No recalcular después de guardar
-        if (result.id) {
+        // 4. Actualizar SOLO el ID - NO sobrescribir el resto del formData
+        // El estado local ya tiene los valores correctos (carga optimista)
+        // La respuesta del backend puede tener tipos incompatibles (Date vs string)
+        if (result.id && !formData.id) {
           setFormData(prev => ({
             ...prev,
-            ...(result as any),
             id: result.id
           }));
         }
+        // Si ya tenemos ID, no hacemos nada - el estado optimista ya está correcto
         
         // 🚨 IMPORTANTE: Los estados de demographicQuestionsEnabled y linkConfigEnabled 
         // NO se recalculan después de guardar para preservar la intención del usuario
@@ -966,39 +967,12 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
   }, [checkRequiredFields, handleConfirmSave]);
 
-  // Actualizar el efecto de demographicQuestionsEnabled
-  useEffect(() => {
-    if (!demographicQuestionsEnabled) {
-      setFormData(prev => ({
-        ...prev,
-        demographicQuestions: {
-          age: { ...prev.demographicQuestions.age, enabled: false },
-          country: { ...prev.demographicQuestions.country, enabled: false },
-          gender: { ...prev.demographicQuestions.gender, enabled: false },
-          educationLevel: { ...prev.demographicQuestions.educationLevel, enabled: false },
-          householdIncome: { ...prev.demographicQuestions.householdIncome, enabled: false },
-          employmentStatus: { ...prev.demographicQuestions.employmentStatus, enabled: false },
-          dailyHoursOnline: { ...prev.demographicQuestions.dailyHoursOnline, enabled: false },
-          technicalProficiency: { ...prev.demographicQuestions.technicalProficiency, enabled: false }
-        }
-      }));
-    }
-  }, [demographicQuestionsEnabled]);
+  // 🔥 REMOVED: useEffect que forzaba enabled: false cuando demographicQuestionsEnabled era false
+  // Esto causaba que los checkboxes individuales se desmarcaran automáticamente
+  // Ahora los checkboxes individuales son completamente independientes del checkbox padre
 
-  // Actualizar el efecto de linkConfigEnabled
-  useEffect(() => {
-    if (!linkConfigEnabled) {
-      setFormData(prev => ({
-        ...prev,
-        linkConfig: {
-          allowMobile: false,
-          trackLocation: false,
-          allowMultipleAttempts: false,
-          showProgressBar: false
-        }
-      }));
-    }
-  }, [linkConfigEnabled]);
+  // 🔥 REMOVED: useEffect que forzaba todos los linkConfig a false cuando linkConfigEnabled era false
+  // Ahora los checkboxes de linkConfig son independientes del checkbox padre
 
   // Métodos para manipular el formulario
   const handleDemographicChange = useCallback((key: DemographicQuestionKeys, value: boolean) => {
