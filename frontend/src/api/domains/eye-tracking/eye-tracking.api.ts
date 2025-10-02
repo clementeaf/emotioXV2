@@ -119,7 +119,7 @@ export const eyeTrackingRecruitApi = {
   getConfigByResearch: async (researchId: string): Promise<EyeTrackingRecruitConfig | null> => {
     try {
       const response = await apiClient.get<ApiResponse<EyeTrackingRecruitConfig>>(
-        `/eye-tracking-recruit/research/${researchId}/config`
+        `/eye-tracking-recruit/research/${researchId}`
       );
       return response.data.data;
     } catch (error) {
@@ -135,7 +135,7 @@ export const eyeTrackingRecruitApi = {
    */
   createConfig: async (researchId: string, data: CreateEyeTrackingRecruitRequest): Promise<EyeTrackingRecruitConfig> => {
     const response = await apiClient.post<ApiResponse<EyeTrackingRecruitConfig>>(
-      `/eye-tracking-recruit/research/${researchId}/config`,
+      `/eye-tracking-recruit/research/${researchId}`,
       data
     );
     return response.data.data;
@@ -146,7 +146,7 @@ export const eyeTrackingRecruitApi = {
    */
   updateConfig: async (researchId: string, data: UpdateEyeTrackingRecruitRequest): Promise<EyeTrackingRecruitConfig> => {
     const response = await apiClient.put<ApiResponse<EyeTrackingRecruitConfig>>(
-      `/eye-tracking-recruit/research/${researchId}/config`,
+      `/eye-tracking-recruit/research/${researchId}`,
       data
     );
     return response.data.data;
@@ -156,7 +156,7 @@ export const eyeTrackingRecruitApi = {
    * Delete recruitment configuration
    */
   deleteConfig: async (researchId: string): Promise<void> => {
-    await apiClient.delete(`/eye-tracking-recruit/research/${researchId}/config`);
+    await apiClient.delete(`/eye-tracking-recruit/research/${researchId}`);
   },
 
   /**
