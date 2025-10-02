@@ -4,7 +4,7 @@
  * Este archivo es generado automáticamente por el script de sincronización.
  * NO MODIFICAR MANUALMENTE - Los cambios se sobrescribirán en la próxima sincronización.
  *
- * Generado: 2025-10-01T19:51:46.000Z
+ * Generado: 2025-10-01T21:57:03.000Z
  * Etapa: prod
  */
 
@@ -14,7 +14,7 @@ export const CENTRALIZED_API_CONFIG = {
   stage: "prod",
   frontend: "http://localhost:3000",
   publicTests: "http://localhost:4700",
-  generatedAt: "2025-10-01T19:51:46.000Z"
+  generatedAt: "2025-10-01T21:57:03.000Z"
 };
 
 export const API_HTTP_ENDPOINT = "http://localhost:3000/dev";

@@ -6,10 +6,10 @@
 set -e
 
 # Configuración
-BUCKET="emotioxv2-frontend-041238861016"
+BUCKET="emotioxv2-frontend-new-1758148652"
 DISTRIBUTION_ID="E3QO9HAYZYNV45"
 REGION="us-east-1"
-BUILD_DIR=".next"
+BUILD_DIR="out"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -26,9 +26,9 @@ log_info "Limpiando bucket S3: $BUCKET ..."
 aws s3 rm s3://$BUCKET --recursive --region $REGION || { log_error "Error al limpiar el bucket S3"; exit 1; }
 log_success "Bucket S3 limpio."
 
-log_info "Borrando build anterior (.next/)..."
+log_info "Borrando build anterior ($BUILD_DIR/)..."
 rm -rf frontend/$BUILD_DIR
-log_success "Directorio .next/ eliminado."
+log_success "Directorio $BUILD_DIR/ eliminado."
 
 # 🆕 SINCRONIZAR ENDPOINTS DINÁMICOS ANTES DEL BUILD
 log_info "🔄 Sincronizando endpoints dinámicos desde backendV2..."
