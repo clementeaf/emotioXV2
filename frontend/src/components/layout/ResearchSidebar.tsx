@@ -1,6 +1,5 @@
 'use client';
 
-import { ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { memo, useMemo, useCallback } from 'react';
@@ -128,20 +127,17 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     router.push('/dashboard'); 
   }, [router]);
 
-  const handleOpenPublicTests = useCallback(() => {
-    if (researchId) {
-      const isDevelopment = window.location.hostname === 'localhost';
-      const baseUrl = isDevelopment
-        ? 'http://localhost:5173'
-        : 'https://d35071761848hm.cloudfront.net';
-      window.open(`${baseUrl}/?researchId=${researchId}`, '_blank');
-    }
-  }, [researchId]);
-
   // Bloque superior: nombre proyecto y enlaces
   const TopBlock = (
     <div>
       <div className="mb-2">
+      <button
+        onClick={handleBackToDashboard}
+        className="py-2 text-sm text-neutral-700 font-medium transition-colors text-left"
+        aria-label="Volver al dashboard"
+      >
+        ← Volver al dashboard
+      </button>
         <h2 className="text-lg font-semibold text-neutral-900 truncate" title={typeof researchName === 'string' ? researchName : ''}>
           {isLoadingName ? (
             <div className="animate-pulse bg-gray-200 rounded h-6 w-32"></div>
@@ -158,25 +154,6 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
           <div className="animate-pulse bg-gray-200 rounded h-4 w-24 mt-1"></div>
         )}
       </div>
-
-      <button
-        onClick={handleBackToDashboard}
-        className="py-2 text-sm text-neutral-700 font-medium transition-colors text-left"
-        aria-label="Volver al dashboard"
-      >
-        ← Volver al dashboard
-      </button>
-      {researchId ? (
-        <button
-          onClick={handleOpenPublicTests}
-          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-        >
-          Abrir vista de participante
-          <ExternalLink size={14} className="ml-1.5" />
-        </button>
-      ) : (
-        <p className="text-xs text-neutral-500">(Research ID no disponible)</p>
-      )}
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
