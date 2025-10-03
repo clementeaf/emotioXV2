@@ -21,11 +21,25 @@ const toWebSocketEvent = (event: MonitoringEvent): WebSocketEvent => {
   };
 };
 
-// Event interfaces defined locally to avoid import issues
-interface MonitoringEvent {
-  type: string;
-  data: any;
+// Tipo para datos demográficos
+interface DemographicData {
+  age?: string;
+  gender?: string;
+  country?: string;
+  educationLevel?: string;
+  householdIncome?: string;
+  employmentStatus?: string;
+  [key: string]: string | number | boolean | undefined;
 }
+
+// Union type para todos los eventos posibles
+type MonitoringEvent =
+  | ParticipantLoginEvent
+  | ParticipantStepEvent
+  | ParticipantDisqualifiedEvent
+  | ParticipantQuotaExceededEvent
+  | ParticipantCompletedEvent
+  | { type: string; data: Record<string, string | number | boolean | DemographicData | undefined> };
 
 // WebSocket specific interface
 interface WebSocketEvent {
@@ -74,7 +88,7 @@ interface ParticipantDisqualifiedEvent {
     participantId: string;
     reason: string;
     disqualificationType: string;
-    demographicData?: any;
+    demographicData?: DemographicData;
     timestamp: string;
   };
 }
@@ -88,7 +102,7 @@ interface ParticipantQuotaExceededEvent {
     quotaValue: string;
     currentCount: number;
     maxQuota: number;
-    demographicData?: any;
+    demographicData?: DemographicData;
     timestamp: string;
   };
 }

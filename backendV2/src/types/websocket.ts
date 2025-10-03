@@ -33,11 +33,22 @@ export interface APIGatewayEventWebsocketRequestContext {
   apiId: string;
 }
 
+// Tipos específicos para datos de WebSocket
+export type WebSocketEventData =
+  | { type: 'view_start'; timestamp: number; questionKey: string }
+  | { type: 'view_end'; timestamp: number; questionKey: string; duration: number }
+  | { type: 'answer_submit'; timestamp: number; questionKey: string; answer: string | number | boolean | Record<string, unknown> }
+  | { type: 'step_change'; from: string; to: string; timestamp: number }
+  | { type: 'monitoring'; participantId: string; researchId: string; demographic?: Record<string, string | number | boolean> }
+  | Record<string, string | number | boolean | Record<string, unknown>>;
+
 // Tipo para el cuerpo de la solicitud WebSocket
 export interface WebSocketRequestBody {
   action?: string;
-  data?: any;
-  [key: string]: any;
+  data?: WebSocketEventData;
+  participantId?: string;
+  researchId?: string;
+  timestamp?: number;
 }
 
 // Tipo para respuesta a evento WebSocket
@@ -50,5 +61,5 @@ export interface WebSocketResponse {
 export interface WebSocketCommand {
   action: string;
   connectionId?: string;
-  data?: any;
+  data?: WebSocketEventData;
 } 

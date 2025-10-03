@@ -1,6 +1,7 @@
 import { HttpError } from '../errors';
 import { ApiError } from './errors';
 import { structuredLog } from './logging.util';
+import { toApplicationError, type DatabaseError } from '../types/errors';
 
 // Interfaz para mapear mensajes de error específicos del modelo a ApiErrors
 interface ErrorMapping {
@@ -22,7 +23,7 @@ interface ErrorMapping {
  * @returns Una instancia de ApiError.
  */
 export const handleDbError = (
-  error: unknown,
+  error: Error | DatabaseError,
   context: string,
   serviceName: string,
   modelErrorMappings: ErrorMapping = {}
@@ -37,30 +38,31 @@ export const handleDbError = (
   }
 
   const logContext = `${serviceName}.${context}`;
+  const appError = toApplicationError(error);
 
-  if (error instanceof Error) {
+  if (appError instanceof Error) {
     // Intentar mapear usando el mapa proporcionado
     for (const prefix in modelErrorMappings) {
-      if (error.message.startsWith(prefix)) {
+      if (appError.message.startsWith(prefix)) {
         const mapping = modelErrorMappings[prefix];
-        structuredLog('warn', logContext, `Mapeando error específico del modelo: ${prefix}`, { originalError: error.message });
+        structuredLog('warn', logContext, `Mapeando error específico del modelo: ${prefix}`, { originalError: appError.message });
         // Usar la clase de error específica del mapeo
         return new mapping.errorClass(
-          mapping.errorClass.prototype.message || error.message, // Usar mensaje default de la clase si existe
+          mapping.errorClass.prototype.message || appError.message, // Usar mensaje default de la clase si existe
           mapping.apiErrorCode
         );
       }
     }
 
     // Si no hubo mapeo, error genérico de DB
-    structuredLog('error', logContext, 'Error de base de datos no mapeado', { error: { name: error.name, message: error.message, stack: error.stack } });
+    structuredLog('error', logContext, 'Error de base de datos no mapeado', { error: { name: appError.name, message: appError.message, stack: appError.stack } });
     return new ApiError(
-      `DATABASE_ERROR: ${error.message || 'Error inesperado en base de datos'}`,
+      `DATABASE_ERROR: ${appError.message || 'Error inesperado en base de datos'}`,
       500
     );
   }
 
-  // Fallback para errores que no son instancias de Error
-  structuredLog('error', logContext, 'Error desconocido/no-Error capturado', { errorData: JSON.stringify(error) });
+  // Fallback (no debería llegar aquí con toApplicationError)
+  structuredLog('error', logContext, 'Error inesperado en la capa de datos', { error: appError });
   return new ApiError('DATABASE_ERROR: Error inesperado en la capa de datos', 500);
 };

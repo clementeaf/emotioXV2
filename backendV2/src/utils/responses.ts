@@ -1,5 +1,6 @@
 import { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
 import { getCorsHeaders } from '../middlewares/cors';
+import { toApplicationError, type ApplicationError } from '../types/errors';
 
 /**
  * Headers CORS por defecto (deprecated - usar getCorsHeaders en su lugar)
@@ -38,21 +39,23 @@ export const createResponseWithCors = (statusCode: number, body: Record<string, 
 /**
 * Manejador global de errores
 */
-export const errorHandler = (error: unknown): APIGatewayProxyResult => {
+export const errorHandler = (error: Error | ApplicationError): APIGatewayProxyResult => {
     console.error('Error en la aplicación:', error);
 
-    // Determinar el código de estado basado en el tipo de error
-    let statusCode = 500;
-    const err = error as { statusCode?: number; message?: string; stack?: string };
+    const appError = toApplicationError(error);
 
-    if (err.statusCode) statusCode = err.statusCode;
-    else if (err.message?.includes('no encontrado')) statusCode = 404;
-    else if (err.message?.includes('inválido') || err.message?.includes('requerido')) statusCode = 400;
-    else if (err.message?.includes('no autorizado') || err.message?.includes('credenciales')) statusCode = 401;
+    // Determinar el código de estado basado en el tipo de error
+    let statusCode = appError.statusCode || 500;
+
+    if (appError.message?.includes('no encontrado')) statusCode = 404;
+    else if (appError.message?.includes('inválido') || appError.message?.includes('requerido')) statusCode = 400;
+    else if (appError.message?.includes('no autorizado') || appError.message?.includes('credenciales')) statusCode = 401;
 
     return createResponse(statusCode, {
         success: false,
-        message: err.message || 'Error interno del servidor',
-        error: process.env.NODE_ENV === 'dev' ? err.stack : undefined
+        message: appError.message || 'Error interno del servidor',
+        code: appError.code,
+        details: appError.details,
+        error: process.env.NODE_ENV === 'dev' ? appError.stack : undefined
     });
 };
