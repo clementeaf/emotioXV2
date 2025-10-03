@@ -94,7 +94,7 @@ export interface ParticipantResponseSavedEvent {
     researchId: string;
     participantId: string;
     questionKey: string;
-    response: any;
+    response: string | number | boolean | string[] | Record<string, string | number | boolean | null> | null;
     timestamp: string;
     stepNumber: number;
     totalSteps: number;

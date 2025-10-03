@@ -8,8 +8,8 @@ import { QuestionType } from '../interfaces/question-types.enum';
  * - Los questionKey se generan usando el ENUM
  * - Si un tipo no está en el ENUM, se marca como error
  */
-export function buildQuestionDictionary(expandedSteps: any[]): Record<string, any> {
-    const questionDictionary: Record<string, any> = {};
+export function buildQuestionDictionary(expandedSteps: Record<string, unknown>[]): Record<string, unknown> {
+    const questionDictionary: Record<string, unknown> = {};
 
     expandedSteps.forEach((step) => {
         if (!step || typeof step !== 'object') return;
@@ -115,7 +115,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
  *
  * USO: Llamar antes de buildQuestionDictionary para detectar problemas
  */
-export function validateQuestionTypes(expandedSteps: any[]): { valid: boolean; errors: string[] } {
+export function validateQuestionTypes(expandedSteps: Record<string, unknown>[]): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     expandedSteps.forEach((step, index) => {

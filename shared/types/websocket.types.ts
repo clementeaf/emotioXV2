@@ -55,11 +55,11 @@ export interface WebSocketConfig {
 }
 
 // Type guards
-export const isWebSocketEvent = (value: any): value is WebSocketEvent => {
-  return Object.values(WebSocketEvent).includes(value);
+export const isWebSocketEvent = (value: unknown): value is WebSocketEvent => {
+  return Object.values(WebSocketEvent).includes(value as WebSocketEvent);
 };
 
-export const isWebSocketMessage = <T>(value: any): value is WebSocketMessage<T> => {
+export const isWebSocketMessage = <T>(value: unknown): value is WebSocketMessage<T> => {
   return (
     typeof value === 'object' &&
     value !== null &&

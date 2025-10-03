@@ -17,7 +17,7 @@ export interface ThankYouScreenConfig {
   // Metadata (version, etc)
   metadata?: {
     version: string;
-    [key: string]: any;
+    [key: string]: string | number | boolean;
   };
 }
 

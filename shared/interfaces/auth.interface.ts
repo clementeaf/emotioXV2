@@ -34,7 +34,7 @@ export interface TokenInfo {
   isValid: boolean;
   expiresAt?: Date;
   timeRemaining?: string;
-  payload?: any;
+  payload?: Record<string, unknown>;
 }
 
 export type LoginStatus = 'idle' | 'validating' | 'connecting' | 'authenticating' | 'success' | 'error';

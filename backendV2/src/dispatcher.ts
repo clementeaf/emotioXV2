@@ -1,7 +1,8 @@
 import logger from './logger';
 
 // Cache para handlers cargados
-const handlers: Record<string, any> = {};
+type HandlerFunction = (...args: unknown[]) => Promise<unknown>;
+const handlers: Record<string, HandlerFunction | undefined> = {};
 
 // Mapa de importadores dinámicos para los controladores
 const controllerImports = {
@@ -25,32 +26,33 @@ const controllerImports = {
 };
 
 // Función para obtener un handler de forma lazy
-export async function getHandler(type: string): Promise<Function | null> {
-  if (handlers[type]) return handlers[type];
+export async function getHandler(type: string): Promise<HandlerFunction | null> {
+  if (handlers[type]) return handlers[type] || null;
 
   // Buscar en el mapa de importadores
   const importer = controllerImports[type as keyof typeof controllerImports];
 
   if (importer) {
     try {
-      const module: any = await importer();
-      let handler: Function | undefined;
+      const module: unknown = await importer();
+      let handler: HandlerFunction | undefined;
 
       // Lógica para encontrar el handler (prioriza 'handler', luego busca primera función)
-      if (typeof module.handler === 'function') {
-        handler = module.handler;
+      const moduleAsRecord = module as Record<string, unknown>;
+      if (typeof moduleAsRecord.handler === 'function') {
+        handler = moduleAsRecord.handler as HandlerFunction;
         logger.info(`Usando exportación 'handler' para ${type}`);
       } else {
-        for (const key in module) {
-          if (typeof module[key] === 'function') {
-            handler = module[key];
+        for (const key in moduleAsRecord) {
+          if (typeof moduleAsRecord[key] === 'function') {
+            handler = moduleAsRecord[key] as HandlerFunction;
             logger.info(`Usando la primera función exportada encontrada ('${key}') para ${type}`);
             break;
           }
         }
       }
       if (!handler && typeof module === 'function') {
-        handler = module;
+        handler = module as HandlerFunction;
         logger.info(`Usando el módulo exportado directamente como handler para ${type}`);
       }
 

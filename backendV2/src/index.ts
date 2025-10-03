@@ -16,15 +16,9 @@ import * as educationalContentHandler from './controllers/educationalContentHand
 
 type ConnectionType = 'http' | 'websocket';
 
-// Interface para controllers con handlers requeridos - escalable y type-safe
-interface ControllerModule {
-  handler?: (event: APIGatewayProxyEvent, context?: Context) => Promise<APIGatewayProxyResult>;
-  mainHandler?: (event: APIGatewayProxyEvent, context?: Context) => Promise<APIGatewayProxyResult>;
-  [key: string]: any;
-}
-
 // Importaciones lazy para reducir el tamaño de carga inicial
-const handlers: Record<string, any> = {};
+type HandlerFunction = (...args: unknown[]) => Promise<unknown>;
+const handlers: Record<string, HandlerFunction | undefined> = {};
 
 // Mapa de importadores dinámicos para los controladores
 const controllerImports = {
@@ -46,8 +40,8 @@ const controllerImports = {
 };
 
 // Función para obtener un handler de forma lazy (refactorizada)
-async function getHandler(type: string): Promise<Function | null> {
-  if (handlers[type]) return handlers[type];
+async function getHandler(type: string): Promise<HandlerFunction | null> {
+  if (handlers[type]) return handlers[type] || null;
 
   // Manejo especial para el controlador admin (import estático)
   if (type === 'admin') {
@@ -61,10 +55,10 @@ async function getHandler(type: string): Promise<Function | null> {
     try {
       const controllerModule = await importFn();
       const handler = controllerModule.handler;
-      
+
       if (typeof handler === 'function') {
-        handlers[type] = handler;
-        return handler;
+        handlers[type] = handler as HandlerFunction;
+        return handler as HandlerFunction;
       } else {
         logger.error(`Admin controller handler is missing or not a function`);
         return null;
@@ -79,10 +73,10 @@ async function getHandler(type: string): Promise<Function | null> {
   if (type === 'educational-content') {
     try {
       const handler = educationalContentHandler.handler;
-      
+
       if (typeof handler === 'function') {
-        handlers[type] = handler;
-        return handler;
+        handlers[type] = handler as HandlerFunction;
+        return handler as HandlerFunction;
       } else {
         logger.error(`Educational content controller handler is missing or not a function`);
         return null;
@@ -96,7 +90,7 @@ async function getHandler(type: string): Promise<Function | null> {
   if (type === 'websocket') {
     // 🎯 IMPLEMENTAR WEBSOCKET HANDLER REAL
     try {
-      const websocketHandler = async (event: any, _context: any, logger: any) => {
+      const websocketHandler = async (event: APIGatewayProxyEvent, _context?: Context) => {
         const routeKey = event.requestContext.routeKey;
         logger.info(`WebSocket route: ${routeKey}`);
 
@@ -157,8 +151,8 @@ async function getHandler(type: string): Promise<Function | null> {
                     })
                   };
               }
-            } catch (parseError) {
-              logger.error('Error parseando mensaje WebSocket:', parseError);
+            } catch (parseError: unknown) {
+              logger.error({ error: parseError }, 'Error parseando mensaje WebSocket');
               return {
                 statusCode: 400,
                 body: JSON.stringify({
@@ -168,7 +162,7 @@ async function getHandler(type: string): Promise<Function | null> {
             }
 
           default:
-            logger.warn('Ruta WebSocket no manejada:', routeKey);
+            logger.warn({ route: routeKey }, 'Ruta WebSocket no manejada');
             return {
               statusCode: 400,
               body: JSON.stringify({
@@ -178,8 +172,8 @@ async function getHandler(type: string): Promise<Function | null> {
             };
         }
       };
-      handlers.websocket = websocketHandler;
-      return websocketHandler;
+      handlers.websocket = websocketHandler as HandlerFunction;
+      return websocketHandler as HandlerFunction;
     } catch (error: unknown) {
       logger.error({ error }, 'Error loading WebSocket handler');
       return null;
@@ -191,14 +185,15 @@ async function getHandler(type: string): Promise<Function | null> {
 
   if (importer) {
     try {
-      const module = await importer() as ControllerModule;
+      const module: unknown = await importer();
+      const moduleAsRecord = module as Record<string, unknown>;
       // Convention: Expect a 'handler' export (not mainHandler)
-      const handler = module.handler || module.mainHandler;
+      const handler = moduleAsRecord.handler || moduleAsRecord.mainHandler;
 
       if (typeof handler === 'function') {
         logger.info(`Controller ready for ${type} using 'handler' export.`);
-        handlers[type] = handler;
-        return handler;
+        handlers[type] = handler as HandlerFunction;
+        return handler as HandlerFunction;
       } else {
         logger.error(`Module for controller type '${type}' loaded, but 'handler' export is missing or not a function.`);
         return null;
@@ -323,7 +318,7 @@ async function handleHttpRequest(
 
     // Ejecuta el controlador con los parámetros adecuados
     // Los controladores creados con createController esperan solo (event)
-    return await controller(event);
+    return await controller(event) as APIGatewayProxyResult;
 
   } catch (error: unknown) {
     // <<< Bloque catch mejorado >>>
@@ -381,7 +376,7 @@ async function handleWebsocketRequest(
 
   // Maneja la solicitud WebSocket
   try {
-    return await websocketHandler(event, context, requestLogger);
+    return await websocketHandler(event, context, requestLogger) as APIGatewayProxyResult;
   } catch (error: unknown) {
     requestLogger.error({ err: error, routeKey }, `Error en WebSocket handler`); // Log con error
     // Usar HttpError aquí sería ideal si websocketHandler los lanza

@@ -45,7 +45,7 @@ export interface DashboardStatsProps {
  * Props para el shell del dashboard
  */
 export interface DashboardShellProps {
-  children: any; // React.ReactNode when used in React context
+  children: React.ReactNode;
 }
 
 /**

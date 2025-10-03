@@ -42,7 +42,7 @@ export class ExampleController {
       });
     } catch (error: unknown) {
       console.error('Error en createExample:', error);
-      return this.handleError(error);
+      return this.handleError(error instanceof Error ? error : new Error(String(error)));
     }
   }
   
@@ -65,14 +65,14 @@ export class ExampleController {
       });
     } catch (error: unknown) {
       console.error('Error en getExampleById:', error);
-      return this.handleError(error);
+      return this.handleError(error instanceof Error ? error : new Error(String(error)));
     }
   }
   
   /**
    * Maneja errores y genera respuestas HTTP adecuadas
    */
-  private handleError(error: any): APIGatewayProxyResult {
+  private handleError(error: Error): APIGatewayProxyResult {
     console.error('Error en ExampleController:', error);
     
     // TODO: Personalizar el manejo de errores según los tipos específicos

@@ -68,7 +68,7 @@ export async function handleHttpRequest(
     // Ejecuta el controlador
     // Asumiendo que el controlador puede necesitar el logger
     // Necesita retorno explícito para APIGatewayProxyResult
-    const result: APIGatewayProxyResult = await controller(event, context, requestLogger);
+    const result = await controller(event, context, requestLogger) as APIGatewayProxyResult;
     return result;
 
   } catch (error: unknown) {

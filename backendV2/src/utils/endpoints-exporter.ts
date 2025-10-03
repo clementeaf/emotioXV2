@@ -13,7 +13,7 @@ import { toApplicationError } from '../types/errors';
 interface ApiEndpoints {
   http: string;
   websocket: string;
-  [key: string]: any;
+  [key: string]: string;
 }
 
 /**

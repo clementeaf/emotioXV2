@@ -33,7 +33,7 @@ export async function handleWebsocketRequest(
   try {
     // Llama al handler específico para la ruta WebSocket
     // Este handler debería manejar $connect, $disconnect, $default, etc.
-    return await websocketHandler(event, context, requestLogger);
+    return await websocketHandler(event, context, requestLogger) as APIGatewayProxyResult;
   } catch (error: unknown) {
     requestLogger.error({ err: error, routeKey }, `Error en WebSocket handler`);
     
