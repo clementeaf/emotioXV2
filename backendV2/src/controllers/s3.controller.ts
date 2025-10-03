@@ -7,6 +7,7 @@ import { structuredLog } from '../utils/logging.util';
 /**
  * Controlador para operaciones relacionadas con Amazon S3
  */
+import { toApplicationError } from '../types/errors';
 export class S3Controller {
   /**
    * Genera una URL prefirmada para subir un archivo a S3
@@ -76,25 +77,26 @@ export class S3Controller {
       }, event);
       
     } catch (error: unknown) {
-      structuredLog('error', 'S3Controller.generateUploadUrl', 'Error', { error });
+      const appError = toApplicationError(error);
+      structuredLog('error', 'S3Controller.generateUploadUrl', 'Error', { appError });
       
       // Determinar el tipo de error para una respuesta apropiada
-      if (error.message && (
-        error.message.includes('Extensión no permitida') ||
-        error.message.includes('Tipo MIME no permitido') ||
-        error.message.includes('Tamaño de archivo inválido') ||
-        error.message.includes('Tipo de archivo inválido')
+      if (appError.message && (
+        appError.message.includes('Extensión no permitida') ||
+        appError.message.includes('Tipo MIME no permitido') ||
+        appError.message.includes('Tamaño de archivo inválido') ||
+        appError.message.includes('Tipo de archivo inválido')
       )) {
         return createResponse(400, {
           error: 'Validación fallida',
-          details: error.message
+          details: appError.message
         }, event);
       }
-      
+
       // Error general
       return createResponse(500, {
         error: 'Error al generar URL prefirmada',
-        details: error.message || 'Error interno del servidor'
+        details: appError.message || 'Error interno del servidor'
       }, event);
     }
   }
@@ -148,14 +150,15 @@ export class S3Controller {
       }, event);
       
     } catch (error: unknown) {
-      structuredLog('error', 'S3Controller.generateDownloadUrl', 'Error', { error });
+      const appError = toApplicationError(error);
+      structuredLog('error', 'S3Controller.generateDownloadUrl', 'Error', { appError });
       // Manejar caso específico si s3Service lanza error por clave no encontrada
-      if (error.name === 'NoSuchKey') { 
-          return createResponse(404, { error: `No se encontró el archivo con la clave proporcionada.` }, event);
+      if (appError.name === 'NoSuchKey') {
+          return createResponse(404, { appError: `No se encontró el archivo con la clave proporcionada.` }, event);
       }
       return createResponse(500, {
         error: 'Error al generar URL prefirmada para descarga',
-        details: error.message || 'Error interno del servidor'
+        details: appError.message || 'Error interno del servidor'
       }, event);
     }
   }
@@ -194,13 +197,14 @@ export class S3Controller {
       return createResponse(200, { message: 'Archivo eliminado exitosamente' }, event);
 
     } catch (error: unknown) {
-      structuredLog('error', 'S3Controller.deleteObject', 'Error al eliminar objeto de S3', { key, error });
-      if (error.name === 'NoSuchKey') {
-        return createResponse(404, { error: 'El archivo no existe en S3' }, event);
+      const appError = toApplicationError(error);
+      structuredLog('error', 'S3Controller.deleteObject', 'Error al eliminar objeto de S3', { key, appError });
+      if (appError.name === 'NoSuchKey') {
+        return createResponse(404, { appError: 'El archivo no existe en S3' }, event);
       }
       return createResponse(500, {
         error: 'Error interno del servidor al eliminar el archivo',
-        details: error.message,
+        details: appError.message,
       }, event);
     }
   }

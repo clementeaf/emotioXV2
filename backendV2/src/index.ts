@@ -70,7 +70,7 @@ async function getHandler(type: string): Promise<Function | null> {
         return null;
       }
     } catch (error: unknown) {
-      logger.error('Error importing admin controller:', error);
+      logger.error({ error }, 'Error importing admin controller');
       return null;
     }
   }
@@ -88,7 +88,7 @@ async function getHandler(type: string): Promise<Function | null> {
         return null;
       }
     } catch (error: unknown) {
-      logger.error('Error importing educational content controller:', error);
+      logger.error({ error }, 'Error importing educational content controller');
       return null;
     }
   }

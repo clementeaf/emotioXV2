@@ -7,20 +7,6 @@ import { uuidv4 } from '../utils/id-generator';
 import { getCorsHeaders } from '../middlewares/cors';
 
 
-// Helper function to convert monitoring event to websocket event
-const toWebSocketEvent = (event: MonitoringEvent): WebSocketEvent => {
-  return {
-    type: 'status_update' as const,
-    data: {
-      timestamp: new Date().toISOString(),
-      message: event.type,
-      participantId: event.data?.participantId as string | undefined,
-      sessionId: event.data?.researchId as string | undefined,
-      metadata: event.data as Record<string, string | number | boolean> | undefined
-    }
-  };
-};
-
 // Tipo para datos demográficos
 interface DemographicData {
   age?: string;
@@ -40,20 +26,6 @@ type MonitoringEvent =
   | ParticipantQuotaExceededEvent
   | ParticipantCompletedEvent
   | { type: string; data: Record<string, string | number | boolean | DemographicData | undefined> };
-
-// WebSocket specific interface
-interface WebSocketEvent {
-  type: 'participant_joined' | 'participant_left' | 'session_started' | 'session_ended' | 'error' | 'status_update';
-  data: {
-    participantId?: string;
-    sessionId?: string;
-    timestamp: string;
-    message?: string;
-    error?: string;
-    status?: string;
-    metadata?: Record<string, string | number | boolean>;
-  };
-}
 
 interface ParticipantLoginEvent {
   type: 'PARTICIPANT_LOGIN';
@@ -502,7 +474,7 @@ export class MonitoringController {
     try {
       // 🎯 OBTENER CONEXIONES ACTIVAS PARA LA INVESTIGACIÓN
       const researchId = event.data?.researchId;
-      if (!researchId) {
+      if (!researchId || typeof researchId !== 'string') {
         structuredLog('warn', `${this.controllerName}.broadcastToDashboard`, 'No hay researchId en evento');
         return;
       }

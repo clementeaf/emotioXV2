@@ -1,6 +1,7 @@
 import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { uuidv4 } from '../utils/id-generator';
+import { toApplicationError } from '../types/errors';
 
 /**
  * Tipos de archivos permitidos
@@ -240,9 +241,10 @@ export class S3Service {
         expiresAt
       };
     } catch (error: unknown) {
+      const appError = toApplicationError(error);
       console.error('S3Service.generateUploadUrl - Error detallado:', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+        error: appError instanceof Error ? appError.message : String(appError),
+        stack: appError instanceof Error ? appError.stack : undefined,
         params: JSON.stringify(params, null, 2)
       });
       throw error;
@@ -283,9 +285,10 @@ export class S3Service {
       return downloadUrl;
 
     } catch (error: unknown) {
+      const appError = toApplicationError(error);
       // Comprobar si el error viene de HeadObject (o GetObject)
-      if (error.name === 'NotFound' || error.name === 'NoSuchKey') {
-          console.error(`${operation} - Error específico: El objeto con clave ${key} no existe en S3 (Error: ${error.name}).`);
+      if (appError.name === 'NotFound' || appError.name === 'NoSuchKey') {
+          console.error(`${operation} - Error específico: El objeto con clave ${key} no existe en S3 (Error: ${appError.name}).`);
           // Crear y lanzar un error específico que el controlador pueda identificar
           const notFoundError = new Error(`El objeto con clave ${key} no se encontró.`);
           notFoundError.name = 'NoSuchKey'; // Usar un nombre consistente
@@ -347,11 +350,12 @@ export class S3Service {
       console.log(`${operation} - Resultado de s3Client.send(command):`, output);
       console.log(`${operation} - Objeto eliminado con éxito de S3 (o ya no existía): ${key}`);
 
-    } catch (error: unknown) { // Usar any temporalmente para acceder a error.name
-      console.error(`${operation} - Error CAPTURADO al llamar a s3Client.send(command) para clave (${key}):`, error);
+    } catch (error: unknown) {
+ const appError = toApplicationError(error); // Usar any temporalmente para acceder a appError.name
+      console.error(`${operation} - Error CAPTURADO al llamar a s3Client.send(command) para clave (${key}):`, appError);
       // Si el error es que la clave no existe, lo tratamos como éxito (idempotencia)
-      if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
-        console.warn(`${operation} - El objeto con clave ${key} no existía en S3 (Error: ${error.name}), considerado éxito.`);
+      if (appError.name === 'NoSuchKey' || appError.name === 'NotFound') {
+        console.warn(`${operation} - El objeto con clave ${key} no existía en S3 (Error: ${appError.name}), considerado éxito.`);
         return; // No lanzar error
       }
       // Para otros errores, sí los relanzamos

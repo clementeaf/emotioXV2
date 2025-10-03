@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createResponse, validateTokenAndSetupAuth } from './controller.utils';
+import { toApplicationError } from '../types/errors';
 
 /**
  * Tipo para funciones que procesan eventos de API Gateway con un controlador
@@ -164,11 +165,12 @@ export function createController(
       });
 
     } catch (error: unknown) {
+      const appError = toApplicationError(error);
       // Manejar errores generales
-      console.error(`CONTROLLER [${options.basePath}] - Error no controlado:`, error);
+      console.error(`CONTROLLER [${options.basePath}] - Error no controlado:`, appError);
       return createResponse(500, {
         error: 'Error interno del servidor',
-        details: error.message || 'Error no especificado'
+        details: appError.message || 'Error no especificado'
       });
     }
   };

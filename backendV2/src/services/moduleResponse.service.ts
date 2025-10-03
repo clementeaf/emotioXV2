@@ -227,9 +227,10 @@ export class ModuleResponseService {
       participantId,
       responses: responses.map(r => ({
         ...r,
+        response: r.response as string | number | boolean | string[] | Record<string, string | number | boolean | null> | null,
         createdAt: now, // Timestamp de creación
         updatedAt: undefined, // No hay actualización en creación
-        metadata: {}
+        metadata: {} as Record<string, string | number | boolean | null>
       })),
       metadata: metadata || {},
       createdAt: now,
@@ -279,7 +280,7 @@ export class ModuleResponseService {
         // Actualizar respuesta existente
         updatedResponses[existingIndex] = {
           ...updatedResponses[existingIndex],
-          response: newResponse.response,
+          response: newResponse.response as string | number | boolean | string[] | Record<string, string | number | boolean | null> | null,
           timestamp: newResponse.timestamp,
           updatedAt: now // Timestamp de actualización
         };
@@ -287,9 +288,10 @@ export class ModuleResponseService {
         // Agregar nueva respuesta
         updatedResponses.push({
           ...newResponse,
+          response: newResponse.response as string | number | boolean | string[] | Record<string, string | number | boolean | null> | null,
           createdAt: now, // Timestamp de creación
           updatedAt: undefined, // No hay actualización en creación
-          metadata: {}
+          metadata: {} as Record<string, string | number | boolean | null>
         });
       }
     }

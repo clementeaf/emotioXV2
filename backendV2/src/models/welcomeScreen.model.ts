@@ -8,6 +8,7 @@ import {
 } from '../../../shared/interfaces/welcome-screen.interface';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 /**
  * Interfaz para el modelo DynamoDB de una pantalla de bienvenida
@@ -121,16 +122,17 @@ export class WelcomeScreenModel {
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla de bienvenida creada', { id: screenId, researchId });
       return createdRecord;
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB PutCommand', { error: error, researchId, screenId });
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB PutCommand', { appError: appError, researchId, screenId });
 
       // Mantener el chequeo específico para ConditionalCheckFailedException
-      if (error.name === 'ConditionalCheckFailedException') {
+      if (appError.name === 'ConditionalCheckFailedException') {
          structuredLog('error', `${this.modelName}.${context}`, `Conflicto de ID al crear (ID: ${screenId})`);
          throw new ApiError('DATABASE_ERROR: Conflicto al generar ID único.', 500); // O 409 si se quiere manejar diferente
       }
       // Para cualquier otro error, lanzar el error genérico PERO después de loguear el detalle
-      structuredLog('error', `${this.modelName}.${context}`, 'Error genérico al crear pantalla de bienvenida en DynamoDB', { error: error, researchId, screenId });
-      throw new ApiError(`DATABASE_ERROR: Error al guardar la pantalla de bienvenida: ${error.message}`, 500);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error genérico al crear pantalla de bienvenida en DynamoDB', { error: appError, researchId, screenId });
+      throw new ApiError(`DATABASE_ERROR: Error al guardar la pantalla de bienvenida: ${appError.message}`, 500);
     }
   }
 
@@ -174,8 +176,9 @@ export class WelcomeScreenModel {
       structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ID', { id });
       return record;
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por ID', { error: error, id });
-      throw new ApiError(`DATABASE_ERROR: Error al obtener pantalla por ID: ${error.message}`, 500);
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por ID', { appError: appError, id });
+      throw new ApiError(`DATABASE_ERROR: Error al obtener pantalla por ID: ${appError.message}`, 500);
     }
   }
 
@@ -234,12 +237,13 @@ export class WelcomeScreenModel {
       structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ResearchID', { researchId, id: item.id });
       return record;
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por researchId (Query GSI)', { error: error, researchId });
-      if ((error as Error).message?.includes('index')) {
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por researchId (Query GSI)', { error: appError, researchId });
+      if (appError.message?.includes('index')) {
          structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
          throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
       }
-      throw new ApiError(`DATABASE_ERROR: Error al buscar pantalla asociada a la investigación: ${error.message}`, 500);
+      throw new ApiError(`DATABASE_ERROR: Error al buscar pantalla asociada a la investigación: ${appError.message}`, 500);
     }
   }
 
@@ -269,7 +273,7 @@ export class WelcomeScreenModel {
        if (data[field] !== undefined) {
          const placeholder = `:${alias}`;
          updateExpression += `, ${field} = ${placeholder}`;
-         expressionAttributeValues[placeholder] = data[field];
+         expressionAttributeValues[placeholder] = data[field] as string | number | boolean | null;
        }
     };
 
@@ -326,9 +330,10 @@ export class WelcomeScreenModel {
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla actualizada', { id });
       return record;
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al actualizar pantalla en DynamoDB', { error: error, id });
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al actualizar pantalla en DynamoDB', { appError: appError, id });
       // Considerar mapeo de ConditionalCheckFailedException si se usa
-      throw new ApiError(`DATABASE_ERROR: Error al guardar cambios de la pantalla: ${error.message}`, 500);
+      throw new ApiError(`DATABASE_ERROR: Error al guardar cambios de la pantalla: ${appError.message}`, 500);
     }
   }
 
@@ -356,8 +361,9 @@ export class WelcomeScreenModel {
       await this.docClient.send(command);
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla eliminada', { id });
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al eliminar pantalla en DynamoDB', { error: error, id });
-      throw new ApiError(`DATABASE_ERROR: Error al eliminar la pantalla de bienvenida: ${error.message}`, 500);
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al eliminar pantalla en DynamoDB', { appError: appError, id });
+      throw new ApiError(`DATABASE_ERROR: Error al eliminar la pantalla de bienvenida: ${appError.message}`, 500);
     }
   }
 
@@ -378,12 +384,13 @@ export class WelcomeScreenModel {
         return await this.create(data, researchId);
       }
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error en createOrUpdate', { error: error, researchId });
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error en createOrUpdate', { appError: appError, researchId });
       // Re-lanzar el error si ya es ApiError, o crear uno nuevo si no
-      if (error instanceof ApiError) {
-        throw error;
+      if (appError instanceof ApiError) {
+        throw appError;
       }
-      throw new ApiError(`DATABASE_ERROR: Error al crear o actualizar la pantalla: ${error.message}`, 500);
+      throw new ApiError(`DATABASE_ERROR: Error al crear o actualizar la pantalla: ${appError.message}`, 500);
     }
   }
 

@@ -8,6 +8,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { toApplicationError } from '../types/errors';
 
 interface ApiEndpoints {
   http: string;
@@ -195,7 +196,8 @@ export function readEndpointsFromServerless(): ApiEndpoints {
             : endpointsData.websocket;
         }
       } catch (error: unknown) {
-        console.warn(`Error al leer endpoints.json: ${error.message}`);
+        const appError = toApplicationError(error);
+        console.warn(`Error al leer endpoints.json: ${appError.message}`);
       }
     }
 
@@ -224,7 +226,8 @@ export function readEndpointsFromServerless(): ApiEndpoints {
           endpoints.stage = stageMatch[1];
         }
       } catch (error: unknown) {
-        console.warn(`Error al leer outputs.json: ${error.message}`);
+        const appError = toApplicationError(error);
+        console.warn(`Error al leer outputs.json: ${appError.message}`);
       }
     }
 

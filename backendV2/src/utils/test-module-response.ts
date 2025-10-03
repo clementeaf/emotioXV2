@@ -3,6 +3,7 @@
  * Este archivo ayuda a identificar problemas con la creación de respuestas
  */
 
+import { toApplicationError } from '../types/errors';
 // import { ModuleResponseService } from '../services/moduleResponse.service';
 
 export const testModuleResponseCreation = async () => {
@@ -70,9 +71,10 @@ export const checkTableStructure = async () => {
     console.log('✅ Tabla accesible, estructura válida');
     return true;
   } catch (error: unknown) {
-    console.error('❌ Error de estructura:', error.message);
+    const appError = toApplicationError(error);
+    console.error('❌ Error de estructura:', appError.message);
 
-    if (error.message.includes('Table or index not found')) {
+    if (appError.message.includes('Table or index not found')) {
       console.error('💡 Posible solución: Verificar que la tabla ModuleResponses existe y tiene el índice RESEARCH_PARTICIPANT_INDEX');
     }
 

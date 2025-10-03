@@ -8,6 +8,7 @@ import {
   validateTokenAndSetupAuth
 } from '../utils/controller.utils';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 // Crear instancia del servicio S3
 const s3Service = new S3Service();
@@ -176,15 +177,16 @@ const cognitiveTaskHandler = async (
         return errorResponse(`Método ${httpMethod} no soportado`, 405, event);
     }
   } catch (error: unknown) {
+    const appError = toApplicationError(error);
     structuredLog('error', `CognitiveTaskHandler.${httpMethod}`, 'Error en el handler', {
       researchId,
-      error: error.message,
-      stack: error.stack
+      error: appError.message,
+      stack: appError.stack
     });
-    if (error.name === 'NotFoundError' || error.message.includes('NOT_FOUND')) {
+    if (appError.name === 'NotFoundError' || appError.message.includes('NOT_FOUND')) {
       return createResponse(404, { message: 'Configuración de Cognitive Task no encontrada.' }, event);
     }
-    return errorResponse(error.message, error.statusCode || 500, event);
+    return errorResponse(appError.message, appError.statusCode || 500, event);
   }
 };
 export const handler = cognitiveTaskHandler;

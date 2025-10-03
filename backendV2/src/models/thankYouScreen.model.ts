@@ -9,6 +9,7 @@ import {
 } from '../../../shared/interfaces/thank-you-screen.interface';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 /**
  * Interfaz para el modelo DynamoDB de una pantalla de agradecimiento
@@ -137,9 +138,10 @@ export class ThankYouScreenModel {
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla de agradecimiento creada', { id: screenId, researchId });
       return createdRecord;
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB PutCommand (ThankYouScreen)', { error: error, researchId });
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al crear pantalla de agradecimiento', { error: error, researchId });
-      throw new ApiError(`DATABASE_ERROR: Error al crear la pantalla de agradecimiento: ${error.message}`, 500);
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB PutCommand (ThankYouScreen)', { appError: appError, researchId });
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al crear pantalla de agradecimiento', { appError: appError, researchId });
+      throw new ApiError(`DATABASE_ERROR: Error al crear la pantalla de agradecimiento: ${appError.message}`, 500);
     }
   }
 
@@ -182,8 +184,9 @@ export class ThankYouScreenModel {
       structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ID', { id });
       return record;
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por ID', { error: error, id });
-      throw new ApiError(`DATABASE_ERROR: Error al obtener la pantalla de agradecimiento por ID: ${error.message}`, 500);
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por ID', { appError: appError, id });
+      throw new ApiError(`DATABASE_ERROR: Error al obtener la pantalla de agradecimiento por ID: ${appError.message}`, 500);
     }
   }
 
@@ -245,15 +248,16 @@ export class ThankYouScreenModel {
       structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ResearchID', { researchId, id: item.id });
       return record;
     } catch (error: unknown) {
+      const appError = toApplicationError(error);
        // *** INICIO LOGS ADICIONALES ***
-       console.error(`[${this.modelName}.${context}] Error durante la ejecución de DynamoDB QueryCommand`, { error });
+       console.error(`[${this.modelName}.${context}] Error durante la ejecución de DynamoDB QueryCommand`, { error: appError });
        // *** FIN LOGS ADICIONALES ***
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por Research ID (Query GSI)', { error: error, researchId });
-      if ((error as Error).message?.includes('index')) {
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por Research ID (Query GSI)', { error: appError, researchId });
+      if (appError.message?.includes('index')) {
          structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado');
          throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
       }
-      throw new ApiError(`DATABASE_ERROR: Error al obtener la pantalla de agradecimiento para esta investigación: ${error.message}`, 500);
+      throw new ApiError(`DATABASE_ERROR: Error al obtener la pantalla de agradecimiento para esta investigación: ${appError.message}`, 500);
     }
   }
 
@@ -343,9 +347,10 @@ export class ThankYouScreenModel {
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla actualizada', { id });
       return record;
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB UpdateCommand (ThankYouScreen)', { error: error, id });
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al actualizar pantalla de agradecimiento', { error: error, id });
-      throw new ApiError(`DATABASE_ERROR: Error al actualizar la pantalla de agradecimiento: ${error.message}`, 500);
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB UpdateCommand (ThankYouScreen)', { appError: appError, id });
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al actualizar pantalla de agradecimiento', { appError: appError, id });
+      throw new ApiError(`DATABASE_ERROR: Error al actualizar la pantalla de agradecimiento: ${appError.message}`, 500);
     }
   }
 
@@ -375,9 +380,10 @@ export class ThankYouScreenModel {
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla eliminada', { id });
       return true;
     } catch (error: unknown) {
-      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB DeleteCommand (ThankYouScreen)', { error: error, id });
-      structuredLog('error', `${this.modelName}.${context}`, 'Error al eliminar pantalla de agradecimiento', { error: error, id });
-      throw new ApiError(`DATABASE_ERROR: Error al eliminar la pantalla de agradecimiento: ${error.message}`, 500);
+      const appError = toApplicationError(error);
+      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB DeleteCommand (ThankYouScreen)', { appError: appError, id });
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al eliminar pantalla de agradecimiento', { appError: appError, id });
+      throw new ApiError(`DATABASE_ERROR: Error al eliminar la pantalla de agradecimiento: ${appError.message}`, 500);
     }
   }
 

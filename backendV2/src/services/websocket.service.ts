@@ -2,21 +2,14 @@ import { ApiGatewayManagementApiClient, PostToConnectionCommand } from '@aws-sdk
 import { DeleteCommand, DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 /**
- * Interfaz para eventos de monitoreo con tipos específicos
+ * Interfaz genérica para eventos de monitoreo
  */
 interface MonitoringEvent {
-  type: 'participant_joined' | 'participant_left' | 'session_started' | 'session_ended' | 'error' | 'status_update';
-  data: {
-    participantId?: string;
-    sessionId?: string;
-    timestamp: string;
-    message?: string;
-    error?: string;
-    status?: string;
-    metadata?: Record<string, string | number | boolean>;
-  };
+  type: string;
+  data: Record<string, unknown>;
 }
 
 /**
@@ -220,8 +213,9 @@ export class WebSocketService {
 
       return true;
     } catch (error: unknown) {
+      const appError = toApplicationError(error);
       // Si la conexión ya no existe, eliminarla de la base de datos
-      if (error.statusCode === 410) {
+      if (appError.statusCode === 410) {
         structuredLog('info', `${this.serviceName}.${context}`, 'Conexión obsoleta, eliminando', {
           connectionId
         });
@@ -229,7 +223,7 @@ export class WebSocketService {
       } else {
         structuredLog('error', `${this.serviceName}.${context}`, 'Error enviando mensaje', {
           connectionId,
-          error: error.message
+          error: appError.message
         });
       }
       return false;

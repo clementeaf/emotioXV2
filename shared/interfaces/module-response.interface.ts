@@ -6,7 +6,7 @@ export type ModuleResponseValue =
   | string[]
   | number
   | boolean
-  | { [key: string]: any }
+  | Record<string, string | number | boolean | null>
   | null;
 
 /**
@@ -124,7 +124,7 @@ export interface QuestionResponse {
   /**
    * Metadata específica de la respuesta
    */
-  metadata: Record<string, any>;
+  metadata: Record<string, string | number | boolean | null>;
 
   /**
    * Timestamp de cuándo se creó la respuesta
