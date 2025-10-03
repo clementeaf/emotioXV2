@@ -14,8 +14,8 @@ export function buildQuestionDictionary(expandedSteps: Record<string, unknown>[]
     expandedSteps.forEach((step) => {
         if (!step || typeof step !== 'object') return;
 
-        const stepType = step.type;
-        const stepId = step.id || step.questionId || 'unknown';
+        const stepType = step.type as string;
+        const stepId = (step.id || step.questionId || 'unknown') as string;
 
         // Fallback automático para title y module
         if (!step.title) step.title = step.name || 'Sin título';
@@ -27,7 +27,7 @@ export function buildQuestionDictionary(expandedSteps: Record<string, unknown>[]
         }
 
         // 1. Validar si el tipo está en el ENUM
-        const isValidType = Object.values(QuestionType).includes(stepType);
+        const isValidType = Object.values(QuestionType).includes(stepType as QuestionType);
 
         let mainQuestionKey = '';
 
@@ -100,7 +100,7 @@ export function buildQuestionDictionary(expandedSteps: Record<string, unknown>[]
                 };
 
                 // Solo mostrar error para tipos realmente desconocidos
-                if (!stepType.includes('test') && !stepType.includes('debug') && !stepType.includes('temp')) {
+                if (typeof stepType === 'string' && !stepType.includes('test') && !stepType.includes('debug') && !stepType.includes('temp')) {
                     console.error(`[buildQuestionDictionary] ❌ Tipo no soportado: ${stepType}. Usando fallback: ${fallbackQuestionKey}`);
                 }
             }
@@ -121,13 +121,13 @@ export function validateQuestionTypes(expandedSteps: Record<string, unknown>[]):
     expandedSteps.forEach((step, index) => {
         if (!step || typeof step !== 'object') return;
 
-        const stepType = step.type;
+        const stepType = step.type as string;
         if (!stepType) {
             errors.push(`Step ${index}: Sin tipo definido`);
             return;
         }
 
-        const isValidType = Object.values(QuestionType).includes(stepType);
+        const isValidType = Object.values(QuestionType).includes(stepType as QuestionType);
         if (!isValidType) {
             errors.push(`Step ${index}: Tipo no soportado "${stepType}"`);
         }

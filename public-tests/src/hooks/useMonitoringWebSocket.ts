@@ -210,7 +210,7 @@ export const useMonitoringWebSocket = () => {
         researchId: researchId || '',
         participantId,
         questionKey,
-        response,
+        response: response as string | number | boolean | string[] | Record<string, string | number | boolean | null> | null,
         timestamp: new Date().toISOString(),
         stepNumber,
         totalSteps,

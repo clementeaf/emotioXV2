@@ -43,24 +43,24 @@ export function buildGlobalQuestionDictionary({
   thankYouScreenQuestions = [],
   eyeTrackingQuestions = []
 }: {
-  welcomeScreenQuestions?: any[];
-  cognitiveTaskQuestions?: any[];
-  smartVocQuestions?: any[];
-  thankYouScreenQuestions?: any[];
-  eyeTrackingQuestions?: any[];
+  welcomeScreenQuestions?: Record<string, unknown>[];
+  cognitiveTaskQuestions?: Record<string, unknown>[];
+  smartVocQuestions?: Record<string, unknown>[];
+  thankYouScreenQuestions?: Record<string, unknown>[];
+  eyeTrackingQuestions?: Record<string, unknown>[];
 }): QuestionDictionary {
   // Normalizar tipos de Cognitive Task
   const normalizedCognitiveQuestions = cognitiveTaskQuestions.map(q => ({
     ...q,
     module: 'cognitive_task',
-    type: normalizeCognitiveType(q.type)
+    type: normalizeCognitiveType(q.type as string)
   }));
 
   // Normalizar tipos de SmartVOC
   const normalizedSmartVocQuestions = smartVocQuestions.map(q => ({
     ...q,
     module: 'smartvoc',
-    type: normalizeSmartVocType(q.type)
+    type: normalizeSmartVocType(q.type as string)
   }));
 
   // Unir todas las preguntas de todos los módulos
@@ -73,5 +73,5 @@ export function buildGlobalQuestionDictionary({
   ];
 
   // Construir el diccionario global
-  return buildQuestionDictionary(allQuestions);
+  return buildQuestionDictionary(allQuestions) as QuestionDictionary;
 }

@@ -92,7 +92,7 @@ export class ThankYouScreenModel {
       redirectUrl: data.redirectUrl || DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl,
       metadata: { // Estructura metadata consistente
         version: '1.0.0',
-        lastUpdated: new Date(),
+        lastUpdated: now,
         lastModifiedBy: 'system' // O userId si está disponible
       }
     };

@@ -406,7 +406,9 @@ export class CognitiveTaskService {
       }
 
       // Extraer questionKey del frontend si existe en las preguntas
-      const questionKey = formData.questions?.[0]?.questionKey || null;
+      const questionKey = typeof formData.questions?.[0]?.questionKey === 'string'
+        ? formData.questions[0].questionKey
+        : undefined;
 
       // Guardar el formulario preservando el questionKey del frontend
       const result = await this.model.create(formData, researchId, questionKey);

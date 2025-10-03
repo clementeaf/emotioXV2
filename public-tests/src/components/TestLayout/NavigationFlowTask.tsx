@@ -147,11 +147,16 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
       // Buscar respuesta del backend para este step
       const store = useStepStore.getState();
       const backendResponse = store.backendResponses.find(
-        (r: BackendResponse) => r.questionKey === currentQuestionKey
+        (r: unknown): r is BackendResponse => (r as BackendResponse).questionKey === currentQuestionKey
       );
 
       if (backendResponse?.response) {
-        const responseData = backendResponse.response;
+        const responseData = backendResponse.response as {
+          selectedImageIndex?: number;
+          selectedHitzone?: string;
+          imageSelections?: Record<string, unknown>;
+          visualClickPoints?: unknown[];
+        };
 
         if (responseData.selectedImageIndex !== undefined) {
           setLocalSelectedImageIndex(responseData.selectedImageIndex);
@@ -165,12 +170,13 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         // 🎯 CARGAR PUNTOS VISUALES PERSISTIDOS
         if (responseData.visualClickPoints && Array.isArray(responseData.visualClickPoints)) {
           const pointsByImage: Record<number, VisualClickPoint[]> = {};
-          responseData.visualClickPoints.forEach((point: VisualClickPoint) => {
-            const imageIndex = point.imageIndex || 0;
+          responseData.visualClickPoints.forEach((point: unknown) => {
+            const typedPoint = point as VisualClickPoint;
+            const imageIndex = typedPoint.imageIndex || 0;
             if (!pointsByImage[imageIndex]) {
               pointsByImage[imageIndex] = [];
             }
-            pointsByImage[imageIndex].push(point);
+            pointsByImage[imageIndex].push(typedPoint);
           });
           setVisualClickPoints(pointsByImage);
           console.log('🎯 Puntos visuales cargados desde backend:', pointsByImage);

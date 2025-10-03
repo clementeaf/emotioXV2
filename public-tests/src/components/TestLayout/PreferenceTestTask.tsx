@@ -38,14 +38,17 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
       // 1. Buscar respuesta del backend para este step
       const store = useStepStore.getState();
       const backendResponse = store.backendResponses.find(
-        (r: BackendResponse) => r.questionKey === currentQuestionKey
+        (r: unknown): r is BackendResponse => (r as BackendResponse).questionKey === currentQuestionKey
       );
 
       console.log('[PreferenceTestTask] 🔍 Backend response:', backendResponse);
 
-      if (backendResponse?.response?.selectedValue) {
-        console.log('[PreferenceTestTask] ✅ Cargando desde backend:', backendResponse.response.selectedValue);
-        setSelectedImageId(backendResponse.response.selectedValue);
+      if (backendResponse?.response) {
+        const responseData = backendResponse.response as { selectedValue?: string; textValue?: string };
+        if (responseData.selectedValue) {
+          console.log('[PreferenceTestTask] ✅ Cargando desde backend:', responseData.selectedValue);
+          setSelectedImageId(responseData.selectedValue);
+        }
         return;
       }
 

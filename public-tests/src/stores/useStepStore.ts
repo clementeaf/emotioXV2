@@ -68,8 +68,8 @@ export const useStepStore = create<StepStore>()(
       },
 
       updateBackendResponses: (responses: unknown[]) => {
-        const validResponses = responses.filter(response =>
-          response && typeof response === 'object' && response.questionKey
+        const validResponses = responses.filter((response): response is { questionKey: string } =>
+          response !== null && typeof response === 'object' && 'questionKey' in response
         );
         // 🎯 ENCONTRAR STEP ACTIVO basado en respuestas
         const state = get();
@@ -77,7 +77,7 @@ export const useStepStore = create<StepStore>()(
         let activeStepIndex = 0;
 
         for (let i = 0; i < stepOrder.length; i++) {
-          if (!validResponses.some(r => r.questionKey === stepOrder[i])) {
+          if (!validResponses.some((r: { questionKey: string }) => r.questionKey === stepOrder[i])) {
             activeStepIndex = i;
             break;
           }
@@ -111,7 +111,9 @@ export const useStepStore = create<StepStore>()(
       // 🎯 SOLO BACKEND - NO MÁS LOCALSTORAGE
       hasBackendResponse: (questionKey: string): boolean => {
         const state = get();
-        return state.backendResponses.some(response => response.questionKey === questionKey);
+        return state.backendResponses.some((response: unknown) =>
+          (response as { questionKey?: string }).questionKey === questionKey
+        );
       },
 
       canAccessStep: (stepIndex: number): boolean => {
@@ -192,7 +194,9 @@ export const useStepStore = create<StepStore>()(
 
       getLastCompletedStep: () => {
         const state = get();
-        const completedKeys = state.backendResponses.map(r => r.questionKey);
+        const completedKeys = state.backendResponses.map((r: unknown) =>
+          (r as { questionKey?: string }).questionKey
+        ).filter((key): key is string => typeof key === 'string');
         return completedKeys.length > 0 ? completedKeys[completedKeys.length - 1] : null;
       },
 
@@ -212,7 +216,9 @@ export const useStepStore = create<StepStore>()(
       },
 
       getCompletedSteps: () => {
-        return get().backendResponses.map(r => r.questionKey);
+        return get().backendResponses.map((r: unknown) =>
+          (r as { questionKey?: string }).questionKey
+        ).filter((key): key is string => typeof key === 'string');
       },
 
       // 🎯 MÉTODOS DE COMPATIBILIDAD

@@ -113,7 +113,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       };
       
       const updatedResponses = [
-        ...currentBackendResponses.filter(r => r.questionKey !== currentQuestionKey),
+        ...currentBackendResponses.filter((r: unknown) => (r as { questionKey?: string }).questionKey !== currentQuestionKey),
         newResponse
       ];
       
