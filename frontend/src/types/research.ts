@@ -48,7 +48,7 @@ export interface ResearchAPIResponse {
 }
 
 // Additional frontend-specific types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   success: boolean;
   message?: string;
@@ -135,10 +135,10 @@ export interface QuestionWithResponses {
 
 export interface QuestionResponse {
   participantId: string;
-  response: any;
+  response: string | number | boolean | string[] | Record<string, unknown>;
   value: string | number | string[] | Record<string, unknown>;
   timestamp?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface GroupedResponsesResponse {

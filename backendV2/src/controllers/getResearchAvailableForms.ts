@@ -129,16 +129,22 @@ interface ThankYouScreenConfiguration {
 }
 
 
+// Tipo para la configuración de contenido
+type ContentConfiguration =
+  | WelcomeScreenConfiguration
+  | ThankYouScreenConfiguration
+  | Record<string, string | number | boolean | null | QuestionChoice[] | ScaleConfig | QuestionFile[] | QuestionMetadata | QuestionConfig | Record<string, unknown> | unknown[] | undefined>;
+
 // Interfaz para la configuración de un paso con tipos específicos
 interface StepConfiguration {
   questionKey: string;
-  contentConfiguration: Record<string, any>;
+  contentConfiguration: ContentConfiguration;
 }
 
 /**
  * Función para parsear JSON si es string con tipado genérico
  */
-function parseJsonField<T = QuestionMetadata | QuestionConfig | Question[] | Record<string, any>>(field: string | T | undefined): T | null {
+function parseJsonField<T = QuestionMetadata | QuestionConfig | Question[] | Record<string, unknown>>(field: string | T | undefined): T | null {
   if (typeof field === 'string') {
     try {
       return JSON.parse(field) as T;

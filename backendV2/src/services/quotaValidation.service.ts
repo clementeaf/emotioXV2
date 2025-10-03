@@ -163,7 +163,7 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
-    const quota = (ageConfig as any)?.quotas?.find((q: AgeQuota) =>
+    const quota = (ageConfig as { quotas?: AgeQuota[] })?.quotas?.find((q: AgeQuota) =>
       q.ageRange === age && q.isActive
     );
 
@@ -211,7 +211,7 @@ export class QuotaValidationService {
     }
 
     // 🎯 NUEVO: Verificar si el país está en la lista de prioritarios
-    const priorityCountries = (countryConfig as any)?.priorityCountries || [];
+    const priorityCountries = (countryConfig as { quotas?: CountryQuota[]; priorityCountries?: string[] })?.priorityCountries || [];
     const isPriorityCountry = priorityCountries.includes(country);
 
     // Si NO es un país prioritario, permitir entrada por "caída natural"
@@ -220,7 +220,7 @@ export class QuotaValidationService {
     }
 
     // Solo para países prioritarios: validar cuota
-    const quota = (countryConfig as any)?.quotas?.find((q: CountryQuota) =>
+    const quota = (countryConfig as { quotas?: CountryQuota[]; priorityCountries?: string[] })?.quotas?.find((q: CountryQuota) =>
       q.country === country && q.isActive
     );
 
@@ -266,7 +266,7 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
-    const quota = (genderConfig as any)?.quotas?.find((q: GenderQuota) =>
+    const quota = (genderConfig as { quotas?: GenderQuota[] })?.quotas?.find((q: GenderQuota) =>
       q.gender === gender && q.isActive
     );
 
@@ -312,7 +312,7 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
-    const quota = (educationConfig as any)?.quotas?.find((q: EducationLevelQuota) =>
+    const quota = (educationConfig as { quotas?: EducationLevelQuota[] })?.quotas?.find((q: EducationLevelQuota) =>
       q.educationLevel === educationLevel && q.isActive
     );
 
@@ -358,7 +358,7 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
-    const quota = (incomeConfig as any)?.quotas?.find((q: HouseholdIncomeQuota) =>
+    const quota = (incomeConfig as { quotas?: HouseholdIncomeQuota[] })?.quotas?.find((q: HouseholdIncomeQuota) =>
       q.incomeLevel === householdIncome && q.isActive
     );
 
@@ -404,7 +404,7 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
-    const quota = (employmentConfig as any)?.quotas?.find((q: EmploymentStatusQuota) =>
+    const quota = (employmentConfig as { quotas?: EmploymentStatusQuota[] })?.quotas?.find((q: EmploymentStatusQuota) =>
       q.employmentStatus === employmentStatus && q.isActive
     );
 
@@ -450,7 +450,7 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
-    const quota = (hoursConfig as any)?.quotas?.find((q: DailyHoursOnlineQuota) =>
+    const quota = (hoursConfig as { quotas?: DailyHoursOnlineQuota[] })?.quotas?.find((q: DailyHoursOnlineQuota) =>
       q.hoursRange === dailyHoursOnline && q.isActive
     );
 
@@ -496,7 +496,7 @@ export class QuotaValidationService {
       return { isValid: true };
     }
 
-    const quota = (proficiencyConfig as any)?.quotas?.find((q: TechnicalProficiencyQuota) =>
+    const quota = (proficiencyConfig as { quotas?: TechnicalProficiencyQuota[] })?.quotas?.find((q: TechnicalProficiencyQuota) =>
       q.proficiencyLevel === technicalProficiency && q.isActive
     );
 

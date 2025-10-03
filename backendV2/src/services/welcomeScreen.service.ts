@@ -10,6 +10,7 @@ import {
 import { handleDbError } from '../utils/dbError.util';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 /**
  * Errores específicos del servicio de pantallas de bienvenida
@@ -103,11 +104,11 @@ export class WelcomeScreenService {
       };
 
       // Extraer questionKey del frontend si existe
-      const questionKey = (data as any).questionKey || null;
+      const questionKey = (data as Record<string, unknown>).questionKey as string | undefined;
 
       return await welcomeScreenModel.create(screenData, researchId, questionKey);
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -125,7 +126,7 @@ export class WelcomeScreenService {
       }
       return welcomeScreen;
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -168,7 +169,7 @@ export class WelcomeScreenService {
       structuredLog('info', `${this.serviceName}.${context}`, 'Welcome screen encontrado', { researchId, screenId: welcomeScreen.id });
       return welcomeScreen;
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -189,7 +190,7 @@ export class WelcomeScreenService {
       }
       return await welcomeScreenModel.update(id, data);
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -240,7 +241,7 @@ export class WelcomeScreenService {
         return newScreen;
       }
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -258,7 +259,7 @@ export class WelcomeScreenService {
       }
       await welcomeScreenModel.delete(id);
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -271,7 +272,7 @@ export class WelcomeScreenService {
     try {
       return await welcomeScreenModel.getAll();
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -299,7 +300,7 @@ export class WelcomeScreenService {
       }
       return await welcomeScreenModel.update(screenId, data);
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 }

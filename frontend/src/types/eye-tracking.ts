@@ -170,11 +170,11 @@ export interface PopularArea {
 export interface EyeTrackingVisualization {
   type: 'heatmap' | 'gazepath' | 'aoiChart' | 'timeline';
   stimulusId: string;
-  data: any;
+  data: Record<string, unknown>;
   metadata: {
     participantFilter?: string[];
     timeRange?: [number, number];
-    settings: any;
+    settings: Record<string, unknown>;
   };
 }
 

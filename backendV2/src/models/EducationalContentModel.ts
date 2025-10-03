@@ -84,7 +84,7 @@ export class EducationalContentModel {
   static async update(id: string, updates: UpdateEducationalContentRequest): Promise<EducationalContent | null> {
     const updateExpression: string[] = [];
     const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
+    const expressionAttributeValues: Record<string, string | number | boolean | null> = {};
 
     if (updates.title !== undefined) {
       updateExpression.push('#title = :title');

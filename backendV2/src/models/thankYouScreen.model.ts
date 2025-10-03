@@ -274,7 +274,7 @@ export class ThankYouScreenModel {
     const now = new Date().toISOString();
 
     let updateExpression = 'SET updatedAt = :updatedAt';
-    const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
+    const expressionAttributeValues: Record<string, string | number | boolean | null> = { ':updatedAt': now };
     // const expressionAttributeNames: Record<string, string> = {}; // Descomentar si se usan nombres reservados
 
     // Construir expresión de actualización dinámica (simplificado)

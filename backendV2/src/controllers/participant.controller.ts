@@ -6,6 +6,7 @@ import { getCorsHeaders } from '../middlewares/cors';
 import { NewResearchService } from '../services/newResearch.service';
 import { participantService } from '../services/participant.service';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 // Schema de validación para participantes
 const ParticipantSchema = z.object({
@@ -385,7 +386,8 @@ export class ParticipantController {
         })
       };
     } catch (error: unknown) {
-      structuredLog('error', 'ParticipantController.login', 'Error in participant login', { error: (error as Error)?.message || error, stack: (error as Error)?.stack, statusCode: (error as any)?.statusCode });
+      const appError = toApplicationError(error);
+      structuredLog('error', 'ParticipantController.login', 'Error in participant login', { error: appError.message, stack: appError.stack, statusCode: appError.statusCode });
       if (error instanceof z.ZodError) {
         return {
           statusCode: 400,
@@ -393,19 +395,19 @@ export class ParticipantController {
           body: JSON.stringify({ error: error.errors, status: 400 })
         };
       }
-      if ((error as any)?.statusCode === 403) {
+      if (appError.statusCode === 403) {
         return {
           statusCode: 403,
           headers: getCorsHeaders(event),
-          body: JSON.stringify({ error: (error as Error)?.message || 'No tienes permiso para esta acción', status: 403 })
+          body: JSON.stringify({ error: appError.message || 'No tienes permiso para esta acción', status: 403 })
         };
       }
       return {
-        statusCode: (error as any)?.statusCode || 500,
+        statusCode: appError.statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: (error as Error)?.message || 'Error interno en el login',
-          status: (error as any)?.statusCode || 500
+          error: appError.message || 'Error interno en el login',
+          status: appError.statusCode || 500
         })
       };
     }
@@ -445,9 +447,10 @@ export class ParticipantController {
       try {
         await this.researchServiceInstance.getResearchById(researchId, 'user');
       } catch (error: unknown) {
-        structuredLog('error', 'ParticipantController.generateDummyParticipants', 'Error validating research', { researchId, error: (error as Error)?.message || error, statusCode: (error as any)?.statusCode });
+        const appError = toApplicationError(error);
+        structuredLog('error', 'ParticipantController.generateDummyParticipants', 'Error validating research', { researchId, error: appError.message, statusCode: appError.statusCode });
         // Si es un ResearchError, devolver el código de estado específico
-        if ((error as any)?.statusCode === 404) {
+        if (appError.statusCode === 404) {
           return {
             statusCode: 404,
             headers: getCorsHeaders(event),
@@ -456,7 +459,7 @@ export class ParticipantController {
               status: 404
             })
           };
-        } else if ((error as any)?.statusCode === 403) {
+        } else if (appError.statusCode === 403) {
           return {
             statusCode: 403,
             headers: getCorsHeaders(event),

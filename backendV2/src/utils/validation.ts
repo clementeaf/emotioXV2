@@ -418,7 +418,7 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
       }
       // Validar configuración específica según el tipo
       if (config.type === 'stars' || config.type === 'numbers') {
-        const configWithRange = config as any;
+        const configWithRange = config as { range?: { min: number; max: number } };
         if (configWithRange.range && (typeof configWithRange.range.min !== 'number' || typeof configWithRange.range.max !== 'number')) {
           return errorResponse(`${questionLabel} con tipo ${config.type} requiere un rango válido`, 400);
         }

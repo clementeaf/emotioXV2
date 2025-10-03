@@ -573,7 +573,7 @@ export class NewResearchModel {
 
       // Filtrar solo los items que son de tipo RESEARCH
       const researchItems = Items?.filter(item => {
-        const dynamoItem = item as any;
+        const dynamoItem = item as Record<string, unknown>;
         return dynamoItem.EntityType === 'RESEARCH';
       }) || [];
 

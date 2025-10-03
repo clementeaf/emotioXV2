@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { BadRequestError, UnauthorizedError, ConflictError, InternalServerError } from '../errors';
-import { EducationalContentModel, CreateEducationalContentRequest, UpdateEducationalContentRequest } from '../models/EducationalContentModel';
+import { EducationalContentModel, CreateEducationalContentRequest, UpdateEducationalContentRequest, EducationalContent } from '../models/EducationalContentModel';
 import { authService } from '../services/auth.service';
 import { validateCreateEducationalContent, validateUpdateEducationalContent } from '../utils/validators/educationalContentValidators';
 
@@ -109,7 +109,7 @@ export const getEducationalContent = async (event: APIGatewayProxyEvent): Promis
     }
 
     let educationalContent = await EducationalContentModel.getByUserIdAndType(userId, contentType);
-    
+
     // Si no existe contenido personalizado, devolver el por defecto
     if (!educationalContent) {
       const defaultContent = await EducationalContentModel.getDefaultContent(contentType);
@@ -120,7 +120,7 @@ export const getEducationalContent = async (event: APIGatewayProxyEvent): Promis
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         ...defaultContent,
-      } as any;
+      } as EducationalContent;
     }
 
     return {
@@ -278,9 +278,9 @@ export const getAllEducationalContent = async (event: APIGatewayProxyEvent): Pro
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ...defaultContent,
-        } as any;
+        } as EducationalContent;
       }
-      
+
       result.push(content);
     }
 

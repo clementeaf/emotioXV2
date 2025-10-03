@@ -109,9 +109,9 @@ export class SmartVOCFormService {
     }
     // Añadir otras validaciones a nivel de formulario si es necesario (ej: data.researchId)
 
-    const finalErrors = { ...errors };
+    const finalErrors: Record<string, unknown> = { ...errors };
     if (Object.keys(qErrors).length > 0) {
-      finalErrors.questions = qErrors as any; // Añadir errores de preguntas
+      finalErrors.questions = qErrors; // Añadir errores de preguntas
     }
 
     if (Object.keys(finalErrors).length > 0) {

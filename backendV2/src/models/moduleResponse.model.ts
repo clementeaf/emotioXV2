@@ -8,7 +8,7 @@ export const ModuleResponseValueSchema = z.union([
   z.array(z.string()),
   z.number(),
   z.boolean(),
-  z.record(z.any()),
+  z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])),
   z.null()
 ]);
 

@@ -421,21 +421,21 @@ export class ResearchInProgressController {
         questionKey: string;
         timestamp: string;
         answer: string | number | boolean | string[];
-        deviceInfo?: Record<string, string>;
-        location?: Record<string, string>;
+        deviceInfo?: Record<string, string | number | boolean | undefined>;
+        location?: Record<string, string | number | boolean | undefined>;
       }
-      
+
       let responses: ResponseItem[] = [];
       let deviceInfo: Record<string, string> | null = null;
       let location: Record<string, string> | null = null;
 
       if (participantResponses && participantResponses.responses) {
-        responses = participantResponses.responses.map((resp: any) => ({
+        responses = participantResponses.responses.map(resp => ({
           questionKey: resp.questionKey,
           timestamp: resp.timestamp,
-          answer: resp.response, // Map 'response' to 'answer'
-          deviceInfo: resp.metadata?.deviceInfo,
-          location: resp.metadata?.location
+          answer: resp.response as string | number | boolean | string[], // Map 'response' to 'answer'
+          deviceInfo: resp.metadata?.deviceInfo as Record<string, string | number | boolean | undefined> | undefined,
+          location: resp.metadata?.locationInfo as Record<string, string | number | boolean | undefined> | undefined
         }));
 
         if (responses.length > 0) {
@@ -469,10 +469,10 @@ export class ResearchInProgressController {
           // Extraer información de dispositivo y ubicación de las respuestas reales
           const firstResponse = responses[0];
           if (firstResponse.deviceInfo) {
-            deviceInfo = firstResponse.deviceInfo;
+            deviceInfo = firstResponse.deviceInfo as Record<string, string>;
           }
           if (firstResponse.location) {
-            location = firstResponse.location;
+            location = firstResponse.location as Record<string, string>;
           }
         }
       }

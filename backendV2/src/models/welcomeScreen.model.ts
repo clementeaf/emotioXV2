@@ -261,7 +261,7 @@ export class WelcomeScreenModel {
     const now = new Date().toISOString();
 
     let updateExpression = 'SET updatedAt = :updatedAt';
-    const expressionAttributeValues: Record<string, any> = {
+    const expressionAttributeValues: Record<string, string | number | boolean | null> = {
       ':updatedAt': now
     };
 

@@ -14,6 +14,7 @@ import {
   parseAndValidateBody,
   validateEyeTrackingData
 } from '../utils/validation';
+import { toApplicationError } from '../types/errors';
 
 /**
  * Controlador para manejar operaciones relacionadas con eye tracking
@@ -22,7 +23,7 @@ export class EyeTrackingController {
   /**
    * Maneja errores en las operaciones del controlador (simplificado)
    */
-  private handleError(error: any, context: string, event: APIGatewayProxyEvent, extraData?: Record<string, any>): APIGatewayProxyResult {
+  private handleError(error: Error | ApiError | EyeTrackingError, context: string, event: APIGatewayProxyEvent, extraData?: Record<string, string | number | boolean>): APIGatewayProxyResult {
     structuredLog('error', `EyeTrackingController.${context}`, 'Error procesando la solicitud', {
       error: error instanceof Error ? { name: error.name, message: error.message } : error,
       ...extraData
@@ -68,8 +69,8 @@ export class EyeTrackingController {
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Configuración encontrada/creada', { researchId, id: eyeTracking.id });
       return createResponse(200, eyeTracking, event);
-    } catch (error) {
-      return this.handleError(error, context, event, { researchId });
+    } catch (error: unknown) {
+      return this.handleError(toApplicationError(error), context, event, { researchId: researchId || '' });
     }
   }
 
@@ -98,8 +99,8 @@ export class EyeTrackingController {
         message: "Configuración de eye tracking creada exitosamente",
         data: result
       }, event);
-    } catch (error) {
-      return this.handleError(error, context, event, { researchId });
+    } catch (error: unknown) {
+      return this.handleError(toApplicationError(error), context, event, { researchId: researchId || '' });
     }
   }
 
@@ -129,8 +130,8 @@ export class EyeTrackingController {
         message: "Configuración de eye tracking actualizada exitosamente",
         data: result
       }, event);
-    } catch (error) {
-      return this.handleError(error, context, event, { researchId });
+    } catch (error: unknown) {
+      return this.handleError(toApplicationError(error), context, event, { researchId: researchId || '' });
     }
   }
 
@@ -157,8 +158,8 @@ export class EyeTrackingController {
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Configuración eliminada', { researchId, id: existingConfig.id });
       return createResponse(204, null, event);
-    } catch (error) {
-      return this.handleError(error, context, event, { researchId });
+    } catch (error: unknown) {
+      return this.handleError(toApplicationError(error), context, event, { researchId: researchId || '' });
     }
   }
 }

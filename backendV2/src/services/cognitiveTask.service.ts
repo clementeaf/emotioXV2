@@ -62,7 +62,7 @@ export class CognitiveTaskService {
   /**
    * Valida que las preguntas sean un array.
    */
-  private _validateQuestionsArray(questions: any): void {
+  private _validateQuestionsArray(questions: unknown): void {
     if (!Array.isArray(questions)) {
       throw new ApiError(
         `${CognitiveTaskError.INVALID_DATA}: Las preguntas deben ser un array`,

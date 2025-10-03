@@ -346,7 +346,7 @@ export class EyeTrackingModel {
 
     const now = new Date().toISOString();
     let updateExpression = 'SET updatedAt = :updatedAt';
-    const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
+    const expressionAttributeValues: Record<string, string | number | boolean | null> = { ':updatedAt': now };
 
     if (data.demographicQuestions !== undefined) {
       updateExpression += ', demographicQuestions = :demographicQuestions';

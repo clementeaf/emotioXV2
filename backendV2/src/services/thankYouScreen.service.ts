@@ -9,6 +9,7 @@ import { ThankYouScreenModel } from '../models/thankYouScreen.model';
 import { handleDbError } from '../utils/dbError.util';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 // Instancia del modelo
 const thankYouScreenModel = new ThankYouScreenModel();
@@ -120,14 +121,14 @@ export class ThankYouScreenService {
       };
 
       // Extraer questionKey del frontend si existe
-      const questionKey = (data as any).questionKey || null;
+      const questionKey = (data as unknown as Record<string, unknown>).questionKey as string | undefined;
 
       // Crear en el modelo
       const thankYouScreen = await thankYouScreenModel.create(screenData, researchId, questionKey);
       return thankYouScreen;
     } catch (error) {
       // Usar handleDbError para consistencia, pasando {} explícitamente como 4to arg
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -152,7 +153,7 @@ export class ThankYouScreenService {
       return thankYouScreen;
     } catch (error) {
       // Usar handleDbError para consistencia, pasando {} explícitamente como 4to arg
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -183,7 +184,7 @@ export class ThankYouScreenService {
       return thankYouScreen;
     } catch (error) {
       // Usar handleDbError para consistencia, pasando {} explícitamente como 4to arg
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -217,7 +218,7 @@ export class ThankYouScreenService {
       return updatedScreen;
     } catch (error) {
        // Usar handleDbError, pasando {} explícitamente como 4to arg
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -250,7 +251,7 @@ export class ThankYouScreenService {
       }
     } catch (error) {
       // Usar handleDbError, pasando {} explícitamente como 4to arg
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -277,7 +278,7 @@ export class ThankYouScreenService {
       }
     } catch (error) {
       // Usar handleDbError, pasando {} explícitamente como 4to arg
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -292,7 +293,7 @@ export class ThankYouScreenService {
       return thankYouScreens;
     } catch (error) {
       // Usar handleDbError, pasando {} explícitamente como 4to arg
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 }

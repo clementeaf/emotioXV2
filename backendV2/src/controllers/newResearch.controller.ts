@@ -7,6 +7,7 @@ import {
     validateTokenAndSetupAuth
 } from '../utils/controller.utils';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 /**
  * Controlador para manejar las peticiones relacionadas con nuevas investigaciones
@@ -60,7 +61,7 @@ export class NewResearchController {
       }, event);
     } catch (error) {
       structuredLog('error', 'NewResearchController.createResearch', 'Error completo en createResearch', { error });
-      return this.handleError(error, event);
+      return this.handleError(toApplicationError(error), event);
     }
   }
 
@@ -86,7 +87,7 @@ export class NewResearchController {
         data: research
       }, event);
     } catch (error) {
-      return this.handleError(error, event);
+      return this.handleError(toApplicationError(error), event);
     }
   }
 
@@ -109,7 +110,7 @@ export class NewResearchController {
         data: researches
       }, event);
     } catch (error) {
-      return this.handleError(error, event);
+      return this.handleError(toApplicationError(error), event);
     }
   }
 
@@ -143,7 +144,7 @@ export class NewResearchController {
         data: updatedResearch
       }, event);
     } catch (error) {
-      return this.handleError(error, event);
+      return this.handleError(toApplicationError(error), event);
     }
   }
 
@@ -172,7 +173,7 @@ export class NewResearchController {
         message: result.message
       }, event);
     } catch (error) {
-      return this.handleError(error, event);
+      return this.handleError(toApplicationError(error), event);
     }
   }
 
@@ -209,7 +210,7 @@ export class NewResearchController {
         data: updatedResearch
       }, event);
     } catch (error) {
-      return this.handleError(error, event);
+      return this.handleError(toApplicationError(error), event);
     }
   }
 
@@ -232,7 +233,7 @@ export class NewResearchController {
         data: researches
       }, event);
     } catch (error) {
-      return this.handleError(error, event);
+      return this.handleError(toApplicationError(error), event);
     }
   }
 
@@ -242,11 +243,11 @@ export class NewResearchController {
    * @param event Evento de API Gateway para CORS dinámicos
    * @returns Respuesta HTTP con detalles del error
    */
-  private handleError(error: any, event?: APIGatewayProxyEvent): APIGatewayProxyResult {
+  private handleError(error: Error | ResearchError, event?: APIGatewayProxyEvent): APIGatewayProxyResult {
     structuredLog('error', 'NewResearchController.handler', 'Error en controlador de investigaciones', { error });
 
     if (error instanceof ResearchError) {
-      const responseBody: any = {
+      const responseBody: { message: string; errors?: Record<string, string> } = {
         message: error.message
       };
 
@@ -319,9 +320,10 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
 
   } catch (error: unknown) {
     console.error('Error en mainHandler:', error);
+    const appError = toApplicationError(error);
     return createResponse(500, {
       error: 'Error interno del servidor',
-      details: error.message || 'Error no especificado'
+      details: appError.message || 'Error no especificado'
     }, event);
   }
 };
