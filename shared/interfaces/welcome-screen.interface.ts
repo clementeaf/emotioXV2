@@ -97,7 +97,7 @@ export const DEFAULT_WELCOME_SCREEN_CONFIG: WelcomeScreenConfig = {
   isEnabled: true,
   title: '',
   message: '',
-  startButtonText: 'Start Research',
+  startButtonText: '',
   metadata: {
     version: '1.0.0'
   }
