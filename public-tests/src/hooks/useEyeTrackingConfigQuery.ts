@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { API_HTTP_ENDPOINT } from '../config/endpoints';
+import { apiRequest } from '../lib/alova';
 
 export interface EyeTrackingConfig {
   id: string;
@@ -40,21 +40,10 @@ export function useEyeTrackingConfigQuery(researchId: string) {
 
       try {
         // 🎯 CORREGIR: Usar el endpoint correcto
-        const response = await fetch(`${API_HTTP_ENDPOINT}/research/${researchId}/eye-tracking`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            return null;
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await apiRequest<EyeTrackingConfig>(
+          `/research/${researchId}/eye-tracking`,
+          { method: 'GET' }
+        );
         return data;
       } catch {
         return null;

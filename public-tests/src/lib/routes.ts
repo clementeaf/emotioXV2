@@ -2,9 +2,10 @@ import { apiRequest } from './alova';
 import { AvailableFormsResponse, CreateModuleResponseDto, ParticipantResponsesDocument, UpdateModuleResponseDto } from './types';
 
 export const getAvailableForms = async (researchId: string): Promise<AvailableFormsResponse> => {
-
   try {
-    const result = await apiRequest<AvailableFormsResponse>(`/research/${researchId}/forms`);
+    const result = await apiRequest<AvailableFormsResponse>(`/research/${researchId}/forms`, {
+      method: 'GET'
+    });
 
     // 🔍 LOG DE LA RESPUESTA RAW
     console.log('[getAvailableForms] 📊 Respuesta raw de forms:', {
@@ -33,30 +34,32 @@ export const getAvailableForms = async (researchId: string): Promise<AvailableFo
 export const saveModuleResponse = async (data: CreateModuleResponseDto): Promise<ParticipantResponsesDocument> => {
   return apiRequest<ParticipantResponsesDocument>('/module-responses', {
     method: 'POST',
-    body: JSON.stringify(data)
+    data
   });
 };
 
 // 🎯 ALINEADO CON BACKEND: updateModuleResponse retorna ParticipantResponsesDocument
 export const updateModuleResponse = async (responseId: string, data: UpdateModuleResponseDto): Promise<ParticipantResponsesDocument> => {
-  const params = new URLSearchParams({
-    researchId: data.researchId,
-    participantId: data.participantId
-  });
-  return apiRequest<ParticipantResponsesDocument>(`/module-responses/${responseId}?${params}`, {
+  return apiRequest<ParticipantResponsesDocument>(`/module-responses/${responseId}`, {
     method: 'PUT',
-    body: JSON.stringify(data)
+    params: {
+      researchId: data.researchId,
+      participantId: data.participantId
+    },
+    data
   });
 };
 
 export const getModuleResponses = async (researchId: string, participantId: string): Promise<ParticipantResponsesDocument> => {
-  const params = new URLSearchParams({ researchId, participantId });
-  return apiRequest<ParticipantResponsesDocument>(`/module-responses?${params}`);
+  return apiRequest<ParticipantResponsesDocument>('/module-responses', {
+    method: 'GET',
+    params: { researchId, participantId }
+  });
 };
 
 export const deleteAllResponses = async (researchId: string, participantId: string): Promise<{ message: string; status: number }> => {
-  const params = new URLSearchParams({ researchId, participantId });
-  return apiRequest<{ message: string; status: number }>(`/module-responses?${params}`, {
-    method: 'DELETE'
+  return apiRequest<{ message: string; status: number }>('/module-responses', {
+    method: 'DELETE',
+    params: { researchId, participantId }
   });
 };

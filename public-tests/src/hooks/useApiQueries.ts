@@ -1,6 +1,7 @@
 import { useMutation, UseMutationOptions, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
-import { getApiUrl } from '../config/endpoints';
 import {
+  deleteAllResponses,
+  getAvailableForms,
   getModuleResponses,
   saveModuleResponse,
   updateModuleResponse
@@ -18,17 +19,7 @@ export function useAvailableFormsQuery(researchId: string, options?: UseQueryOpt
   return useQuery<AvailableFormsResponse, Error>({
     queryKey: ['availableForms', researchId],
     queryFn: async () => {
-      const response = await fetch(`${getApiUrl('research')}/${researchId}/forms`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await getAvailableForms(researchId);
 
       // 🔍 LOG DETALLADO DE LA RESPUESTA DE FORMS
       console.log('[useAvailableFormsQuery] 📊 Datos completos de forms:', {
@@ -148,18 +139,7 @@ export function useDeleteAllResponsesMutation(options?: UseMutationOptions<{ mes
   const queryClient = useQueryClient();
   return useMutation<{ message: string; status: number }, Error, { researchId: string; participantId: string }>({
     mutationFn: async ({ researchId, participantId }) => {
-      const response = await fetch(`${getApiUrl('module-responses')}?researchId=${researchId}&participantId=${participantId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      return response.json();
+      return deleteAllResponses(researchId, participantId);
     },
     onSuccess: (data, variables) => {
       // Invalidar queries relacionadas con las respuestas del módulo

@@ -1,5 +1,5 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { getApiUrl } from '../config/endpoints';
+import { apiRequest } from '../lib/alova';
 
 export interface QuotaVerificationResponse {
   isExceeded: boolean;
@@ -42,37 +42,38 @@ export const useQuotaVerification = (
       try {
         // 🎯 NUEVO: Si hay demográficos, usar el nuevo sistema de cuotas dinámicas
         if (params.demographics) {
-          const response = await fetch(
-            `${getApiUrl('quota-validation')}/validate`,
-            {
+          try {
+            const data = await apiRequest<{
+              isValid: boolean;
+              quotaInfo?: {
+                currentCount?: number;
+                maxQuota?: number;
+                demographicType?: string;
+                demographicValue?: string;
+              };
+              reason?: string;
+            }>('/quota-validation/validate', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+              data: {
                 researchId: params.researchId,
                 demographics: params.demographics
-              })
-            }
-          );
+              }
+            });
 
-          if (!response.ok) {
+            // 🎯 CONVERTIR RESPUESTA DEL NUEVO SISTEMA AL FORMATO COMPATIBLE
+            return {
+              isExceeded: !data.isValid,
+              currentCount: data.quotaInfo?.currentCount || 0,
+              limit: data.quotaInfo?.maxQuota || 999,
+              researchId: params.researchId,
+              demographicType: data.quotaInfo?.demographicType,
+              demographicValue: data.quotaInfo?.demographicValue,
+              reason: data.reason
+            };
+          } catch {
             // Fallback al sistema actual
             return await checkLegacyQuota(params);
           }
-
-          const data = await response.json();
-
-          // 🎯 CONVERTIR RESPUESTA DEL NUEVO SISTEMA AL FORMATO COMPATIBLE
-          return {
-            isExceeded: !data.isValid,
-            currentCount: data.quotaInfo?.currentCount || 0,
-            limit: data.quotaInfo?.maxQuota || 999,
-            researchId: params.researchId,
-            demographicType: data.quotaInfo?.demographicType,
-            demographicValue: data.quotaInfo?.demographicValue,
-            reason: data.reason
-          };
         }
 
         // 🎯 SISTEMA ACTUAL: Consultar el estado de cuota desde el backend
@@ -104,17 +105,13 @@ export const useQuotaVerification = (
  * 🎯 FUNCIÓN AUXILIAR: Verificar cuota usando el sistema actual
  */
 async function checkLegacyQuota(params: QuotaVerificationParams): Promise<QuotaVerificationResponse> {
-  const response = await fetch(
-    `${getApiUrl('research')}/${params.researchId}/participants/${params.participantId}/quota-status`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  if (!response.ok) {
+  try {
+    const data = await apiRequest<QuotaVerificationResponse>(
+      `/research/${params.researchId}/participants/${params.participantId}/quota-status`,
+      { method: 'GET' }
+    );
+    return data;
+  } catch {
     // Si el endpoint no existe, asumir que no excede la cuota
     return {
       isExceeded: false,
@@ -123,8 +120,4 @@ async function checkLegacyQuota(params: QuotaVerificationParams): Promise<QuotaV
       researchId: params.researchId
     };
   }
-
-  const data = await response.json();
-
-  return data;
 }
