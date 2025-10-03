@@ -107,7 +107,7 @@ export class CompanyModel {
         createdAt: now,
         updatedAt: now
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error detallado al crear empresa en DynamoDB:', error);
       throw new Error('Failed to create company');
     }
@@ -144,7 +144,7 @@ export class CompanyModel {
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error getting company by ID ${id}:`, error);
       
       // Si es un error de "resource not found" de DynamoDB, retornar null
@@ -290,7 +290,7 @@ export class CompanyModel {
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating company:', error);
       
       // Si es un error de "resource not found", re-lanzar como error específico
@@ -322,7 +322,7 @@ export class CompanyModel {
 
     try {
       await this.dynamoClient.send(params);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting company:', error);
       
       // Si es un error de "resource not found", considerar como exitoso (ya estaba eliminado)

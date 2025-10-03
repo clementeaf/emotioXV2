@@ -239,7 +239,7 @@ export class S3Service {
         key,
         expiresAt
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('S3Service.generateUploadUrl - Error detallado:', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -313,7 +313,7 @@ export class S3Service {
       const deleteUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
 
       return deleteUrl;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al generar URL prefirmada para eliminación:', error);
       throw error;
     }

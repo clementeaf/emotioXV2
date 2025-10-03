@@ -14,9 +14,9 @@ const toWebSocketEvent = (event: MonitoringEvent): WebSocketEvent => {
     data: {
       timestamp: new Date().toISOString(),
       message: event.type,
-      participantId: event.data?.participantId,
-      sessionId: event.data?.researchId,
-      metadata: event.data
+      participantId: event.data?.participantId as string | undefined,
+      sessionId: event.data?.researchId as string | undefined,
+      metadata: event.data as Record<string, string | number | boolean> | undefined
     }
   };
 };
@@ -181,22 +181,22 @@ export class MonitoringController {
       // 🎯 PROCESAR EVENTO SEGÚN TIPO
       switch (monitoringEvent.type) {
         case 'PARTICIPANT_LOGIN':
-          await this.handleParticipantLogin(monitoringEvent.data);
+          await this.handleParticipantLogin(monitoringEvent.data as ParticipantLoginEvent['data']);
           break;
         case 'PARTICIPANT_STEP':
-          await this.handleParticipantStep(monitoringEvent.data);
+          await this.handleParticipantStep(monitoringEvent.data as ParticipantStepEvent['data']);
           break;
         case 'PARTICIPANT_DISQUALIFIED':
-          await this.handleParticipantDisqualified(monitoringEvent.data);
+          await this.handleParticipantDisqualified(monitoringEvent.data as ParticipantDisqualifiedEvent['data']);
           break;
         case 'PARTICIPANT_QUOTA_EXCEEDED':
-          await this.handleParticipantQuotaExceeded(monitoringEvent.data);
+          await this.handleParticipantQuotaExceeded(monitoringEvent.data as ParticipantQuotaExceededEvent['data']);
           break;
         case 'PARTICIPANT_COMPLETED':
-          await this.handleParticipantCompleted(monitoringEvent.data);
+          await this.handleParticipantCompleted(monitoringEvent.data as ParticipantCompletedEvent['data']);
           break;
         case 'PARTICIPANT_ERROR':
-          await this.handleParticipantError(monitoringEvent.data);
+          await this.handleParticipantError(monitoringEvent.data as ParticipantErrorEvent['data']);
           break;
         default:
           structuredLog('warn', `${this.controllerName}.${contextName}`, 'Evento no manejado', {
@@ -508,8 +508,7 @@ export class MonitoringController {
       }
 
       // 🎯 BROADCAST A TODAS LAS CONEXIONES DE LA INVESTIGACIÓN
-      const wsEvent = toWebSocketEvent(event);
-      const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, wsEvent);
+      const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, event);
       
       const eventHasParticipantId = (evt: MonitoringEvent): evt is ParticipantLoginEvent | ParticipantStepEvent | ParticipantDisqualifiedEvent | ParticipantQuotaExceededEvent | ParticipantCompletedEvent | ParticipantErrorEvent | ParticipantResponseSavedEvent => {
         return 'participantId' in evt.data;

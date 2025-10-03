@@ -1,5 +1,5 @@
-import { 
-  EyeTrackingModel, 
+import {
+  EyeTrackingModel,
   EyeTrackingFormData,
   EyeTrackingRecord,
   DEFAULT_EYE_TRACKING_CONFIG
@@ -8,6 +8,7 @@ import { ApiError } from '../utils/errors';
 import { NotFoundError } from '../errors';
 import { structuredLog } from '../utils/logging.util';
 import { handleDbError } from '../utils/dbError.util';
+import { toApplicationError } from '../types/errors';
 
 // Instancia del modelo
 const eyeTrackingModel = new EyeTrackingModel();
@@ -141,7 +142,7 @@ export class EyeTrackingService {
       const eyeTracking = await eyeTrackingModel.create(eyeTrackingData, researchId);
       structuredLog('info', `${this.serviceName}.${context}`, 'Configuración creada exitosamente', { researchId, id: eyeTracking.id });
       return eyeTracking;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
@@ -150,7 +151,7 @@ export class EyeTrackingService {
         throw new ApiError('Configuración ya existe para esta investigación', 409);
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante la creación', { error, researchId });
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -172,12 +173,12 @@ export class EyeTrackingService {
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Configuración encontrada', { id });
       return eyeTracking;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener por ID', { error, id });
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 
@@ -200,12 +201,12 @@ export class EyeTrackingService {
     try {
       // 1. Intentar obtener la existente
       eyeTracking = await eyeTrackingModel.getByResearchId(researchId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante GetStep', { error, researchId });
-      throw handleDbError(error, `${context} [GetStep]`, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), `${context} [GetStep]`, this.serviceName, {});
     }
 
     if (!eyeTracking) {
@@ -216,12 +217,12 @@ export class EyeTrackingService {
           researchId
         };
         eyeTracking = await this.create(defaultData, researchId, 'system');
-      } catch (error) {
+      } catch (error: unknown) {
         if (error instanceof ApiError || error instanceof NotFoundError) {
           throw error;
         }
         structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante CreateDefaultStep', { error, researchId });
-        throw handleDbError(error, `${context} [CreateDefaultStep]`, this.serviceName, {});
+        throw handleDbError(toApplicationError(error), `${context} [CreateDefaultStep]`, this.serviceName, {});
       }
     }
 
@@ -254,12 +255,12 @@ export class EyeTrackingService {
       }
       structuredLog('info', `${this.serviceName}.${context}`, 'Configuración actualizada exitosamente', { id });
       return updatedConfig;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al actualizar', { error, id });
-      throw handleDbError(error, context, this.serviceName, {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {
         'EYE_TRACKING_CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 }
       });
     }
@@ -286,12 +287,12 @@ export class EyeTrackingService {
     let existingConfig: EyeTrackingRecord | null = null;
     try {
       existingConfig = await eyeTrackingModel.getByResearchId(researchId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante GetExistingStep', { error, researchId });
-      throw handleDbError(error, `${context} [GetExistingStep]`, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), `${context} [GetExistingStep]`, this.serviceName, {});
     }
       
     try {
@@ -302,7 +303,7 @@ export class EyeTrackingService {
         structuredLog('info', `${this.serviceName}.${context}`, 'No existe configuración, creando nueva', { researchId });
         return await this.create({ ...data, researchId }, researchId, userId);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
@@ -311,7 +312,7 @@ export class EyeTrackingService {
         throw new ApiError('Conflicto al crear configuración', 409);
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante Update/Create step', { error, researchId });
-      throw handleDbError(error, context, this.serviceName, {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {
         'EYE_TRACKING_CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 },
       });
     }
@@ -333,12 +334,12 @@ export class EyeTrackingService {
       // Eliminar
       await eyeTrackingModel.delete(id);
       structuredLog('info', `${this.serviceName}.${context}`, 'Configuración eliminada exitosamente', { id });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al eliminar', { error, id });
-      throw handleDbError(error, context, this.serviceName, {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {
         'EYE_TRACKING_CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 }
       });
     }
@@ -355,12 +356,12 @@ export class EyeTrackingService {
       const eyeTrackingConfigs = await eyeTrackingModel.getAll();
       structuredLog('info', `${this.serviceName}.${context}`, `Encontradas ${eyeTrackingConfigs.length} configuraciones`);
       return eyeTrackingConfigs;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener todas', { error });
-      throw handleDbError(error, context, this.serviceName, {});
+      throw handleDbError(toApplicationError(error), context, this.serviceName, {});
     }
   }
 }

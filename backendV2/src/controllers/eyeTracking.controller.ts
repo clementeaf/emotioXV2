@@ -23,7 +23,7 @@ export class EyeTrackingController {
   /**
    * Maneja errores en las operaciones del controlador (simplificado)
    */
-  private handleError(error: Error | ApiError | EyeTrackingError, context: string, event: APIGatewayProxyEvent, extraData?: Record<string, string | number | boolean>): APIGatewayProxyResult {
+  private handleError(error: Error | ApiError, context: string, event: APIGatewayProxyEvent, extraData?: Record<string, string | number | boolean>): APIGatewayProxyResult {
     structuredLog('error', `EyeTrackingController.${context}`, 'Error procesando la solicitud', {
       error: error instanceof Error ? { name: error.name, message: error.message } : error,
       ...extraData
@@ -33,14 +33,15 @@ export class EyeTrackingController {
       return errorResponse(error.message, error.statusCode, event);
     }
 
-    if (error.message?.includes(EyeTrackingError.NOT_FOUND)) {
+    const errorMessage = error.message || '';
+    if (errorMessage.includes(EyeTrackingError.NOT_FOUND)) {
       return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de eye tracking'), 404, event);
     }
-    if (error.message?.includes(EyeTrackingError.INVALID_DATA) ||
-      error.message?.includes(EyeTrackingError.RESEARCH_REQUIRED)) {
-      return errorResponse(error.message, 400, event);
+    if (errorMessage.includes(EyeTrackingError.INVALID_DATA) ||
+      errorMessage.includes(EyeTrackingError.RESEARCH_REQUIRED)) {
+      return errorResponse(errorMessage, 400, event);
     }
-    if (error.message?.includes(EyeTrackingError.PERMISSION_DENIED)) {
+    if (errorMessage.includes(EyeTrackingError.PERMISSION_DENIED)) {
       return errorResponse(ERROR_MESSAGES.AUTH.FORBIDDEN, 403, event);
     }
 

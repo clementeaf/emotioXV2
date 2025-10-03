@@ -63,7 +63,7 @@ export default apiEndpoints;
     // Escribir al archivo
     fs.writeFileSync(outputPath, content);
     console.log(`Endpoints exportados exitosamente a: ${outputPath}`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al exportar endpoints:', error);
     throw error;
   }
@@ -155,7 +155,7 @@ export default API_ENDPOINTS;
     // Escribir archivo
     fs.writeFileSync(outputFilePath, template);
     console.log(`Endpoints exportados exitosamente a: ${outputFilePath}`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al exportar endpoints:', error);
     throw error;
   }
@@ -230,7 +230,7 @@ export function readEndpointsFromServerless(): ApiEndpoints {
 
     console.log('Endpoints encontrados:', endpoints);
     return endpoints;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al leer endpoints:', error);
     // Devolver valores por defecto
     return {

@@ -142,7 +142,7 @@ export class NewResearchModel {
 
       // Devolver la investigación tal como se guardó en la base de datos
       return savedResearch;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error detallado al crear nueva investigación en DynamoDB:', error);
       throw new Error('Failed to create new research');
     }
@@ -184,7 +184,7 @@ export class NewResearchModel {
         tags: JSON.parse(item.tags),
         status: item.status
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error getting research by ID ${id}:`, error);
       
       // Si es un error de "resource not found" de DynamoDB, retornar null
@@ -243,7 +243,7 @@ export class NewResearchModel {
         tags: JSON.parse(item.tags as string),
         status: item.status as string
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error getting researches by user ID ${userId}:`, error);
       
       // Si es un error de "resource not found" o índice no existe, retornar array vacío
@@ -377,7 +377,7 @@ export class NewResearchModel {
         tags: JSON.parse(updated.tags),
         status: updated.status
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating research:', error);
       
       // Si es un error de "resource not found", re-lanzar como error específico
@@ -409,7 +409,7 @@ export class NewResearchModel {
       
       // Actualizar solo el estado
       return await this.update(id, { status });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating research status:', error);
       throw new Error('Failed to update research status');
     }
@@ -431,7 +431,7 @@ export class NewResearchModel {
 
     try {
       await this.dynamoClient.send(params);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting research:', error);
       
       // Si es un error de "resource not found", considerar como exitoso (ya estaba eliminado)
@@ -474,7 +474,7 @@ export class NewResearchModel {
       
       // Comparar el userId almacenado con el proporcionado
       return result.Item.userId === userId;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error checking research ownership:', error);
       
       // Si es un error de "resource not found", retornar false (no es propietario)

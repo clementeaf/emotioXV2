@@ -98,7 +98,7 @@ const cognitiveTaskHandler = async (
         uploadUrl: presignedResponse.uploadUrl
       });
       return createResponse(200, response, event);
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       structuredLog('error', 'CognitiveTaskHandler.UPLOAD_URL', 'Error generando URL de upload', {
         researchId,

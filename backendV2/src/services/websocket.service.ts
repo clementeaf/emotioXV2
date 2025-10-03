@@ -92,7 +92,7 @@ export class WebSocketService {
         connectionId,
         researchId
       });
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error registrando conexión', {
         connectionId,
         researchId,
@@ -124,7 +124,7 @@ export class WebSocketService {
       structuredLog('info', `${this.serviceName}.${context}`, 'Conexión WebSocket eliminada', {
         connectionId
       });
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error eliminando conexión', {
         connectionId,
         error
@@ -164,7 +164,7 @@ export class WebSocketService {
       });
 
       return connections;
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error obteniendo conexiones', {
         researchId,
         error
@@ -193,7 +193,7 @@ export class WebSocketService {
         lastActivity: item.lastActivity,
         ttl: item.ttl
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.getConnectionsByConnectionId`, 'Error buscando conexiones', {
         connectionId,
         error
@@ -270,7 +270,7 @@ export class WebSocketService {
       });
 
       return successCount;
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error en broadcast', {
         researchId,
         eventType: event.type,
@@ -302,7 +302,7 @@ export class WebSocketService {
           }
         }));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error actualizando actividad', {
         connectionId,
         error

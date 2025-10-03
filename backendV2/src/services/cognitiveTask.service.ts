@@ -6,6 +6,7 @@ import { FileType, PresignedUrlParams, S3Service } from '../services/s3.service'
 import { handleDbError } from '../utils/dbError.util';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
+import { toApplicationError } from '../types/errors';
 
 /**
  * Errores específicos del servicio de tareas cognitivas
@@ -316,7 +317,7 @@ export class CognitiveTaskService {
         file: uploadedFile,
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error(`${operation} - Error:`, error);
          if (error instanceof ApiError) {
              throw error;
@@ -333,7 +334,7 @@ export class CognitiveTaskService {
   async getFileDownloadUrl(s3Key: string): Promise<string> {
     try {
       return await this.s3Service.generateDownloadUrl(s3Key);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al generar URL para descargar archivo:', error);
       throw new ApiError(
         `${CognitiveTaskError.FILE_ERROR}: Error al generar URL para descargar archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`,
@@ -350,7 +351,7 @@ export class CognitiveTaskService {
   async getFileDeleteUrl(s3Key: string): Promise<string> {
     try {
       return await this.s3Service.generateDeleteUrl(s3Key);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al generar URL para eliminar archivo:', error);
       throw new ApiError(
         `${CognitiveTaskError.FILE_ERROR}: Error al generar URL para eliminar archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`,
@@ -382,8 +383,8 @@ export class CognitiveTaskService {
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask encontrado', { researchId, formId: cognitiveTask.id });
       return cognitiveTask;
-    } catch (error) {
-      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+    } catch (error: unknown) {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
 
@@ -417,7 +418,7 @@ export class CognitiveTaskService {
       });
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error al crear formulario CognitiveTask', {
         researchId,
         error: error instanceof Error ? error.message : 'Error desconocido'
@@ -454,8 +455,8 @@ export class CognitiveTaskService {
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask actualizado exitosamente', { taskId, researchId });
       return result;
-    } catch (error) {
-      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+    } catch (error: unknown) {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
 
@@ -473,8 +474,8 @@ export class CognitiveTaskService {
       }
       const researchId = currentRecord.researchId;
       return await this.model.delete(researchId);
-    } catch (error) {
-      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+    } catch (error: unknown) {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
 
@@ -513,8 +514,8 @@ export class CognitiveTaskService {
       };
 
       return await this.model.create(formDataToClone, targetResearchId);
-    } catch (error) {
-      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+    } catch (error: unknown) {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
 
@@ -542,7 +543,7 @@ export class CognitiveTaskService {
       }
 
       return clonedQuestions;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al clonar preguntas:', error);
       throw error;
     }
@@ -600,7 +601,7 @@ export class CognitiveTaskService {
       const results = await Promise.all(clonedFilesPromises);
       return results.filter(file => file !== null) as UploadedFile[];
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al clonar archivos (generando nueva metadata S3):', error);
       if (error instanceof ApiError) throw error;
       throw new ApiError(`${CognitiveTaskError.FILE_ERROR}: Error durante la preparación de clonación de archivos S3`, 500);
@@ -615,8 +616,8 @@ export class CognitiveTaskService {
     const context = 'getAllForms';
     try {
       return await this.model.getAll();
-    } catch (error) {
-      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+    } catch (error: unknown) {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
 
@@ -635,13 +636,13 @@ export class CognitiveTaskService {
         try {
           await this.update(formId, updateData);
           successCount++;
-        } catch (error) {
+        } catch (error: unknown) {
           console.error(`[BatchUpdate] Error al actualizar formulario ${formId}:`, error);
         }
       }
 
       return successCount;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error general en actualización batch de formularios CognitiveTask:', error);
       throw new ApiError(
         `${CognitiveTaskError.DATABASE_ERROR}: Error general en actualización batch: ${error instanceof Error ? error.message : 'Error desconocido'}`,
@@ -680,7 +681,7 @@ export class CognitiveTaskService {
         throw error; // Propagar NotFoundError
       }
       // Usar handleDbError para otros errores de base de datos
-      throw handleDbError(error, this.serviceName, context, COGNITIVE_TASK_MODEL_ERRORS);
+      throw handleDbError(toApplicationError(error), this.serviceName, context, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
 
@@ -708,7 +709,7 @@ export class CognitiveTaskService {
 
       try {
         existingForm = await this.model.getByResearchId(researchId);
-      } catch (error) {
+      } catch (error: unknown) {
         // Si hay un error de base de datos real, propagarlo
         throw error;
       }
@@ -741,8 +742,8 @@ export class CognitiveTaskService {
         structuredLog('info', `${this.serviceName}.${context}`, 'Creación completada', { researchId, formId: newForm.id });
         return newForm;
       }
-    } catch (error) {
-      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+    } catch (error: unknown) {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
 
@@ -774,13 +775,13 @@ export class CognitiveTaskService {
       }
 
       return deleted;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         // El formulario no existe, devolver false en lugar de error
         structuredLog('info', `${this.serviceName}.${context}`, 'Formulario no encontrado para eliminar', { researchId });
         return false;
       }
-      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+      throw handleDbError(toApplicationError(error), context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
 }

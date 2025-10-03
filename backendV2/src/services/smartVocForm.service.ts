@@ -209,7 +209,7 @@ export class SmartVOCFormService {
       });
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error al crear formulario SmartVOC', {
         researchId,
         error: error instanceof Error ? error.message : 'Error desconocido'

@@ -180,7 +180,7 @@ async function getHandler(type: string): Promise<Function | null> {
       };
       handlers.websocket = websocketHandler;
       return websocketHandler;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error({ error }, 'Error loading WebSocket handler');
       return null;
     }
@@ -203,7 +203,7 @@ async function getHandler(type: string): Promise<Function | null> {
         logger.error(`Module for controller type '${type}' loaded, but 'handler' export is missing or not a function.`);
         return null;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error({ err: error, controllerType: type }, `Error dynamically loading controller module '${type}'`);
       return null;
     }
@@ -232,7 +232,7 @@ export const handler = async (
   // 🚀 Inicialización automática de recursos (solo primera vez)
   try {
     await initializationService.initialize();
-  } catch (error) {
+  } catch (error: unknown) {
     requestLogger.warn({ err: error }, 'Warning: Auto-initialization failed, continuing anyway');
   }
 
@@ -246,7 +246,7 @@ export const handler = async (
     requestLogger.info({ statusCode: response.statusCode }, 'Solicitud completada');
     return response;
 
-  } catch (error) {
+  } catch (error: unknown) {
     requestLogger.error({ err: error }, 'Error general no capturado en el handler principal');
 
     // Formato de respuesta de error genérico
