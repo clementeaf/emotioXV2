@@ -17,7 +17,7 @@ interface TestPoint {
 interface TestResult {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 /**

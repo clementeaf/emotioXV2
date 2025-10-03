@@ -48,7 +48,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   useEffect(() => {
     if (moduleResponses?.responses) {
       const demographicsResponse = moduleResponses.responses.find(
-        (response: any) => response.questionKey === 'demographics'
+        (response) => response.questionKey === 'demographics'
       );
 
       if (demographicsResponse?.response) {

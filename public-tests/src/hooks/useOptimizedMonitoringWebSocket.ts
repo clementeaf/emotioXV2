@@ -40,7 +40,7 @@ export const useOptimizedMonitoringWebSocket = () => {
   }, []);
 
   // 🎯 LOGGING INTELIGENTE (reducido en producción)
-  const log = useCallback((level: 'info' | 'warn' | 'error', message: string, data?: any) => {
+  const log = useCallback((level: 'info' | 'warn' | 'error', message: string, data?: unknown) => {
     if (isDev || level === 'error') {
       console[level](`[OptimizedMonitoringWebSocket] ${message}`, data || '');
     }
@@ -247,7 +247,7 @@ export const useOptimizedMonitoringWebSocket = () => {
   const sendParticipantResponseSaved = useCallback((
     participantId: string,
     questionKey: string,
-    response: any,
+    response: unknown,
     stepNumber: number,
     totalSteps: number,
     progress: number

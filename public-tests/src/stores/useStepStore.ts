@@ -16,14 +16,14 @@ export interface Step {
 
 export interface StepStore {
   // 🎯 UNA SOLA FUENTE DE VERDAD
-  backendResponses: any[];
+  backendResponses: unknown[];
   steps: Step[];
   currentQuestionKey: string;
 
   // 🎯 MÉTODOS ESENCIALES
   setCurrentQuestionKey: (questionKey: string) => void;
   setSteps: (steps: Step[]) => void;
-  updateBackendResponses: (responses: any[]) => void;
+  updateBackendResponses: (responses: unknown[]) => void;
   resetStore: () => void;
 
   // 🎯 CÁLCULOS DINÁMICOS
@@ -67,7 +67,7 @@ export const useStepStore = create<StepStore>()(
         }
       },
 
-      updateBackendResponses: (responses: any[]) => {
+      updateBackendResponses: (responses: unknown[]) => {
         const validResponses = responses.filter(response =>
           response && typeof response === 'object' && response.questionKey
         );

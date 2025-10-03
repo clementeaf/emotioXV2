@@ -233,7 +233,7 @@ const TestLayoutRenderer: React.FC = () => {
 
   // 🎯 PRIMERO BUSCAR EN BACKEND, LUEGO EN LOCAL
   const backendResponse = moduleResponses?.responses?.find(
-    (response: any) => response.questionKey === currentQuestionKey
+    (response) => response.questionKey === currentQuestionKey
   );
   
   // 🚨 FIX: La estructura correcta es directamente response.response

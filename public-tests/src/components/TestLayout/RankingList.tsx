@@ -53,7 +53,7 @@ export const RankingList: React.FC<RankingListProps> = ({
             // 🚨 PRIORIDAD 1: Datos directos del backend (más reactivo)
             if (moduleResponses?.responses) {
                 const backendResponse = moduleResponses.responses.find(
-                    (response: any) => response.questionKey === currentQuestionKey
+                    (response) => response.questionKey === currentQuestionKey
                 );
                 if (backendResponse?.response && typeof backendResponse.response === 'object' && backendResponse.response !== null && 'selectedValue' in backendResponse.response) {
                     dataSource = backendResponse.response as Record<string, unknown>;

@@ -56,8 +56,8 @@ export const useFormLoadingState = ({
 
     // Buscar respuesta existente para este questionKey en el backend
     if (moduleResponses?.responses && Array.isArray(moduleResponses.responses)) {
-      const existingResponse = (moduleResponses.responses as any[]).find(
-        (response: any) => response.questionKey === questionKey
+      const existingResponse = moduleResponses.responses.find(
+        (response) => response.questionKey === questionKey
       );
 
       if (existingResponse?.response) {

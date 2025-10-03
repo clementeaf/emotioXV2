@@ -13,7 +13,7 @@ import { getWebsocketUrl } from '../config/dynamic-endpoints';
 export async function testWebSocketConnection(): Promise<{
   success: boolean;
   error?: string;
-  details?: any;
+  details?: unknown;
 }> {
   return new Promise((resolve) => {
     try {

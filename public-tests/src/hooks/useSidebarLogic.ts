@@ -58,7 +58,7 @@ export const useSidebarLogic = ({
 
           // 🎯 FILTRAR STEPS DE DEMOGRAPHICS SIN CONFIGURACIÓN
           if (questionKey === 'demographics') {
-            const hasConfiguredQuestions = Object.values(stepConfig.contentConfiguration?.demographicQuestions || {}).some((q: any) => q?.enabled);
+            const hasConfiguredQuestions = Object.values(stepConfig.contentConfiguration?.demographicQuestions || {}).some((q: unknown) => (q as Record<string, unknown>)?.enabled);
             if (!hasConfiguredQuestions) {
               return null;
             }
@@ -90,7 +90,7 @@ export const useSidebarLogic = ({
             questionKey: stepConfig.questionKey
           };
         })
-        .filter((step: any): step is NonNullable<typeof step> => step !== null);
+        .filter((step): step is NonNullable<typeof step> => step !== null);
 
 
       return orderedSteps;
@@ -110,7 +110,7 @@ export const useSidebarLogic = ({
     if (steps.length > 0) {
 
       // Convertir steps al formato del store
-      const storeSteps = steps.map((step: any) => ({
+      const storeSteps = steps.map((step) => ({
         questionKey: step.questionKey,
         title: step.title
       }));
@@ -137,7 +137,7 @@ export const useSidebarLogic = ({
   useEffect(() => {
     if (steps.length > 0 && onStepsReady && !stepsNotifiedRef.current) {
       stepsNotifiedRef.current = true;
-      const sidebarSteps: SidebarStep[] = steps.map((step: any) => ({
+      const sidebarSteps: SidebarStep[] = steps.map((step) => ({
         label: step.title,
         questionKey: step.questionKey
       }));

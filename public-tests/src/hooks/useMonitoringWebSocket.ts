@@ -199,7 +199,7 @@ export const useMonitoringWebSocket = () => {
   const sendParticipantResponseSaved = useCallback((
     participantId: string,
     questionKey: string,
-    response: any,
+    response: unknown,
     stepNumber: number,
     totalSteps: number,
     progress: number
