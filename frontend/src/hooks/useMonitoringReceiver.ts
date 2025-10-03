@@ -125,7 +125,24 @@ export const useMonitoringReceiver = (researchId: string) => {
 
       wsRef.current.onmessage = (event) => {
         try {
-          const message: MonitoringEvent = JSON.parse(event.data);
+          const rawMessage = JSON.parse(event.data);
+
+          // 🎯 CONVERTIR FORMATO DE BACKEND A FORMATO ESPERADO
+          // Backend envía: { type: 'status_update', data: { message: 'PARTICIPANT_LOGIN', metadata: {...} } }
+          // Frontend espera: { type: 'PARTICIPANT_LOGIN', data: {...} }
+          let message: MonitoringEvent;
+
+          if (rawMessage.type === 'status_update' && rawMessage.data?.message) {
+            // Convertir de formato backend a formato frontend
+            message = {
+              type: rawMessage.data.message,
+              data: rawMessage.data.metadata || rawMessage.data
+            };
+          } else {
+            // Ya está en el formato correcto
+            message = rawMessage;
+          }
+
           handleMonitoringEvent(message);
         } catch (error) {
         }

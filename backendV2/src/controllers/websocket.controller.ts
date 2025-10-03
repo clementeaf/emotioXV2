@@ -21,6 +21,42 @@ interface WebSocketEvent {
 
 export class WebSocketController {
   /**
+   * Helper para crear evento WebSocket y hacer broadcast
+   */
+  private async broadcastEvent(
+    researchId: string,
+    eventType: string,
+    participantId: string,
+    metadata: Record<string, unknown>
+  ): Promise<number> {
+    try {
+      const wsEvent = {
+        type: 'status_update' as const,
+        data: {
+          timestamp: new Date().toISOString(),
+          message: eventType,
+          participantId,
+          sessionId: researchId,
+          metadata: metadata as unknown as Record<string, string | number | boolean>
+        }
+      };
+
+      const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, wsEvent);
+
+      console.log(`[WebSocketController] ✅ ${eventType} broadcast al dashboard:`, {
+        researchId,
+        participantId,
+        successfulBroadcasts
+      });
+
+      return successfulBroadcasts;
+    } catch (error) {
+      console.error(`[WebSocketController] ❌ Error en broadcast de ${eventType}:`, error);
+      return 0;
+    }
+  }
+
+  /**
    * Maneja la conexión inicial del WebSocket
    */
   async handleConnect(event: WebSocketEvent): Promise<APIGatewayProxyResult> {
@@ -108,6 +144,12 @@ export class WebSocketController {
       case 'PARTICIPANT_RESPONSE_SAVED':
         return this.handleParticipantResponseSaved(event, body);
 
+      case 'PARTICIPANT_COMPLETED':
+        return this.handleParticipantCompleted(event, body);
+
+      case 'PARTICIPANT_ERROR':
+        return this.handleParticipantError(event, body);
+
       default:
         console.log('[WebSocketController] ⚠️ Tipo de mensaje no reconocido:', body.type);
         return {
@@ -165,13 +207,20 @@ export class WebSocketController {
    */
   private async handleParticipantLogin(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
+    const dataPayload = data.data as Record<string, unknown>;
+    const researchId = dataPayload?.researchId as string;
 
     console.log('[WebSocketController] 👤 PARTICIPANT_LOGIN:', {
       connectionId,
-      researchId: (data.data as Record<string, unknown>)?.researchId,
-      participantId: (data.data as Record<string, unknown>)?.participantId,
-      email: (data.data as Record<string, unknown>)?.email
+      researchId,
+      participantId: dataPayload?.participantId,
+      email: dataPayload?.email
     });
+
+    // 🎯 BROADCAST AL DASHBOARD
+    if (researchId && dataPayload?.participantId) {
+      await this.broadcastEvent(researchId, 'PARTICIPANT_LOGIN', dataPayload.participantId as string, dataPayload);
+    }
 
     return {
       statusCode: 200,
@@ -189,14 +238,21 @@ export class WebSocketController {
    */
   private async handleParticipantStep(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
+    const dataPayload = data.data as Record<string, unknown>;
+    const researchId = dataPayload?.researchId as string;
 
     console.log('[WebSocketController] 📊 PARTICIPANT_STEP:', {
       connectionId,
-      researchId: (data.data as Record<string, unknown>)?.researchId,
-      participantId: (data.data as Record<string, unknown>)?.participantId,
-      stepName: (data.data as Record<string, unknown>)?.stepName,
-      progress: (data.data as Record<string, unknown>)?.progress
+      researchId,
+      participantId: dataPayload?.participantId,
+      stepName: dataPayload?.stepName,
+      progress: dataPayload?.progress
     });
+
+    // 🎯 BROADCAST AL DASHBOARD
+    if (researchId && dataPayload?.participantId) {
+      await this.broadcastEvent(researchId, 'PARTICIPANT_STEP', dataPayload.participantId as string, dataPayload);
+    }
 
     return {
       statusCode: 200,
@@ -214,14 +270,21 @@ export class WebSocketController {
    */
   private async handleParticipantDisqualified(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
+    const dataPayload = data.data as Record<string, unknown>;
+    const researchId = dataPayload?.researchId as string;
 
     console.log('[WebSocketController] 🚫 PARTICIPANT_DISQUALIFIED:', {
       connectionId,
-      researchId: (data.data as Record<string, unknown>)?.researchId,
-      participantId: (data.data as Record<string, unknown>)?.participantId,
-      reason: (data.data as Record<string, unknown>)?.reason,
-      disqualificationType: (data.data as Record<string, unknown>)?.disqualificationType
+      researchId,
+      participantId: dataPayload?.participantId,
+      reason: dataPayload?.reason,
+      disqualificationType: dataPayload?.disqualificationType
     });
+
+    // 🎯 BROADCAST AL DASHBOARD
+    if (researchId && dataPayload?.participantId) {
+      await this.broadcastEvent(researchId, 'PARTICIPANT_DISQUALIFIED', dataPayload.participantId as string, dataPayload);
+    }
 
     return {
       statusCode: 200,
@@ -239,20 +302,91 @@ export class WebSocketController {
    */
   private async handleParticipantQuotaExceeded(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
     const connectionId = event.requestContext.connectionId;
+    const dataPayload = data.data as Record<string, unknown>;
+    const researchId = dataPayload?.researchId as string;
 
     console.log('[WebSocketController] 📈 PARTICIPANT_QUOTA_EXCEEDED:', {
       connectionId,
-      researchId: (data.data as Record<string, unknown>)?.researchId,
-      participantId: (data.data as Record<string, unknown>)?.participantId,
-      quotaType: (data.data as Record<string, unknown>)?.quotaType,
-      quotaValue: (data.data as Record<string, unknown>)?.quotaValue
+      researchId,
+      participantId: dataPayload?.participantId,
+      quotaType: dataPayload?.quotaType,
+      quotaValue: dataPayload?.quotaValue
     });
+
+    // 🎯 BROADCAST AL DASHBOARD
+    if (researchId && dataPayload?.participantId) {
+      await this.broadcastEvent(researchId, 'PARTICIPANT_QUOTA_EXCEEDED', dataPayload.participantId as string, dataPayload);
+    }
 
     return {
       statusCode: 200,
       headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
       body: JSON.stringify({
         message: 'Participant quota exceeded recorded',
+        connectionId,
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
+
+  /**
+   * Maneja evento de completación de participante
+   */
+  private async handleParticipantCompleted(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
+    const connectionId = event.requestContext.connectionId;
+    const dataPayload = data.data as Record<string, unknown>;
+    const researchId = dataPayload?.researchId as string;
+
+    console.log('[WebSocketController] ✅ PARTICIPANT_COMPLETED:', {
+      connectionId,
+      researchId,
+      participantId: dataPayload?.participantId,
+      totalDuration: dataPayload?.totalDuration,
+      responsesCount: dataPayload?.responsesCount
+    });
+
+    // 🎯 BROADCAST AL DASHBOARD
+    if (researchId && dataPayload?.participantId) {
+      await this.broadcastEvent(researchId, 'PARTICIPANT_COMPLETED', dataPayload.participantId as string, dataPayload);
+    }
+
+    return {
+      statusCode: 200,
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
+      body: JSON.stringify({
+        message: 'Participant completion recorded',
+        connectionId,
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
+
+  /**
+   * Maneja evento de error de participante
+   */
+  private async handleParticipantError(event: WebSocketEvent, data: Record<string, unknown>): Promise<APIGatewayProxyResult> {
+    const connectionId = event.requestContext.connectionId;
+    const dataPayload = data.data as Record<string, unknown>;
+    const researchId = dataPayload?.researchId as string;
+
+    console.log('[WebSocketController] ❌ PARTICIPANT_ERROR:', {
+      connectionId,
+      researchId,
+      participantId: dataPayload?.participantId,
+      error: dataPayload?.error,
+      stepName: dataPayload?.stepName
+    });
+
+    // 🎯 BROADCAST AL DASHBOARD
+    if (researchId && dataPayload?.participantId) {
+      await this.broadcastEvent(researchId, 'PARTICIPANT_ERROR', dataPayload.participantId as string, dataPayload);
+    }
+
+    return {
+      statusCode: 200,
+      headers: getCorsHeaders(event as unknown as import('aws-lambda').APIGatewayProxyEvent),
+      body: JSON.stringify({
+        message: 'Participant error recorded',
         connectionId,
         timestamp: new Date().toISOString()
       })
@@ -278,43 +412,15 @@ export class WebSocketController {
     });
 
     // 🎯 BROADCAST AL DASHBOARD - PROGRESO EN TIEMPO REAL
-    if (researchId) {
-      try {
-        const monitoringEvent = {
-          type: 'PARTICIPANT_STEP' as const,
-          data: {
-            researchId,
-            participantId: dataPayload?.participantId as string,
-            stepName: dataPayload?.questionKey as string,
-            stepNumber: dataPayload?.stepNumber as number,
-            totalSteps: dataPayload?.totalSteps as number,
-            progress: dataPayload?.progress as number,
-            timestamp: new Date().toISOString()
-          }
-        };
-
-        // Convert to WebSocket compatible format
-        const wsEvent = {
-          type: 'status_update' as const,
-          data: {
-            timestamp: new Date().toISOString(),
-            message: monitoringEvent.type,
-            participantId: monitoringEvent.data.participantId,
-            sessionId: researchId,
-            metadata: monitoringEvent.data
-          }
-        };
-        const successfulBroadcasts = await webSocketService.broadcastToResearch(researchId, wsEvent);
-        
-        console.log('[WebSocketController] ✅ Progreso broadcast al dashboard:', {
-          researchId,
-          participantId: dataPayload?.participantId,
-          progress: dataPayload?.progress,
-          successfulBroadcasts
-        });
-      } catch (error) {
-        console.error('[WebSocketController] ❌ Error en broadcast de progreso:', error);
-      }
+    if (researchId && dataPayload?.participantId) {
+      const stepData = {
+        ...dataPayload,
+        stepName: dataPayload.questionKey,
+        stepNumber: dataPayload.stepNumber,
+        totalSteps: dataPayload.totalSteps,
+        progress: dataPayload.progress
+      };
+      await this.broadcastEvent(researchId, 'PARTICIPANT_STEP', dataPayload.participantId as string, stepData);
     }
 
     return {

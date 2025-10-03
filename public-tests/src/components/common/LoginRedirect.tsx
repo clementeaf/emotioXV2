@@ -54,7 +54,8 @@ const LoginRedirect: React.FC = () => {
         researchId
       );
 
-      navigate('/test');
+      // Mantener parámetros en la URL
+      navigate(`/test?researchId=${researchId}&participantId=${participantId}`);
     } else {
       // 👁️ MODO PREVIEW: Solo researchId (QR code de testing)
       console.log('[LoginRedirect] 👁️ MODO PREVIEW - Solo researchId:', researchId);
@@ -75,7 +76,8 @@ const LoginRedirect: React.FC = () => {
         researchId
       );
 
-      navigate('/test');
+      // Mantener researchId en la URL (modo preview solo con researchId)
+      navigate(`/test?researchId=${researchId}`);
     }
   }, [location, navigate, setParticipant, params]);
 
