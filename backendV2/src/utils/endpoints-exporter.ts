@@ -194,7 +194,7 @@ export function readEndpointsFromServerless(): ApiEndpoints {
             ? endpointsData.websocket[0]
             : endpointsData.websocket;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.warn(`Error al leer endpoints.json: ${error.message}`);
       }
     }
@@ -223,7 +223,7 @@ export function readEndpointsFromServerless(): ApiEndpoints {
         if (stageMatch && stageMatch[1]) {
           endpoints.stage = stageMatch[1];
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.warn(`Error al leer outputs.json: ${error.message}`);
       }
     }

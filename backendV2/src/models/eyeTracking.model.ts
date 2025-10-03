@@ -275,7 +275,7 @@ export class EyeTrackingModel {
       await this.docClient.send(command);
       structuredLog('info', `${this.modelName}.${context}`, 'Configuración creada', { id: eyeTrackingId, researchId });
       return this.mapToRecord(item);
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB PutCommand', { error: error, researchId, id: eyeTrackingId });
       throw new ApiError(`DATABASE_ERROR: Error al crear la configuración de eye tracking: ${error.message}`, 500);
     }
@@ -299,7 +299,7 @@ export class EyeTrackingModel {
       }
       structuredLog('debug', `${this.modelName}.${context}`, 'Configuración encontrada por ID', { id });
       return this.mapToRecord(result.Item as EyeTrackingDynamoItem);
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB GetCommand', { error: error, id });
       throw new ApiError(`DATABASE_ERROR: Error al obtener la configuración de eye tracking por ID: ${error.message}`, 500);
     }
@@ -324,7 +324,7 @@ export class EyeTrackingModel {
         return null;
       }
       return this.mapToRecord(result.Items[0] as EyeTrackingDynamoItem);
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener eye tracking por researchId (Query GSI)', { error: error, researchId });
       if ((error as Error).message?.includes('index')) {
         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
@@ -402,7 +402,7 @@ export class EyeTrackingModel {
       }
       structuredLog('info', `${this.modelName}.${context}`, 'Configuración actualizada', { id });
       return this.mapToRecord(result.Attributes as EyeTrackingDynamoItem);
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB UpdateCommand', { error: error, id });
       throw new ApiError(`DATABASE_ERROR: Error al actualizar la configuración de eye tracking: ${error.message}`, 500);
     }
@@ -430,7 +430,7 @@ export class EyeTrackingModel {
     try {
       await this.docClient.send(command);
       structuredLog('info', `${this.modelName}.${context}`, 'Configuración eliminada', { id });
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB DeleteCommand', { error: error, id });
       throw new ApiError(`DATABASE_ERROR: Error al eliminar la configuración de eye tracking: ${error.message}`, 500);
     }
@@ -455,7 +455,7 @@ export class EyeTrackingModel {
       const items = result.Items || [];
       structuredLog('debug', `${this.modelName}.${context}`, `Scan completado, encontrados ${items.length} items.`);
       return items.map(item => this.mapToRecord(item as EyeTrackingDynamoItem));
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB ScanCommand', { error: error });
       throw new ApiError(`DATABASE_ERROR: Error al obtener todas las configuraciones de eye tracking: ${error.message}`, 500);
     }

@@ -16,7 +16,7 @@ export const corsHeaders = {
  * Función para crear respuestas estandarizadas (versión legacy)
  * @deprecated Use createResponseWithCors instead
  */
-export const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
+export const createResponse = (statusCode: number, body: Record<string, unknown> | unknown[]): APIGatewayProxyResult => {
     return {
         statusCode,
         headers: corsHeaders,
@@ -27,7 +27,7 @@ export const createResponse = (statusCode: number, body: any): APIGatewayProxyRe
 /**
  * Función para crear respuestas estandarizadas con CORS dinámico
  */
-export const createResponseWithCors = (statusCode: number, body: any, event: APIGatewayProxyEvent): APIGatewayProxyResult => {
+export const createResponseWithCors = (statusCode: number, body: Record<string, unknown> | unknown[], event: APIGatewayProxyEvent): APIGatewayProxyResult => {
     return {
         statusCode,
         headers: getCorsHeaders(event),
@@ -38,19 +38,21 @@ export const createResponseWithCors = (statusCode: number, body: any, event: API
 /**
 * Manejador global de errores
 */
-export const errorHandler = (error: any): APIGatewayProxyResult => {
+export const errorHandler = (error: unknown): APIGatewayProxyResult => {
     console.error('Error en la aplicación:', error);
 
     // Determinar el código de estado basado en el tipo de error
     let statusCode = 500;
-    if (error.statusCode) statusCode = error.statusCode;
-    else if (error.message?.includes('no encontrado')) statusCode = 404;
-    else if (error.message?.includes('inválido') || error.message?.includes('requerido')) statusCode = 400;
-    else if (error.message?.includes('no autorizado') || error.message?.includes('credenciales')) statusCode = 401;
+    const err = error as { statusCode?: number; message?: string; stack?: string };
+
+    if (err.statusCode) statusCode = err.statusCode;
+    else if (err.message?.includes('no encontrado')) statusCode = 404;
+    else if (err.message?.includes('inválido') || err.message?.includes('requerido')) statusCode = 400;
+    else if (err.message?.includes('no autorizado') || err.message?.includes('credenciales')) statusCode = 401;
 
     return createResponse(statusCode, {
         success: false,
-        message: error.message || 'Error interno del servidor',
-        error: process.env.NODE_ENV === 'dev' ? error.stack : undefined
+        message: err.message || 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'dev' ? err.stack : undefined
     });
 };

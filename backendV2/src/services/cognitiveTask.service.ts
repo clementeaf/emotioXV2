@@ -674,7 +674,7 @@ export class CognitiveTaskService {
         throw new NotFoundError(CognitiveTaskError.NOT_FOUND);
       }
       return record;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Re-lanzar errores conocidos o manejar como error de DB
       if (error instanceof NotFoundError) {
         throw error; // Propagar NotFoundError

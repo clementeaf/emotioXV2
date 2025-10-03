@@ -219,7 +219,7 @@ export class WebSocketService {
       });
 
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Si la conexión ya no existe, eliminarla de la base de datos
       if (error.statusCode === 410) {
         structuredLog('info', `${this.serviceName}.${context}`, 'Conexión obsoleta, eliminando', {

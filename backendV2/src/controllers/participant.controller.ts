@@ -720,7 +720,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     structuredLog('error', 'ParticipantController.mainHandler', 'Error in participant handler', { error: (error as Error)?.message || error, stack: (error as Error)?.stack });
     return {
       statusCode: 500,

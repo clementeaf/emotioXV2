@@ -225,7 +225,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       headers: getCorsHeaders(event),
       body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     structuredLog('error', 'QuotaValidationHandler', 'Error en quotaValidationHandler', { error });
     return {
       statusCode: 500,

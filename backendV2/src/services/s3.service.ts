@@ -282,7 +282,7 @@ export class S3Service {
 
       return downloadUrl;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Comprobar si el error viene de HeadObject (o GetObject)
       if (error.name === 'NotFound' || error.name === 'NoSuchKey') {
           console.error(`${operation} - Error específico: El objeto con clave ${key} no existe en S3 (Error: ${error.name}).`);
@@ -347,7 +347,7 @@ export class S3Service {
       console.log(`${operation} - Resultado de s3Client.send(command):`, output);
       console.log(`${operation} - Objeto eliminado con éxito de S3 (o ya no existía): ${key}`);
 
-    } catch (error: any) { // Usar any temporalmente para acceder a error.name
+    } catch (error: unknown) { // Usar any temporalmente para acceder a error.name
       console.error(`${operation} - Error CAPTURADO al llamar a s3Client.send(command) para clave (${key}):`, error);
       // Si el error es que la clave no existe, lo tratamos como éxito (idempotencia)
       if (error.name === 'NoSuchKey' || error.name === 'NotFound') {

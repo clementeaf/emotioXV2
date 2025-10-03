@@ -175,7 +175,7 @@ const cognitiveTaskHandler = async (
       default:
         return errorResponse(`Método ${httpMethod} no soportado`, 405, event);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     structuredLog('error', `CognitiveTaskHandler.${httpMethod}`, 'Error en el handler', {
       researchId,
       error: error.message,

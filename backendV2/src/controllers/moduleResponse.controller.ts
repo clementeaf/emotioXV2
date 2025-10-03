@@ -1255,7 +1255,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
         }
       })
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error en mainHandler:', error);
 
     return {

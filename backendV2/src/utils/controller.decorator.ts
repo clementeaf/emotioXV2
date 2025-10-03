@@ -163,7 +163,7 @@ export function createController(
         details: `No se encontró controlador para ${method} ${path}`
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Manejar errores generales
       console.error(`CONTROLLER [${options.basePath}] - Error no controlado:`, error);
       return createResponse(500, {

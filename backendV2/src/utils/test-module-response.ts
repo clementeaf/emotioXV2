@@ -69,7 +69,7 @@ export const checkTableStructure = async () => {
 
     console.log('✅ Tabla accesible, estructura válida');
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error de estructura:', error.message);
 
     if (error.message.includes('Table or index not found')) {

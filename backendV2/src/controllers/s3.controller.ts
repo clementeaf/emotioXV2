@@ -75,7 +75,7 @@ export class S3Controller {
         data: presignedUrlData
       }, event);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'S3Controller.generateUploadUrl', 'Error', { error });
       
       // Determinar el tipo de error para una respuesta apropiada
@@ -147,7 +147,7 @@ export class S3Controller {
         }
       }, event);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'S3Controller.generateDownloadUrl', 'Error', { error });
       // Manejar caso específico si s3Service lanza error por clave no encontrada
       if (error.name === 'NoSuchKey') { 
@@ -193,7 +193,7 @@ export class S3Controller {
       structuredLog('info', 'S3Controller.deleteObject', 'Archivo eliminado exitosamente de S3', { decodedKey });
       return createResponse(200, { message: 'Archivo eliminado exitosamente' }, event);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', 'S3Controller.deleteObject', 'Error al eliminar objeto de S3', { key, error });
       if (error.name === 'NoSuchKey') {
         return createResponse(404, { error: 'El archivo no existe en S3' }, event);

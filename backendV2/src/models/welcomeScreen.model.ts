@@ -120,7 +120,7 @@ export class WelcomeScreenModel {
       };
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla de bienvenida creada', { id: screenId, researchId });
       return createdRecord;
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB PutCommand', { error: error, researchId, screenId });
 
       // Mantener el chequeo específico para ConditionalCheckFailedException
@@ -173,7 +173,7 @@ export class WelcomeScreenModel {
       };
       structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ID', { id });
       return record;
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por ID', { error: error, id });
       throw new ApiError(`DATABASE_ERROR: Error al obtener pantalla por ID: ${error.message}`, 500);
     }
@@ -233,7 +233,7 @@ export class WelcomeScreenModel {
       };
       structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ResearchID', { researchId, id: item.id });
       return record;
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por researchId (Query GSI)', { error: error, researchId });
       if ((error as Error).message?.includes('index')) {
          structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
@@ -325,7 +325,7 @@ export class WelcomeScreenModel {
       };
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla actualizada', { id });
       return record;
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error al actualizar pantalla en DynamoDB', { error: error, id });
       // Considerar mapeo de ConditionalCheckFailedException si se usa
       throw new ApiError(`DATABASE_ERROR: Error al guardar cambios de la pantalla: ${error.message}`, 500);
@@ -355,7 +355,7 @@ export class WelcomeScreenModel {
     try {
       await this.docClient.send(command);
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla eliminada', { id });
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error al eliminar pantalla en DynamoDB', { error: error, id });
       throw new ApiError(`DATABASE_ERROR: Error al eliminar la pantalla de bienvenida: ${error.message}`, 500);
     }
@@ -377,7 +377,7 @@ export class WelcomeScreenModel {
       } else {
         return await this.create(data, researchId);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error en createOrUpdate', { error: error, researchId });
       // Re-lanzar el error si ya es ApiError, o crear uno nuevo si no
       if (error instanceof ApiError) {

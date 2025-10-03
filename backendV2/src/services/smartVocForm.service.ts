@@ -140,7 +140,7 @@ export class SmartVOCFormService {
     try {
       // Delegar completamente al modelo
       return await this.model.getByResearchId(researchId);
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo', { error, researchId });
       // Envolver el error del modelo en ApiError
       throw new ApiError(
@@ -166,7 +166,7 @@ export class SmartVOCFormService {
         throw new ApiError(`${SmartVOCError.NOT_FOUND}: Formulario SmartVOC no encontrado con ID ${id}`, 404);
       }
       return form;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Si ya es un ApiError (como el NOT_FOUND), relanzarlo
       if (error instanceof ApiError) {
         throw error;
@@ -237,7 +237,7 @@ export class SmartVOCFormService {
       // La verificación de existencia ahora debería hacerse en el modelo antes de actualizar
       // El modelo debería lanzar un error si el ID no existe, que se captura aquí
       return await this.model.update(id, formData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Capturar el error específico de NOT_FOUND si el modelo lo lanza
       if (error.message === 'SMART_VOC_FORM_NOT_FOUND') {
         throw new ApiError(`${SmartVOCError.NOT_FOUND}: Formulario con ID ${id} no encontrado para actualizar`, 404);
@@ -270,7 +270,7 @@ export class SmartVOCFormService {
       // El modelo maneja la idempotencia (no falla si no existe).
       await this.model.delete(formId);
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario eliminado exitosamente', { formId });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ya no debería haber ApiError aquí si el modelo no lo lanza para delete
       // if (error instanceof ApiError) {
       //     throw error;
@@ -309,7 +309,7 @@ export class SmartVOCFormService {
       }
 
       return deleted;
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo', { error, researchId });
       throw new ApiError(
         `${SmartVOCError.DATABASE_ERROR}: Error al eliminar formulario por researchId - ${error.message}`,
@@ -329,7 +329,7 @@ export class SmartVOCFormService {
     
     try {
       return await this.model.getAll();
-    } catch (error: any) {
+    } catch (error: unknown) {
       structuredLog('error', `${this.serviceName}.${context}`, 'Error desde el modelo', { error });
       throw new ApiError(
         `${SmartVOCError.DATABASE_ERROR}: Error al obtener todos los formularios - ${error.message}`,

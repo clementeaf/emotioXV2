@@ -69,7 +69,7 @@ async function getHandler(type: string): Promise<Function | null> {
         logger.error(`Admin controller handler is missing or not a function`);
         return null;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error importing admin controller:', error);
       return null;
     }
@@ -87,7 +87,7 @@ async function getHandler(type: string): Promise<Function | null> {
         logger.error(`Educational content controller handler is missing or not a function`);
         return null;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error importing educational content controller:', error);
       return null;
     }

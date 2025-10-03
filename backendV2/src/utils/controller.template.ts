@@ -40,7 +40,7 @@ export class ExampleController {
         message: 'Recurso creado exitosamente',
         data: { id: 'example-id', ...data }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error en createExample:', error);
       return this.handleError(error);
     }
@@ -63,7 +63,7 @@ export class ExampleController {
       return createResponse(200, {
         data: { id, name: 'Example Resource' }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error en getExampleById:', error);
       return this.handleError(error);
     }

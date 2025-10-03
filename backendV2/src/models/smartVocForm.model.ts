@@ -116,7 +116,7 @@ export class SmartVOCFormModel {
       await this.dynamoClient.send(command);
       console.log(`[SmartVOCFormModel.create] ✅ Formulario creado exitosamente con questionKey: ${questionKey}`);
       return this.mapToRecord(item);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[SmartVOCFormModel.create] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error('[SmartVOCFormModel.create] Error en PutCommand:', error.message);
       throw new Error(`DATABASE_ERROR: Error al crear formulario SmartVOC - ${error.message}`);
@@ -147,7 +147,7 @@ export class SmartVOCFormModel {
       }
       console.log(`[SmartVOCFormModel.getById] Item encontrado: ${id}`);
       return this.mapToRecord(result.Item as SmartVOCFormDynamoItem);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[SmartVOCFormModel.getById] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error(`[SmartVOCFormModel.getById] Error al obtener SmartVOCForm por ID ${id}:`, error.message);
        // Incluir código de error genérico de DB
@@ -192,7 +192,7 @@ export class SmartVOCFormModel {
 
       return null;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[SmartVOCFormModel.getByResearchId] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error(`[SmartVOCFormModel.getByResearchId] Error al obtener SmartVOCForm por researchId ${researchId}:`, error.message);
        if ((error as Error).message?.includes('index')) {
@@ -260,7 +260,7 @@ export class SmartVOCFormModel {
           throw new Error('Update operation did not return attributes.');
       }
       return this.mapToRecord(result.Attributes as SmartVOCFormDynamoItem);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[SmartVOCFormModel.update] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       if (error.name === 'ConditionalCheckFailedException') {
           console.error(`[SmartVOCFormModel.update] Error: No se encontró el formulario con ID ${id} para actualizar.`);
@@ -294,7 +294,7 @@ export class SmartVOCFormModel {
       console.log(`[SmartVOCFormModel.delete] Intentando eliminar item: ${id}`);
       await this.dynamoClient.send(command);
       console.log(`[SmartVOCFormModel.delete] Item eliminado (o no existía): ${id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[SmartVOCFormModel.delete] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error(`[SmartVOCFormModel.delete] Error al eliminar SmartVOCForm con ID ${id}:`, error.message);
       // Incluir código de error genérico de DB
@@ -337,7 +337,7 @@ export class SmartVOCFormModel {
       console.log(`[SmartVOCFormModel.deleteByResearchId] Formulario SmartVOC eliminado exitosamente para researchId: ${researchId}`);
       return true;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.name === 'ConditionalCheckFailedException') {
         console.warn(`[SmartVOCFormModel.deleteByResearchId] El formulario ya no existe para researchId: ${researchId}`);
         return false; // Ya fue eliminado o no existe
@@ -367,7 +367,7 @@ export class SmartVOCFormModel {
       const items = result.Items || [];
       console.log(`[SmartVOCFormModel.getAll] Scan completado. Items encontrados: ${items.length}`);
       return items.map(item => this.mapToRecord(item as SmartVOCFormDynamoItem));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[SmartVOCFormModel.getAll] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error('[SmartVOCFormModel.getAll] Error en ScanCommand:', error.message);
       // Incluir código de error genérico de DB

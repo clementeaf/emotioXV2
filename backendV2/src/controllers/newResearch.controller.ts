@@ -317,7 +317,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
         }, event);
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error en mainHandler:', error);
     return createResponse(500, {
       error: 'Error interno del servidor',

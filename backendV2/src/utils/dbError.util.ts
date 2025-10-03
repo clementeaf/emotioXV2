@@ -22,7 +22,7 @@ interface ErrorMapping {
  * @returns Una instancia de ApiError.
  */
 export const handleDbError = (
-  error: any,
+  error: unknown,
   context: string,
   serviceName: string,
   modelErrorMappings: ErrorMapping = {}
@@ -32,7 +32,7 @@ export const handleDbError = (
     return error;
   }
   // [FIX] Si es un HttpError (incluye NotFoundError), retornarlo tal cual
-  if (error instanceof Error && 'statusCode' in error && typeof (error as any).statusCode === 'number') {
+  if (error instanceof Error && 'statusCode' in error && typeof (error as HttpError).statusCode === 'number') {
     return error as HttpError;
   }
 
