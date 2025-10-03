@@ -107,6 +107,7 @@ export const useOptimizedMonitoringWebSocket = () => {
     } catch (error) {
       log('error', '❌ Error creando WebSocket:', error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [researchId, log]);
 
   // 🎯 DESCONECTAR
@@ -148,7 +149,6 @@ export const useOptimizedMonitoringWebSocket = () => {
       
       // Limpiar cache de eventos enviados (mantener solo últimos 50)
       if (sentEventsRef.current.size > 50) {
-        const firstItems = Array.from(sentEventsRef.current).slice(0, 25);
         sentEventsRef.current = new Set(Array.from(sentEventsRef.current).slice(25));
       }
 

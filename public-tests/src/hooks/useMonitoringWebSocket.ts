@@ -52,6 +52,7 @@ export const useMonitoringWebSocket = () => {
     } catch (error) {
       isConnectedRef.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [researchId]);
 
   // 🎯 DESCONECTAR

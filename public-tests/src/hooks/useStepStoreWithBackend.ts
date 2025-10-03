@@ -91,6 +91,7 @@ export const useStepStoreWithBackend = () => {
         }
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses]);
 
   return {

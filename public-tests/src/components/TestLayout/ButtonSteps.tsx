@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
-import { useDemographicValidation } from '../../hooks/useDemographicValidation';
+import { useDemographicValidation, type DemographicQuestions } from '../../hooks/useDemographicValidation';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
@@ -305,7 +305,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         Object.entries(currentFormData).map(([key, value]) => [key, String(value || '')])
       ) as Record<string, string>;
 
-      const validationResult = validateDemographics(formValuesString, eyeTrackingConfig.demographicQuestions);
+      const validationResult = validateDemographics(formValuesString, eyeTrackingConfig.demographicQuestions as DemographicQuestions);
 
       if (validationResult.isDisqualified) {
         // 🎯 NUEVO: GUARDAR ANTES DE REDIRIGIR

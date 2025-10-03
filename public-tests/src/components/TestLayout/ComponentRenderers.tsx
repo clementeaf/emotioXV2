@@ -646,6 +646,7 @@ export const ThankYouScreenComponent: React.FC<{
 
       sendToAPI();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestionKey, researchId, participantId, eyeTrackingConfig?.parameterOptions?.saveDeviceInfo, eyeTrackingConfig?.parameterOptions?.saveLocationInfo]);
 
   // 🎯 VERIFICAR SI EL USUARIO FUE DESCALIFICADO

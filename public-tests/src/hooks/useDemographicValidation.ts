@@ -1,12 +1,24 @@
 import { useCallback } from 'react';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface ValidationResult {
   isDisqualified: boolean;
   reason?: string;
   disqualifyingField?: string;
 }
+
+export interface DemographicQuestion {
+  enabled?: boolean;
+  disqualifyingAges?: string[];
+  disqualifyingCountries?: string[];
+  disqualifyingGenders?: string[];
+  disqualifyingEducation?: string[];
+  disqualifyingIncomes?: string[];
+  disqualifyingEmploymentStatuses?: string[];
+  disqualifyingHours?: string[];
+  disqualifyingProficiencies?: string[];
+}
+
+export type DemographicQuestions = Record<string, DemographicQuestion>;
 
 /**
  * Hook para validar respuestas demográficas contra criterios descalificatorios
@@ -18,7 +30,7 @@ export const useDemographicValidation = () => {
    */
   const validateDemographics = useCallback((
     responses: Record<string, string>,
-    demographicQuestions: any
+    demographicQuestions: DemographicQuestions
   ): ValidationResult => {
 
     if (!demographicQuestions) {
@@ -27,7 +39,7 @@ export const useDemographicValidation = () => {
 
     // Validar cada pregunta demográfica
     for (const [questionKey, question] of Object.entries(demographicQuestions)) {
-      const questionData = question as any;
+      const questionData = question;
       if (!questionData?.enabled) continue;
 
       const response = responses[questionKey];

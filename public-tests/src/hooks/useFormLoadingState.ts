@@ -82,6 +82,7 @@ export const useFormLoadingState = ({
     }
 
     setIsLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleResponses, isLoadingResponses, questionKey, stableOnDataLoaded]);
 
   const handleInputChange = useCallback((key: string, value: unknown) => {

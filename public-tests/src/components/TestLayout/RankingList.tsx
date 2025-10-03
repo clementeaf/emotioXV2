@@ -107,6 +107,7 @@ export const RankingList: React.FC<RankingListProps> = ({
 
             console.log('[RankingList] ⚠️ No data found from any source');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentQuestionKey, moduleResponses, initialFormData]);
 
     // 🎯 SINCRONIZAR CON ITEMS PROPS

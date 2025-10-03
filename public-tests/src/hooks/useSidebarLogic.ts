@@ -96,7 +96,7 @@ export const useSidebarLogic = ({
       return orderedSteps;
     }
     return [];
-  }, [formsData?.stepsConfiguration]);
+  }, [formsData?.stepsConfiguration, formsData?.steps]);
 
   const totalSteps = steps.length;
 
@@ -179,7 +179,7 @@ export const useSidebarLogic = ({
     await handleDelete(async () => {
       await onDeleteAllResponses();
     });
-  }, [onDeleteAllResponses, handleDelete, researchId]);
+  }, [onDeleteAllResponses, handleDelete]);
 
   // FUNCIONES DEL SIDEBAR (MEMOIZADAS)
   const toggleSidebar = useCallback(() => setIsOpen(prev => !prev), []);

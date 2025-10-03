@@ -166,6 +166,7 @@ export const useLocationTracking = ({
     } finally {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackLocationEnabled, researchId, getGPSLocation, getIPLocation]);
 
   // Función para enviar ubicación al backend
