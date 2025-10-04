@@ -1,13 +1,8 @@
 'use client';
 
 import { useAuth as useNewAuth, useLogout as useNewLogout } from '@/api/domains/auth';
+import { User } from '@/api/domains/auth/auth.types';
 import React, { createContext, useCallback, useContext, useState } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-}
 
 interface AuthContextType {
   user: User | null;

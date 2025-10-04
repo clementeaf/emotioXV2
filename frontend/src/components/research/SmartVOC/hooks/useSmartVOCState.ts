@@ -20,8 +20,7 @@ export const useSmartVOCState = (researchId: string) => {
         instructions: '',
         showConditionally: false,
         config: {
-          type: 'stars',
-          companyName: ''
+          type: 'stars'
         }
       },
       {
@@ -60,8 +59,7 @@ export const useSmartVOCState = (researchId: string) => {
         instructions: '',
         showConditionally: false,
         config: {
-          type: 'emojis',
-          companyName: ''
+          type: 'emojis'
         }
       },
       {
@@ -75,8 +73,7 @@ export const useSmartVOCState = (researchId: string) => {
           type: 'scale',
           scaleRange: { start: 0, end: 10 },
           startLabel: '',
-          endLabel: '',
-          companyName: ''
+          endLabel: ''
         }
       },
       {
@@ -151,8 +148,7 @@ export const useSmartVOCState = (researchId: string) => {
           instructions: '',
           showConditionally: false,
           config: {
-            type: 'stars',
-            companyName: ''
+            type: 'stars'
           }
         },
         {
@@ -191,8 +187,7 @@ export const useSmartVOCState = (researchId: string) => {
           instructions: '',
           showConditionally: false,
           config: {
-            type: 'emojis',
-            companyName: ''
+            type: 'emojis'
           }
         },
         {
@@ -206,8 +201,7 @@ export const useSmartVOCState = (researchId: string) => {
             type: 'scale',
             scaleRange: { start: 0, end: 10 },
             startLabel: '',
-            endLabel: '',
-            companyName: ''
+            endLabel: ''
           }
         },
         {

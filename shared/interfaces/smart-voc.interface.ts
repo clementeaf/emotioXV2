@@ -22,10 +22,6 @@ export interface QuestionConfigBase {
     end: number;
   };
 
-  /**
-   * Company name for questions that reference a company
-   */
-  companyName?: string;
 
   /**
    * Start label for scale questions (e.g. "Not at all")
@@ -43,7 +39,6 @@ export interface QuestionConfigBase {
  */
 export interface CSATConfig extends QuestionConfigBase {
   type: 'stars' | 'numbers' | 'emojis';
-  companyName: string;
 }
 
 /**
@@ -75,7 +70,6 @@ export interface CVConfig extends QuestionConfigBase {
  */
 export interface NEVConfig extends QuestionConfigBase {
   type: 'emojis';
-  companyName: string;
   emotions?: string[];
 }
 
@@ -88,7 +82,6 @@ export interface NPSConfig extends QuestionConfigBase {
     start: number;
     end: number;
   };
-  companyName: string;
 }
 
 /**
@@ -265,12 +258,11 @@ export const DEFAULT_SMART_VOC_FORM: SmartVOCFormData = {
       id: 'csat',
       type: QuestionType.SMARTVOC_CSAT,
       title: 'Customer Satisfaction Score (CSAT)',
-      description: 'How would you rate your overall satisfaction level with [company]?',
+      description: 'How would you rate your overall satisfaction level?',
       showConditionally: false,
       instructions: '',
       config: {
-        type: 'stars',
-        companyName: ''
+        type: 'stars'
       }
     }
   ],

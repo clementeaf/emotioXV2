@@ -27,8 +27,11 @@ export const DashboardContent = memo(() => {
     return { totalResearch, inProgress, completed, participants };
   }, [researchList]);
 
-  // Nuevo: loading explícito si el estado aún no está listo
-  if (isLoading || isLoadingResearch) {
+  // Solo mostrar loading si NO hay datos en cache
+  const hasData = researchList.length > 0;
+  const shouldShowLoading = (isLoading || isLoadingResearch) && !hasData;
+
+  if (shouldShowLoading) {
     return (
       <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)] overflow-y-auto">
         <div className="mx-auto px-6 py-8 w-full">

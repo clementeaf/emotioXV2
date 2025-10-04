@@ -28,49 +28,11 @@ interface QuotaValue {
 }
 
 export function QuotasForm({ className }: QuotasFormProps) {
-  const [quotasEnabled, setQuotasEnabled] = useState(true);
+  const [quotasEnabled, setQuotasEnabled] = useState(false);
   const [quotaLimitType, setQuotaLimitType] = useState<'soft' | 'hard'>('soft');
-  const [totalLimit, setTotalLimit] = useState(500);
-  
-  const [quotas, setQuotas] = useState<Quota[]>([
-    {
-      id: 'gender',
-      name: 'Gender Distribution',
-      type: 'demographic',
-      attribute: 'gender',
-      enabled: true,
-      values: [
-        { id: 'male', label: 'Male', target: 250, current: 125 },
-        { id: 'female', label: 'Female', target: 250, current: 97 },
-        { id: 'non-binary', label: 'Non-binary', target: 0, current: 5 }
-      ]
-    },
-    {
-      id: 'age',
-      name: 'Age Groups',
-      type: 'demographic',
-      attribute: 'age',
-      enabled: true,
-      values: [
-        { id: '18-24', label: '18-24', target: 100, current: 45 },
-        { id: '25-34', label: '25-34', target: 150, current: 78 },
-        { id: '35-44', label: '35-44', target: 150, current: 56 },
-        { id: '45-54', label: '45-54', target: 100, current: 32 }
-      ]
-    },
-    {
-      id: 'location',
-      name: 'Geographic Location',
-      type: 'demographic',
-      attribute: 'country',
-      enabled: false,
-      values: [
-        { id: 'us', label: 'United States', target: 300, current: 145 },
-        { id: 'uk', label: 'United Kingdom', target: 100, current: 56 },
-        { id: 'ca', label: 'Canada', target: 100, current: 23 }
-      ]
-    }
-  ]);
+  const [totalLimit, setTotalLimit] = useState(0);
+
+  const [quotas, setQuotas] = useState<Quota[]>([]);
 
   const calculateQuotaProgress = (quota: Quota) => {
     const total = quota.values.reduce((sum, value) => sum + value.target, 0);

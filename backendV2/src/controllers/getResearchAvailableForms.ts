@@ -106,7 +106,6 @@ interface Question {
   files?: QuestionFile[];
   metadata?: QuestionMetadata;
   config?: QuestionConfig;
-  companyName?: string;
   order?: number;
   [key: string]: string | number | boolean | null | QuestionChoice[] | ScaleConfig | QuestionFile[] | QuestionMetadata | QuestionConfig | undefined;
 }
@@ -241,7 +240,6 @@ function extractSmartVOCConfig(item: DynamoDBItem): StepConfiguration[] {
           description: question.description || '',
           instructions: question.instructions || '',
           type: question.type || '',
-          companyName: question.companyName || '',
           required: question.required !== false,
           choices: question.choices || [],
           metadata: parseJsonField(question.metadata) || {},

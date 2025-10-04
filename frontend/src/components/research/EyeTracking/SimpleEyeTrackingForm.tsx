@@ -28,21 +28,21 @@ export const SimpleEyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
 
   // Task configuration checkboxes
   const [isShelfTask, setIsShelfTask] = useState(false);
-  const [resizeImage, setResizeImage] = useState(true);
-  const [eyeTrackingDevice, setEyeTrackingDevice] = useState(true);
-  const [eyeTrackingWebcam, setEyeTrackingWebcam] = useState(true);
-  const [clickMeasurement, setClickMeasurement] = useState(true);
+  const [resizeImage, setResizeImage] = useState(false);
+  const [eyeTrackingDevice, setEyeTrackingDevice] = useState(false);
+  const [eyeTrackingWebcam, setEyeTrackingWebcam] = useState(false);
+  const [clickMeasurement, setClickMeasurement] = useState(false);
   const [finishByKeyOrClick, setFinishByKeyOrClick] = useState(false);
   const [holdVertical, setHoldVertical] = useState(false);
   const [holdHorizontal, setHoldHorizontal] = useState(false);
 
   // Priming display time
-  const [primingTime, setPrimingTime] = useState('10 secs');
+  const [primingTime, setPrimingTime] = useState('');
 
   // Shelf configuration
   const [randomizeOptions, setRandomizeOptions] = useState(false);
-  const [numberOfShelfs, setNumberOfShelfs] = useState(2);
-  const [itemsPerShelf, setItemsPerShelf] = useState(5);
+  const [numberOfShelfs, setNumberOfShelfs] = useState(0);
+  const [itemsPerShelf, setItemsPerShelf] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

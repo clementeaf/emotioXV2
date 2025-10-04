@@ -1,4 +1,4 @@
-import { FormField } from './FormField';
+import { FormField } from '@/components/forms/FormField';
 
 interface ValidatedFormFieldProps {
   id: string;

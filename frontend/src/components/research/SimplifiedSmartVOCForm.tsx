@@ -10,7 +10,6 @@ interface Question {
   required?: boolean;
   showConditionality?: boolean;
   config?: {
-    companyName?: string;
     scaleStart?: number;
     scaleEnd?: number;
     startLabel?: string;
@@ -31,11 +30,10 @@ export function SimplifiedSmartVOCForm({ onSave }: SimplifiedSmartVOCFormProps) 
     const newQuestion: Question = {
       id: `q${questions.length + 1}`,
       type: 'CSAT',
-      text: 'How satisfied are you with our product?',
+      text: '',
       required: true,
       showConditionality: false,
       config: {
-        companyName: '',
         ratingType: 'stars'
       }
     };
@@ -52,7 +50,7 @@ export function SimplifiedSmartVOCForm({ onSave }: SimplifiedSmartVOCFormProps) 
     // Configuración por defecto según tipo
     switch(type) {
       case 'CSAT':
-        config = { companyName: '', ratingType: 'stars' };
+        config = { ratingType: 'stars' };
         break;
       case 'CES':
         config = { scaleStart: 1, scaleEnd: 7 };
@@ -61,10 +59,10 @@ export function SimplifiedSmartVOCForm({ onSave }: SimplifiedSmartVOCFormProps) 
         config = { scaleStart: 1, scaleEnd: 7, startLabel: '', endLabel: '' };
         break;
       case 'NEV':
-        config = { companyName: '', ratingType: 'emojis' };
+        config = { ratingType: 'emojis' };
         break;
       case 'NPS':
-        config = { companyName: '', scaleStart: 0, scaleEnd: 10 };
+        config = { scaleStart: 0, scaleEnd: 10 };
         break;
       case 'VOC':
         config = {};
@@ -108,18 +106,6 @@ export function SimplifiedSmartVOCForm({ onSave }: SimplifiedSmartVOCFormProps) 
       case 'CSAT':
         return (
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Company or service's name
-              </label>
-              <input 
-                type="text" 
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-                value={question.config?.companyName || ''}
-                onChange={(e) => handleConfigChange(question.id, 'companyName', e.target.value)}
-                placeholder="Enter company name"
-              />
-            </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Rating Type
@@ -210,13 +196,6 @@ export function SimplifiedSmartVOCForm({ onSave }: SimplifiedSmartVOCFormProps) 
             <label className="block text-sm font-medium text-neutral-700 mb-1">
               Company or service's name
             </label>
-            <input 
-              type="text" 
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-              value={question.config?.companyName || ''}
-              onChange={(e) => handleConfigChange(question.id, 'companyName', e.target.value)}
-              placeholder="Enter company name"
-            />
           </div>
         );
       
@@ -226,13 +205,6 @@ export function SimplifiedSmartVOCForm({ onSave }: SimplifiedSmartVOCFormProps) 
             <label className="block text-sm font-medium text-neutral-700 mb-1">
               Company or service's name
             </label>
-            <input 
-              type="text" 
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-              value={question.config?.companyName || ''}
-              onChange={(e) => handleConfigChange(question.id, 'companyName', e.target.value)}
-              placeholder="Enter company name"
-            />
           </div>
         );
       

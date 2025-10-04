@@ -1,14 +1,15 @@
 {
-  "lastSync": "2025-10-01T21:57:03.000Z",
-  "stage": "prod",
-  "forceSync": false,
-  "verbose": true,
-  "filesGenerated": [
-    "dynamic-endpoints.js",
-    "centralized-config.ts",
-    "sync-status.json"
+  "lastSync": "2025-10-04T16:53:00.000Z",
+  "stage": "dev",
+  "httpEndpoint": "https://h68qs1et9j.execute-api.us-east-1.amazonaws.com/dev",
+  "wsEndpoint": "wss://b59weq4qqh.execute-api.us-east-1.amazonaws.com/dev",
+  "syncMethod": "post-deploy-script",
+  "filesUpdated": [
+    "frontend/src/api/dynamic-endpoints.ts",
+    "public-tests/src/config/dynamic-endpoints.ts",
+    "config/endpoints/centralized-config.ts",
+    "config/endpoints/sync-status.json"
   ],
   "backendVersion": "0.1.0",
-  "projectRoot": "/Users/clementefalcone/Desktop/personal/emotioXV2",
-  "configDir": "/Users/clementefalcone/Desktop/personal/emotioXV2/config/endpoints"
+  "projectRoot": "/Users/clementefalcone/Desktop/personal/emotioXV2"
 }

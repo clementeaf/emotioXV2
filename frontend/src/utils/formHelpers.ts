@@ -154,13 +154,3 @@ export function getScaleButtonClass(options: {
     disabledClasses
   ].filter(Boolean).join(' ');
 }
-
-/**
- * Format question text with company name replacement
- */
-export function formatQuestionText(text: string, companyName?: string): string {
-  if (!companyName) {
-    return text;
-  }
-  return text.replace(/{company}/g, companyName);
-} 

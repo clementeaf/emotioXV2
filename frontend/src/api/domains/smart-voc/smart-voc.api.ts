@@ -46,7 +46,7 @@ export const smartVocApi = {
    * Update smart VOC
    */
   update: async (researchId: string, data: UpdateSmartVOCRequest): Promise<SmartVOCFormData> => {
-    const response = await apiClient.put<ApiResponse<SmartVOCFormData>>(
+    const response = await apiClient.post<ApiResponse<SmartVOCFormData>>(
       `/research/${researchId}/smart-voc`,
       data
     );

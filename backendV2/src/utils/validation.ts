@@ -407,9 +407,6 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
 
   switch (type) {
     case QuestionType.SMARTVOC_CSAT:
-      if (!config.companyName || typeof config.companyName !== 'string') {
-        return errorResponse(error.REQUIRED_FIELD(`nombre de empresa en ${questionLabel.toLowerCase()}`), 400);
-      }
       if (!config.type || !['stars', 'numbers', 'emojis'].includes(config.type)) {
         return errorResponse(
           `${questionLabel} de tipo CSAT debe tener un tipo de entrada válido: stars, numbers o emojis`,
@@ -458,9 +455,6 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
         return errorResponse(`NEV: tipo de config debe ser uno de: ${validNevTypes.join(', ')}`);
       }
 
-      if (!config.companyName || typeof config.companyName !== 'string') {
-        return errorResponse(`NEV: requiere companyName`);
-      }
       break;
   }
 

@@ -12,8 +12,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     instructions: '',
     showConditionally: false,
     config: {
-      type: 'stars',
-      companyName: ''
+      type: 'stars'
     }
   },
   [QuestionType.SMARTVOC_CES]: {
@@ -50,8 +49,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
       type: 'scale',
       scaleRange: { start: 0, end: 10 },
       startLabel: '',
-      endLabel: '',
-      companyName: ''
+      endLabel: ''
     }
   },
   [QuestionType.SMARTVOC_NEV]: {
@@ -61,8 +59,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     instructions: '',
     showConditionally: false,
     config: {
-      type: 'emojis',
-      companyName: ''
+      type: 'emojis'
     }
   },
   [QuestionType.SMARTVOC_VOC]: {

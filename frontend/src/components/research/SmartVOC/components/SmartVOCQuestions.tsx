@@ -21,41 +21,14 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // ÚNICA FUENTE DE VERDAD para companyName
-  const firstQuestionWithCompany = questions.find(q => q.config && 'companyName' in q.config);
-  const [companyName, setCompanyName] = useState(firstQuestionWithCompany?.config.companyName || '');
-
-  // Sincronizar el estado local si las props cambian desde fuera
-  useEffect(() => {
-    const firstQuestionWithCompany = questions.find(q => q.config && 'companyName' in q.config);
-    setCompanyName(firstQuestionWithCompany?.config.companyName || '');
-  }, [questions]);
 
 
-  // Función para propagar el nombre de la empresa a todas las preguntas que lo utilizan
-  const syncCompanyName = (newCompanyName: string) => {
-    setCompanyName(newCompanyName); // Actualizar estado local para el input controlado
-
-    // Actualizar todas las preguntas que usan companyName en el estado principal (formData)
-    questions.forEach(question => {
-      if (['CSAT', 'NEV', 'NPS'].includes(question.type)) {
-        // Solo llamar a la actualización si el valor es realmente diferente
-        if (question.config.companyName !== newCompanyName) {
-          onUpdateQuestion(question.id, {
-            config: { ...question.config, companyName: newCompanyName }
-          });
-        }
-      }
-    });
-  };
 
   // Obtener los tipos de preguntas ya existentes
   const existingQuestionTypes = questions
     .map(q => q.type)
     .filter((t): t is QuestionType => ['CSAT', 'CES', 'CV', 'NEV', 'NPS', 'VOC'].includes(t));
 
-  // Determinar si el campo de companyName debe mostrarse
-  const showCompanyNameInput = questions.some(q => ['CSAT', 'NEV', 'NPS'].includes(q.type));
 
   // Normalizar preguntas para la UI (solo para el componente, no para el backend)
   const questionsForUI = questions.map(q => ({
@@ -208,38 +181,11 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   };
 
   const handleAddQuestion = (question: SmartVOCQuestion) => {
-    // Si se añade una pregunta que usa companyName, asegurarse que herede el valor actual
-    if (['CSAT', 'NEV', 'NPS'].includes(question.type)) {
-      question.config.companyName = companyName;
-    }
     onAddQuestion(question);
   };
 
   return (
     <div className="space-y-6">
-      {/* CAMPO ÚNICO Y CENTRALIZADO PARA EL NOMBRE DE LA EMPRESA */}
-      {showCompanyNameInput && (
-        <div className="p-4 border border-neutral-200 rounded-lg bg-neutral-50/50">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={companyName}
-                onChange={(e) => syncCompanyName(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg bg-neutral-100 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
-                disabled={disabled}
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
-                  Se reutiliza en todas las preguntas aplicables
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {questionsForUI.map((question, index) => (
         <div key={question.id || index} className="p-6 border border-neutral-200 rounded-lg bg-white shadow-sm">

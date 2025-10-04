@@ -21,17 +21,7 @@ export function ParticipantsForm({ className }: ParticipantsFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Datos de ejemplo
-  const [participants] = useState<Participant[]>([
-    { id: '001', name: 'John Doe', email: 'john.doe@example.com', status: 'completed', completedAt: '2023-06-15' },
-    { id: '002', name: 'Jane Smith', email: 'jane.smith@example.com', status: 'pending' },
-    { id: '003', name: 'Robert Johnson', email: 'robert.j@example.com', status: 'disqualified', completedAt: '2023-06-12' },
-    { id: '004', name: 'Emily Davis', email: 'emily.d@example.com', status: 'completed', completedAt: '2023-06-14' },
-    { id: '005', name: 'Michael Brown', email: 'michael.b@example.com', status: 'pending' },
-    { id: '006', name: 'Sarah Wilson', email: 'sarah.w@example.com', status: 'completed', completedAt: '2023-06-10' },
-    { id: '007', name: 'David Miller', email: 'david.m@example.com', status: 'disqualified', completedAt: '2023-06-13' },
-    { id: '008', name: 'Lisa Taylor', email: 'lisa.t@example.com', status: 'pending' },
-  ]);
+  const [participants] = useState<Participant[]>([]);
 
   // Filtrar participantes basado en la búsqueda y el estado seleccionado
   const filteredParticipants = participants.filter(participant => {

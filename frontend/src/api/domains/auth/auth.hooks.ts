@@ -26,7 +26,7 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (credentials: LoginRequest) => authApi.login(credentials),
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       // Choose storage based on rememberMe preference
       const storage = variables.rememberMe ? localStorage : sessionStorage;
 
@@ -41,14 +41,25 @@ export function useLogin() {
       // Notify auth state change for same-tab updates
       window.dispatchEvent(new CustomEvent('authStateChanged'));
 
-      // Invalidate and refetch user queries
-      queryClient.invalidateQueries({ queryKey: authKeys.all });
+      // Prefetch dashboard data in parallel while navigating
+      queryClient.prefetchQuery({
+        queryKey: ['research', 'list'],
+        queryFn: async () => {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/research`, {
+            headers: { 'Authorization': `Bearer ${data.token}` }
+          });
+          return response.json();
+        },
+        staleTime: 30000, // Consider fresh for 30 seconds
+      });
 
-      // Show success message
-      toast.success('Inicio de sesión exitoso');
-
-      // Redirect to dashboard
+      // Redirect immediately (no toast, no delay)
       router.push('/dashboard');
+
+      // Invalidate auth queries in background (non-blocking)
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: authKeys.all });
+      }, 0);
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.message || 'Error al iniciar sesión';

@@ -68,7 +68,6 @@ export class SmartVOCFormService {
               case 'CSAT':
                 const csatConfig = config as CSATConfig;
                 if (!csatConfig.type || !['stars', 'numbers', 'emojis'].includes(csatConfig.type)) qErrors[questionKey]['config.type'] = 'CSAT: tipo de config inválido';
-                if (!csatConfig.companyName || typeof csatConfig.companyName !== 'string') qErrors[questionKey]['config.companyName'] = 'CSAT: requiere companyName';
                 break;
               case 'CES':
                 const cesConfig = config as CESConfig;
@@ -87,13 +86,11 @@ export class SmartVOCFormService {
                 if (!nevConfig.type || !validNevTypes.includes(nevConfig.type)) {
                   qErrors[questionKey]['config.type'] = `NEV: tipo de config debe ser uno de: ${validNevTypes.join(', ')}`;
                 }
-                if (!nevConfig.companyName || typeof nevConfig.companyName !== 'string') qErrors[questionKey]['config.companyName'] = 'NEV: requiere companyName';
                 break;
               case 'NPS':
                 const npsConfig = config as NPSConfig;
                 if (npsConfig.type !== 'scale') qErrors[questionKey]['config.type'] = 'NPS: tipo de config debe ser scale';
                 if (!npsConfig.scaleRange || typeof npsConfig.scaleRange.start !== 'number' || typeof npsConfig.scaleRange.end !== 'number') qErrors[questionKey]['config.scaleRange'] = 'NPS: requiere scaleRange numérico';
-                if (!npsConfig.companyName || typeof npsConfig.companyName !== 'string') qErrors[questionKey]['config.companyName'] = 'NPS: requiere companyName';
                 break;
               case 'VOC':
                 const vocConfig = config as VOCConfig;

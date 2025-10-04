@@ -44,10 +44,10 @@ export const welcomeScreenApi = {
   },
 
   /**
-   * Update welcome screen
+   * Update welcome screen (backend uses POST for upsert)
    */
   update: async (researchId: string, data: UpdateWelcomeScreenRequest): Promise<WelcomeScreenData> => {
-    const response = await apiClient.put<ApiResponse<WelcomeScreenData>>(
+    const response = await apiClient.post<ApiResponse<WelcomeScreenData>>(
       `/research/${researchId}/welcome-screen`,
       data
     );

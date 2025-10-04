@@ -4,7 +4,7 @@ import { useLoginForm } from '@/hooks/useLoginForm';
 import { PUBLIC_ROUTES } from '@/routes';
 import Link from 'next/link';
 import { CheckboxField } from './CheckboxField';
-import { FormField } from './FormField';
+import { FormField } from '@/components/forms/FormField';
 import { StatusMessage } from './StatusMessage';
 import { SubmitButton } from './SubmitButton';
 
