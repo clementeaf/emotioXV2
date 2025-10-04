@@ -168,8 +168,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     if (saving) {
       return 'Guardando...';
     }
-    // Solo mostrar 'Actualizar' si formData.id es un string no vacío
-    if (typeof formData.id === 'string' && formData.id.length > 0) {
+    // Solo mostrar 'Actualizar' si formData.id existe y tiene valor (datos del backend)
+    if (formData.id && typeof formData.id === 'string' && formData.id.trim().length > 0) {
       return 'Actualizar';
     }
     return 'Guardar';
