@@ -464,7 +464,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
         questionContent = `
                           <div class="form-field">
                             <label class="sr-only">Respuesta de texto corto</label>
-                            <input type="text" name="question-${q.id}" placeholder="Tu respuesta" class="input-text">
+                            <input type="text" name="question-${q.id}" placeholder="${q.answerPlaceholder || 'Tu respuesta'}" class="input-text">
                           </div>
                         `;
         break;
@@ -472,7 +472,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
         questionContent = `
                           <div class="form-field">
                             <label class="sr-only">Respuesta de texto largo</label>
-                            <textarea name="question-${q.id}" rows="4" placeholder="Tu respuesta" class="textarea"></textarea>
+                            <textarea name="question-${q.id}" rows="4" placeholder="${q.answerPlaceholder || 'Tu respuesta'}" class="textarea"></textarea>
                           </div>
                         `;
         break;
@@ -511,19 +511,30 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                         `;
         break;
       case 'linear_scale':
+        const scaleStart = q.scaleConfig?.startValue || 1;
+        const scaleEnd = q.scaleConfig?.endValue || 5;
+        const startLabel = q.scaleConfig?.startLabel || '';
+        const endLabel = q.scaleConfig?.endLabel || '';
+        
         questionContent = `
                           <fieldset class="scale-container">
                             <legend class="sr-only">Seleccione un valor en la escala</legend>
                             <div class="linear-scale">
-                              ${Array.from({ length: 5 }, (_, i) => `
+                              ${Array.from({ length: scaleEnd - scaleStart + 1 }, (_, i) => scaleStart + i).map(value => `
                                 <div class="scale-option">
                                   <label class="scale-label">
-                                    <input type="radio" name="question-${q.id}" value="${i+1}" class="scale-input">
-                                    <span class="scale-text">${i+1}</span>
+                                    <input type="radio" name="question-${q.id}" value="${value}" class="scale-input">
+                                    <span class="scale-text">${value}</span>
                                   </label>
                                 </div>
                               `).join('')}
                             </div>
+                            ${startLabel || endLabel ? `
+                              <div class="scale-labels" style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.875rem; color: #64748b;">
+                                <span>${startLabel}</span>
+                                <span>${endLabel}</span>
+                              </div>
+                            ` : ''}
                           </fieldset>
                         `;
         break;
@@ -541,6 +552,71 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                             <input type="text" placeholder="Tu respuesta">
                           </div>
                         `;
+        break;
+      case 'navigation_flow':
+        const navigationFiles = q.files || [];
+        if (navigationFiles.length > 0) {
+          questionContent = `
+                          <div class="file-preview">
+                            <div style="text-align: center; margin-bottom: 1rem;">
+                              <h4 style="margin-bottom: 0.5rem; color: #374151;">Imagen de navegación</h4>
+                              <p style="color: #6b7280; font-size: 0.875rem;">Haz clic en las áreas marcadas para continuar</p>
+                            </div>
+                            ${navigationFiles.map((file: any, fileIndex: number) => `
+                              <div class="file-item">
+                                <img src="${file.url || file.preview}" alt="${file.name || 'Imagen de navegación'}" 
+                                     style="max-width: 100%; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer;">
+                                <div class="file-name">${file.name || `Imagen ${fileIndex + 1}`}</div>
+                                ${file.hitZones && file.hitZones.length > 0 ? `
+                                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
+                                    ${file.hitZones.length} zona(s) de clic configurada(s)
+                                  </div>
+                                ` : ''}
+                              </div>
+                            `).join('')}
+                          </div>
+                        `;
+        } else {
+          questionContent = `
+                          <div style="text-align: center; padding: 2rem; background: #f9fafb; border: 2px dashed #d1d5db; border-radius: 8px;">
+                            <p style="color: #6b7280; margin: 0;">No hay imágenes configuradas para el flujo de navegación</p>
+                          </div>
+                        `;
+        }
+        break;
+      case 'preference_test':
+        const preferenceFiles = q.files || [];
+        if (preferenceFiles.length >= 2) {
+          questionContent = `
+                          <div class="file-preview">
+                            <div style="text-align: center; margin-bottom: 1rem;">
+                              <h4 style="margin-bottom: 0.5rem; color: #374151;">Prueba de Preferencia A/B</h4>
+                              <p style="color: #6b7280; font-size: 0.875rem;">Selecciona la opción que prefieras</p>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 600px; margin: 0 auto;">
+                              ${preferenceFiles.slice(0, 2).map((file: any, fileIndex: number) => `
+                                <div class="file-item" style="text-align: center;">
+                                  <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 1rem; cursor: pointer; transition: border-color 0.2s;" 
+                                       onmouseover="this.style.borderColor='#3b82f6'" 
+                                       onmouseout="this.style.borderColor='#e5e7eb'">
+                                    <img src="${file.url || file.preview}" alt="${file.name || 'Opción A/B'}" 
+                                         style="max-width: 100%; border-radius: 4px;">
+                                    <div class="file-name" style="margin-top: 0.5rem; font-weight: 500;">
+                                      Opción ${fileIndex === 0 ? 'A' : 'B'}
+                                    </div>
+                                  </div>
+                                </div>
+                              `).join('')}
+                            </div>
+                          </div>
+                        `;
+        } else {
+          questionContent = `
+                          <div style="text-align: center; padding: 2rem; background: #f9fafb; border: 2px dashed #d1d5db; border-radius: 8px;">
+                            <p style="color: #6b7280; margin: 0;">Se necesitan al menos 2 imágenes para la prueba de preferencia</p>
+                          </div>
+                        `;
+        }
         break;
       default:
         questionContent = '<p style="color: #666;">Tipo de pregunta no compatible con la vista previa.</p>';
