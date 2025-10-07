@@ -55,7 +55,7 @@ export const LocationConsentModal: React.FC<LocationConsentModalProps> = ({
               <h3 className="font-medium text-yellow-900 mb-2">📱 Usuarios de Safari</h3>
               <ul className="text-sm text-yellow-800 space-y-1">
                 <li>• Asegúrate de que Safari tenga permisos de ubicación habilitados</li>
-                <li>• Ve a Safari > Preferencias > Privacidad > Servicios de ubicación</li>
+                <li>• Ve a Safari &gt; Preferencias &gt; Privacidad &gt; Servicios de ubicación</li>
                 <li>• Si usas HTTPS, la ubicación funcionará mejor</li>
                 <li>• Safari puede requerir más tiempo para obtener la ubicación</li>
               </ul>

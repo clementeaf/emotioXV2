@@ -124,7 +124,7 @@ function App() {
                   {/* 🎯 AVISO ESPECÍFICO PARA SAFARI */}
                   {/^((?!chrome|android).)*safari/i.test(navigator.userAgent) && (
                     <div className="text-xs mt-2 bg-red-700 bg-opacity-50 p-2 rounded">
-                      <strong>Safari:</strong> Verifica permisos de ubicación en Safari > Preferencias > Privacidad
+                      <strong>Safari:</strong> Verifica permisos de ubicación en Safari &gt; Preferencias &gt; Privacidad
                     </div>
                   )}
                 </div>
