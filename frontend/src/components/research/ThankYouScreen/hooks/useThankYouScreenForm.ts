@@ -30,7 +30,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   const {
     data: existingScreen,
     isLoading,
-    error,
     updateThankYouScreen,
     createThankYouScreen,
     deleteThankYouScreen
@@ -41,7 +40,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   const [isSaving, setIsSaving] = useState(false);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [isEmpty, setIsEmpty] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
@@ -50,7 +48,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   useEffect(() => {
     if (!actualResearchId) {
       setFormData({ ...INITIAL_FORM_DATA });
-      setIsEmpty(true);
       return;
     }
 
@@ -68,23 +65,11 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         }
       };
       setFormData(formDataToSet);
-      setIsEmpty(false);
       setHasBeenSaved(true);
     } else if (!hasBeenSaved) {
       setFormData({ ...INITIAL_FORM_DATA });
-      setIsEmpty(true);
     }
-
-    // Manejar errores - solo mostrar error si hay un error real (no 404)
-    if (error && !existingScreen && !error.message?.includes('THANK_YOU_SCREEN_NOT_FOUND')) {
-      setModalError({
-        title: 'Error',
-        message: 'No se pudo cargar la configuración de la pantalla de agradecimiento.',
-        type: 'error'
-      });
-      setModalVisible(true);
-    }
-  }, [existingScreen, actualResearchId, error]);
+  }, [existingScreen, actualResearchId, hasBeenSaved]);
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
@@ -164,7 +149,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
 
       setFormData(formDataFromResult);
       setHasBeenSaved(true);
-      setIsEmpty(false);
 
       // Usar toast en lugar de modal para éxito
       toastHelpers.saveSuccess('Pantalla de agradecimiento');
@@ -238,7 +222,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       await deleteThankYouScreen();
       setFormData({ ...INITIAL_FORM_DATA });
       setHasBeenSaved(false);
-      setIsEmpty(true);
 
       // Usar toast en lugar de modal para éxito
       toastHelpers.deleteSuccess('Pantalla de agradecimiento');
