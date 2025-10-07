@@ -64,6 +64,29 @@ export const useLocationTracking = ({
         return;
       }
 
+      // 🎯 DETECTAR SAFARI Y AJUSTAR CONFIGURACIÓN
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      console.log('[useLocationTracking] Navegador detectado:', {
+        isSafari,
+        isIOS,
+        userAgent: navigator.userAgent
+      });
+
+      // 🎯 CONFIGURACIÓN OPTIMIZADA PARA SAFARI
+      const geolocationOptions = isSafari || isIOS ? {
+        enableHighAccuracy: false,  // Safari prefiere false
+        timeout: 30000,            // 30 segundos para Safari
+        maximumAge: 60000          // 1 minuto para Safari
+      } : {
+        enableHighAccuracy: true,
+        timeout: 15000,            // 15 segundos para otros navegadores
+        maximumAge: 300000         // 5 minutos para otros navegadores
+      };
+
+      console.log('[useLocationTracking] Opciones de geolocalización:', geolocationOptions);
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const locationData: LocationData = {
@@ -73,16 +96,37 @@ export const useLocationTracking = ({
             timestamp: new Date().toISOString(),
             source: 'gps'
           };
+          console.log('[useLocationTracking] Ubicación GPS obtenida:', locationData);
           resolve(locationData);
         },
         (error) => {
-          reject(new Error(`Error de geolocalización: ${error.message}`));
+          console.error('[useLocationTracking] Error de geolocalización:', {
+            code: error.code,
+            message: error.message,
+            isSafari,
+            isIOS
+          });
+          
+          // 🎯 MENSAJES DE ERROR ESPECÍFICOS PARA SAFARI
+          let errorMessage = `Error de geolocalización: ${error.message}`;
+          
+          if (isSafari || isIOS) {
+            switch (error.code) {
+              case 1: // PERMISSION_DENIED
+                errorMessage = 'Permiso de ubicación denegado. Por favor, habilita la ubicación en Safari > Preferencias > Privacidad > Servicios de ubicación';
+                break;
+              case 2: // POSITION_UNAVAILABLE
+                errorMessage = 'Ubicación no disponible. Verifica que tengas conexión a internet y que la ubicación esté habilitada';
+                break;
+              case 3: // TIMEOUT
+                errorMessage = 'Tiempo de espera agotado. Safari puede requerir más tiempo para obtener la ubicación';
+                break;
+            }
+          }
+          
+          reject(new Error(errorMessage));
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // 5 minutos
-        }
+        geolocationOptions
       );
     });
   }, []);

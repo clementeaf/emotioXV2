@@ -49,6 +49,19 @@ export const LocationConsentModal: React.FC<LocationConsentModalProps> = ({
             Para mejorar la calidad de <strong>{researchTitle}</strong>, nos gustaría obtener tu ubicación aproximada.
           </p>
 
+          {/* 🎯 AVISO ESPECÍFICO PARA SAFARI */}
+          {/^((?!chrome|android).)*safari/i.test(navigator.userAgent) && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h3 className="font-medium text-yellow-900 mb-2">📱 Usuarios de Safari</h3>
+              <ul className="text-sm text-yellow-800 space-y-1">
+                <li>• Asegúrate de que Safari tenga permisos de ubicación habilitados</li>
+                <li>• Ve a Safari > Preferencias > Privacidad > Servicios de ubicación</li>
+                <li>• Si usas HTTPS, la ubicación funcionará mejor</li>
+                <li>• Safari puede requerir más tiempo para obtener la ubicación</li>
+              </ul>
+            </div>
+          )}
+
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="font-medium text-blue-900 mb-2">¿Qué información recopilamos?</h3>
             <ul className="text-sm text-blue-800 space-y-1">
