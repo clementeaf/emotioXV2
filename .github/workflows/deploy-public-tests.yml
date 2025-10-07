@@ -108,8 +108,7 @@ jobs:
           echo "🔄 Invalidating CloudFront cache..."
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*" \
-            --region ${{ env.AWS_REGION }}
+            --paths "/*"
 
       - name: 🔍 Verify deployment
         run: |
@@ -119,7 +118,6 @@ jobs:
           # Obtener dominio de CloudFront
           CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
             --id ${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }} \
-            --region ${{ env.AWS_REGION }} \
             --query 'Distribution.DomainName' \
             --output text)
 
@@ -173,7 +171,7 @@ jobs:
           echo ""
           echo "🌐 URLs:"
           echo "  - S3: https://${{ secrets.PUBLIC_TESTS_S3_BUCKET }}.s3.${{ env.AWS_REGION }}.amazonaws.com"
-          echo "  - CloudFront: https://$(aws cloudfront get-distribution --id ${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }} --region ${{ env.AWS_REGION }} --query 'Distribution.DomainName' --output text)"
+          echo "  - CloudFront: https://$(aws cloudfront get-distribution --id ${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }} --query 'Distribution.DomainName' --output text)"
           echo ""
           echo "📋 Próximos pasos:"
           echo "1. Verifica que el sitio funciona correctamente"
