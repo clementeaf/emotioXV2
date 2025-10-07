@@ -104,11 +104,16 @@ jobs:
             --cache-control "no-cache,no-store,must-revalidate"
 
       - name: 🌐 Invalidate CloudFront cache
+        continue-on-error: true
         run: |
           echo "🔄 Invalidating CloudFront cache..."
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
+          if [ -n "${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id ${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }} \
+              --paths "/*" && echo "✅ CloudFront cache invalidated" || echo "⚠️  CloudFront invalidation failed"
+          else
+            echo "⚠️  PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID not set - skipping"
+          fi
 
       - name: 🔍 Verify deployment
         run: |
