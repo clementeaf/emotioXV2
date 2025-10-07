@@ -537,9 +537,16 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const queryClient = useQueryClient();
 
   // Estados
-  const [formData, setFormData] = useState<EyeTrackingRecruitFormData>({
-    ...DEFAULT_CONFIG,
-    researchId: researchId === 'current' ? '1234' : researchId // Replicando WelcomeScreen: si es 'current', usa un ID real
+  const [formData, setFormData] = useState<EyeTrackingRecruitFormData>(() => {
+    const actualResearchId = researchId === 'current' ? '1234' : researchId;
+    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+    const generatedUrl = `${publicTestsBaseUrl}/?researchId=${actualResearchId}`;
+    
+    return {
+      ...DEFAULT_CONFIG,
+      researchId: actualResearchId,
+      researchUrl: generatedUrl
+    };
   });
   const [stats, setStats] = useState<EyeTrackingRecruitStats | null>(DEFAULT_STATS);
   const [loading, setLoading] = useState(true);
@@ -568,7 +575,12 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     const actualResearchId = researchId === 'current' ? '1234' : researchId;
     // Usar el mismo formato que en el sidebar unificado para asegurar consistencia
     const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
-    return `${publicTestsBaseUrl}/?researchId=${actualResearchId}`;
+    const generatedUrl = `${publicTestsBaseUrl}/?researchId=${actualResearchId}`;
+    
+    // Debug log para verificar la URL generada
+    console.log('[useEyeTrackingRecruit] Generated URL:', generatedUrl);
+    
+    return generatedUrl;
   }, [researchId]);
 
   // Usar el hook compartido para obtener datos de eye-tracking recruit
@@ -662,6 +674,20 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }));
     }
   }, [isLoadingConfig, generateRecruitmentLink]);
+
+  // 🎯 NUEVO: Asegurar que la URL se genere siempre al montar el componente
+  useEffect(() => {
+    if (!loading) {
+      const generatedLink = generateRecruitmentLink();
+      // Solo actualizar si la URL es diferente o está vacía
+      if (!formData.researchUrl || formData.researchUrl !== generatedLink) {
+        setFormData(prev => ({
+          ...prev,
+          researchUrl: generatedLink
+        }));
+      }
+    }
+  }, [loading, formData.researchUrl, generateRecruitmentLink]);
 
   // 🎯 DETECTAR CAMBIOS NO GUARDADOS PARA FEEDBACK VISUAL
   useEffect(() => {
@@ -1565,7 +1591,13 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // Acciones
   const generateQRCode = useCallback(() => {
-    const link = generateRecruitmentLink();
+    // 🎯 FIX: Asegurar que tenemos una URL válida antes de generar QR
+    const link = formData.researchUrl || generateRecruitmentLink();
+    
+    if (!link) {
+      toast.error('No se pudo generar la URL de investigación');
+      return;
+    }
 
     // Generar QR (en una aplicación real, podríamos usar una librería como qrcode.react)
     // Aquí simularemos la generación almacenando la URL en el estado
@@ -1576,13 +1608,20 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     // Por ejemplo: const qrCodeSvg = await QRCode.toString(link, { type: 'svg' });
 
     toast.success('Código QR generado correctamente');
-  }, [generateRecruitmentLink]);
+  }, [formData.researchUrl, generateRecruitmentLink]);
 
   const copyLinkToClipboard = useCallback(() => {
-    const link = generateRecruitmentLink();
+    // 🎯 FIX: Usar la URL del formData si existe, sino generar una nueva
+    const link = formData.researchUrl || generateRecruitmentLink();
+    
+    if (!link) {
+      toast.error('No se pudo obtener la URL de investigación');
+      return;
+    }
+    
     navigator.clipboard.writeText(link);
     toast.success('Enlace copiado al portapapeles');
-  }, [generateRecruitmentLink]);
+  }, [formData.researchUrl, generateRecruitmentLink]);
 
   // Actualizar el handler de demographicQuestionsEnabled
   const setDemographicQuestionsEnabled = useCallback((enabled: boolean) => {
@@ -1624,9 +1663,13 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // Función auxiliar para crear una configuración predeterminada
   const createDefaultConfig = (researchId: string) => {
+    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+    const generatedUrl = `${publicTestsBaseUrl}/?researchId=${researchId}`;
+
     const defaultConfig = {
       ...DEFAULT_CONFIG,
-      researchId
+      researchId,
+      researchUrl: generatedUrl
     };
 
     // Actualizar el estado del formulario

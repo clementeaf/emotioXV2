@@ -190,6 +190,9 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       showSuccessToast('Datos de reclutamiento eliminados correctamente');
 
       // Resetear el estado del formulario después de eliminar
+      const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+      const generatedUrl = `${publicTestsBaseUrl}/?researchId=${researchId}`;
+
       const defaultConfig = {
         id: undefined, // Importante: resetear el ID
         researchId: researchId,
@@ -207,7 +210,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         linkConfig: { allowMobile: false, trackLocation: false, allowMultipleAttempts: false, showProgressBar: true },
         participantLimit: { enabled: false, value: 50 },
         backlinks: { complete: '', disqualified: '', overquota: '' },
-        researchUrl: `https://useremotion.com/link/${researchId}`,
+        researchUrl: generatedUrl,
         parameterOptions: { saveDeviceInfo: false, saveLocationInfo: false, saveResponseTimes: false, saveUserJourney: false }
       };
 
