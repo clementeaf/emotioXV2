@@ -496,8 +496,13 @@ export function getWebsocketUrl(): string {
  * Función helper para obtener URL de Public Tests
  */
 export function getPublicTestsUrl(researchId?: string, participantId?: string): string {
-  // URL base de public tests desde endpoints dinámicos
-  const PUBLIC_TESTS_URL = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+  // 🎯 DETECTAR ENTORNO AUTOMÁTICAMENTE
+  const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  
+  // URL base de public tests - LOCAL vs PRODUCCIÓN
+  const PUBLIC_TESTS_URL = isDevelopment 
+    ? 'http://localhost:5173'  // 🏠 DESARROLLO LOCAL
+    : (process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'); // 🌐 PRODUCCIÓN
 
   let url = PUBLIC_TESTS_URL;
   if (researchId && participantId) {
@@ -506,7 +511,7 @@ export function getPublicTestsUrl(researchId?: string, participantId?: string): 
 
   // Debug log en desarrollo
   if (typeof window !== 'undefined' && !validateApiConfiguration()) {
-    console.log('[api-config] Public Tests URL:', url);
+    console.log('[api-config] Public Tests URL:', url, '| Entorno:', isDevelopment ? 'LOCAL' : 'PRODUCCIÓN');
   }
 
   return url;

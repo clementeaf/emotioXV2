@@ -539,7 +539,13 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Estados
   const [formData, setFormData] = useState<EyeTrackingRecruitFormData>(() => {
     const actualResearchId = researchId === 'current' ? '1234' : researchId;
-    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+    
+    // 🎯 DETECTAR ENTORNO AUTOMÁTICAMENTE
+    const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    const publicTestsBaseUrl = isDevelopment 
+      ? 'http://localhost:5173'  // 🏠 DESARROLLO LOCAL
+      : (process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'); // 🌐 PRODUCCIÓN
+    
     const generatedUrl = `${publicTestsBaseUrl}/?researchId=${actualResearchId}`;
     
     return {
@@ -573,12 +579,17 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Función para generar el enlace de reclutamiento
   const generateRecruitmentLink = useCallback(() => {
     const actualResearchId = researchId === 'current' ? '1234' : researchId;
-    // Usar el mismo formato que en el sidebar unificado para asegurar consistencia
-    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+    
+    // 🎯 DETECTAR ENTORNO AUTOMÁTICAMENTE
+    const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    const publicTestsBaseUrl = isDevelopment 
+      ? 'http://localhost:5173'  // 🏠 DESARROLLO LOCAL
+      : (process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'); // 🌐 PRODUCCIÓN
+    
     const generatedUrl = `${publicTestsBaseUrl}/?researchId=${actualResearchId}`;
     
     // Debug log para verificar la URL generada
-    console.log('[useEyeTrackingRecruit] Generated URL:', generatedUrl);
+    console.log('[useEyeTrackingRecruit] Generated URL:', generatedUrl, '| Entorno:', isDevelopment ? 'LOCAL' : 'PRODUCCIÓN');
     
     return generatedUrl;
   }, [researchId]);
