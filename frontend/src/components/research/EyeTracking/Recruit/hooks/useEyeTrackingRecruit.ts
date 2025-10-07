@@ -1632,33 +1632,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     
     try {
       await navigator.clipboard.writeText(link);
-      toast.success('✅ Enlace copiado al portapapeles', {
-        duration: 3000,
-        position: 'top-center',
-        style: {
-          background: '#10b981',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '14px',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-        }
-      });
+      toast.success('Enlace copiado al portapapeles');
     } catch (error) {
-      toast.error('❌ Error al copiar enlace', {
-        duration: 4000,
-        position: 'top-center',
-        style: {
-          background: '#ef4444',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '14px',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-        }
-      });
+      toast.error('Error al copiar enlace');
     }
   }, [formData.researchUrl, generateRecruitmentLink]);
 
