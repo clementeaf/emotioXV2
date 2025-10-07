@@ -9,6 +9,7 @@ import { useEyeTrackingConfigQuery } from './hooks/useEyeTrackingConfigQuery';
 import { useLocationTracking } from './hooks/useLocationTracking';
 import './index.css';
 import NoResearchIdError from './pages/NoResearchIdError';
+import { PrivacyNoticePage } from './pages';
 
 // Crear el cliente de Query
 const queryClient = new QueryClient({
@@ -140,6 +141,7 @@ function App() {
             <Route path="/" element={<LoginRedirect />} />
             <Route path="/error-no-research-id" element={<NoResearchIdError />} />
             <Route path="/test" element={<TestLayoutMain />} />
+            <Route path="/privacy" element={<PrivacyNoticePage />} />
             {/* 🎯 NUEVA RUTA: Acceso directo con path params */}
             <Route path="/:researchId/:participantId" element={<LoginRedirect />} />
           </Routes>
