@@ -1621,7 +1621,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     toast.success('Código QR generado correctamente');
   }, [formData.researchUrl, generateRecruitmentLink]);
 
-  const copyLinkToClipboard = useCallback(() => {
+  const copyLinkToClipboard = useCallback(async () => {
     // 🎯 FIX: Usar la URL del formData si existe, sino generar una nueva
     const link = formData.researchUrl || generateRecruitmentLink();
     
@@ -1630,8 +1630,36 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       return;
     }
     
-    navigator.clipboard.writeText(link);
-    toast.success('Enlace copiado al portapapeles');
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success('✅ Enlace copiado al portapapeles', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#10b981',
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+        }
+      });
+    } catch (error) {
+      toast.error('❌ Error al copiar enlace', {
+        duration: 4000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+        }
+      });
+    }
   }, [formData.researchUrl, generateRecruitmentLink]);
 
   // Actualizar el handler de demographicQuestionsEnabled

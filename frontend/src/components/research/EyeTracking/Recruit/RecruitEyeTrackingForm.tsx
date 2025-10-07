@@ -783,7 +783,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           />
                           <button
                             type="button"
-                            className="px-2 py-2 bg-neutral-100 border border-l-0 border-neutral-300 rounded-r-md text-neutral-600"
+                            className="px-2 py-2 bg-neutral-100 border border-l-0 border-neutral-300 rounded-r-md text-neutral-600 hover:bg-green-50 hover:text-green-600 hover:border-green-300 transition-colors duration-200"
                             onClick={copyLinkToClipboard}
                             title="Copiar enlace"
                             aria-label="Copiar enlace al portapapeles"
