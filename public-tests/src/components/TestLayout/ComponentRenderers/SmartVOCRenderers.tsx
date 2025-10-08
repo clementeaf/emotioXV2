@@ -221,6 +221,11 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
     
     const maxSelections = extractMaxSelections(instructions);
     console.log('[SmartVOCRenderers] 🎯 maxSelections final:', maxSelections);
+    console.log('[SmartVOCRenderers] 🔍 Instrucciones completas:', {
+      instructions,
+      maxSelections,
+      extractedCorrectly: maxSelections === 4
+    });
 
     return (
       <QuestionComponent

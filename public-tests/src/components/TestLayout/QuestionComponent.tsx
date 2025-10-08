@@ -94,7 +94,8 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       questionType: question.type,
       maxSelections: question.config?.maxSelections,
       currentValue: value,
-      currentSelectionsLength: Array.isArray(value) ? value.length : 0
+      currentSelectionsLength: Array.isArray(value) ? value.length : 0,
+      canSelectMore: Array.isArray(value) ? value.length < (question.config?.maxSelections || 0) : false
     });
 
     if (question.type === 'emojis' && question.config?.maxSelections > 1) {
