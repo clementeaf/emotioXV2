@@ -244,7 +244,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
               <p className="text-gray-600 mb-6">{question.description}</p>
               <div className="flex gap-4">
                 {[1, 2, 3, 4, 5].map((value) => (
@@ -267,7 +266,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
               <p className="text-gray-600 mb-6">{question.description}</p>
               <div className="flex flex-col gap-4 w-full max-w-md">
                 {question.choices?.map((choice) => (
@@ -296,7 +294,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
               <p className="text-gray-600 mb-6">{question.description}</p>
               {question.config?.type === 'text' ? (
                 <textarea
@@ -344,7 +341,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
               <p className="text-gray-600 mb-6">{question.description}</p>
               <div className="bg-gray-100 p-6 rounded-lg">
                 <p className="text-gray-700 mb-4">Componente de navegación en desarrollo</p>
@@ -362,7 +358,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
               <p className="text-gray-600 mb-6">{question.description}</p>
               <button
                 onClick={() => handleValueChange('viewed')}
@@ -377,7 +372,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         return (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
               <p className="text-gray-600 mb-6">{question.description}</p>
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             </div>

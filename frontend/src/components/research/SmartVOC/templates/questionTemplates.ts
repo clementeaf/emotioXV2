@@ -11,6 +11,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     description: 'Mide satisfacción general',
     instructions: '',
     showConditionally: false,
+    required: true,
     config: {
       type: 'stars'
     }
@@ -58,6 +59,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     description: 'Analiza valor emocional',
     instructions: '',
     showConditionally: false,
+    required: true,
     config: {
       type: 'emojis'
     }

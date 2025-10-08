@@ -98,8 +98,6 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
       ...baseConfig,
       type: displayType, // Agregar el tipo de visualización
       ...(displayType === 'stars' && {
-        leftLabel: '1 - Muy insatisfecho',
-        rightLabel: '5 - Muy satisfecho',
         startLabel: '1 - Muy insatisfecho',
         endLabel: '5 - Muy satisfecho'
       }),

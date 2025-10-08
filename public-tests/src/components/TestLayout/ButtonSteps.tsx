@@ -430,6 +430,64 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       const journeyData = getJourneyData();
       const finalMetadata = buildUserJourneyMetadata(journeyData, enhancedMetadata);
 
+      // 🎯 FALLBACK: Asegurar que metadata cumpla con ResponseMetadataSchema
+      const safeMetadata = Object.keys(finalMetadata).length > 0 ? finalMetadata : {
+        deviceInfo: {
+          deviceType: 'desktop' as const,
+          userAgent: navigator.userAgent,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          platform: navigator.platform,
+          language: navigator.language
+        },
+        timingInfo: {
+          startTime: Date.now(),
+          endTime: Date.now(),
+          duration: 0
+        }
+      };
+
+      // 🎯 CONVERTIR currentFormData AL FORMATO CORRECTO PARA BACKEND
+      const formatResponseData = (data: unknown): string | number | boolean | string[] | Record<string, string | number | boolean | null> | null => {
+        if (data === null || data === undefined) {
+          return null;
+        }
+        
+        if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') {
+          return data;
+        }
+        
+        if (Array.isArray(data)) {
+          // Convertir array a array de strings
+          return data.map(item => String(item));
+        }
+        
+        if (typeof data === 'object') {
+          // Convertir objeto complejo a objeto simple con valores primitivos
+          const simpleObject: Record<string, string | number | boolean | null> = {};
+          for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+            if (value === null || value === undefined) {
+              simpleObject[key] = null;
+            } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+              simpleObject[key] = value;
+            } else if (Array.isArray(value)) {
+              // Convertir arrays a strings separados por comas
+              simpleObject[key] = value.map(item => String(item)).join(',');
+            } else if (typeof value === 'object') {
+              // Convertir objetos anidados a strings JSON
+              simpleObject[key] = JSON.stringify(value);
+            } else {
+              simpleObject[key] = String(value);
+            }
+          }
+          return simpleObject;
+        }
+        
+        return String(data);
+      };
+
+      const formattedResponse = formatResponseData(currentFormData);
+
       if (hasExistingResponse) {
         // UPDATE: Actualizar la respuesta existente
         const updateData: UpdateModuleResponseDto = {
@@ -438,16 +496,33 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           questionKey: currentQuestionKey,
           responses: [{
             questionKey: currentQuestionKey,
-            response: currentFormData,
+            response: formattedResponse,
             timestamp,
             createdAt: existingResponse?.createdAt || now,
             updatedAt: now
           }],
-          metadata: finalMetadata // 🎯 METADATA CON TIMING Y RECORRIDO
+          metadata: safeMetadata // 🎯 METADATA SEGURO QUE CUMPLE CON ESQUEMA
         };
 
+        // 🚨 DEBUG: Log de datos que se envían
+        console.log('[ButtonSteps] 🔍 Datos UPDATE que se envían:', {
+          updateData,
+          documentId,
+          researchId,
+          participantId,
+          currentQuestionKey,
+          currentFormData: currentFormData,
+          currentFormDataType: typeof currentFormData,
+          currentFormDataKeys: Object.keys(currentFormData || {})
+        });
+
+        // 🚨 VALIDACIÓN: Verificar que documentId existe
+        if (!documentId) {
+          throw new Error('No se encontró documentId para actualizar la respuesta');
+        }
+
         await updateMutation.mutateAsync({
-          responseId: documentId || '',
+          responseId: documentId,
           data: updateData
         });
       } else {
@@ -458,12 +533,12 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           questionKey: currentQuestionKey,
           responses: [{
             questionKey: currentQuestionKey,
-            response: currentFormData,
+            response: formattedResponse,
             timestamp,
             createdAt: now,
             updatedAt: undefined
           }],
-          metadata: finalMetadata // 🎯 METADATA CON TIMING Y RECORRIDO
+          metadata: safeMetadata // 🎯 METADATA SEGURO QUE CUMPLE CON ESQUEMA
         };
 
         await saveMutation.mutateAsync(createData);
