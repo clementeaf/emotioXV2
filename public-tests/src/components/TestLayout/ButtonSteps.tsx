@@ -491,6 +491,45 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           const simpleObject: Record<string, string | number | boolean | null> = {};
           const entries = Object.entries(data as Record<string, unknown>);
           
+          // 🎯 EXTRAER LÍMITE DINÁMICO PARA SMARTVOC NEV
+          let maxSelections = 3; // Fallback por defecto
+          if (currentQuestionKey === 'smartvoc_nev') {
+            // Obtener instrucciones del backend para extraer maxSelections
+            const currentStepConfig = formsData?.stepsConfiguration?.find(
+              (config: any) => config.questionKey === currentQuestionKey
+            );
+            const instructions = String(currentStepConfig?.contentConfiguration?.instructions || '');
+            
+            // 🎯 EXTRAER maxSelections DE LAS INSTRUCCIONES (misma lógica que SmartVOCRenderers.tsx)
+            const extractMaxSelections = (text: string): number => {
+              const patterns = [
+                /selecciona\s+maximo\s+(\d+)\s+emociones/i,
+                /hasta\s+(\d+)/i,
+                /máximo\s+(\d+)/i,
+                /máx\s+(\d+)/i,
+                /max\s+(\d+)/i,
+                /selecciona\s+hasta\s+(\d+)/i,
+                /selecciona\s+máximo\s+(\d+)/i,
+                /selecciona\s+(\d+)\s+emociones/i,
+                /(\d+)\s+emociones/i
+              ];
+              
+              for (const pattern of patterns) {
+                const match = text.match(pattern);
+                if (match) {
+                  const number = parseInt(match[1], 10);
+                  if (number > 0 && number <= 10) {
+                    return number;
+                  }
+                }
+              }
+              return 4; // Fallback para SmartVOC NEV
+            };
+            
+            maxSelections = extractMaxSelections(instructions);
+            console.log('[ButtonSteps] 🎯 SmartVOC NEV - maxSelections extraído:', maxSelections, 'de instrucciones:', instructions);
+          }
+          
           // 🎯 LIMITAR OBJETOS A 5 PROPIEDADES MÁXIMO Y VALORES CORTOS
           for (const [key, value] of entries.slice(0, 5)) {
             if (value === null || value === undefined) {
@@ -501,8 +540,10 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             } else if (typeof value === 'number' || typeof value === 'boolean') {
               simpleObject[key] = value;
             } else if (Array.isArray(value)) {
-              // 🎯 LIMITAR ARRAYS ANIDADOS A 3 ELEMENTOS MÁXIMO
-              simpleObject[key] = value.slice(0, 3).map(item => String(item)).join(',');
+              // 🎯 USAR LÍMITE DINÁMICO PARA SMARTVOC NEV, 3 PARA OTROS
+              const arrayLimit = currentQuestionKey === 'smartvoc_nev' ? maxSelections : 3;
+              simpleObject[key] = value.slice(0, arrayLimit).map(item => String(item)).join(',');
+              console.log('[ButtonSteps] 🎯 Array limitado a:', arrayLimit, 'elementos para', currentQuestionKey);
             } else if (typeof value === 'object') {
               // 🎯 LIMITAR OBJETOS ANIDADOS A JSON COMPACTO
               const jsonStr = JSON.stringify(value);
