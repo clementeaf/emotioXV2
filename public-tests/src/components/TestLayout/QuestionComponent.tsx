@@ -3,6 +3,8 @@
 
 import React from 'react';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
+import { useStepStore } from '../../stores/useStepStore';
+import { useAutoSave } from '../../hooks/useAutoSave';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 
 interface QuestionComponentProps {
@@ -28,6 +30,12 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
   } = useFormLoadingState({
     questionKey: currentStepKey
   });
+
+  // 🎯 HOOK PARA AUTO-AVANCE
+  const { goToNextStep } = useStepStore();
+  
+  // 🎯 HOOK PARA AUTO-GUARDADO
+  const { autoSave } = useAutoSave({ currentQuestionKey: currentStepKey });
 
   const [value, setValue] = React.useState<unknown[]>([]);
 
@@ -78,21 +86,56 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       if (currentSelections.includes(newValue)) {
         const updatedSelections = currentSelections.filter(item => item !== newValue);
         setValue(updatedSelections);
-        saveToStore({ value: updatedSelections });
+        // 🎯 FORMATO UNIFICADO: Usar selectedValue para consistencia con otras preguntas
+        saveToStore({ 
+          selectedValue: updatedSelections,
+          value: updatedSelections 
+        });
       } else {
         if (currentSelections.length < question.config.maxSelections) {
           const updatedSelections = [...currentSelections, newValue];
           setValue(updatedSelections);
-          saveToStore({ value: updatedSelections });
+          // 🎯 FORMATO UNIFICADO: Usar selectedValue para consistencia con otras preguntas
+          saveToStore({ 
+            selectedValue: updatedSelections,
+            value: updatedSelections 
+          });
+          
+          // 🎯 AUTO-AVANCE: Si se alcanza el límite máximo, guardar y avanzar automáticamente
+          if (updatedSelections.length === question.config.maxSelections) {
+            console.log(`[QuestionComponent] 🚀 Auto-avance activado: ${updatedSelections.length}/${question.config.maxSelections} selecciones completadas`);
+            // Pequeño delay para que el usuario vea la selección antes del auto-avance
+            setTimeout(async () => {
+              try {
+                // 🎯 GUARDAR AUTOMÁTICAMENTE ANTES DEL AUTO-AVANCE
+                await autoSave();
+                console.log('[QuestionComponent] ✅ Datos guardados automáticamente antes del auto-avance');
+                // 🎯 AVANZAR DESPUÉS DEL GUARDADO
+                goToNextStep();
+              } catch (error) {
+                console.error('[QuestionComponent] ❌ Error al guardar automáticamente:', error);
+                // Avanzar de todas formas para no bloquear al usuario
+                goToNextStep();
+              }
+            }, 800);
+          }
         } else {
           const updatedSelections = [...currentSelections.slice(1), newValue];
           setValue(updatedSelections);
-          saveToStore({ value: updatedSelections });
+          // 🎯 FORMATO UNIFICADO: Usar selectedValue para consistencia con otras preguntas
+          saveToStore({ 
+            selectedValue: updatedSelections,
+            value: updatedSelections 
+          });
         }
       }
     } else {
       setValue(newValue);
-      saveToStore({ value: newValue });
+      // 🎯 FORMATO UNIFICADO: Usar selectedValue para consistencia con otras preguntas
+      saveToStore({ 
+        selectedValue: newValue,
+        value: newValue 
+      });
     }
   };
 

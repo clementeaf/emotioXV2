@@ -186,16 +186,42 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
   },
 
   smartvoc_nev: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
-    const selectorType = String(contentConfiguration?.type || 'detailed');
+    const instructions = String(contentConfiguration?.instructions || '');
+    const extractMaxSelections = (text: string): number => {
+      const patterns = [
+        /hasta\s+(\d+)/i,
+        /máximo\s+(\d+)/i,
+        /máx\s+(\d+)/i,
+        /max\s+(\d+)/i,
+        /selecciona\s+hasta\s+(\d+)/i,
+        /selecciona\s+máximo\s+(\d+)/i,
+        /selecciona\s+(\d+)\s+emociones/i,
+        /(\d+)\s+emociones/i
+      ];
+      
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+          const number = parseInt(match[1], 10);
+          if (number > 0 && number <= 10) { // Límite razonable
+            return number;
+          }
+        }
+      }
+      
+      return 3; // Fallback por defecto
+    };
+    
+    const maxSelections = extractMaxSelections(instructions);
 
     return (
       <QuestionComponent
         question={{
           title: String(contentConfiguration?.title || 'NEV'),
           questionKey: currentQuestionKey,
-          type: selectorType,
+          type: 'emojis', // 🎯 TIPO CORRECTO PARA ACTIVAR AUTO-AVANCE
           config: {
-            maxSelections: 3,
+            maxSelections: maxSelections,
             emotions: ['feliz', 'satisfecho', 'confiado', 'valorado', 'cuidado', 'seguro', 'enfocado', 'indulgente', 'estimulado', 'exploratorio', 'interesado', 'energico', 'descontento', 'frustrado', 'irritado', 'decepcion', 'estresado', 'infeliz', 'desatendido', 'apresurado'],
             instructions: contentConfiguration?.instructions
           },

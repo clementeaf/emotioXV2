@@ -241,24 +241,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
           />
         );
       case 'smartvoc':
+        // 🎯 ELIMINADO: Lógica duplicada - ahora se maneja en QuestionComponent.tsx
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
-              <p className="text-gray-600 mb-6">{question.description}</p>
-              <div className="flex gap-4">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <button
-                    key={value}
-                    onClick={() => handleValueChange(value.toString())}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${selectedValue === value.toString()
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
+              <p className="text-gray-600 mb-6">Esta pregunta SmartVOC se maneja en QuestionComponent.tsx</p>
             </div>
           </div>
         );

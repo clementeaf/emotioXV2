@@ -265,14 +265,26 @@ const TestLayoutRenderer: React.FC = () => {
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
   const isConfigurationPending = questionType === 'demographics' && !hasConfiguredQuestions;
+  
+  // 🎯 DETECTAR SI ES PREGUNTA NEV CON AUTO-AVANCE
+  const isNEVWithAutoAdvance = () => {
+    if (questionType !== 'smartvoc_nev') return false;
+    
+    const instructions = String(contentConfiguration?.instructions || '');
+    const hasMaxSelectionPattern = /hasta\s+(\d+)|máximo\s+(\d+)|máx\s+(\d+)|max\s+(\d+)|selecciona\s+hasta\s+(\d+)|selecciona\s+máximo\s+(\d+)|selecciona\s+(\d+)\s+emociones|(\d+)\s+emociones/i.test(instructions);
+    
+    return hasMaxSelectionPattern;
+  };
+  
+  const shouldHideButton = isNEVWithAutoAdvance();
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1">
         {renderedForm}
       </div>
-      {/* 🎯 OCULTAR BOTÓN SI NO HAY CONFIGURACIÓN */}
-      {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && (
+      {/* 🎯 OCULTAR BOTÓN SI NO HAY CONFIGURACIÓN O SI ES NEV CON AUTO-AVANCE */}
+      {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && !shouldHideButton && (
         <ButtonSteps
           currentQuestionKey={currentQuestionKey}
           formData={formData}
