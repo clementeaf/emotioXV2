@@ -79,13 +79,25 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       const participantId = getParticipantId();
 
 
+      // 🎯 OPTIMIZAR DATOS DEMOGRÁFICOS PARA EVITAR LÍMITES DE DYNAMODB
+      const optimizeDemographicData = (data: Record<string, string>): Record<string, string> => {
+        const optimized: Record<string, string> = {};
+        for (const [key, value] of Object.entries(data)) {
+          // 🎯 LIMITAR STRINGS A 100 CARACTERES MÁXIMO
+          optimized[key] = value.length > 100 ? value.substring(0, 100) + '...' : value;
+        }
+        return optimized;
+      };
+
+      const optimizedDemographicsData = optimizeDemographicData(demographicsData);
+
       const createData = {
         researchId: researchId || '',
         participantId: participantId,
         questionKey: 'demographics',
         responses: [{
           questionKey: 'demographics',
-          response: demographicsData,
+          response: optimizedDemographicsData,
           timestamp,
           createdAt: now
         }],

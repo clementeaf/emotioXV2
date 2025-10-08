@@ -55,8 +55,16 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
   }, [currentStepKey, question.type, question.config?.maxSelections, question.config?.multiple]);
 
   React.useEffect(() => {
+    console.log('[QuestionComponent] 🔍 Cargando datos para:', currentStepKey, {
+      initialFormData,
+      formValues,
+      hasLoadedData,
+      questionType: question.type
+    });
+
     if (initialFormData && Object.keys(initialFormData).length > 0) {
       const backendValue = initialFormData.value || initialFormData.selectedValue;
+      console.log('[QuestionComponent] 📥 Datos del backend (initialFormData):', backendValue);
 
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (backendValue === null || backendValue === undefined)) {
         setValue('');
@@ -68,6 +76,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
 
     if (hasLoadedData && formValues && Object.keys(formValues).length > 0) {
       const savedValue = formValues.value || formValues.selectedValue;
+      console.log('[QuestionComponent] 💾 Datos del store local:', savedValue);
 
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (savedValue === null || savedValue === undefined)) {
         setValue('');
@@ -80,12 +89,21 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
 
 
   const handleChange = (newValue: unknown) => {
+    console.log('[QuestionComponent] 🎯 handleChange llamado:', {
+      newValue,
+      questionType: question.type,
+      maxSelections: question.config?.maxSelections,
+      currentValue: value,
+      currentSelectionsLength: Array.isArray(value) ? value.length : 0
+    });
+
     if (question.type === 'emojis' && question.config?.maxSelections > 1) {
       const currentSelections = Array.isArray(value) ? value : [];
 
       if (currentSelections.includes(newValue)) {
         const updatedSelections = currentSelections.filter(item => item !== newValue);
         setValue(updatedSelections);
+        console.log('[QuestionComponent] 🔄 Deseleccionando:', newValue, 'Selecciones actuales:', updatedSelections);
         // 🎯 FORMATO UNIFICADO: Usar selectedValue para consistencia con otras preguntas
         saveToStore({ 
           selectedValue: updatedSelections,
@@ -95,6 +113,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
         if (currentSelections.length < question.config.maxSelections) {
           const updatedSelections = [...currentSelections, newValue];
           setValue(updatedSelections);
+          console.log('[QuestionComponent] ➕ Seleccionando:', newValue, 'Selecciones actuales:', updatedSelections, `(${updatedSelections.length}/${question.config.maxSelections})`);
           // 🎯 FORMATO UNIFICADO: Usar selectedValue para consistencia con otras preguntas
           saveToStore({ 
             selectedValue: updatedSelections,
@@ -120,17 +139,13 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
             }, 800);
           }
         } else {
-          const updatedSelections = [...currentSelections.slice(1), newValue];
-          setValue(updatedSelections);
-          // 🎯 FORMATO UNIFICADO: Usar selectedValue para consistencia con otras preguntas
-          saveToStore({ 
-            selectedValue: updatedSelections,
-            value: updatedSelections 
-          });
+          // 🎯 CASO: Ya se alcanzó el límite máximo, no permitir más selecciones
+          console.log('[QuestionComponent] ⚠️ Límite máximo alcanzado, no se puede seleccionar más');
         }
       }
     } else {
       setValue(newValue);
+      console.log('[QuestionComponent] 📝 Valor simple:', newValue);
       // 🎯 FORMATO UNIFICADO: Usar selectedValue para consistencia con otras preguntas
       saveToStore({ 
         selectedValue: newValue,

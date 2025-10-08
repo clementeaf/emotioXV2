@@ -35,9 +35,9 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
   // Construir los steps usando el orden del backend
   const steps = React.useMemo(() => {
     if (formsData?.steps && formsData?.stepsConfiguration) {
-      return formsData.steps
+      return (formsData.steps as unknown as Array<{ title: string; questionKey: string }>)
         .map((step: { title: string; questionKey: string }) => {
-          const config = formsData.stepsConfiguration[step.questionKey];
+          const config = (formsData.stepsConfiguration as unknown as Record<string, unknown>)[step.questionKey];
           return config ? { ...step, ...config } : null;
         })
         .filter((step: { title: string; questionKey: string } | null): step is NonNullable<typeof step> => step !== null);
@@ -181,7 +181,7 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
 
       // 🎯 VALIDACIÓN DE TAMAÑO PARA EVITAR LÍMITES DE DYNAMODB
       const responseSize = JSON.stringify(formattedResponse).length;
-      if (responseSize > 10000) { // 10KB límite conservador
+      if (responseSize > 5000) { // 5KB límite más estricto para respuestas individuales
         console.warn('[useAutoSave] ⚠️ Respuesta muy grande, truncando datos:', responseSize, 'bytes');
         // Truncar aún más si es necesario
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
@@ -194,6 +194,27 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
             }
           }
           formattedResponse = truncatedResponse;
+        }
+      }
+
+      // 🎯 VALIDACIÓN ADICIONAL: VERIFICAR TAMAÑO DEL DOCUMENTO COMPLETO
+      const currentDocumentSize = moduleResponses ? JSON.stringify(moduleResponses).length : 0;
+      const estimatedNewSize = currentDocumentSize + responseSize;
+      
+      if (estimatedNewSize > 350000) { // 350KB límite conservador (400KB es el máximo de DynamoDB)
+        console.warn('[useAutoSave] ⚠️ Documento completo muy grande, aplicando truncamiento agresivo:', estimatedNewSize, 'bytes');
+        
+        // 🎯 TRUNCAMIENTO AGRESIVO PARA EVITAR LÍMITE DE DYNAMODB
+        if (typeof formattedResponse === 'object' && formattedResponse !== null) {
+          const aggressiveTruncation: Record<string, string | number | boolean | null> = {};
+          for (const [key, value] of Object.entries(formattedResponse).slice(0, 2)) { // Solo 2 propiedades
+            if (typeof value === 'string') {
+              aggressiveTruncation[key] = value.substring(0, 25); // Solo 25 caracteres
+            } else {
+              aggressiveTruncation[key] = value;
+            }
+          }
+          formattedResponse = aggressiveTruncation;
         }
       }
 

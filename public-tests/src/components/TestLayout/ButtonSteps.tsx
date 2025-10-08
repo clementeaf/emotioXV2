@@ -329,6 +329,29 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             disqualificationType: 'demographics'
           };
 
+          // 🎯 OPTIMIZAR DATOS DEMOGRÁFICOS PARA EVITAR LÍMITES DE DYNAMODB
+          const optimizeFormData = (data: Record<string, unknown>): Record<string, unknown> => {
+            const optimized: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(data)) {
+              if (typeof value === 'string') {
+                // 🎯 LIMITAR STRINGS A 100 CARACTERES MÁXIMO
+                optimized[key] = value.length > 100 ? value.substring(0, 100) + '...' : value;
+              } else if (Array.isArray(value)) {
+                // 🎯 LIMITAR ARRAYS A 10 ELEMENTOS MÁXIMO
+                optimized[key] = value.slice(0, 10);
+              } else if (typeof value === 'object' && value !== null) {
+                // 🎯 LIMITAR OBJETOS A 5 PROPIEDADES MÁXIMO
+                const entries = Object.entries(value as Record<string, unknown>);
+                optimized[key] = Object.fromEntries(entries.slice(0, 5));
+              } else {
+                optimized[key] = value;
+              }
+            }
+            return optimized;
+          };
+
+          const optimizedFormData = optimizeFormData(currentFormData);
+
           // 🎯 GUARDAR CON INFORMACIÓN DE DESCALIFICACIÓN
           const createData: CreateModuleResponseDto = {
             researchId: researchId || '',
@@ -336,7 +359,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             questionKey: currentQuestionKey,
             responses: [{
               questionKey: currentQuestionKey,
-              response: currentFormData,
+              response: optimizedFormData,
               timestamp,
               createdAt: now
             }],
@@ -447,7 +470,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         }
       };
 
-      // 🎯 CONVERTIR currentFormData AL FORMATO CORRECTO PARA BACKEND
+      // 🎯 CONVERTIR currentFormData AL FORMATO CORRECTO PARA BACKEND - OPTIMIZADO PARA DYNAMODB
       const formatResponseData = (data: unknown): string | number | boolean | string[] | Record<string, string | number | boolean | null> | null => {
         if (data === null || data === undefined) {
           return null;
@@ -458,35 +481,82 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         }
         
         if (Array.isArray(data)) {
-          // Convertir array a array de strings
-          return data.map(item => String(item));
+          // 🎯 LIMITAR ARRAYS A 10 ELEMENTOS MÁXIMO
+          const limitedArray = data.slice(0, 10).map(item => String(item));
+          return limitedArray;
         }
         
         if (typeof data === 'object') {
-          // Convertir objeto complejo a objeto simple con valores primitivos
+          // Convertir objeto complejo a objeto simple con valores primitivos - OPTIMIZADO
           const simpleObject: Record<string, string | number | boolean | null> = {};
-          for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+          const entries = Object.entries(data as Record<string, unknown>);
+          
+          // 🎯 LIMITAR OBJETOS A 5 PROPIEDADES MÁXIMO Y VALORES CORTOS
+          for (const [key, value] of entries.slice(0, 5)) {
             if (value === null || value === undefined) {
               simpleObject[key] = null;
-            } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            } else if (typeof value === 'string') {
+              // 🎯 LIMITAR STRINGS A 100 CARACTERES MÁXIMO
+              simpleObject[key] = value.length > 100 ? value.substring(0, 100) + '...' : value;
+            } else if (typeof value === 'number' || typeof value === 'boolean') {
               simpleObject[key] = value;
             } else if (Array.isArray(value)) {
-              // Convertir arrays a strings separados por comas
-              simpleObject[key] = value.map(item => String(item)).join(',');
+              // 🎯 LIMITAR ARRAYS ANIDADOS A 3 ELEMENTOS MÁXIMO
+              simpleObject[key] = value.slice(0, 3).map(item => String(item)).join(',');
             } else if (typeof value === 'object') {
-              // Convertir objetos anidados a strings JSON
-              simpleObject[key] = JSON.stringify(value);
+              // 🎯 LIMITAR OBJETOS ANIDADOS A JSON COMPACTO
+              const jsonStr = JSON.stringify(value);
+              simpleObject[key] = jsonStr.length > 200 ? jsonStr.substring(0, 200) + '...' : jsonStr;
             } else {
-              simpleObject[key] = String(value);
+              simpleObject[key] = String(value).substring(0, 100);
             }
           }
           return simpleObject;
         }
         
-        return String(data);
+        return String(data).substring(0, 100);
       };
 
-      const formattedResponse = formatResponseData(currentFormData);
+      let formattedResponse = formatResponseData(currentFormData);
+
+      // 🎯 VALIDACIÓN DE TAMAÑO PARA EVITAR LÍMITES DE DYNAMODB
+      const responseSize = JSON.stringify(formattedResponse).length;
+      if (responseSize > 5000) { // 5KB límite más estricto para respuestas individuales
+        console.warn('[ButtonSteps] ⚠️ Respuesta muy grande, truncando datos:', responseSize, 'bytes');
+        // Truncar aún más si es necesario
+        if (typeof formattedResponse === 'object' && formattedResponse !== null) {
+          const truncatedResponse: Record<string, string | number | boolean | null> = {};
+          for (const [key, value] of Object.entries(formattedResponse).slice(0, 3)) {
+            if (typeof value === 'string') {
+              truncatedResponse[key] = value.substring(0, 50);
+            } else {
+              truncatedResponse[key] = value;
+            }
+          }
+          formattedResponse = truncatedResponse;
+        }
+      }
+
+      // 🎯 VALIDACIÓN ADICIONAL: VERIFICAR TAMAÑO DEL DOCUMENTO COMPLETO
+      const currentDocumentSize = moduleResponses ? JSON.stringify(moduleResponses).length : 0;
+      const estimatedNewSize = currentDocumentSize + responseSize;
+      
+      if (estimatedNewSize > 350000) { // 350KB límite conservador (400KB es el máximo de DynamoDB)
+        console.warn('[ButtonSteps] ⚠️ Documento completo muy grande, aplicando truncamiento agresivo:', estimatedNewSize, 'bytes');
+        
+        // 🎯 TRUNCAMIENTO AGRESIVO PARA EVITAR LÍMITE DE DYNAMODB
+        if (typeof formattedResponse === 'object' && formattedResponse !== null) {
+          const aggressiveTruncation: Record<string, string | number | boolean | null> = {};
+          for (const [key, value] of Object.entries(formattedResponse).slice(0, 2)) { // Solo 2 propiedades
+            if (typeof value === 'string') {
+              aggressiveTruncation[key] = value.substring(0, 25); // Solo 25 caracteres
+            } else {
+              aggressiveTruncation[key] = value;
+            }
+          }
+          formattedResponse = aggressiveTruncation;
+        }
+      }
 
       if (hasExistingResponse) {
         // UPDATE: Actualizar la respuesta existente

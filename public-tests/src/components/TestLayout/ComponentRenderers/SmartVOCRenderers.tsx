@@ -187,8 +187,13 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
 
   smartvoc_nev: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
     const instructions = String(contentConfiguration?.instructions || '');
+    console.log('[SmartVOCRenderers] 🔍 Instrucciones NEV:', instructions);
+    
     const extractMaxSelections = (text: string): number => {
+      console.log('[SmartVOCRenderers] 🔍 Extrayendo maxSelections de:', text);
+      
       const patterns = [
+        /selecciona\s+maximo\s+(\d+)\s+emociones/i, // 🎯 PATRÓN ESPECÍFICO PARA "Selecciona maximo 4 emociones"
         /hasta\s+(\d+)/i,
         /máximo\s+(\d+)/i,
         /máx\s+(\d+)/i,
@@ -203,16 +208,19 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
         const match = text.match(pattern);
         if (match) {
           const number = parseInt(match[1], 10);
+          console.log('[SmartVOCRenderers] ✅ Patrón encontrado:', pattern, 'Número extraído:', number);
           if (number > 0 && number <= 10) { // Límite razonable
             return number;
           }
         }
       }
       
-      return 3; // Fallback por defecto
+      console.log('[SmartVOCRenderers] ⚠️ No se encontró patrón, usando fallback: 4');
+      return 4; // Fallback por defecto (máximo 4 emociones)
     };
     
     const maxSelections = extractMaxSelections(instructions);
+    console.log('[SmartVOCRenderers] 🎯 maxSelections final:', maxSelections);
 
     return (
       <QuestionComponent
