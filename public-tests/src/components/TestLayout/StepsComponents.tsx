@@ -156,45 +156,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
       case 'smartvoc_nev':
       case 'detailed':
       case 'emojis':
+        // 🎯 ELIMINADO: Lógica duplicada - ahora se maneja en QuestionComponent.tsx
         return (
-          <div className="space-y-6">
-            {/* Primera fila - 7 emociones */}
-            <div className="grid grid-cols-7 gap-2">
-              {['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado'].map((emotion) => (
-                <button
-                  key={emotion}
-                  onClick={() => handleValueChange(emotion)}
-                  className="p-3 rounded-lg border-2 text-sm font-medium bg-green-100 border-green-200 text-green-800 hover:bg-green-200"
-                >
-                  {emotion}
-                </button>
-              ))}
-            </div>
-
-            {/* Segunda fila - 6 emociones */}
-            <div className="grid grid-cols-6 gap-2">
-              {['Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico', 'Descontento'].map((emotion) => (
-                <button
-                  key={emotion}
-                  onClick={() => handleValueChange(emotion)}
-                  className="p-3 rounded-lg border-2 text-sm font-medium bg-green-200 border-green-300 text-green-900 hover:bg-green-300"
-                >
-                  {emotion}
-                </button>
-              ))}
-            </div>
-
-            {/* Tercera fila - 7 emociones */}
-            <div className="grid grid-cols-7 gap-2">
-              {['Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'].map((emotion) => (
-                <button
-                  key={emotion}
-                  onClick={() => handleValueChange(emotion)}
-                  className="p-3 rounded-lg border-2 text-sm font-medium bg-red-100 border-red-200 text-red-800 hover:bg-red-200"
-                >
-                  {emotion}
-                </button>
-              ))}
+          <div className="flex flex-col items-center justify-center h-full gap-6">
+            <div className="text-center">
+              <p className="text-gray-600 mb-6">Esta pregunta SmartVOC se maneja en QuestionComponent.tsx</p>
             </div>
           </div>
         );
