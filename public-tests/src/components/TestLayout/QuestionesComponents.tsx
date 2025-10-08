@@ -68,6 +68,9 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
 }) => {
   // 🎯 DETERMINAR SI USAR ESTRELLAS O EMOJIS
   const useStars = type === 'stars';
+  
+  // 🎯 ESTADO PARA MANEJAR HOVER EN ESTRELLAS
+  const [hoverValue, setHoverValue] = React.useState<number | null>(null);
 
   const elements = useStars
     ? Array.from({ length: max - min + 1 }, (_, i) => ({ id: min + i, symbol: '★' }))
@@ -75,6 +78,16 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
 
   const displayStartLabel = useStars ? startLabel || '1 - Muy insatisfecho' : '';
   const displayEndLabel = useStars ? endLabel || '5 - Muy satisfecho' : '';
+
+  // 🎯 FUNCIÓN PARA DETERMINAR SI UNA ESTRELLA DEBE ESTAR ILUMINADA
+  const isStarActive = (elementId: number) => {
+    if (useStars) {
+      // Durante hover, mostrar progresión hasta la estrella hovereada
+      const currentValue = hoverValue !== null ? hoverValue : (value ?? 0);
+      return currentValue >= elementId;
+    }
+    return value === elementId;
+  };
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -84,10 +97,12 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
             key={element.id}
             type="button"
             className={`transition ${useStars
-              ? `text-3xl ${(value ?? 0) >= element.id ? 'text-yellow-500 scale-125' : 'text-gray-300 hover:text-yellow-400 hover:scale-110'}`
+              ? `text-3xl ${isStarActive(element.id) ? 'text-yellow-500 scale-125' : 'text-gray-300 hover:text-yellow-400 hover:scale-110'}`
               : `text-3xl ${value === element.id ? 'scale-125' : 'opacity-80 hover:scale-110'}`
               }`}
             onClick={() => onChange?.(element.id)}
+            onMouseEnter={() => useStars && setHoverValue(element.id)}
+            onMouseLeave={() => useStars && setHoverValue(null)}
             aria-label={`Seleccionar ${element.id} ${useStars ? 'estrella' : 'emoji'}`}
           >
             {element.symbol}
