@@ -63,8 +63,15 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
     });
 
     if (initialFormData && Object.keys(initialFormData).length > 0) {
-      const backendValue = initialFormData.value || initialFormData.selectedValue;
+      let backendValue = initialFormData.value || initialFormData.selectedValue;
       console.log('[QuestionComponent] 📥 Datos del backend (initialFormData):', backendValue);
+
+      // 🎯 CONVERTIR STRING DEL BACKEND A ARRAY PARA SMARTVOC NEV
+      if (question.type === 'emojis' && question.config?.maxSelections > 1 && typeof backendValue === 'string') {
+        console.log('[QuestionComponent] 🔄 Convirtiendo string del backend a array:', backendValue);
+        backendValue = backendValue.split(',').map(item => item.trim()).filter(item => item.length > 0);
+        console.log('[QuestionComponent] ✅ Array convertido:', backendValue);
+      }
 
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (backendValue === null || backendValue === undefined)) {
         setValue('');
