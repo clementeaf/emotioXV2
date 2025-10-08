@@ -69,16 +69,12 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
   // 🎯 DETERMINAR SI USAR ESTRELLAS O EMOJIS
   const useStars = type === 'stars';
 
-  // 🎯 GENERAR ELEMENTOS SEGÚN EL TIPO
   const elements = useStars
     ? Array.from({ length: max - min + 1 }, (_, i) => ({ id: min + i, symbol: '★' }))
     : emojis.map((emoji, idx) => ({ id: idx + 1, symbol: emoji }));
 
-  // 🎯 LABELS PARA ESTRELLAS
   const displayStartLabel = useStars ? startLabel || '1 - Muy insatisfecho' : '';
   const displayEndLabel = useStars ? endLabel || '5 - Muy satisfecho' : '';
-
-  // 🎯 LOGS DE DEBUG
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -98,7 +94,6 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
           </button>
         ))}
       </div>
-      {/* 🎯 MOSTRAR LABELS SOLO PARA ESTRELLAS */}
       {useStars && (displayStartLabel || displayEndLabel) && (
         <div className="flex flex-row items-center justify-between w-full max-w-md mt-2">
           <span className="text-xs text-gray-500">{displayStartLabel}</span>
@@ -125,7 +120,7 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionProps> = ({
   return (
     <div className="w-full flex flex-col items-center">
       <textarea
-        className="w-full max-w-md min-h-[150px] min-w-[350px] border border-gray-300 rounded p-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full max-w-md min-h-[150px] min-w-[350px] border border-gray-300 rounded p-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
         value={value || ''}
         onChange={e => {
           onChange?.(e.target.value);

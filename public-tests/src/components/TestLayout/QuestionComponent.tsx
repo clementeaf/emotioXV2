@@ -1,4 +1,4 @@
- 
+
 // @ts-nocheck
 
 import React from 'react';
@@ -29,12 +29,9 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
     questionKey: currentStepKey
   });
 
-  // 🎯 INICIALIZAR VALOR CORRECTO DESDE EL INICIO
   const [value, setValue] = React.useState<unknown[]>([]);
 
-  // 🎯 RESET SUAVE SOLO DEL VALOR LOCAL CUANDO CAMBIA EL STEP
   React.useEffect(() => {
-    // 🎯 SOLO RESETEAR EL VALOR LOCAL SEGÚN EL TIPO (NO LIMPIAR STORE)
     let initialValue;
     if (question.type === 'emojis' && question.config?.maxSelections > 1) {
       initialValue = [];
@@ -45,22 +42,14 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
     } else {
       initialValue = null;
     }
-    
+
     setValue(initialValue);
-    console.log('[QuestionComponent] 🔄 Reset suave para:', currentStepKey, 'valor inicial:', initialValue);
   }, [currentStepKey, question.type, question.config?.maxSelections, question.config?.multiple]);
 
-  // 🎯 CARGAR VALOR GUARDADO (PRIMERO initialFormData, LUEGO PERSISTENCIA)
   React.useEffect(() => {
-    // 🚨 PRIORIDAD 1: Si hay initialFormData del backend, usarlo
     if (initialFormData && Object.keys(initialFormData).length > 0) {
       const backendValue = initialFormData.value || initialFormData.selectedValue;
-      console.log('[QuestionComponent] 🎯 Cargando desde backend:', {
-        currentStepKey,
-        initialFormData,
-        backendValue
-      });
-      
+
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (backendValue === null || backendValue === undefined)) {
         setValue('');
       } else {
@@ -68,17 +57,10 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
       }
       return;
     }
-    
-    // 🚨 PRIORIDAD 2: Si no hay backend data, usar persistencia local
+
     if (hasLoadedData && formValues && Object.keys(formValues).length > 0) {
       const savedValue = formValues.value || formValues.selectedValue;
-      console.log('[QuestionComponent] 🎯 Cargando desde local:', {
-        currentStepKey,
-        formValues,
-        savedValue
-      });
-      
-      // 🎯 MANEJAR VALORES NULL/UNDEFINED PARA TEXTAREA
+
       if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (savedValue === null || savedValue === undefined)) {
         setValue('');
       } else {
@@ -90,51 +72,46 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
 
 
   const handleChange = (newValue: unknown) => {
-    
-    // 🎯 MANEJAR SELECCIÓN MÚLTIPLE PARA NEV
     if (question.type === 'emojis' && question.config?.maxSelections > 1) {
       const currentSelections = Array.isArray(value) ? value : [];
 
       if (currentSelections.includes(newValue)) {
-        // Si ya está seleccionado, removerlo
         const updatedSelections = currentSelections.filter(item => item !== newValue);
         setValue(updatedSelections);
         saveToStore({ value: updatedSelections });
       } else {
-        // Si no está seleccionado y no excede el límite, agregarlo
         if (currentSelections.length < question.config.maxSelections) {
           const updatedSelections = [...currentSelections, newValue];
           setValue(updatedSelections);
           saveToStore({ value: updatedSelections });
         } else {
-          // Si excede el límite, reemplazar la última selección
           const updatedSelections = [...currentSelections.slice(1), newValue];
           setValue(updatedSelections);
           saveToStore({ value: updatedSelections });
         }
       }
     } else {
-      // 🎯 SELECCIÓN ÚNICA (comportamiento original)
       setValue(newValue);
       saveToStore({ value: newValue });
     }
   };
 
-  // 🎯 MODAL DE CARGA
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Cargando...</div>;
   }
 
   return (
     <div key={`question-${currentStepKey}-${question.type}`} className="flex flex-col items-center justify-center h-full gap-6 p-8">
-      <h2 className="text-2xl font-bold text-gray-800 text-center">
-        {question.title}
-      </h2>
-      {question.description && question.description.trim() !== '' && (
+      {question.title && question.title.trim() !== '' && (
+        <p className="text-gray-600 text-center max-w-2xl">
+          {question.title}
+        </p>
+      )}
+      {/* {question.description && question.description.trim() !== '' && (
         <p className="text-gray-600 text-center max-w-2xl">
           {question.description}
         </p>
-      )}
+      )} */}
       {question.config?.instructions && (
         <p className="text-sm text-gray-500 text-center max-w-2xl mt-2">
           {question.config.instructions}
@@ -199,51 +176,51 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({ question, 
         )}
         {(question.type === 'smartvoc_nev' || question.type === 'detailed' || question.type === 'emojis') && (
           <>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Primera fila - 7 emociones */}
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
                 {['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado'].map((emotion) => (
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all cursor-pointer ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
+                    className={`px-2 py-3 rounded-lg border-2 text-xs font-medium transition-all cursor-pointer min-h-[56px] flex items-center justify-center text-center ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
                       ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
                       : 'bg-green-100 border-green-200 text-green-800 hover:bg-green-200'
                       }`}
                   >
-                    {emotion}
+                    <span className="leading-tight break-words px-1">{emotion}</span>
                   </button>
                 ))}
               </div>
 
               {/* Segunda fila - 6 emociones */}
-              <div className="grid grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
                 {['Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico', 'Descontento'].map((emotion) => (
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all cursor-pointer ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
+                    className={`px-2 py-3 rounded-lg border-2 text-xs font-medium transition-all cursor-pointer min-h-[56px] flex items-center justify-center text-center ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
                       ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
                       : 'bg-green-200 border-green-300 text-green-900 hover:bg-green-300'
                       }`}
                   >
-                    {emotion}
+                    <span className="leading-tight break-words px-1">{emotion}</span>
                   </button>
                 ))}
               </div>
 
-              {/* Tercera fila - 7 emociones */}
-              <div className="grid grid-cols-7 gap-2">
+              {/* Tercera fila - 7 emociones - Ajustada para palabras largas */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2">
                 {['Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'].map((emotion) => (
                   <button
                     key={emotion}
                     onClick={() => handleChange(emotion)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all cursor-pointer ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
+                    className={`px-3 py-3 rounded-lg border-2 text-xs font-medium transition-all cursor-pointer min-h-[56px] flex items-center justify-center text-center ${(Array.isArray(value) ? value.includes(emotion) : value === emotion)
                       ? 'bg-blue-500 border-blue-600 text-white shadow-lg'
                       : 'bg-red-100 border-red-200 text-red-800 hover:bg-red-200'
                       }`}
                   >
-                    {emotion}
+                    <span className="leading-tight break-words">{emotion}</span>
                   </button>
                 ))}
               </div>

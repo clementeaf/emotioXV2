@@ -41,9 +41,6 @@ export const useOptimizedMonitoringWebSocket = () => {
 
   // 🎯 LOGGING INTELIGENTE (reducido en producción)
   const log = useCallback((level: 'info' | 'warn' | 'error', message: string, data?: unknown) => {
-    if (isDev || level === 'error') {
-      console[level](`[OptimizedMonitoringWebSocket] ${message}`, data || '');
-    }
   }, [isDev]);
 
   // 🎯 CONECTAR CON RECONEXIÓN AUTOMÁTICA
