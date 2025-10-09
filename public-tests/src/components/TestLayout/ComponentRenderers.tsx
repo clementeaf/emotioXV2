@@ -239,20 +239,35 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
     );
   },
 
-  cognitive_linear_scale: ({ contentConfiguration, currentQuestionKey, formData }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Escala Lineal'),
-        questionKey: currentQuestionKey,
-        type: 'scale',
-        config: contentConfiguration,
-        choices: [],
-        description: String(contentConfiguration?.description || 'Selecciona un valor en la escala')
-      }}
-      currentStepKey={currentQuestionKey}
-      initialFormData={formData}
-    />
-  ),
+  cognitive_linear_scale: ({ contentConfiguration, currentQuestionKey, formData }) => {
+    // 🎯 CONFIGURACIÓN PARA ESCALA LINEAL CON BARRA DESLIZANTE
+    const scaleConfig = contentConfiguration?.scaleConfig || {};
+    const min = scaleConfig.startValue || 0;
+    const max = scaleConfig.endValue || 10;
+    const startLabel = scaleConfig.startLabel || 'Strongly disagree';
+    const endLabel = scaleConfig.endLabel || 'Strongly agree';
+
+    return (
+      <QuestionComponent
+        question={{
+          title: String(contentConfiguration?.title || 'Escala Lineal'),
+          questionKey: currentQuestionKey,
+          type: 'linear_scale', // 🎯 NUEVO TIPO PARA LINEARSCALESLIDER
+          config: {
+            ...contentConfiguration,
+            min,
+            max,
+            startLabel,
+            endLabel
+          },
+          choices: [],
+          description: String(contentConfiguration?.description || 'Selecciona un valor en la escala')
+        }}
+        currentStepKey={currentQuestionKey}
+        initialFormData={formData}
+      />
+    );
+  },
 
   cognitive_rating: ({ contentConfiguration, currentQuestionKey, formData }) => (
     <QuestionComponent

@@ -3,7 +3,7 @@ import React from 'react';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
 import { useStepStore } from '../../stores/useStepStore';
 import { useAutoSave } from '../../hooks/useAutoSave';
-import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
+import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion, LinearScaleSlider } from './QuestionesComponents';
 import { EMOTIONS, EMOTION_GRID_CONFIG, EmotionCategory } from '../../constants/emotions';
 import { useLogger } from '../../utils/logger';
 
@@ -409,6 +409,16 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
             endLabel={question.config?.endLabel}
             leftLabel={question.config?.leftLabel}
             rightLabel={question.config?.rightLabel}
+            value={value as number}
+            onChange={handleChange}
+          />
+        )}
+        {question.type === 'linear_scale' && (
+          <LinearScaleSlider
+            min={question.config?.min as number | undefined}
+            max={question.config?.max as number | undefined}
+            startLabel={question.config?.startLabel}
+            endLabel={question.config?.endLabel}
             value={value as number}
             onChange={handleChange}
           />

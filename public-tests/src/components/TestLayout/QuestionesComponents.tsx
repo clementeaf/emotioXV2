@@ -237,3 +237,126 @@ export const DetailedEmotionQuestion: React.FC<DetailedEmotionQuestionProps> = (
     maxSelections={maxSelections}
   />
 );
+
+// 🎯 NUEVO COMPONENTE: ESCALA LINEAL CON BARRA DESLIZANTE
+export interface LinearScaleSliderProps {
+  value?: number;
+  onChange?: (value: number) => void;
+  min?: number;
+  max?: number;
+  startLabel?: string;
+  endLabel?: string;
+  disabled?: boolean;
+}
+
+export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
+  value = 0,
+  onChange,
+  min = 0,
+  max = 10,
+  startLabel = 'Strongly disagree',
+  endLabel = 'Strongly agree',
+  disabled = false,
+}) => {
+  const [isDragging, setIsDragging] = React.useState(false);
+  const sliderRef = React.useRef<HTMLDivElement>(null);
+
+  // 🎯 CALCULAR PORCENTAJE DEL VALOR ACTUAL
+  const percentage = ((value - min) / (max - min)) * 100;
+
+  // 🎯 MANEJAR CLICK EN LA BARRA
+  const handleSliderClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled || !sliderRef.current) return;
+
+    const rect = sliderRef.current.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const sliderWidth = rect.width;
+    const newValue = Math.round((clickX / sliderWidth) * (max - min) + min);
+    const clampedValue = Math.max(min, Math.min(max, newValue));
+    
+    onChange?.(clampedValue);
+  };
+
+  // 🎯 MANEJAR ARRASTRE
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    setIsDragging(true);
+    handleSliderClick(event);
+  };
+
+  const handleMouseMove = (event: MouseEvent) => {
+    if (!isDragging || !sliderRef.current) return;
+    
+    const rect = sliderRef.current.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const sliderWidth = rect.width;
+    const newValue = Math.round((clickX / sliderWidth) * (max - min) + min);
+    const clampedValue = Math.max(min, Math.min(max, newValue));
+    
+    onChange?.(clampedValue);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // 🎯 EFECTOS PARA ARRASTRE
+  React.useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging]);
+
+  return (
+    <div className="flex flex-col items-center w-full max-w-2xl">
+      {/* 🎯 BARRA DESLIZANTE */}
+      <div className="relative w-full h-8 mb-4">
+        <div
+          ref={sliderRef}
+          className={`relative w-full h-2 bg-gray-200 rounded-full cursor-pointer transition-all ${
+            disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300'
+          }`}
+          onClick={handleSliderClick}
+          onMouseDown={handleMouseDown}
+        >
+          {/* 🎯 BARRA DE PROGRESO */}
+          <div
+            className="absolute top-0 left-0 h-full bg-green-500 rounded-full transition-all duration-200"
+            style={{ width: `${percentage}%` }}
+          />
+          
+          {/* 🎯 INDICADOR DEL VALOR */}
+          <div
+            className={`absolute top-1/2 w-6 h-6 bg-white border-2 border-green-500 rounded-full transform -translate-y-1/2 transition-all duration-200 shadow-lg ${
+              disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
+            }`}
+            style={{ left: `calc(${percentage}% - 12px)` }}
+          >
+            {/* 🎯 ÍCONO DE CHECK */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 🎯 ETIQUETAS DE EXTREMOS */}
+      <div className="flex justify-between w-full text-sm text-gray-600">
+        <span className="text-left">{startLabel}</span>
+        <span className="text-right">{endLabel}</span>
+      </div>
+
+      {/* 🎯 VALOR ACTUAL */}
+      <div className="mt-2 text-lg font-semibold text-green-600">
+        {value}
+      </div>
+    </div>
+  );
+};
