@@ -24,11 +24,11 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   const { redirectToDisqualification } = useDisqualificationRedirect();
   const { sendParticipantDisqualified } = useOptimizedMonitoringWebSocket();
 
-  // 🎯 USAR STORE PERSISTENTE EN LUGAR DE useState
-  const { setFormData, getFormData } = useFormDataStore();
+  // 🎯 SOLO BACKEND - NO STORE LOCAL
   const { getParticipantId } = useParticipantStore();
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedData, setHasLoadedData] = useState(false);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
 
   // 🎯 USAR EL HOOK EXISTENTE PARA OBTENER RESPUESTAS DEL BACKEND
   const { data: moduleResponses } = useModuleResponsesQuery(
@@ -36,15 +36,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     participantId || ''
   );
 
-  // 🎯 CARGAR DATOS PERSISTIDOS AL INICIALIZAR
-  useEffect(() => {
-    const savedData = getFormData('demographics');
-    if (savedData && Object.keys(savedData).length > 0) {
-      setHasLoadedData(true);
-    }
-  }, [getFormData]);
-
-  // 🎯 CARGAR DATOS DEL BACKEND CUANDO ESTÉN DISPONIBLES
+  // 🎯 CARGAR DATOS SOLO DEL BACKEND
   useEffect(() => {
     if (moduleResponses?.responses) {
       const demographicsResponse = moduleResponses.responses.find(
@@ -53,21 +45,18 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
       if (demographicsResponse?.response) {
         console.log('[DemographicForm] 🎯 Cargando datos del backend:', demographicsResponse.response);
-        // 🎯 CARGAR DATOS DEL BACKEND AL STORE LOCAL
-        setFormData('demographics', demographicsResponse.response);
+        setFormValues(demographicsResponse.response as Record<string, string>);
         setHasLoadedData(true);
       }
     }
-  }, [moduleResponses, setFormData]);
+  }, [moduleResponses]);
 
-  // 🎯 FUNCIÓN PARA MANEJAR CAMBIOS EN LOS INPUTS
+  // 🎯 FUNCIÓN PARA MANEJAR CAMBIOS EN LOS INPUTS - SOLO ESTADO LOCAL
   const handleInputChange = (key: string, value: string) => {
-    const currentData = getFormData('demographics');
-    const updatedData = {
-      ...currentData,
+    setFormValues(prevValues => ({
+      ...prevValues,
       [key]: value
-    };
-    setFormData('demographics', updatedData);
+    }));
   };
 
   // 🎯 FUNCIÓN PARA GUARDAR DEMOGRÁFICOS EN BACKEND
@@ -153,16 +142,13 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
     if (!eyeTrackingConfig?.demographicQuestions) return;
 
-    // 🎯 OBTENER DATOS DEL STORE
-    const currentFormData = getFormData('demographics');
-    if (!currentFormData || Object.keys(currentFormData).length === 0) {
+    // 🎯 OBTENER DATOS DEL ESTADO LOCAL
+    if (!formValues || Object.keys(formValues).length === 0) {
       return;
     }
 
-    // 🎯 CONVERTIR FORM VALUES A FORMATO CORRECTO
-    const demographicsData = Object.fromEntries(
-      Object.entries(currentFormData).map(([key, value]) => [key, String(value || '')])
-    ) as Record<string, string>;
+    // 🎯 USAR FORM VALUES DIRECTAMENTE
+    const demographicsData = formValues;
 
     // 🎯 VALIDAR DESCALIFICACIÓN POR SELECCIÓN
     const validationResult = validateDemographics(demographicsData, eyeTrackingConfig.demographicQuestions);
@@ -288,7 +274,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
               </label>
               <select
                 name={q.key}
-                value={(getFormData('demographics')[q.key] as string) || ''}
+                value={formValues[q.key] || ''}
                 onChange={(e) => handleInputChange(q.key, e.target.value)}
                 required={q.required}
                 className="p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"

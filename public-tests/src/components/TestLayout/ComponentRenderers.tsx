@@ -161,7 +161,10 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
       title: String(contentConfiguration?.title || 'Respuesta Corta'),
       questionKey: currentQuestionKey,
       type: 'cognitive_short_text',
-      config: contentConfiguration,
+      config: {
+        ...contentConfiguration,
+        placeholder: contentConfiguration?.answerPlaceholder || 'Escribe tu respuesta aquí...'
+      },
       choices: [],
       description: String(contentConfiguration?.description || 'Escribe tu respuesta')
     };
@@ -182,7 +185,10 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
         title: String(contentConfiguration?.title || 'Respuesta Larga'),
         questionKey: currentQuestionKey,
         type: 'text',
-        config: contentConfiguration,
+        config: {
+          ...contentConfiguration,
+          placeholder: contentConfiguration?.answerPlaceholder || 'Escribe tu respuesta aquí...'
+        },
         choices: [],
         description: String(contentConfiguration?.description || 'Escribe tu respuesta detallada')
       }}
@@ -278,7 +284,8 @@ export const ThankYouScreenComponent: React.FC<{
   quotaResult?: unknown;
   eyeTrackingConfig?: unknown;
 }> = ({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig }) => {
-  const { setFormData } = useFormDataStore();
+  // 🎯 SOLO BACKEND - NO STORE LOCAL
+  // const { setFormData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
 

@@ -21,7 +21,8 @@ export const useFormLoadingState = ({
   questionKey,
   onDataLoaded
 }: UseFormLoadingStateProps): UseFormLoadingStateReturn => {
-  const { setFormData, getFormData } = useFormDataStore();
+  // 🎯 SOLO BACKEND - NO STORE LOCAL
+  // const { setFormData, getFormData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -71,15 +72,8 @@ export const useFormLoadingState = ({
       }
     }
 
-    // Si no hay datos en el backend, cargar del store local
-    const existingData = getFormData(questionKey);
-    if (existingData && Object.keys(existingData).length > 0) {
-      setFormValues(existingData as Record<string, unknown>);
-      setHasLoadedData(true);
-
-      // Callback opcional cuando se cargan los datos
-      stableOnDataLoaded(existingData as Record<string, unknown>);
-    }
+    // 🎯 SOLO BACKEND - NO STORE LOCAL
+    // Si no hay datos en el backend, no cargar nada
 
     setIsLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,26 +86,22 @@ export const useFormLoadingState = ({
         [key]: value
       };
 
-      // Guardar en el store después del render para evitar setState durante render
-      setTimeout(() => {
-        setFormData(questionKey, newValues);
-      }, 0);
+      // 🎯 SOLO BACKEND - NO STORE LOCAL
+      // Los datos se guardan directamente en el backend
 
       return newValues;
     });
-  }, [questionKey, setFormData]);
+  }, [questionKey]);
 
   // 🚨 USEEFFECT ELIMINADO: Causaba race condition donde datos del step anterior
   // se guardaban con la key del step actual. El guardado ahora se maneja
   // explícitamente a través de saveToStore() y handleInputChange()
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
-    // 🎯 VALIDACIÓN: Solo guardar si los datos son válidos y no están vacíos
-    if (data && Object.keys(data).length > 0) {
-      // 🎯 GUARDADO INMEDIATO: Eliminar setTimeout para evitar race conditions
-      setFormData(questionKey, data);
-    }
-  }, [questionKey, setFormData]);
+    // 🎯 SOLO BACKEND - NO STORE LOCAL
+    // Los datos se guardan directamente en el backend
+    console.log('[useFormLoadingState] 🎯 Datos guardados en backend:', data);
+  }, [questionKey]);
 
   return {
     isLoading: isLoading || isLoadingResponses,

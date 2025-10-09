@@ -314,7 +314,8 @@ function extractCognitiveTaskConfig(item: DynamoDBItem): StepConfiguration[] {
           choices: question.choices || [],
           scaleConfig: question.scaleConfig || {},
           files: question.files || [],
-          metadata: parseJsonField(question.metadata) || {}
+          metadata: parseJsonField(question.metadata) || {},
+          answerPlaceholder: question.answerPlaceholder || '' // 🎯 AGREGADO: Campo answerPlaceholder
         };
 
         configurations.push({

@@ -53,43 +53,9 @@ export const useStepStoreWithBackend = () => {
       updateBackendResponses(backendResponses);
 
       // 🎯 SINCRONIZAR CON FORM DATA STORE
-      const { setFormData } = useFormDataStore.getState();
-      backendResponses.forEach((backendResponse: { questionKey: string; response: unknown }) => {
-        if (backendResponse.questionKey && backendResponse.response) {
-          // 🎯 EXTRAER VALOR DE LA RESPUESTA
-          let value = null;
-          const responseData = backendResponse.response as Record<string, unknown>;
-          if (responseData.value !== undefined) {
-            value = responseData.value;
-          } else if (responseData.selectedValue !== undefined) {
-            value = responseData.selectedValue;
-          } else if (responseData.response !== undefined) {
-            value = responseData.response;
-          } else if (responseData.age !== undefined) {
-            // 🎯 CASO ESPECIAL PARA DEMOGRÁFICOS
-            value = responseData.age;
-          }
-
-          // 🎯 GUARDAR EN FORM DATA STORE
-          const formDataToSave = {
-            value,
-            selectedValue: value,
-            response: backendResponse.response,
-            timestamp: responseData.timestamp || new Date().toISOString()
-          };
-
-          // 🎯 PARA DEMOGRÁFICOS, GUARDAR TAMBIÉN EN EL FORMATO ESPERADO
-          if (backendResponse.questionKey === 'demographics') {
-            setFormData('demographics', {
-              ...formDataToSave,
-              age: value // 🎯 GUARDAR TAMBIÉN COMO age PARA COMPATIBILIDAD
-            });
-          } else {
-            setFormData(backendResponse.questionKey, formDataToSave);
-          }
-
-        }
-      });
+      // 🎯 SOLO BACKEND - NO STORE LOCAL
+      // Los datos se manejan directamente desde el backend
+      // No se guardan en store local
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses]);

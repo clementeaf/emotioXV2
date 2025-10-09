@@ -372,11 +372,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
           {question.title}
         </p>
       )}
-      {/* {question.description && question.description.trim() !== '' && (
+      {question.description && question.description.trim() !== '' && (
         <p className="text-gray-600 text-center max-w-2xl">
           {question.description}
         </p>
-      )} */}
+      )}
       {question.config?.instructions && (
         <p className="text-sm text-gray-500 text-center max-w-2xl mt-2">
           {question.config.instructions}

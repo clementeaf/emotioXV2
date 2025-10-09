@@ -47,7 +47,7 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
           config: {
             ...config,
             instructions: contentConfiguration?.instructions as string,
-            type: displayType === 'stars' ? 'emojis' : 'scale'
+            type: displayType === 'stars' ? 'stars' : 'scale'  // 🎯 CORREGIDO: Usar 'stars' cuando el tipo es 'stars'
           },
           choices: [],
           description: String(contentConfiguration?.description || '')
