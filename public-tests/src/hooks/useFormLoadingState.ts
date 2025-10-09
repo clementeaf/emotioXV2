@@ -108,10 +108,8 @@ export const useFormLoadingState = ({
   const saveToStore = useCallback((data: Record<string, unknown>) => {
     // 🎯 VALIDACIÓN: Solo guardar si los datos son válidos y no están vacíos
     if (data && Object.keys(data).length > 0) {
-      // Usar setTimeout para evitar setState durante render
-      setTimeout(() => {
-        setFormData(questionKey, data);
-      }, 0);
+      // 🎯 GUARDADO INMEDIATO: Eliminar setTimeout para evitar race conditions
+      setFormData(questionKey, data);
     }
   }, [questionKey, setFormData]);
 

@@ -45,14 +45,16 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
     return [];
   }, [formsData?.steps, formsData?.stepsConfiguration]);
 
-  const saveMutation = useSaveModuleResponseMutation({
-    onSuccess: () => {
-      console.log('[useAutoSave] ✅ Respuesta guardada automáticamente para:', currentQuestionKey);
-    },
-    onError: (error) => {
-      console.error('[useAutoSave] ❌ Error al guardar automáticamente:', error);
-    }
-  });
+      const saveMutation = useSaveModuleResponseMutation({
+        onSuccess: (data) => {
+          console.log('[useAutoSave] ✅ Respuesta guardada automáticamente para:', currentQuestionKey);
+          console.log('[useAutoSave] 📊 Datos guardados:', data);
+        },
+        onError: (error) => {
+          console.error('[useAutoSave] ❌ Error al guardar automáticamente:', error);
+          console.error('[useAutoSave] 🔍 Error completo:', error);
+        }
+      });
 
   const updateMutation = useUpdateModuleResponseMutation({
     onSuccess: () => {
@@ -83,13 +85,31 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
 
     try {
       console.log('[useAutoSave] 🚀 Iniciando guardado automático para:', currentQuestionKey);
+      console.log('[useAutoSave] 🔍 Datos del participante:', { researchId, participantId, currentQuestionKey });
       
-      // 🎯 OBTENER DATOS ACTUALES
-      const currentFormData = getFormData(currentQuestionKey) || {};
+      // 🎯 OBTENER DATOS ACTUALES CON RETRY LOGIC
+      let currentFormData = getFormData(currentQuestionKey) || {};
+      console.log('[useAutoSave] 🔍 Datos iniciales del store:', {
+        currentFormData,
+        hasData: Object.keys(currentFormData).length > 0,
+        keys: Object.keys(currentFormData)
+      });
       
+      // 🎯 RETRY: Si no hay datos, esperar un poco y reintentar
       if (!currentFormData || Object.keys(currentFormData).length === 0) {
-        console.warn('[useAutoSave] ⚠️ No hay datos para guardar');
-        return;
+        console.log('[useAutoSave] 🔄 No hay datos inmediatos, reintentando...');
+        await new Promise(resolve => setTimeout(resolve, 100));
+        currentFormData = getFormData(currentQuestionKey) || {};
+        console.log('[useAutoSave] 🔍 Datos después del retry:', {
+          currentFormData,
+          hasData: Object.keys(currentFormData).length > 0,
+          keys: Object.keys(currentFormData)
+        });
+        
+        if (!currentFormData || Object.keys(currentFormData).length === 0) {
+          console.warn('[useAutoSave] ⚠️ No hay datos para guardar después del retry');
+          return;
+        }
       }
 
       // 🎯 TRACKING DE RECORRIDO
@@ -265,7 +285,11 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
           metadata: safeMetadata
         };
 
-        await saveMutation.mutateAsync(createData);
+        console.log('[useAutoSave] 🎯 Ejecutando mutación de guardado...');
+        console.log('[useAutoSave] 📤 Datos que se van a guardar:', createData);
+        
+        const result = await saveMutation.mutateAsync(createData);
+        console.log('[useAutoSave] 📥 Resultado del guardado:', result);
       }
 
       // 🎯 ENVIAR EVENTO WEBSOCKET PARA MONITOREO EN TIEMPO REAL

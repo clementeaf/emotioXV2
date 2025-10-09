@@ -46,7 +46,8 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
           type: displayType === 'stars' ? 'emoji' : 'scale',
           config: {
             ...config,
-            instructions: contentConfiguration?.instructions
+            instructions: contentConfiguration?.instructions as string,
+            type: displayType === 'stars' ? 'emojis' : 'scale'
           },
           choices: [],
           description: String(contentConfiguration?.description || '')
@@ -75,7 +76,7 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
             rightLabel: endLabel,
             startLabel: startLabel,
             endLabel: endLabel,
-            instructions: contentConfiguration?.instructions
+            instructions: contentConfiguration?.instructions as string
           },
           choices: [],
           description: String(contentConfiguration?.description || '')
@@ -129,7 +130,7 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
             rightLabel,
             startLabel,
             endLabel,
-            instructions: contentConfiguration?.instructions
+            instructions: contentConfiguration?.instructions as string
           },
           choices: [],
           description: String(contentConfiguration?.description || '')
@@ -174,7 +175,7 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
             rightLabel,
             startLabel,
             endLabel,
-            instructions: contentConfiguration?.instructions
+            instructions: contentConfiguration?.instructions as string
           },
           choices: [],
           description: String(contentConfiguration?.description || '')
@@ -235,8 +236,7 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
           type: 'emojis', // 🎯 TIPO CORRECTO PARA ACTIVAR AUTO-AVANCE
           config: {
             maxSelections: maxSelections,
-            emotions: ['feliz', 'satisfecho', 'confiado', 'valorado', 'cuidado', 'seguro', 'enfocado', 'indulgente', 'estimulado', 'exploratorio', 'interesado', 'energico', 'descontento', 'frustrado', 'irritado', 'decepcion', 'estresado', 'infeliz', 'desatendido', 'apresurado'],
-            instructions: contentConfiguration?.instructions
+            instructions: contentConfiguration?.instructions as string
           },
           choices: [],
           description: ''
@@ -255,7 +255,7 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
         type: 'text',
         config: {
           placeholder: String(contentConfiguration?.placeholder || 'Escribe tu opinión aquí...'),
-          instructions: contentConfiguration?.instructions
+          instructions: contentConfiguration?.instructions as string
         },
         choices: [],
         description: String(contentConfiguration?.description || '')
