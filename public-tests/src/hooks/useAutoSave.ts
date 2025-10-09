@@ -15,24 +15,20 @@ interface UseAutoSaveProps {
 export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
   const { researchId, participantId } = useTestStore();
   const { getFormData } = useFormDataStore();
-  
-  // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
+
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
   const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
 
-  // 🎯 WEBSOCKET OPTIMIZADO PARA MONITOREO EN TIEMPO REAL
-  const { sendParticipantStep, sendParticipantResponseSaved } = useOptimizedMonitoringWebSocket();
+  const { sendParticipantResponseSaved } = useOptimizedMonitoringWebSocket();
 
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',
     participantId || ''
   );
 
-  // Obtener los steps del backend
   const { data: formsData } = useAvailableFormsQuery(researchId || '');
 
-  // Construir los steps usando el orden del backend
   const steps = React.useMemo(() => {
     if (formsData?.steps && formsData?.stepsConfiguration) {
       return (formsData.steps as unknown as Array<{ title: string; questionKey: string }>)
@@ -45,86 +41,53 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
     return [];
   }, [formsData?.steps, formsData?.stepsConfiguration]);
 
-      const saveMutation = useSaveModuleResponseMutation({
-        onSuccess: (data) => {
-          console.log('[useAutoSave] ✅ Respuesta guardada automáticamente para:', currentQuestionKey);
-          console.log('[useAutoSave] 📊 Datos guardados:', data);
-        },
-        onError: (error) => {
-          console.error('[useAutoSave] ❌ Error al guardar automáticamente:', error);
-          console.error('[useAutoSave] 🔍 Error completo:', error);
-        }
-      });
-
-  const updateMutation = useUpdateModuleResponseMutation({
-    onSuccess: () => {
-      console.log('[useAutoSave] ✅ Respuesta actualizada automáticamente para:', currentQuestionKey);
-    },
-    onError: (error) => {
-      console.error('[useAutoSave] ❌ Error al actualizar automáticamente:', error);
-    }
+  const saveMutation = useSaveModuleResponseMutation({
+    onSuccess: () => { },
+    onError: () => { }
   });
 
-  // 🎯 CRONOMETRAJE NO INTRUSIVO
-  const { startTiming, endTiming, getTimingData } = useResponseTiming({
+  const updateMutation = useUpdateModuleResponseMutation({
+    onSuccess: () => { },
+    onError: () => { }
+  });
+
+  const { endTiming, getTimingData } = useResponseTiming({
     questionKey: currentQuestionKey,
     enabled: shouldTrackTiming
   });
 
-  // 🎯 TRACKING DE RECORRIDO NO INTRUSIVO
-  const { trackStepVisit, getJourneyData } = useUserJourneyTracking({
+  const { trackStepVisit } = useUserJourneyTracking({
     enabled: shouldTrackUserJourney,
     researchId
   });
 
   const autoSave = useCallback(async () => {
     if (!researchId || !participantId) {
-      console.warn('[useAutoSave] ⚠️ No hay researchId o participantId, no se puede guardar');
       return;
     }
 
     try {
-      console.log('[useAutoSave] 🚀 Iniciando guardado automático para:', currentQuestionKey);
-      console.log('[useAutoSave] 🔍 Datos del participante:', { researchId, participantId, currentQuestionKey });
-      
-      // 🎯 OBTENER DATOS ACTUALES CON RETRY LOGIC
       let currentFormData = getFormData(currentQuestionKey) || {};
-      console.log('[useAutoSave] 🔍 Datos iniciales del store:', {
-        currentFormData,
-        hasData: Object.keys(currentFormData).length > 0,
-        keys: Object.keys(currentFormData)
-      });
-      
-      // 🎯 RETRY: Si no hay datos, esperar un poco y reintentar
+
       if (!currentFormData || Object.keys(currentFormData).length === 0) {
-        console.log('[useAutoSave] 🔄 No hay datos inmediatos, reintentando...');
         await new Promise(resolve => setTimeout(resolve, 100));
         currentFormData = getFormData(currentQuestionKey) || {};
-        console.log('[useAutoSave] 🔍 Datos después del retry:', {
-          currentFormData,
-          hasData: Object.keys(currentFormData).length > 0,
-          keys: Object.keys(currentFormData)
-        });
-        
+
         if (!currentFormData || Object.keys(currentFormData).length === 0) {
-          console.warn('[useAutoSave] ⚠️ No hay datos para guardar después del retry');
           return;
         }
       }
 
-      // 🎯 TRACKING DE RECORRIDO
       if (shouldTrackUserJourney) {
         trackStepVisit(currentQuestionKey, 'visit');
       }
 
-      // 🎯 CRONOMETRAJE
       if (shouldTrackTiming) {
         endTiming();
         const timingData = getTimingData();
         console.log('[useAutoSave] ⏱️ Timing data:', timingData);
       }
 
-      // 🎯 METADATA SEGURO
       const finalMetadata = {
         deviceInfo: {
           deviceType: 'desktop' as const,
@@ -157,33 +120,27 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
         }
       };
 
-      // 🎯 FORMATO DE RESPUESTA OPTIMIZADO PARA EVITAR LÍMITES DE DYNAMODB
       const formatResponseData = (data: unknown): string | number | boolean | string[] | Record<string, string | number | boolean | null> | null => {
         if (data === null || data === undefined) return null;
         if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') return data;
         if (Array.isArray(data)) {
-          // 🎯 LIMITAR ARRAYS A 10 ELEMENTOS MÁXIMO
           const limitedArray = data.slice(0, 10).map(item => String(item));
           return limitedArray;
         }
         if (typeof data === 'object') {
           const simpleObject: Record<string, string | number | boolean | null> = {};
           const entries = Object.entries(data as Record<string, unknown>);
-          
-          // 🎯 LIMITAR OBJETOS A 5 PROPIEDADES MÁXIMO Y VALORES CORTOS
+
           for (const [key, value] of entries.slice(0, 5)) {
             if (value === null || value === undefined) {
               simpleObject[key] = null;
             } else if (typeof value === 'string') {
-              // 🎯 LIMITAR STRINGS A 100 CARACTERES MÁXIMO
               simpleObject[key] = value.length > 100 ? value.substring(0, 100) + '...' : value;
             } else if (typeof value === 'number' || typeof value === 'boolean') {
               simpleObject[key] = value;
             } else if (Array.isArray(value)) {
-              // 🎯 LIMITAR ARRAYS ANIDADOS A 3 ELEMENTOS MÁXIMO
               simpleObject[key] = value.slice(0, 3).map(item => String(item)).join(',');
             } else if (typeof value === 'object') {
-              // 🎯 LIMITAR OBJETOS ANIDADOS A JSON COMPACTO
               const jsonStr = JSON.stringify(value);
               simpleObject[key] = jsonStr.length > 200 ? jsonStr.substring(0, 200) + '...' : jsonStr;
             } else {
@@ -199,11 +156,9 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
       const timestamp = new Date().toISOString();
       const now = new Date().toISOString();
 
-      // 🎯 VALIDACIÓN DE TAMAÑO PARA EVITAR LÍMITES DE DYNAMODB
       const responseSize = JSON.stringify(formattedResponse).length;
-      if (responseSize > 5000) { // 5KB límite más estricto para respuestas individuales
-        console.warn('[useAutoSave] ⚠️ Respuesta muy grande, truncando datos:', responseSize, 'bytes');
-        // Truncar aún más si es necesario
+      if (responseSize > 5000) {
+
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
           const truncatedResponse: Record<string, string | number | boolean | null> = {};
           for (const [key, value] of Object.entries(formattedResponse).slice(0, 3)) {
@@ -217,14 +172,11 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
         }
       }
 
-      // 🎯 VALIDACIÓN ADICIONAL: VERIFICAR TAMAÑO DEL DOCUMENTO COMPLETO
       const currentDocumentSize = moduleResponses ? JSON.stringify(moduleResponses).length : 0;
       const estimatedNewSize = currentDocumentSize + responseSize;
-      
-      if (estimatedNewSize > 350000) { // 350KB límite conservador (400KB es el máximo de DynamoDB)
-        console.warn('[useAutoSave] ⚠️ Documento completo muy grande, aplicando truncamiento agresivo:', estimatedNewSize, 'bytes');
-        
-        // 🎯 TRUNCAMIENTO AGRESIVO PARA EVITAR LÍMITE DE DYNAMODB
+
+      if (estimatedNewSize > 350000) {
+
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
           const aggressiveTruncation: Record<string, string | number | boolean | null> = {};
           for (const [key, value] of Object.entries(formattedResponse).slice(0, 2)) { // Solo 2 propiedades
@@ -238,7 +190,6 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
         }
       }
 
-      // 🎯 VERIFICAR SI EXISTE RESPUESTA
       const existingResponse = moduleResponses?.responses?.find(
         (moduleResponse: { questionKey: string }) => moduleResponse.questionKey === currentQuestionKey
       );
@@ -246,7 +197,7 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
       const documentId = moduleResponses?.id;
 
       if (hasExistingResponse) {
-        // UPDATE: Actualizar la respuesta existente - SOLO MANTENER LA RESPUESTA ACTUAL
+
         const updateData = {
           researchId: researchId || '',
           participantId: participantId || '',
@@ -269,30 +220,8 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
           responseId: documentId,
           data: updateData
         });
-      } else {
-        // CREATE: Crear nueva respuesta
-        const createData = {
-          researchId: researchId || '',
-          participantId: participantId || '',
-          questionKey: currentQuestionKey,
-          responses: [{
-            questionKey: currentQuestionKey,
-            response: formattedResponse,
-            timestamp,
-            createdAt: now,
-            updatedAt: undefined
-          }],
-          metadata: safeMetadata
-        };
-
-        console.log('[useAutoSave] 🎯 Ejecutando mutación de guardado...');
-        console.log('[useAutoSave] 📤 Datos que se van a guardar:', createData);
-        
-        const result = await saveMutation.mutateAsync(createData);
-        console.log('[useAutoSave] 📥 Resultado del guardado:', result);
       }
 
-      // 🎯 ENVIAR EVENTO WEBSOCKET PARA MONITOREO EN TIEMPO REAL
       if (participantId) {
         const currentStepIndex = steps.findIndex((step: { questionKey: string }) => step.questionKey === currentQuestionKey);
         const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
@@ -306,8 +235,6 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
           progress
         );
       }
-
-      console.log('[useAutoSave] ✅ Guardado automático completado para:', currentQuestionKey);
 
     } catch (error) {
       console.error('[useAutoSave] ❌ Error en guardado automático:', error);
