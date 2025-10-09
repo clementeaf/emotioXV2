@@ -39,7 +39,7 @@ export function useWelcomeScreenData(researchId: string | null) {
     mutationFn: (data: CreateWelcomeScreenRequest) => welcomeScreenApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: welcomeScreenKeys.byResearch(researchId!) });
-      toast.success('Welcome screen created successfully');
+      // 🎯 TOAST REMOVIDO: Se maneja en el componente
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create welcome screen');
@@ -52,7 +52,7 @@ export function useWelcomeScreenData(researchId: string | null) {
       welcomeScreenApi.update(researchId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: welcomeScreenKeys.byResearch(researchId!) });
-      toast.success('Welcome screen updated successfully');
+      // 🎯 TOAST REMOVIDO: Se maneja en el componente
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update welcome screen');
@@ -64,7 +64,7 @@ export function useWelcomeScreenData(researchId: string | null) {
     mutationFn: (researchId: string) => welcomeScreenApi.delete(researchId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: welcomeScreenKeys.byResearch(researchId!) });
-      toast.success('Welcome screen deleted successfully');
+      // 🎯 TOAST REMOVIDO: Se maneja en el componente
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete welcome screen');
@@ -145,7 +145,7 @@ export function useCreateWelcomeScreen() {
     mutationFn: (data: CreateWelcomeScreenRequest) => welcomeScreenApi.create(data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: welcomeScreenKeys.byResearch(variables.researchId) });
-      toast.success('Welcome screen created successfully');
+      // 🎯 TOAST REMOVIDO: Se maneja en el componente
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create welcome screen');
@@ -164,7 +164,7 @@ export function useUpdateWelcomeScreen() {
       welcomeScreenApi.update(researchId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: welcomeScreenKeys.byResearch(variables.researchId) });
-      toast.success('Welcome screen updated successfully');
+      // 🎯 TOAST REMOVIDO: Se maneja en el componente
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update welcome screen');
@@ -182,7 +182,7 @@ export function useDeleteWelcomeScreen() {
     mutationFn: (researchId: string) => welcomeScreenApi.delete(researchId),
     onSuccess: (_, researchId) => {
       queryClient.invalidateQueries({ queryKey: welcomeScreenKeys.byResearch(researchId) });
-      toast.success('Welcome screen deleted successfully');
+      // 🎯 TOAST REMOVIDO: Se maneja en el componente
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete welcome screen');
