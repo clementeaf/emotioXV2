@@ -167,7 +167,7 @@ export const useSmartVOCForm = (researchId: string) => {
           config,
           questionKey: getSmartVOCQuestionType(q.type),
           type: q.type, // Type is already QuestionType
-          description: q.description || q.title,
+          description: q.description || '', // 🎯 NO FORZAR DESCRIPTION = TITLE
           required: q.type !== QuestionType.SMARTVOC_VOC,
         };
       }),

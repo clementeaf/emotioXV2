@@ -199,13 +199,23 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           </div>
           <div className="space-y-5">
             <div>
-              <label className="text-sm font-medium text-neutral-900 block mb-2">Texto de la pregunta</label>
+              <label className="text-sm font-medium text-neutral-900 block mb-2">Título de la pregunta</label>
               <input
                 type="text"
                 value={question.title}
                 onChange={(e) => onUpdateQuestion(question.id, { title: e.target.value })}
                 className="w-full h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                placeholder="Introduzca el texto de la pregunta"
+                placeholder="Introduzca el título de la pregunta"
+                disabled={disabled}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-neutral-900 block mb-2">Descripción (opcional)</label>
+              <textarea
+                value={question.description || ''}
+                onChange={(e) => onUpdateQuestion(question.id, { description: e.target.value })}
+                className="w-full h-20 p-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                placeholder="Introduzca una descripción opcional para la pregunta"
                 disabled={disabled}
               />
             </div>
@@ -229,6 +239,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                 <span className="ml-2 text-xs font-normal text-red-500">(NO EDITABLE)</span>
               </label>
               <div className="mt-2 text-sm text-gray-700 font-medium">{question.title || 'Título de la pregunta'}</div>
+              {question.description && <div className="mt-1 text-sm text-gray-600">{question.description}</div>}
               {question.instructions && <div className="mt-1 text-xs text-gray-500">{question.instructions}</div>}
 
               {/* Renderizar vista previa según tipo */}
