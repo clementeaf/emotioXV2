@@ -12,11 +12,13 @@ import { useTestStore } from '../../stores/useTestStore';
 
 interface DemographicFormProps {
   demographicQuestions: Record<string, unknown>;
+  currentQuestionKey?: string;
   onSubmit?: (data: Record<string, string>) => void;
 }
 
 export const DemographicForm: React.FC<DemographicFormProps> = ({
   demographicQuestions,
+  currentQuestionKey = 'demographics',
   onSubmit
 }) => {
   const { researchId, participantId } = useTestStore();
@@ -43,20 +45,28 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
         (response) => response.questionKey === 'demographics'
       );
 
-      if (demographicsResponse?.response) {
+      if (demographicsResponse?.response && Object.keys(demographicsResponse.response).length > 0) {
         console.log('[DemographicForm] 🎯 Cargando datos del backend:', demographicsResponse.response);
         setFormValues(demographicsResponse.response as Record<string, string>);
         setHasLoadedData(true);
+      } else {
+        console.log('[DemographicForm] 🔍 Respuesta vacía o sin datos:', demographicsResponse?.response);
+        setHasLoadedData(false);
       }
     }
   }, [moduleResponses]);
 
-  // 🎯 FUNCIÓN PARA MANEJAR CAMBIOS EN LOS INPUTS - SOLO ESTADO LOCAL
+  // 🎯 FUNCIÓN PARA MANEJAR CAMBIOS EN LOS INPUTS - SINCRONIZAR CON STORE
   const handleInputChange = (key: string, value: string) => {
-    setFormValues(prevValues => ({
-      ...prevValues,
+    const newValues = {
+      ...formValues,
       [key]: value
-    }));
+    };
+    setFormValues(newValues);
+    
+    // 🎯 SINCRONIZAR CON FORM DATA STORE PARA BUTTONSTEPS
+    const { setFormData } = useFormDataStore.getState();
+    setFormData(currentQuestionKey, newValues);
   };
 
   // 🎯 FUNCIÓN PARA GUARDAR DEMOGRÁFICOS EN BACKEND
@@ -291,7 +301,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
                   </option>
                 ))}
               </select>
-
             </div>
           ))}
         </form>

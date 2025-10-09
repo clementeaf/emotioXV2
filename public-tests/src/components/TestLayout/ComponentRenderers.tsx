@@ -4,6 +4,7 @@
 import React from 'react';
 import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useFormDataStore } from '../../stores/useFormDataStore';
+import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { processFilesWithUrls } from '../../utils/s3-url.utils';
 import { DemographicForm } from './DemographicForm';
@@ -49,11 +50,22 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
     );
   },
 
-  demographics: ({ contentConfiguration }) => (
-    <DemographicForm
-      demographicQuestions={contentConfiguration?.demographicQuestions as Record<string, unknown> || {}}
-    />
-  ),
+  demographics: ({ contentConfiguration, currentQuestionKey }) => {
+    const handleDemographicSubmit = (data: Record<string, string>) => {
+      console.log('[ComponentRenderers] 🎯 Demographics enviados:', data);
+      // 🎯 NAVEGAR AL SIGUIENTE STEP DESPUÉS DE ENVIAR
+      const { goToNextStep } = useStepStore.getState();
+      goToNextStep();
+    };
+
+    return (
+      <DemographicForm
+        demographicQuestions={contentConfiguration?.demographicQuestions as Record<string, unknown> || {}}
+        currentQuestionKey={currentQuestionKey}
+        onSubmit={handleDemographicSubmit}
+      />
+    );
+  },
 
   smartvoc: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
@@ -300,16 +312,16 @@ export const ThankYouScreenComponent: React.FC<{
   eyeTrackingConfig?: unknown;
 }> = ({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig }) => {
   // 🎯 SOLO BACKEND - NO STORE LOCAL
-  // const { setFormData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
 
   React.useEffect(() => {
     if (currentQuestionKey === 'thank_you_screen' && researchId && participantId) {
-      setFormData(currentQuestionKey, {
-        visited: true,
-        timestamp: new Date().toISOString()
-      });
+      // 🎯 SOLO BACKEND - NO STORE LOCAL
+      // setFormData(currentQuestionKey, {
+      //   visited: true,
+      //   timestamp: new Date().toISOString()
+      // });
 
       const sendToAPI = async () => {
         try {

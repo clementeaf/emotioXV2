@@ -78,7 +78,11 @@ interface BackendResponse { // Not used
 }
 */
 
-export const QuestionComponent: React.FC<QuestionComponentProps> = ({
+// 🎯 COMPONENTE ELIMINADO - DUPLICADO CON QuestionComponent.tsx
+// Este componente causaba duplicación de títulos
+// Ahora se usa QuestionComponent.tsx que es la versión correcta
+
+export const QuestionComponentOLD: React.FC<QuestionComponentProps> = ({
   question,
   currentStepKey
 }) => {

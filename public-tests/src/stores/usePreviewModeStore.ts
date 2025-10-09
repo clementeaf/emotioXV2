@@ -16,7 +16,7 @@ interface PreviewModeState {
  *   → Se guardan respuestas normalmente en backend
  */
 export const usePreviewModeStore = create<PreviewModeState>()((set) => ({
-  isPreviewMode: true, // Por defecto en modo preview hasta que se detecte participantId
+  isPreviewMode: false, // 🎯 FORZAR MODO PRODUCCIÓN PARA TESTING
 
   setPreviewMode: (isPreview: boolean) => {
     set({ isPreviewMode: isPreview });

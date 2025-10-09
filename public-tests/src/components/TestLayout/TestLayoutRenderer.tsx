@@ -223,6 +223,9 @@ const TestLayoutRenderer: React.FC = () => {
   const hasConfiguredQuestions = questionType === 'demographics' ?
     Object.values(contentConfiguration?.demographicQuestions || {}).some((q: { enabled?: boolean }) => q?.enabled) :
     true;
+  
+  // 🎯 SI HAY PREGUNTAS DEMOGRÁFICAS CONFIGURADAS, NO ES CONFIGURACIÓN PENDIENTE
+  const isConfigurationPending = questionType === 'demographics' && !hasConfiguredQuestions;
 
   console.log('[TestLayoutRenderer] 🎯 Rendering component:', {
     questionType,
@@ -264,19 +267,16 @@ const TestLayoutRenderer: React.FC = () => {
 
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
-  const isConfigurationPending = questionType === 'demographics' && !hasConfiguredQuestions;
   
   // 🎯 DETECTAR SI ES PREGUNTA NEV CON AUTO-AVANCE
-  const isNEVWithAutoAdvance = () => {
+  const shouldHideButton = (() => {
     if (questionType !== 'smartvoc_nev') return false;
     
     const instructions = String(contentConfiguration?.instructions || '');
     const hasMaxSelectionPattern = /hasta\s+(\d+)|máximo\s+(\d+)|máx\s+(\d+)|max\s+(\d+)|selecciona\s+hasta\s+(\d+)|selecciona\s+máximo\s+(\d+)|selecciona\s+(\d+)\s+emociones|(\d+)\s+emociones/i.test(instructions);
     
     return hasMaxSelectionPattern;
-  };
-  
-  const shouldHideButton = isNEVWithAutoAdvance();
+  })();
 
   return (
     <div className="flex flex-col h-full">
