@@ -297,6 +297,36 @@ function applySpecificOrder(steps: string[]): string[] {
 }
 
 /**
+ * Función para ordenar las configuraciones según el array de steps
+ * @param configurations Array de configuraciones desordenadas
+ * @param orderedSteps Array de steps en el orden correcto
+ * @returns Array de configuraciones ordenado según orderedSteps
+ */
+function orderConfigurationsBySteps(
+  configurations: StepConfiguration[], 
+  orderedSteps: string[]
+): StepConfiguration[] {
+  const orderedConfigurations: StepConfiguration[] = [];
+  
+  // Para cada step en orden, buscar su configuración correspondiente
+  orderedSteps.forEach((stepQuestionKey) => {
+    const config = configurations.find(
+      (config) => config.questionKey === stepQuestionKey
+    );
+    
+    if (config) {
+      orderedConfigurations.push(config);
+    } else {
+      console.warn(`[orderConfigurationsBySteps] No se encontró configuración para questionKey: ${stepQuestionKey}`);
+    }
+  });
+  
+  console.log(`[orderConfigurationsBySteps] Ordenando ${configurations.length} configuraciones según ${orderedSteps.length} steps`);
+  
+  return orderedConfigurations;
+}
+
+/**
  * Función para extraer configuración de Cognitive Task
  */
 function extractCognitiveTaskConfig(item: DynamoDBItem): StepConfiguration[] {
@@ -475,13 +505,17 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
     // Aplicar orden específico según las reglas
     const orderedSteps = applySpecificOrder(uniqueTypes);
 
+    // 🔧 FIX: Ordenar las configuraciones según el orden de los steps
+    const orderedConfigurations = orderConfigurationsBySteps(configurations, orderedSteps);
+
     console.log(`[getAvailableFormTypesAndConfigurations] Tipos encontrados: ${uniqueTypes.join(', ')}`);
     console.log(`[getAvailableFormTypesAndConfigurations] Tipos ordenados: ${orderedSteps.join(', ')}`);
     console.log(`[getAvailableFormTypesAndConfigurations] Configuraciones encontradas: ${configurations.length}`);
+    console.log(`[getAvailableFormTypesAndConfigurations] Configuraciones ordenadas: ${orderedConfigurations.length}`);
 
     return {
       steps: orderedSteps,
-      stepsConfiguration: configurations
+      stepsConfiguration: orderedConfigurations
     };
 
   } catch (error: unknown) {

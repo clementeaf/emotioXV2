@@ -306,6 +306,8 @@ ModuleResponsesTable:
       SSEEnabled: true
       SSEType: KMS
       KMSMasterKeyId: alias/aws/dynamodb
+    StreamSpecification:
+      StreamViewType: NEW_AND_OLD_IMAGES
 
 # Permite acceso público de solo lectura a todos los archivos del bucket
 # COMENTADO: No se puede aplicar política sin actualizar primero las configuraciones del bucket existente

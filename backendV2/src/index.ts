@@ -37,6 +37,7 @@ const controllerImports = {
   'researchForms': () => import('./controllers/getResearchAvailableForms'),
   'module-responses': () => import('./controllers/moduleResponse.controller'),
   'researchInProgress': () => import('./controllers/researchInProgress.controller'),
+  'config': () => import('./controllers/config.controller'),
 };
 
 // Función para obtener un handler de forma lazy (refactorizada)

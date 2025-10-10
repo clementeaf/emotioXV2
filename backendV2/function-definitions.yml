@@ -4,6 +4,11 @@
 api:
   handler: src/index.handler
   events:
+    # --- Configuración Dinámica ---
+    - http:
+        path: /config
+        method: GET
+        cors: true
     # --- Rutas de Autenticación ---
     - http:
         path: /auth/login
@@ -562,3 +567,24 @@ monitoringSubscribe:
 #         path: admin/{proxy+}
 #         method: OPTIONS
 #         cors: true
+
+# Función para procesar streams de DynamoDB
+streamProcessor:
+  handler: src/handlers/streamProcessor.streamProcessor
+  events:
+    - stream:
+        type: dynamodb
+        arn: 
+          Fn::GetAtt:
+            - ParticipantTable
+            - StreamArn
+        batchSize: 10
+        startingPosition: LATEST
+    - stream:
+        type: dynamodb
+        arn: 
+          Fn::GetAtt:
+            - ModuleResponsesTable
+            - StreamArn
+        batchSize: 10
+        startingPosition: LATEST
