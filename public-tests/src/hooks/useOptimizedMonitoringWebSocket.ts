@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { MonitoringEvent } from '../../../shared/interfaces/websocket-events.interface';
 import { getWebsocketUrl } from '../config/dynamic-endpoints';
 import { useTestStore } from '../stores/useTestStore';
+import { QuotaType } from './WebSocketTypes';
 
 /**
  * Hook optimizado para envío eficiente de eventos de monitoreo
@@ -317,7 +318,7 @@ export const useOptimizedMonitoringWebSocket = () => {
       data: {
         researchId: researchId || '',
         participantId,
-        quotaType: quotaType as any,
+        quotaType: quotaType as QuotaType,
         quotaValue,
         currentCount,
         maxQuota,

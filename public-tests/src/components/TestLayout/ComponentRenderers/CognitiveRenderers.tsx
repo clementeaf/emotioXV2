@@ -4,12 +4,7 @@ import { NavigationFlowTask } from '../cognitive/NavigationFlowTask';
 import PreferenceTestTask from '../cognitive/PreferenceTestTask';
 import { QuestionComponent } from '../QuestionComponent';
 import { RankingList } from '../components/RankingList';
-
-interface CognitiveRendererArgs {
-  contentConfiguration?: Record<string, unknown>;
-  currentQuestionKey: string;
-  formData?: Record<string, unknown>;
-}
+import { CognitiveRendererArgs, ImageFile, ScaleConfig } from './CognitiveTypes';
 
 export const cognitiveRenderers = {
   cognitive: ({ contentConfiguration, currentQuestionKey, formData }: CognitiveRendererArgs) => (
@@ -18,8 +13,14 @@ export const cognitiveRenderers = {
         title: String(contentConfiguration?.title || 'Pregunta Cognitive Task'),
         questionKey: currentQuestionKey,
         type: currentQuestionKey,
-        config: contentConfiguration,
-        choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
+        config: contentConfiguration as Record<string, unknown>,
+        choices: Array.isArray(contentConfiguration?.choices) 
+          ? contentConfiguration.choices.map(choice => ({
+              ...choice,
+              label: choice.label || choice.text,
+              value: choice.value || choice.id
+            }))
+          : [],
         description: String(contentConfiguration?.description || '')
       }}
       currentStepKey={currentQuestionKey}
@@ -29,8 +30,8 @@ export const cognitiveRenderers = {
 
   cognitive_navigation_flow: ({ contentConfiguration, currentQuestionKey }: CognitiveRendererArgs) => {
     const filesWithUrls = Array.isArray(contentConfiguration?.files)
-      ? processFilesWithUrls(contentConfiguration.files as any[])
-      : [] as any[];
+      ? processFilesWithUrls(contentConfiguration.files as ImageFile[])
+      : [] as ImageFile[];
 
     return (
       <NavigationFlowTask
@@ -39,7 +40,7 @@ export const cognitiveRenderers = {
           type: 'cognitive_navigation_flow',
           title: String(contentConfiguration?.title || 'Flujo de Navegación'),
           description: String(contentConfiguration?.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?'),
-          files: filesWithUrls
+          files: filesWithUrls as ImageFile[]
         }}
         currentQuestionKey={currentQuestionKey}
       />
@@ -48,8 +49,8 @@ export const cognitiveRenderers = {
 
   cognitive_preference_test: ({ contentConfiguration, currentQuestionKey }: CognitiveRendererArgs) => {
     const filesWithUrls = Array.isArray(contentConfiguration?.files)
-      ? processFilesWithUrls(contentConfiguration.files as any[])
-      : [] as any[];
+      ? processFilesWithUrls(contentConfiguration.files as ImageFile[])
+      : [] as ImageFile[];
 
     return (
       <PreferenceTestTask
@@ -58,7 +59,7 @@ export const cognitiveRenderers = {
           type: 'cognitive_preference_test',
           title: String(contentConfiguration?.title || 'Test de Preferencia'),
           description: String(contentConfiguration?.description || 'Selecciona tu preferencia'),
-          files: filesWithUrls
+          files: filesWithUrls as ImageFile[]
         }}
         currentQuestionKey={currentQuestionKey}
       />
@@ -175,7 +176,7 @@ export const cognitiveRenderers = {
   },
 
   cognitive_linear_scale: ({ contentConfiguration, currentQuestionKey, formData }: CognitiveRendererArgs) => {
-    const scaleConfig = contentConfiguration?.scaleConfig as any || {};
+    const scaleConfig: ScaleConfig = contentConfiguration?.scaleConfig || {};
     const min = scaleConfig.startValue || 0;
     const max = scaleConfig.endValue || 10;
     const startLabel = scaleConfig.startLabel || 'Strongly disagree';
@@ -209,7 +210,7 @@ export const cognitiveRenderers = {
         title: String(contentConfiguration?.title || 'Calificación'),
         questionKey: currentQuestionKey,
         type: 'emoji',
-        config: contentConfiguration,
+        config: contentConfiguration as Record<string, unknown>,
         choices: [],
         description: String(contentConfiguration?.description || 'Califica usando las opciones')
       }}

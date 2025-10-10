@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { MonitoringEvent } from '../../../shared/interfaces/websocket-events.interface';
 import { getWebsocketUrl } from '../config/dynamic-endpoints';
 import { useTestStore } from '../stores/useTestStore';
+import { QuotaType } from './WebSocketTypes';
 
 /**
  * Hook para enviar eventos de monitoreo vía WebSocket
@@ -151,7 +152,7 @@ export const useMonitoringWebSocket = () => {
       data: {
         researchId: researchId || '',
         participantId,
-        quotaType: quotaType as any,
+        quotaType: quotaType as QuotaType,
         quotaValue,
         currentCount,
         maxQuota,
