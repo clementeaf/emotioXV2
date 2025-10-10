@@ -110,14 +110,10 @@ const TestLayoutRenderer: React.FC = () => {
   if (!researchId) {
     const urlParams = new URLSearchParams(window.location.search);
     const urlResearchId = urlParams.get('researchId');
-    const storedResearchId = localStorage.getItem('researchId');
 
     if (urlResearchId) {
       // Redirigir a login CON el researchId de la URL
       window.location.href = `/?researchId=${urlResearchId}`;
-    } else if (storedResearchId) {
-      // Redirigir a login CON el researchId del localStorage
-      window.location.href = `/?researchId=${storedResearchId}`;
     } else {
       // Si no hay researchId en ningún lado, ir a error
       window.location.href = '/error-no-research-id';

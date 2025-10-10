@@ -7,6 +7,7 @@ import LoginRedirect from './components/common/LoginRedirect';
 import TestLayoutMain from './components/TestLayout/components/TestLayoutMain';
 import { useEyeTrackingConfigQuery } from './hooks/useEyeTrackingConfigQuery';
 import { useLocationTracking } from './hooks/useLocationTracking';
+import { useTestStore } from './stores/useTestStore';
 import './index.css';
 import NoResearchIdError from './pages/NoResearchIdError';
 import { PrivacyNoticePage } from './pages';
@@ -23,25 +24,28 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const [researchId, setResearchId] = useState<string | null>(null);
+  const { researchId, setParticipant } = useTestStore();
   const [showLocationModal, setShowLocationModal] = useState(false);
 
-  // Obtener researchId de la URL o localStorage
+  // Obtener researchId de la URL y configurarlo en el store
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlResearchId = urlParams.get('researchId');
-    const storedResearchId = localStorage.getItem('researchId');
 
-    // Configurar researchId
-    if (urlResearchId) {
-      setResearchId(urlResearchId);
-      localStorage.setItem('researchId', urlResearchId);
-    } else if (storedResearchId) {
-      setResearchId(storedResearchId);
+    // Configurar researchId en el store si viene de la URL
+    if (urlResearchId && urlResearchId !== researchId) {
+      // Usar setParticipant para actualizar el researchId en el store
+      // Mantener otros valores existentes
+      setParticipant(
+        '', // participantId - se mantendrá vacío hasta el login
+        '', // participantName - se mantendrá vacío hasta el login  
+        '', // participantEmail - se mantendrá vacío hasta el login
+        urlResearchId // researchId - se actualiza con el de la URL
+      );
     }
 
     // Nota: El modo preview ahora se configura en LoginRedirect
-  }, []);
+  }, [researchId, setParticipant]);
 
   // Obtener configuración de eye-tracking
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
