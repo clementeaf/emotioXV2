@@ -213,7 +213,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
   // 🎯 HOOK PARA AUTO-GUARDADO
   const { autoSave } = useAutoSave({ 
     currentQuestionKey: currentStepKey,
-    formData: formValues 
+    formValues: formValues 
   });
 
   // 🎯 USAR HOOK PERSONALIZADO PARA INICIALIZACIÓN

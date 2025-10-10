@@ -9,10 +9,10 @@ import { useAvailableFormsQuery } from './useApiQueries';
 
 interface UseAutoSaveProps {
   currentQuestionKey: string;
-  formData?: Record<string, unknown>;
+  formValues: Record<string, unknown>;
 }
 
-export const useAutoSave = ({ currentQuestionKey, formData }: UseAutoSaveProps) => {
+export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps) => {
   const { researchId, participantId } = useTestStore();
 
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
@@ -67,7 +67,7 @@ export const useAutoSave = ({ currentQuestionKey, formData }: UseAutoSaveProps) 
 
     try {
       // 🎯 USAR DATOS PASADOS COMO PARÁMETRO EN LUGAR DEL STORE
-      const currentFormData = formData || {};
+      const currentFormData = formValues || {};
 
       if (!currentFormData || Object.keys(currentFormData).length === 0) {
         return;
@@ -238,7 +238,7 @@ export const useAutoSave = ({ currentQuestionKey, formData }: UseAutoSaveProps) 
     researchId,
     participantId,
     currentQuestionKey,
-    formData,
+    formValues,
     shouldTrackUserJourney,
     shouldTrackTiming,
     trackStepVisit,
