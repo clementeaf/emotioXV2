@@ -364,12 +364,8 @@ export function validateSmartVOCData(data: SmartVOCFormData): APIGatewayProxyRes
       return errorResponse(error.TOO_LONG(`El título de ${questionLabel.toLowerCase()}`, 100), 400);
     }
 
-    // Validar descripción
-    if (!question.description || question.description.trim() === '') {
-      return errorResponse(error.REQUIRED_FIELD(`descripción de ${questionLabel.toLowerCase()}`), 400);
-    }
-
-    if (question.description.length > 500) {
+    // Validar descripción (OPCIONAL)
+    if (question.description && question.description.length > 500) {
       return errorResponse(error.TOO_LONG(`La descripción de ${questionLabel.toLowerCase()}`, 500), 400);
     }
 

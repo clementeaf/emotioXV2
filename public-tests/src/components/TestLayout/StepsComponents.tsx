@@ -6,94 +6,22 @@ import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
+import { getDeviceInfo, getLocationInfo } from '../../utils/deviceUtils';
 import { LoadingModal } from './LoadingModal';
 import { EmotionHierarchyQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
 
-// Funciones helper para capturar datos reales
-const getDeviceType = (): 'desktop' | 'mobile' | 'tablet' => {
-  const width = window.screen.width;
-  const height = window.screen.height;
-  const ratio = width / height;
-
-  if (width >= 1024) return 'desktop';
-  if (width >= 768 && ratio > 1.2) return 'tablet';
-  return 'mobile';
-};
-
-const getBrowserInfo = (): string => {
-  const userAgent = navigator.userAgent;
-  if (userAgent.includes('Chrome')) return 'Chrome';
-  if (userAgent.includes('Firefox')) return 'Firefox';
-  if (userAgent.includes('Safari')) return 'Safari';
-  if (userAgent.includes('Edge')) return 'Edge';
-  return 'Unknown';
-};
-
-const getOSInfo = (): string => {
-  const userAgent = navigator.userAgent;
-  if (userAgent.includes('Windows')) return 'Windows';
-  if (userAgent.includes('Mac')) return 'macOS';
-  if (userAgent.includes('Linux')) return 'Linux';
-  if (userAgent.includes('Android')) return 'Android';
-  if (userAgent.includes('iOS')) return 'iOS';
-  return 'Unknown';
-};
-
-const getLocationInfo = async (): Promise<{ country: string, city: string, ip: string }> => {
-  try {
-    // Intentar obtener IP real
-    const response = await fetch('https://api.ipify.org?format=json');
-    const data = await response.json();
-    const ip = data.ip;
-
-    // Intentar obtener ubicación basada en IP
-    const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-    const geoData = await geoResponse.json();
-
-    return {
-      country: geoData.country_name || 'Chile',
-      city: geoData.city || 'Valparaíso',
-      ip: ip
-    };
-  } catch {
-    return {
-      country: 'Chile',
-      city: 'Valparaíso',
-      ip: 'N/A'
-    };
-  }
-};
-
-// 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
-/*
-interface BackendResponse { // Not used
-  questionKey: string;
-  response: {
-    selectedValue?: string;
-    textValue?: string;
-    [key: string]: unknown;
-  };
-}
-*/
-
-// 🎯 COMPONENTE ELIMINADO - DUPLICADO CON QuestionComponent.tsx
-// Este componente causaba duplicación de títulos
-// Ahora se usa QuestionComponent.tsx que es la versión correcta
-
 export const QuestionComponentOLD: React.FC<QuestionComponentProps> = ({
   question,
   currentStepKey
 }) => {
-  // 🎯 USAR EL TIPO DE LA PREGUNTA EN LUGAR DEL QUESTION_TYPE_MAP
+
   const questionType = question.type || QUESTION_TYPE_MAP[currentStepKey as keyof typeof QUESTION_TYPE_MAP] || 'pending';
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [textValue, setTextValue] = useState<string>('');
 
-  // 🎯 ESTABILIZAR LA FUNCIÓN DE CALLBACK PARA EVITAR BUCLE INFINITO
   const handleDataLoaded = useCallback((data: Record<string, unknown>) => {
-    // Cargar valores específicos cuando se cargan los datos
     if (data.selectedValue && typeof data.selectedValue === 'string') {
       setSelectedValue(data.selectedValue);
     }
@@ -112,7 +40,6 @@ export const QuestionComponentOLD: React.FC<QuestionComponentProps> = ({
     onDataLoaded: handleDataLoaded
   });
 
-  // 🎯 FUNCIÓN PARA GUARDAR EN EL STORE (ESTABILIZADA CON USECALLBACK)
   const saveToStoreWithValues = useCallback((data: Record<string, unknown>) => {
     saveToStore(data);
   }, [saveToStore]);
@@ -122,7 +49,6 @@ export const QuestionComponentOLD: React.FC<QuestionComponentProps> = ({
     setTextValue('');
   }, [currentStepKey]);
 
-  // 🎯 INICIALIZAR VALORES DESDE EL STORE Y BACKEND
   useEffect(() => {
     if (formValues && Object.keys(formValues).length > 0) {
       if (formValues.selectedValue && typeof formValues.selectedValue === 'string') {
@@ -134,7 +60,6 @@ export const QuestionComponentOLD: React.FC<QuestionComponentProps> = ({
     }
   }, [formValues]);
 
-  // 🎯 MODAL DE CARGA
   if (isLoading) {
     return <LoadingModal />;
   }
@@ -160,7 +85,6 @@ export const QuestionComponentOLD: React.FC<QuestionComponentProps> = ({
       case 'smartvoc_nev':
       case 'detailed':
       case 'emojis':
-        // 🎯 ELIMINADO: Lógica duplicada - ahora se maneja en QuestionComponent.tsx
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
@@ -211,7 +135,6 @@ export const QuestionComponentOLD: React.FC<QuestionComponentProps> = ({
           />
         );
       case 'smartvoc':
-        // 🎯 ELIMINADO: Lógica duplicada - ahora se maneja en QuestionComponent.tsx
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
@@ -374,11 +297,9 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
   const { researchId, participantId } = useTestStore();
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
 
-  // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
 
-  // 🎯 TRACKING DE RECORRIDO NO INTRUSIVO
   const { trackStepVisit } = useUserJourneyTracking({
     enabled: shouldTrackUserJourney,
     researchId
@@ -389,13 +310,11 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
     const currentQuestionKey = store.currentQuestionKey;
 
     if (currentQuestionKey && researchId && participantId) {
-      // 🎯 GUARDAR EN FORMDATA
       setFormData(currentQuestionKey, {
         visited: true,
         timestamp: new Date().toISOString()
       });
 
-      // 🎯 TRACKING DE RECORRIDO
       if (shouldTrackUserJourney) {
         trackStepVisit(currentQuestionKey, 'visit');
       }
@@ -403,18 +322,11 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
       try {
         const timestamp = new Date().toISOString();
 
-        // Capturar información real del dispositivo SOLO si está habilitado
         let deviceInfo = null;
         if (eyeTrackingConfig?.parameterOptions?.saveDeviceInfo) {
-          deviceInfo = {
-            type: getDeviceType(),
-            browser: getBrowserInfo(),
-            os: getOSInfo(),
-            screenSize: `${window.screen.width}x${window.screen.height}`
-          };
+          deviceInfo = getDeviceInfo();
         }
 
-        // Capturar información de ubicación SOLO si está habilitado
         let location = null;
         if (eyeTrackingConfig?.parameterOptions?.saveLocationInfo) {
           location = await getLocationInfo();
@@ -437,16 +349,12 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
         };
 
         await saveModuleResponseMutation.mutateAsync(createData);
-      } catch {
-        // Error handled silently
-      }
+      } catch {}
     }
 
-    // Navegar al siguiente step
     store.goToNextStep();
   };
 
-  // 🎯 TRACKING DE VISITA
   useEffect(() => {
     const store = useStepStore.getState();
     const currentQuestionKey = store.currentQuestionKey;
