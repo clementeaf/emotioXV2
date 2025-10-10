@@ -1,8 +1,8 @@
 export { default as BurgerMenuButton } from './BurgerMenuButton';
 export { ButtonStepsUI } from './ButtonStepsUI';
 export * from './CommonStates';
-export { DemographicFormUI } from './DemographicFormUI';
-export * from './EmotionHierarchyComponents';
+// DemographicFormUI moved to demographic/ directory
+// EmotionHierarchyComponents moved to emotion/ directory
 export { ErrorComponent, LoadingComponent, UnknownStepComponent } from './ErrorComponents';
 export { LoadingModal } from './LoadingModal';
 export { default as MobileOverlay } from './MobileOverlay';

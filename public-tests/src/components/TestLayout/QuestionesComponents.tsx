@@ -1,5 +1,5 @@
 import React from 'react';
-import { DetailedEmotionSelector, EmotionHierarchySelector } from './components/EmotionHierarchyComponents';
+import { DetailedEmotionSelector, EmotionHierarchySelector } from './emotion';
 import { ScaleRangeQuestionProps, SingleAndMultipleChoiceQuestionProps } from './types';
 
 export function ScaleRangeQuestion({

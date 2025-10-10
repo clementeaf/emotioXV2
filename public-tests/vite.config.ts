@@ -47,9 +47,23 @@ export default defineConfig({
             './src/components/common/FormField.tsx'
           ],
           'test-layout': [
-            './src/components/TestLayout/TestLayoutMain.tsx',
+            './src/components/TestLayout/components/TestLayoutMain.tsx',
             './src/components/TestLayout/TestLayoutRenderer.tsx',
-            './src/components/TestLayout/StepItem.tsx'
+            './src/components/TestLayout/components/StepItem.tsx',
+            './src/components/TestLayout/QuestionComponent.tsx',
+            './src/components/TestLayout/ButtonSteps.tsx'
+          ],
+          'test-layout-emotion': [
+            './src/components/TestLayout/emotion/EmotionHierarchySelector.tsx',
+            './src/components/TestLayout/emotion/DetailedEmotionSelector.tsx'
+          ],
+          'test-layout-demographic': [
+            './src/components/TestLayout/demographic/DemographicForm.tsx',
+            './src/components/TestLayout/demographic/DemographicFormUI.tsx'
+          ],
+          'test-layout-cognitive': [
+            './src/components/TestLayout/cognitive/NavigationFlowTask.tsx',
+            './src/components/TestLayout/cognitive/PreferenceTestTask.tsx'
           ]
         },
         chunkFileNames: (chunkInfo) => {

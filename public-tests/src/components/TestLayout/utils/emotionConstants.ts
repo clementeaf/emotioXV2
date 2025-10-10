@@ -1,4 +1,4 @@
-import type { EmotionCluster, EmotionOption } from '../components/EmotionHierarchyComponents';
+import type { EmotionCluster, EmotionOption } from '../emotion';
 
 /**
  * Clusters emocionales según la jerarquía de valor emocional

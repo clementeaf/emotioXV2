@@ -4,7 +4,7 @@ import { QuestionComponent } from './QuestionComponent';
 import { SmartVOCRenderers } from './ComponentRenderers/SmartVOCRenderers';
 import { screenRenderers } from './ComponentRenderers/ScreenRenderers';
 import { cognitiveRenderers } from './ComponentRenderers/CognitiveRenderers';
-import { demographicRenderers } from './ComponentRenderers/DemographicRenderers';
+import { demographicRenderers } from './demographic';
 
 interface RendererArgs {
   contentConfiguration?: Record<string, unknown>;

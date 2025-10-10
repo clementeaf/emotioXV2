@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStepStore } from '../../../stores/useStepStore';
-import { DemographicForm } from '../DemographicForm';
+import { DemographicForm } from './DemographicForm';
 
 interface DemographicRendererArgs {
   contentConfiguration?: Record<string, unknown>;

@@ -1,13 +1,13 @@
 import React from 'react';
-import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
-import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
-import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
-import { useDemographicValidation } from '../../hooks/useDemographicValidation';
-import { useDemographicSave } from '../../hooks/useDemographicSave';
-import { useDemographicData } from '../../hooks/useDemographicData';
-import { useTestStore } from '../../stores/useTestStore';
-import { useParticipantStore } from '../../stores/useParticipantStore';
-import { DemographicFormUI } from './components/DemographicFormUI';
+import { useDisqualificationRedirect } from '../../../hooks/useDisqualificationRedirect';
+import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
+import { useOptimizedMonitoringWebSocket } from '../../../hooks/useOptimizedMonitoringWebSocket';
+import { useDemographicValidation } from '../../../hooks/useDemographicValidation';
+import { useDemographicSave } from '../../../hooks/useDemographicSave';
+import { useDemographicData } from '../../../hooks/useDemographicData';
+import { useTestStore } from '../../../stores/useTestStore';
+import { useParticipantStore } from '../../../stores/useParticipantStore';
+import { DemographicFormUI } from './DemographicFormUI';
 
 interface DemographicFormProps {
   demographicQuestions: Record<string, unknown>;
