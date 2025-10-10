@@ -49,7 +49,8 @@ export class SmartVOCFormService {
           // Validaciones básicas de pregunta
           if (!q.id || typeof q.id !== 'string' || q.id.trim() === '') qErrors[questionKey].id = `debe tener un ID válido`;
           if (!q.title || typeof q.title !== 'string' || q.title.trim() === '') qErrors[questionKey].title = `debe tener título`;
-          if (!q.description || typeof q.description !== 'string' || q.description.trim() === '') qErrors[questionKey].description = `debe tener descripción`;
+          // description es OPCIONAL
+          if (q.description && typeof q.description !== 'string') qErrors[questionKey].description = `debe ser texto válido`;
           // 🎯 VALIDAR TIPOS SMART VOC (aceptar tanto formatos cortos como largos)
           const validTypes = ['CSAT', 'CES', 'CV', 'NEV', 'NPS', 'VOC', 'smartvoc_csat', 'smartvoc_ces', 'smartvoc_cv', 'smartvoc_nev', 'smartvoc_nps', 'smartvoc_voc'];
           if (!q.type || !validTypes.includes(q.type)) qErrors[questionKey].type = `tiene un tipo inválido (${q.type})`;
