@@ -21,15 +21,7 @@ export function useAvailableFormsQuery(researchId: string, options?: UseQueryOpt
     queryFn: async () => {
       const data = await getAvailableForms(researchId);
 
-      // 🔍 LOG DETALLADO DE LA RESPUESTA DE FORMS
-      console.log('[useAvailableFormsQuery] 📊 Datos completos de forms:', {
-        researchId,
-        steps: data.steps,
-        stepsConfiguration: data.stepsConfiguration,
-        count: data.count,
-        allKeys: Object.keys(data),
-        fullResponse: data
-      });
+      // 🔍 LOG DETALLADO DE LA RESPUESTA DE FORMS - REMOVIDO
 
       return data;
     },
@@ -48,16 +40,11 @@ export function useModuleResponsesQuery(researchId: string, participantId: strin
   return useQuery<ParticipantResponsesDocument, Error>({
     queryKey: ['moduleResponses', researchId, participantId],
     queryFn: async () => {
-      try {
-        const result = await getModuleResponses(researchId, participantId);
+      const result = await getModuleResponses(researchId, participantId);
 
-        const actualData = (result as { data?: ParticipantResponsesDocument }).data || result;
+      const actualData = (result as { data?: ParticipantResponsesDocument }).data || result;
 
-        return actualData;
-      } catch (error) {
-        console.error('❌ Error al obtener module responses:', error);
-        throw error;
-      }
+      return actualData;
     },
     enabled: !!researchId && !!participantId,
     staleTime: 0, // 🎯 NO cachear datos entre participantes
@@ -78,7 +65,7 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Parti
       const { isPreviewMode } = usePreviewModeStore.getState();
 
       if (isPreviewMode) {
-        console.log('[useSaveModuleResponseMutation] 👁️ MODO PREVIEW - Omitiendo guardado:', data.questionKey);
+        // Preview mode logging removido
 
         // Retornar un mock response para que el flujo continúe
         return {
@@ -96,7 +83,7 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Parti
       }
 
       // Modo producción: guardar normalmente
-      console.log('[useSaveModuleResponseMutation] 💾 MODO PRODUCCIÓN - Guardando:', data.questionKey);
+      // Production mode logging removido
       return saveModuleResponse(data);
     },
     onSuccess: (data, variables) => {
@@ -113,7 +100,7 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Parti
       if (!isPreviewMode && data.quotaResult && variables.questionKey === 'thank_you_screen') {
         const { setQuotaResult } = useFormDataStore.getState();
         setQuotaResult(data.quotaResult);
-        console.log('[useSaveModuleResponseMutation] 🎯 Cuota verificada:', data.quotaResult);
+        // Quota verification logging removido
       }
     },
     ...options,
@@ -149,7 +136,7 @@ export function useDeleteAllResponsesMutation(options?: UseMutationOptions<{ mes
       options?.onSuccess?.(data, variables, undefined);
     },
     onError: (error, variables, context) => {
-      console.error('[useDeleteAllResponsesMutation] ❌ Error:', error);
+      // Error logging removido
       options?.onError?.(error, variables, context);
     },
     ...options,

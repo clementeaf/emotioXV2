@@ -20,7 +20,6 @@ export const useOptimizedMonitoringWebSocket = () => {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const debounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  // Estado para tracking de participante
   const [participantState, setParticipantState] = useState<{
     hasLoggedIn: boolean;
     lastStep: string | null;
@@ -33,28 +32,21 @@ export const useOptimizedMonitoringWebSocket = () => {
 
   const isDev = import.meta.env.DEV;
 
-  // 🎯 GENERAR ID ÚNICO PARA EVENTO (evitar duplicados)
   const generateEventId = useCallback((event: MonitoringEvent): string => {
     const timestamp = Date.now();
     const participantId = ('participantId' in event.data) ? event.data.participantId : 'unknown';
     return `${event.type}-${participantId}-${timestamp}`;
   }, []);
 
-  // 🎯 LOGGING INTELIGENTE (reducido en producción)
   const log = useCallback((level: 'info' | 'warn' | 'error', message: string, data?: unknown) => {
-    if (isDev) {
-      console.log(`[useOptimizedMonitoringWebSocket] ${level.toUpperCase()}: ${message}`, data);
-    }
-  }, [isDev]);
+  }, []);
 
-  // 🎯 CONECTAR CON RECONEXIÓN AUTOMÁTICA
   const connect = useCallback(() => {
     if (!researchId || isConnectedRef.current) return;
 
     try {
       const wsUrl = import.meta.env.VITE_WS_URL || getWebsocketUrl();
       
-      // 🐛 DEBUG: Verificar variables de entorno
       log('info', '🔧 Variables de entorno:', {
         VITE_WS_URL: import.meta.env.VITE_WS_URL,
         VITE_API_URL: import.meta.env.VITE_API_URL,
@@ -70,14 +62,12 @@ export const useOptimizedMonitoringWebSocket = () => {
         log('info', '✅ WebSocket conectado exitosamente');
         isConnectedRef.current = true;
 
-        // Enviar eventos en cola
         if (eventQueueRef.current.length > 0) {
           log('info', `📤 Enviando ${eventQueueRef.current.length} eventos en cola`);
           eventQueueRef.current.forEach(event => sendEventNow(event));
           eventQueueRef.current = [];
         }
 
-        // Enviar evento de conexión
         if (researchId) {
           sendEventNow({
             type: 'MONITORING_CONNECT',
@@ -93,8 +83,7 @@ export const useOptimizedMonitoringWebSocket = () => {
         log('warn', `❌ WebSocket desconectado: ${event.code}`, event.reason);
         isConnectedRef.current = false;
 
-        // Reconexión automática (con backoff)
-        if (event.code !== 1000) { // No es cierre limpio
+        if (event.code !== 1000) {
           const delay = Math.min(5000 * Math.pow(2, eventQueueRef.current.length / 10), 30000);
           reconnectTimeoutRef.current = setTimeout(() => connect(), delay);
         }
@@ -111,13 +100,11 @@ export const useOptimizedMonitoringWebSocket = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [researchId, log]);
 
-  // 🎯 DESCONECTAR
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
     }
     
-    // Limpiar debounce timers
     debounceTimersRef.current.forEach(timer => clearTimeout(timer));
     debounceTimersRef.current.clear();
 
@@ -128,17 +115,14 @@ export const useOptimizedMonitoringWebSocket = () => {
     isConnectedRef.current = false;
   }, []);
 
-  // 🎯 ENVIAR EVENTO INMEDIATAMENTE (sin debouncing)
   const sendEventNow = useCallback((event: MonitoringEvent) => {
     const eventId = generateEventId(event);
     
-    // Evitar duplicados
     if (sentEventsRef.current.has(eventId)) {
       return false;
     }
 
     if (!wsRef.current || !isConnectedRef.current) {
-      // Agregar a cola offline
       eventQueueRef.current.push(event);
       log('warn', `📋 Evento agregado a cola offline: ${event.type}`);
       return false;
@@ -148,7 +132,6 @@ export const useOptimizedMonitoringWebSocket = () => {
       wsRef.current.send(JSON.stringify(event));
       sentEventsRef.current.add(eventId);
       
-      // Limpiar cache de eventos enviados (mantener solo últimos 50)
       if (sentEventsRef.current.size > 50) {
         sentEventsRef.current = new Set(Array.from(sentEventsRef.current).slice(25));
       }
@@ -161,19 +144,16 @@ export const useOptimizedMonitoringWebSocket = () => {
     }
   }, [generateEventId, log]);
 
-  // 🎯 ENVIAR EVENTO CON DEBOUNCING (para eventos frecuentes)
   const sendEventDebounced = useCallback((event: MonitoringEvent, debounceMs = 1000) => {
     const participantId = ('participantId' in event.data) ? event.data.participantId : 'unknown';
     const questionKey = ('questionKey' in event.data) ? event.data.questionKey : 'default';
     const debounceKey = `${event.type}-${participantId}-${questionKey}`;
     
-    // Limpiar timer existente
     const existingTimer = debounceTimersRef.current.get(debounceKey);
     if (existingTimer) {
       clearTimeout(existingTimer);
     }
 
-    // Crear nuevo timer
     const timer = setTimeout(() => {
       sendEventNow(event);
       debounceTimersRef.current.delete(debounceKey);
@@ -182,10 +162,7 @@ export const useOptimizedMonitoringWebSocket = () => {
     debounceTimersRef.current.set(debounceKey, timer);
   }, [sendEventNow]);
 
-  // 🎯 EVENTOS ESPECÍFICOS OPTIMIZADOS
-
   const sendParticipantLogin = useCallback((participantId: string, email?: string) => {
-    // Evitar múltiples logins del mismo participante
     if (participantState.hasLoggedIn) {
       log('info', '⏭️ Login ya enviado, omitiendo duplicado');
       return false;
@@ -217,9 +194,8 @@ export const useOptimizedMonitoringWebSocket = () => {
     progress: number,
     duration?: number
   ) => {
-    // Solo enviar si hay cambio significativo
     if (participantState.lastStep === stepName && Math.abs(participantState.lastProgress - progress) < 5) {
-      return false; // Cambio menor al 5%, no enviar
+      return false;
     }
 
     const success = sendEventDebounced({
@@ -234,7 +210,7 @@ export const useOptimizedMonitoringWebSocket = () => {
         timestamp: new Date().toISOString(),
         duration
       }
-    }, 2000); // Debounce de 2 segundos
+    }, 2000);
 
     setParticipantState(prev => ({
       ...prev,
@@ -253,7 +229,6 @@ export const useOptimizedMonitoringWebSocket = () => {
     totalSteps: number,
     progress: number
   ) => {
-    // Este evento es crítico, enviarlo inmediatamente pero con debounce corto
     return sendEventDebounced({
       type: 'PARTICIPANT_RESPONSE_SAVED',
       data: {
@@ -266,7 +241,7 @@ export const useOptimizedMonitoringWebSocket = () => {
         totalSteps,
         progress
       }
-    }, 500); // Debounce de 500ms
+    }, 500);
   }, [researchId, sendEventDebounced]);
 
   const sendParticipantCompleted = useCallback((
@@ -345,7 +320,6 @@ export const useOptimizedMonitoringWebSocket = () => {
     });
   }, [researchId, sendEventNow]);
 
-  // 🎯 CONECTAR AL MONTAR
   useEffect(() => {
     if (researchId) {
       connect();

@@ -85,7 +85,7 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
       if (shouldTrackTiming) {
         endTiming();
         const timingData = getTimingData();
-        console.log('[useAutoSave] ⏱️ Timing data:', timingData);
+        // Timing data logging removido
       }
 
       const finalMetadata = {

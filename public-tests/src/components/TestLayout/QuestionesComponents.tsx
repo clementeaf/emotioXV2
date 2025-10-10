@@ -153,6 +153,13 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
   onChange,
   multiple = false,
 }) => {
+  // 🔍 DEBUG: Verificar choices
+  console.log('[SingleAndMultipleChoiceQuestion] 🔍 Debug:', {
+    choices,
+    choicesLength: choices?.length,
+    value,
+    multiple
+  });
 
   // 🎯 FORZAR VALOR CORRECTO PARA MÚLTIPLE
   const currentValue = multiple && !Array.isArray(value) ? [] : value;
@@ -185,11 +192,27 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
     }
   };
 
+  // 🔍 VERIFICAR SI HAY CHOICES
+  if (!choices || choices.length === 0) {
+    return (
+      <div className="flex flex-col items-center w-full gap-4">
+        <div className="w-full max-w-md border border-red-300 rounded py-4 px-4 bg-red-50">
+          <p className="text-red-600 text-center">
+            ⚠️ No hay opciones disponibles para esta pregunta
+          </p>
+          <p className="text-sm text-red-500 text-center mt-2">
+            Debug: choices = {JSON.stringify(choices)}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center w-full gap-4">
-      {choices.map((choice) => (
+      {choices.map((choice, index) => (
         <button
-          key={choice.id}
+          key={`${choice.id}-${index}-${choice.text}`}
           type="button"
           className={`w-full max-w-md border rounded py-2 px-4 text-base transition text-left ${isSelected(choice.id)
             ? 'bg-blue-600 text-white border-blue-700'

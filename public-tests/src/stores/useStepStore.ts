@@ -206,21 +206,16 @@ export const useStepStore = create<StepStore>()(
         const currentStep = state.currentQuestionKey;
         const currentIndex = stepOrder.findIndex(step => step === currentStep);
 
-        console.log('[useStepStore] 🔍 getNextStep:', {
-          stepOrder,
-          currentStep,
-          currentIndex,
-          totalSteps: stepOrder.length
-        });
+        // Step navigation logging removido
 
         // Si hay un siguiente step en el orden, retornarlo
         if (currentIndex >= 0 && currentIndex < stepOrder.length - 1) {
           const nextStep = stepOrder[currentIndex + 1];
-          console.log('[useStepStore] ✅ Siguiente step encontrado:', nextStep);
+          // Next step logging removido
           return nextStep;
         }
 
-        console.log('[useStepStore] ⚠️ No hay siguiente step');
+        // No next step logging removido
         return '';
       },
 
@@ -239,19 +234,13 @@ export const useStepStore = create<StepStore>()(
         const state = get();
         const nextStepKey = state.getNextStep();
         
-        console.log('[useStepStore] 🚀 goToNextStep ejecutado:', {
-          currentQuestionKey: state.currentQuestionKey,
-          nextStepKey,
-          totalSteps: state.steps.length,
-          steps: state.steps.map(s => s.questionKey),
-          hasNextStep: !!nextStepKey
-        });
+        // Go to next step logging removido
         
         if (nextStepKey) {
-          console.log('[useStepStore] ✅ Avanzando a siguiente step:', nextStepKey);
+          // Advancing to next step logging removido
           state.setCurrentQuestionKey(nextStepKey);
         } else {
-          console.log('[useStepStore] ⚠️ No hay siguiente step disponible');
+          // No next step available logging removido
         }
       }
     })

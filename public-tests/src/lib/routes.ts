@@ -2,32 +2,13 @@ import { apiRequest } from './alova';
 import { AvailableFormsResponse, CreateModuleResponseDto, ParticipantResponsesDocument, UpdateModuleResponseDto } from './types';
 
 export const getAvailableForms = async (researchId: string): Promise<AvailableFormsResponse> => {
-  try {
-    const result = await apiRequest<AvailableFormsResponse>(`/research/${researchId}/forms`, {
-      method: 'GET'
-    });
+  const result = await apiRequest<AvailableFormsResponse>(`/research/${researchId}/forms`, {
+    method: 'GET'
+  });
 
-    // 🔍 LOG DE LA RESPUESTA RAW
-    console.log('[getAvailableForms] 📊 Respuesta raw de forms:', {
-      researchId,
-      result,
-      type: typeof result,
-      keys: Object.keys(result),
-      hasSteps: 'steps' in result,
-      hasStepsConfiguration: 'stepsConfiguration' in result,
-      stepsLength: result.steps?.length,
-      configLength: result.stepsConfiguration?.length
-    });
+  // 🔍 LOG DE LA RESPUESTA RAW - REMOVIDO
 
-    return result;
-  } catch (error) {
-    console.error('[getAvailableForms] ❌ API falló:', {
-      researchId,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
-    throw error;
-  }
+  return result;
 };
 
 // 🎯 ALINEADO CON BACKEND: saveModuleResponse retorna ParticipantResponsesDocument

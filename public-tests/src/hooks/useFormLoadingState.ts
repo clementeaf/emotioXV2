@@ -21,8 +21,8 @@ export const useFormLoadingState = ({
   questionKey,
   onDataLoaded
 }: UseFormLoadingStateProps): UseFormLoadingStateReturn => {
-  // 🎯 SOLO BACKEND - NO STORE LOCAL
-  // const { setFormData, getFormData } = useFormDataStore();
+  // 🎯 HABILITAR STORE LOCAL PARA SINCRONIZACIÓN
+  const { setFormData, getFormData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +46,7 @@ export const useFormLoadingState = ({
     setFormValues({});
     setHasLoadedData(false);
     setIsLoading(true);
-    console.log('[useFormLoadingState] 🔄 Reset suave para question:', questionKey);
+    // Reset logging removido
   }, [questionKey]);
 
   useEffect(() => {
@@ -85,22 +85,21 @@ export const useFormLoadingState = ({
         [key]: value
       };
 
-      // 🎯 SOLO BACKEND - NO STORE LOCAL
-      // Los datos se guardan directamente en el backend
+      // 🎯 GUARDAR EN STORE LOCAL PARA SINCRONIZACIÓN
+      setFormData(questionKey, newValues);
 
       return newValues;
     });
-  }, []);
+  }, [questionKey, setFormData]);
 
   // 🚨 USEEFFECT ELIMINADO: Causaba race condition donde datos del step anterior
   // se guardaban con la key del step actual. El guardado ahora se maneja
   // explícitamente a través de saveToStore() y handleInputChange()
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
-    // 🎯 SOLO BACKEND - NO STORE LOCAL
-    // Los datos se guardan directamente en el backend
-    console.log('[useFormLoadingState] 🎯 Datos guardados en backend:', data);
-  }, []);
+    // 🎯 GUARDAR EN STORE LOCAL PARA SINCRONIZACIÓN
+    setFormData(questionKey, data);
+  }, [questionKey, setFormData]);
 
   return {
     isLoading: isLoading || isLoadingResponses,

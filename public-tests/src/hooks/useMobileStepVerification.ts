@@ -47,17 +47,7 @@ export const useMobileStepVerification = (
       setIsBlocked(blocked);
       setShouldShowBlockScreen(blocked);
 
-      console.log('[useMobileStepVerification] Estado de verificación:', {
-        researchId,
-        deviceType,
-        isMobileOrTablet,
-        allowMobile,
-        configFound,
-        shouldBlock,
-        blocked,
-        isLoadingConfig,
-        isLoadingMobileCheck
-      });
+      // Estado de verificación logging removido
     }
   }, [
     researchId,

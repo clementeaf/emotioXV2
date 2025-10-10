@@ -200,58 +200,25 @@ const TestLayoutRenderer: React.FC = () => {
     return <div className='flex flex-col items-center justify-center h-full'>No se encontró información para este step</div>;
   }
 
-
   const currentStepData = getCurrentStepData(formsData, currentQuestionKey);
 
-  console.log('[TestLayoutRenderer] 🔍 Debug smartvoc_csat:', {
-    currentQuestionKey,
-    currentStepData: currentStepData ? 'found' : 'not found',
-    contentConfiguration: currentStepData?.contentConfiguration ? 'found' : 'not found',
-    formsDataSteps: formsData?.steps?.length || 0,
-    questionType: currentQuestionKey ? getQuestionType(currentQuestionKey) : 'unknown'
-  });
-
   if (!currentStepData) {
-    console.log('[TestLayoutRenderer] ❌ currentStepData is null for:', currentQuestionKey);
     return <div>No se encontró información para este step: {currentQuestionKey}</div>;
   }
 
   const { contentConfiguration } = currentStepData;
   const questionType = getQuestionType(currentQuestionKey);
 
-  // 🎯 VERIFICAR SI HAY PREGUNTAS CONFIGURADAS PARA DEMOGRAPHICS
   const hasConfiguredQuestions = questionType === 'demographics' ?
     Object.values(contentConfiguration?.demographicQuestions || {}).some((q: { enabled?: boolean }) => q?.enabled) :
     true;
   
-  // 🎯 SI HAY PREGUNTAS DEMOGRÁFICAS CONFIGURADAS, NO ES CONFIGURACIÓN PENDIENTE
   const isConfigurationPending = questionType === 'demographics' && !hasConfiguredQuestions;
-
-  console.log('[TestLayoutRenderer] 🎯 Rendering component:', {
-    questionType,
-    hasRenderer: !!RENDERERS[questionType],
-    availableRenderers: Object.keys(RENDERERS),
-    currentQuestionKey
-  });
-
-  // 🎯 PRIMERO BUSCAR EN BACKEND, LUEGO EN LOCAL
   const backendResponse = moduleResponses?.responses?.find(
     (response) => response.questionKey === currentQuestionKey
   );
   
-  // 🚨 FIX: La estructura correcta es directamente response.response
   const formData = backendResponse?.response || getFormData(currentQuestionKey) || {};
-
-  console.log('[TestLayoutRenderer] 🔍 Debug formData:', {
-    currentQuestionKey,
-    backendResponse: backendResponse ? 'found' : 'not found',
-    backendResponseStructure: backendResponse ? Object.keys(backendResponse) : [],
-    actualBackendData: backendResponse?.response,
-    localData: getFormData(currentQuestionKey),
-    finalFormData: formData,
-    moduleResponsesStructure: moduleResponses ? Object.keys(moduleResponses) : [],
-    totalResponses: moduleResponses?.responses?.length || 0
-  });
 
   const renderedForm =
     RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig, formData }) ||
@@ -268,7 +235,6 @@ const TestLayoutRenderer: React.FC = () => {
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
   
-  // 🎯 DETECTAR SI ES PREGUNTA NEV CON AUTO-AVANCE
   const shouldHideButton = (() => {
     if (questionType !== 'smartvoc_nev') return false;
     

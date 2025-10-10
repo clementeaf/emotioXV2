@@ -35,11 +35,9 @@ export const useDemographicData = ({ currentQuestionKey = 'demographics' }: UseD
       );
 
       if (demographicsResponse?.response && Object.keys(demographicsResponse.response).length > 0) {
-        console.log('[useDemographicData] 🎯 Cargando datos del backend:', demographicsResponse.response);
         setFormValues(demographicsResponse.response as Record<string, string>);
         setHasLoadedData(true);
       } else {
-        console.log('[useDemographicData] 🔍 Respuesta vacía o sin datos:', demographicsResponse?.response);
         setHasLoadedData(false);
       }
     }

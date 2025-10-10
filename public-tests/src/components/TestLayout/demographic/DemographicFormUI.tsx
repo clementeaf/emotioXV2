@@ -79,7 +79,7 @@ export const DemographicFormUI: React.FC<DemographicFormUIProps> = ({
                 <option value="">Selecciona una opción</option>
                 {q.options.map((opt: string, i: number) => (
                   <option
-                    key={i}
+                    key={`${q.key}-option-${i}-${opt}`}
                     value={opt}
                     className={q.disqualifyingOptions?.includes(opt) ? 'text-red-500' : ''}
                   >

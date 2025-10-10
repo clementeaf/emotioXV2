@@ -170,7 +170,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
         const currentStep = store.currentQuestionKey;
         
         if (currentStep === currentQuestionKey) {
-          console.log('[ButtonSteps] ➡️ Ejecutando goToNextStep()...');
+          // Navigation logging removido
           goToNextStep();
         }
         setIsNavigating(false);

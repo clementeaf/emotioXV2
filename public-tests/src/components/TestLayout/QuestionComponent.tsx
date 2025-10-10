@@ -386,6 +386,14 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
       <div className="w-full max-w-2xl">
         {question.type === 'choice' && (
           <>
+            {/* 🔍 DEBUG: Verificar datos de choice */}
+            {console.log('[QuestionComponent] 🔍 Choice Debug:', {
+              questionType: question.type,
+              questionChoices: question.choices,
+              questionChoicesLength: question.choices?.length,
+              questionConfig: question.config,
+              currentStepKey
+            })}
             <SingleAndMultipleChoiceQuestion
               key={`choice-${currentStepKey}-${question.title.replace(/\s+/g, '-')}`}
               choices={(question.choices || []).map(choice => ({
