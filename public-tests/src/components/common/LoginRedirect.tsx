@@ -11,39 +11,29 @@ const LoginRedirect: React.FC = () => {
   const { setParticipant } = useTestStore();
 
   useEffect(() => {
-    // 🎯 INTENTO 1: Obtener parámetros desde la URL path (/{researchId}/{participantId})
     const pathResearchId = params.researchId;
     const pathParticipantId = params.participantId;
-
-    // 🎯 INTENTO 2: Obtener parámetros desde query string (?researchId=X&userId=Y o ?researchId=X&participantId=Y)
     const urlParams = new URLSearchParams(location.search);
     const queryResearchId = urlParams.get('researchId');
     const queryParticipantId = urlParams.get('participantId');
     const queryUserId = urlParams.get('userId');
-
-    // 🎯 PRIORIDAD: Path params > Query params
     const researchId = pathResearchId || queryResearchId;
     const participantId = pathParticipantId || queryParticipantId || queryUserId;
 
-    // Obtener stores de modo preview y participant
     const { setParticipantId } = useParticipantStore.getState();
     const { setPreviewMode } = usePreviewModeStore.getState();
 
     if (!researchId) {
-      // Sin researchId → Error
       console.error('[LoginRedirect] ❌ No researchId provided');
       navigate('/error-no-research-id');
       return;
     }
 
     if (participantId) {
-      // 🎬 MODO PRODUCCIÓN: Ambos parámetros presentes
-      console.log('[LoginRedirect] 🎬 MODO PRODUCCIÓN - ParticipantId:', participantId);
 
       setPreviewMode(false);
       setParticipantId(participantId);
 
-      // Configurar participante con participantId
       const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
       const participantEmail = `${participantId.slice(-8)}@participant.study`;
 
@@ -54,15 +44,10 @@ const LoginRedirect: React.FC = () => {
         researchId
       );
 
-      // Mantener parámetros en la URL
       navigate(`/test?researchId=${researchId}&participantId=${participantId}`);
     } else {
-      // 👁️ MODO PREVIEW: Solo researchId (QR code de testing)
-      console.log('[LoginRedirect] 👁️ MODO PREVIEW - Solo researchId:', researchId);
-
       setPreviewMode(true);
 
-      // Auto-generar participantId para modo preview
       const previewParticipantId = `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       setParticipantId(previewParticipantId);
 
@@ -76,7 +61,6 @@ const LoginRedirect: React.FC = () => {
         researchId
       );
 
-      // Mantener researchId en la URL (modo preview solo con researchId)
       navigate(`/test?researchId=${researchId}`);
     }
   }, [location, navigate, setParticipant, params]);

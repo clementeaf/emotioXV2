@@ -1,0 +1,57 @@
+name: Update API Configuration
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backendV2/**'
+      - 'config/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to update'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+jobs:
+  update-config:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'development' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          
+      - name: Update API configuration
+        run: |
+          chmod +x scripts/update-api-config.sh
+          ./scripts/update-api-config.sh ${{ github.event.inputs.environment || 'development' }}
+          
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add config/
+          git add frontend/config/
+          git add public-tests/config/
+          git add backendV2/config/
+          git commit -m "🔄 Auto-update API configuration for ${{ github.event.inputs.environment || 'development' }}" || exit 0
+          git push
+          
+      - name: Notify deployment
+        if: github.event.inputs.environment == 'production'
+        run: |
+          echo "🚀 API configuration updated for production environment"
+          # Aquí se puede agregar notificación a Slack, Discord, etc.
