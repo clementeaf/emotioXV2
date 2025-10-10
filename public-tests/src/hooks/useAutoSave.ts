@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import { useTestStore } from '../stores/useTestStore';
-import { useFormDataStore } from '../stores/useFormDataStore';
 import { useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from './useApiQueries';
 import { useEyeTrackingConfigQuery } from './useEyeTrackingConfigQuery';
 import { useOptimizedMonitoringWebSocket } from './useOptimizedMonitoringWebSocket';
@@ -10,11 +9,11 @@ import { useAvailableFormsQuery } from './useApiQueries';
 
 interface UseAutoSaveProps {
   currentQuestionKey: string;
+  formData?: Record<string, unknown>;
 }
 
-export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
+export const useAutoSave = ({ currentQuestionKey, formData }: UseAutoSaveProps) => {
   const { researchId, participantId } = useTestStore();
-  const { getFormData } = useFormDataStore();
 
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
@@ -67,15 +66,11 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
     }
 
     try {
-      let currentFormData = getFormData(currentQuestionKey) || {};
+      // 🎯 USAR DATOS PASADOS COMO PARÁMETRO EN LUGAR DEL STORE
+      const currentFormData = formData || {};
 
       if (!currentFormData || Object.keys(currentFormData).length === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        currentFormData = getFormData(currentQuestionKey) || {};
-
-        if (!currentFormData || Object.keys(currentFormData).length === 0) {
-          return;
-        }
+        return;
       }
 
       if (shouldTrackUserJourney) {
@@ -243,7 +238,7 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
     researchId,
     participantId,
     currentQuestionKey,
-    getFormData,
+    formData,
     shouldTrackUserJourney,
     shouldTrackTiming,
     trackStepVisit,

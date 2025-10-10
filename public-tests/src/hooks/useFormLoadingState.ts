@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useFormDataStore } from '../stores/useFormDataStore';
 import { useTestStore } from '../stores/useTestStore';
 import { useModuleResponsesQuery } from './useApiQueries';
 
@@ -21,8 +20,7 @@ export const useFormLoadingState = ({
   questionKey,
   onDataLoaded
 }: UseFormLoadingStateProps): UseFormLoadingStateReturn => {
-  // 🎯 HABILITAR STORE LOCAL PARA SINCRONIZACIÓN
-  const { setFormData, getFormData } = useFormDataStore();
+  // 🎯 USAR SOLO BACKEND - NO STORE LOCAL
   const { researchId, participantId } = useTestStore();
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -85,21 +83,19 @@ export const useFormLoadingState = ({
         [key]: value
       };
 
-      // 🎯 GUARDAR EN STORE LOCAL PARA SINCRONIZACIÓN
-      setFormData(questionKey, newValues);
-
+      // 🎯 NO GUARDAR EN STORE LOCAL - Solo en estado local temporal
       return newValues;
     });
-  }, [questionKey, setFormData]);
+  }, []);
 
   // 🚨 USEEFFECT ELIMINADO: Causaba race condition donde datos del step anterior
   // se guardaban con la key del step actual. El guardado ahora se maneja
   // explícitamente a través de saveToStore() y handleInputChange()
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
-    // 🎯 GUARDAR EN STORE LOCAL PARA SINCRONIZACIÓN
-    setFormData(questionKey, data);
-  }, [questionKey, setFormData]);
+    // 🎯 NO GUARDAR EN STORE LOCAL - Solo actualizar estado local
+    setFormValues(data);
+  }, []);
 
   return {
     isLoading: isLoading || isLoadingResponses,
