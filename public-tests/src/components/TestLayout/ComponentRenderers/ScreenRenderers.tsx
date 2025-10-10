@@ -1,12 +1,13 @@
 import React from 'react';
 import { ThankYouScreenComponent } from '../components/ThankYouScreenComponent';
 import { ScreenComponent } from '../StepsComponents';
+import { QuotaResult, EyeTrackingConfig } from '../components/ThankYouScreenTypes';
 
 interface ScreenRendererArgs {
   contentConfiguration?: Record<string, unknown>;
   currentQuestionKey: string;
-  quotaResult?: unknown;
-  eyeTrackingConfig?: unknown;
+  quotaResult?: QuotaResult;
+  eyeTrackingConfig?: EyeTrackingConfig;
 }
 
 export const screenRenderers = {

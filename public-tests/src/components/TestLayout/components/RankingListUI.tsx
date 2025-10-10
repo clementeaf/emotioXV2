@@ -28,7 +28,6 @@ export const RankingListUI: React.FC<RankingListUIProps> = ({
       {rankedItems.map((item, index) => {
         const canMoveUpItem = canMoveUp(index);
         const canMoveDownItem = canMoveDown(index, rankedItems.length);
-        const isDisabled = isLoading || (!canMoveUpItem && !canMoveDownItem);
 
         return (
           <div 

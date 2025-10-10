@@ -13,7 +13,7 @@ export const useRankingData = ({ items, currentQuestionKey, initialFormData }: U
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { setFormData, getFormData } = useFormDataStore();
+  const { getFormData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
 
   const { data: moduleResponses } = useModuleResponsesQuery(
@@ -32,7 +32,6 @@ export const useRankingData = ({ items, currentQuestionKey, initialFormData }: U
 
     try {
       let dataSource: Record<string, unknown> | null = null;
-      let sourceType = 'none';
 
       // 1. Intentar cargar desde backend
       if (moduleResponses?.responses) {
@@ -44,7 +43,6 @@ export const useRankingData = ({ items, currentQuestionKey, initialFormData }: U
             backendResponse.response !== null && 
             'selectedValue' in backendResponse.response) {
           dataSource = backendResponse.response as Record<string, unknown>;
-          sourceType = 'moduleResponses';
         }
       }
 
@@ -53,7 +51,6 @@ export const useRankingData = ({ items, currentQuestionKey, initialFormData }: U
           Object.keys(initialFormData).length > 0 && 
           initialFormData.selectedValue) {
         dataSource = initialFormData;
-        sourceType = 'initialFormData';
       }
 
       // 3. Intentar cargar desde localStorage
@@ -61,7 +58,6 @@ export const useRankingData = ({ items, currentQuestionKey, initialFormData }: U
         const localData = getFormData(currentQuestionKey);
         if (localData?.selectedValue) {
           dataSource = localData as Record<string, unknown>;
-          sourceType = 'localStorage';
         }
       }
 

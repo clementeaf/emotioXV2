@@ -6,11 +6,13 @@ import { screenRenderers } from './ComponentRenderers/ScreenRenderers';
 import { cognitiveRenderers } from './ComponentRenderers/CognitiveRenderers';
 import { demographicRenderers } from './demographic';
 
+import { QuotaResult, EyeTrackingConfig } from './components/ThankYouScreenTypes';
+
 interface RendererArgs {
   contentConfiguration?: Record<string, unknown>;
   currentQuestionKey: string;
-  quotaResult?: unknown;
-  eyeTrackingConfig?: unknown;
+  quotaResult?: QuotaResult;
+  eyeTrackingConfig?: EyeTrackingConfig;
   formData?: Record<string, unknown>;
   [key: string]: unknown;
 }

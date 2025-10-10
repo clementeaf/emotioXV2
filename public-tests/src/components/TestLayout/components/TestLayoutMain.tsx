@@ -12,7 +12,6 @@ const TestLayoutMain: React.FC = () => {
   const { researchId } = useTestStore();
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   
-  // 🎯 DETERMINAR SI EL SIDEBAR DEBE MOSTRARSE
   const shouldShowSidebar = eyeTrackingConfig?.linkConfig?.showProgressBar ?? true;
 
   const handleStepsReady = useCallback((steps: SidebarStep[]) => {
