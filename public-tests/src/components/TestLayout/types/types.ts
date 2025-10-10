@@ -1,4 +1,4 @@
-import { AvailableFormsResponse } from '../../lib/types';
+import { AvailableFormsResponse } from '../../../lib/types';
 
 export interface Question {
   title?: string;

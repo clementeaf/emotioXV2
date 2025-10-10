@@ -20,11 +20,9 @@ export function WebSocketDiagnostic({ className = '' }: WebSocketDiagnosticProps
     setEnvVars(null);
 
     try {
-      // 🎯 VERIFICAR VARIABLES DE ENTORNO
       const env = checkEnvironmentVariables();
       setEnvVars(env);
 
-      // 🎯 PROBAR CONEXIÓN WEBSOCKET
       const result = await testWebSocketConnection();
       setTestResult(result);
 

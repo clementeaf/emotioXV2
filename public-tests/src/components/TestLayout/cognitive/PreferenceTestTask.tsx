@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useFormDataStore } from '../../stores/useFormDataStore';
-import { useStepStore } from '../../stores/useStepStore';
-import { PreferenceFile, PreferenceTestTaskProps } from './types';
+import { useFormDataStore } from '../../../stores/useFormDataStore';
+import { useStepStore } from '../../../stores/useStepStore';
+import { PreferenceFile, PreferenceTestTaskProps } from '../types/types';
 
 // 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
 interface BackendResponse {

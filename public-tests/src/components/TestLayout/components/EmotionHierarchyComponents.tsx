@@ -1,5 +1,5 @@
 import React from 'react';
-import { ALL_EMOTIONS } from './emotionConstants';
+import { ALL_EMOTIONS } from '../utils/emotionConstants';
 
 /**
  * Interfaces para los componentes de jerarquía de emociones

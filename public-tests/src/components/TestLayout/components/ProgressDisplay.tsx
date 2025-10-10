@@ -1,6 +1,6 @@
 import React from 'react';
-import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
-import { useTestStore } from '../../stores/useTestStore';
+import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
+import { useTestStore } from '../../../stores/useTestStore';
 
 interface ProgressDisplayProps {
   current: number;

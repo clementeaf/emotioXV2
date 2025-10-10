@@ -1,10 +1,10 @@
 import React, { useCallback, useState } from 'react';
-import TestLayoutRenderer from './TestLayoutRenderer';
-import TestLayoutSidebar from './sidebar/TestLayoutSidebar';
-import { SidebarStep } from './types';
-import { usePreviewModeStore } from '../../stores/usePreviewModeStore';
-import { useTestStore } from '../../stores/useTestStore';
-import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
+import TestLayoutRenderer from '../TestLayoutRenderer';
+import TestLayoutSidebar from '../sidebar/TestLayoutSidebar';
+import { SidebarStep } from '../types/types';
+import { usePreviewModeStore } from '../../../stores/usePreviewModeStore';
+import { useTestStore } from '../../../stores/useTestStore';
+import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
 
 const TestLayoutMain: React.FC = () => {
   const [, setSidebarSteps] = useState<SidebarStep[]>([]);

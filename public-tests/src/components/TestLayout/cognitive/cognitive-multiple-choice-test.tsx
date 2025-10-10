@@ -1,5 +1,5 @@
 import React from 'react';
-import { SingleAndMultipleChoiceQuestion } from './QuestionesComponents';
+import { SingleAndMultipleChoiceQuestion } from '../QuestionesComponents';
 
 export const CognitiveMultipleChoiceTest: React.FC = () => {
   const [value, setValue] = React.useState<string[]>([]);

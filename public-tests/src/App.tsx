@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { LocationConsentModal } from './components/common/LocationConsentModal';
 import LoginRedirect from './components/common/LoginRedirect';
-import TestLayoutMain from './components/TestLayout/TestLayoutMain';
+import TestLayoutMain from './components/TestLayout/components/TestLayoutMain';
 import { useEyeTrackingConfigQuery } from './hooks/useEyeTrackingConfigQuery';
 import { useLocationTracking } from './hooks/useLocationTracking';
 import './index.css';

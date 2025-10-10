@@ -1,5 +1,5 @@
 import React from 'react';
-import { DetailedEmotionSelector, EmotionHierarchySelector } from './EmotionHierarchyComponents';
+import { DetailedEmotionSelector, EmotionHierarchySelector } from './components/EmotionHierarchyComponents';
 import { ScaleRangeQuestionProps, SingleAndMultipleChoiceQuestionProps } from './types';
 
 export function ScaleRangeQuestion({
@@ -284,7 +284,7 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
     handleSliderClick(event);
   };
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const handleMouseMove = React.useCallback((event: MouseEvent) => {
     if (!isDragging || !sliderRef.current) return;
     
     const rect = sliderRef.current.getBoundingClientRect();
@@ -294,7 +294,7 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
     const clampedValue = Math.max(min, Math.min(max, newValue));
     
     onChange?.(clampedValue);
-  };
+  }, [isDragging, min, max, onChange]);
 
   const handleMouseUp = () => {
     setIsDragging(false);
@@ -310,7 +310,7 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove]);
 
   return (
     <div className="flex flex-col items-center w-full max-w-2xl">

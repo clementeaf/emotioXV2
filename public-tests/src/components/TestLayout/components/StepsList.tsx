@@ -1,7 +1,7 @@
 import React from 'react';
-import { useStepStore } from '../../stores/useStepStore';
+import { useStepStore } from '../../../stores/useStepStore';
 import StepItem from './StepItem';
-import { CustomStepsListProps } from './types';
+import { CustomStepsListProps } from '../types/types';
 
 const StepsList: React.FC<CustomStepsListProps> = ({ steps, currentStepKey, isStepEnabled }) => {
   const { setCurrentQuestionKey, getStepState } = useStepStore();

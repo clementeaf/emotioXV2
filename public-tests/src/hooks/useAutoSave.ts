@@ -251,7 +251,7 @@ export const useAutoSave = ({ currentQuestionKey }: UseAutoSaveProps) => {
     getTimingData,
     moduleResponses,
     steps,
-    saveMutation,
+    // saveMutation,
     updateMutation,
     sendParticipantResponseSaved
   ]);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { VOCTextQuestion } from './QuestionesComponents';
+import { VOCTextQuestion } from '../QuestionesComponents';
 
 // 🧪 Componente de test para cognitive_short_text
 export const CognitiveShortTextTest: React.FC = () => {

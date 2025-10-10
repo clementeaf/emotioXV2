@@ -20,11 +20,9 @@ export const StepTransition: React.FC<StepTransitionProps> = ({
 
   useEffect(() => {
     if (isTransitioning) {
-      // Fade out
       setTransitionClass('opacity-0 transform translate-x-4');
       setShowContent(false);
       
-      // Fade in after transition
       const timer = setTimeout(() => {
         setTransitionClass('opacity-100 transform translate-x-0');
         setShowContent(true);

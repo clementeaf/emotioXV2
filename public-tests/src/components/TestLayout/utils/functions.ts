@@ -1,4 +1,4 @@
-import { StepSearchResult, StepType } from './types';
+import { StepSearchResult, StepType } from '../types/types';
 
 export function getStepType(step: StepSearchResult): StepType {
   if (!step) return 'unknown';

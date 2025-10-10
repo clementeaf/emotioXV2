@@ -15,14 +15,12 @@ export function useSidebarSteps(
   const queryClient = useQueryClient();
   const { data, isLoading, error, refetch } = useAvailableFormsQuery(researchId);
 
-  // Invalidar cache cuando researchId cambie
   useEffect(() => {
     if (researchId) {
       queryClient.invalidateQueries({ queryKey: ['availableForms', researchId] });
     }
   }, [researchId, queryClient]);
 
-  // Combinar steps API + locales
   const steps = useMemo(() => {
 
     if (data?.steps && data.steps.length > 0) {
@@ -36,7 +34,6 @@ export function useSidebarSteps(
     return localSteps;
   }, [data, localSteps]);
 
-  // Inicializar paso activo solo una vez
   const hasInitializedRef = useRef(false);
 
   useEffect(() => {
@@ -49,7 +46,6 @@ export function useSidebarSteps(
     }
   }, [steps, hasResponse, setCurrentQuestionKey]);
 
-  // Notificar cuando los steps estén listos
   const stepsNotifiedRef = useRef(false);
 
   useEffect(() => {

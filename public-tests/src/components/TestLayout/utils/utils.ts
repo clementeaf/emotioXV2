@@ -1,4 +1,4 @@
-import { AvailableFormsResponse, StepConfiguration } from '../../lib/types';
+import { AvailableFormsResponse, StepConfiguration } from '../../../lib/types';
 
 export const QUESTION_TYPE_MAP = {
   // Screens especiales

@@ -24,7 +24,6 @@ export function NavigationFlowDebugger({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showStats, setShowStats] = useState(true);
 
-  // Calcular estadísticas
   const totalPoints = Object.values(visualClickPoints).flat().length;
   const correctPoints = Object.values(visualClickPoints).flat().filter(p => p.isCorrect).length;
   const incorrectPoints = totalPoints - correctPoints;

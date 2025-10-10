@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useModuleResponsesQuery } from '../../hooks/useApiQueries';
-import { useFormDataStore } from '../../stores/useFormDataStore';
-import { useTestStore } from '../../stores/useTestStore';
+import { useModuleResponsesQuery } from '../../../hooks/useApiQueries';
+import { useFormDataStore } from '../../../stores/useFormDataStore';
+import { useTestStore } from '../../../stores/useTestStore';
 
 
 interface RankingListProps {

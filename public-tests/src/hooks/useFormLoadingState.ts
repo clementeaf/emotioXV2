@@ -76,7 +76,6 @@ export const useFormLoadingState = ({
     // Si no hay datos en el backend, no cargar nada
 
     setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleResponses, isLoadingResponses, questionKey, stableOnDataLoaded]);
 
   const handleInputChange = useCallback((key: string, value: unknown) => {
@@ -91,7 +90,7 @@ export const useFormLoadingState = ({
 
       return newValues;
     });
-  }, [questionKey]);
+  }, []);
 
   // 🚨 USEEFFECT ELIMINADO: Causaba race condition donde datos del step anterior
   // se guardaban con la key del step actual. El guardado ahora se maneja
@@ -101,7 +100,7 @@ export const useFormLoadingState = ({
     // 🎯 SOLO BACKEND - NO STORE LOCAL
     // Los datos se guardan directamente en el backend
     console.log('[useFormLoadingState] 🎯 Datos guardados en backend:', data);
-  }, [questionKey]);
+  }, []);
 
   return {
     isLoading: isLoading || isLoadingResponses,

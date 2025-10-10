@@ -88,7 +88,7 @@ const useQuestionInitialization = (
   React.useEffect(() => {
     const initialValue = getInitialValue(question.type, question.config);
     setValue(initialValue);
-  }, [currentStepKey, question.type, question.config?.maxSelections, question.config?.multiple, getInitialValue]);
+  }, [currentStepKey, question.type, question.config, getInitialValue]);
 
   // 🎯 CARGAR DATOS DEL BACKEND O STORE LOCAL
   React.useEffect(() => {
@@ -354,7 +354,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
         value: newValue 
       });
     }
-  }, [question.type, question.config?.maxSelections, value, saveToStore, autoSave, goToNextStep, debug, info, warn, error]);
+  }, [question.type, question.config, value, saveToStore, autoSave, goToNextStep, debug, info, warn, error, isAutoAdvancing, question.title, setValue]);
 
   // 🎯 HANDLER MEMOIZADO PARA CLICKS DE EMOCIONES
   const handleEmotionClick = React.useCallback((emotion: string) => {

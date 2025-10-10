@@ -37,10 +37,8 @@ export const OptimisticFormWrapper: React.FC<OptimisticFormWrapperProps> = ({
     onDataLoaded
   });
 
-  // 🎯 MOSTRAR CONTENIDO OPTIMISTA INMEDIATAMENTE, LUEGO CARGAR DATOS REALES
   useEffect(() => {
     if (!isLoading && hasLoadedData) {
-      // Pequeño delay para transición suave
       const timer = setTimeout(() => {
         setShowOptimisticContent(false);
       }, 150);
@@ -48,7 +46,6 @@ export const OptimisticFormWrapper: React.FC<OptimisticFormWrapperProps> = ({
     }
   }, [isLoading, hasLoadedData]);
 
-  // 🎯 RESETEAR ESTADO OPTIMISTA CUANDO CAMBIA LA PREGUNTA
   useEffect(() => {
     setShowOptimisticContent(true);
   }, [questionKey]);

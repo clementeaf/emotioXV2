@@ -5,11 +5,11 @@ import { useSidebarLogic } from '../../../hooks/useSidebarLogic';
 import { useFormDataStore } from '../../../stores/useFormDataStore';
 import { useStepStore } from '../../../stores/useStepStore';
 import { useTestStore } from '../../../stores/useTestStore';
-import BurgerMenuButton from '../BurgerMenuButton';
-import MobileOverlay from '../MobileOverlay';
-import ProgressDisplay from '../ProgressDisplay';
-import SidebarContainer from '../SidebarContainer';
-import StepsList from '../StepsList';
+import BurgerMenuButton from '../components/BurgerMenuButton';
+import MobileOverlay from '../components/MobileOverlay';
+import ProgressDisplay from '../components/ProgressDisplay';
+import SidebarContainer from '../components/SidebarContainer';
+import StepsList from '../components/StepsList';
 import { Props } from '../types';
 
 const TestLayoutSidebar: React.FC<Props> = ({
@@ -35,7 +35,6 @@ const TestLayoutSidebar: React.FC<Props> = ({
     }
   });
 
-  // Sincronizar steps del useSidebarLogic con el store
   const { steps, totalSteps, isLoading, error, isOpen, toggleSidebar, closeSidebar, isStepEnabled, handleDeleteAllResponses, isDeleting, deleteButtonText, isDeleteDisabled, refetchForms } = useSidebarLogic({
     researchId: researchId || '',
     onStepsReady,
@@ -46,7 +45,6 @@ const TestLayoutSidebar: React.FC<Props> = ({
     }
   });
 
-  // Forzar re-render usando una key que depende del estado global
   const sidebarKey = `${backendResponses.length}-${currentQuestionKey}`;
 
   return (
