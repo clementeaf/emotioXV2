@@ -384,17 +384,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
       )}
 
       <div className="w-full max-w-2xl">
-        {/* 🔍 DEBUG: Verificar tipo de pregunta */}
-        {(() => {
-          console.log('[QuestionComponent] 🔍 Question Debug:', {
-            questionType: question.type,
-            questionTitle: question.title,
-            hasChoices: !!question.choices,
-            choicesLength: question.choices?.length,
-            choices: question.choices
-          });
-          return null;
-        })()}
         {question.type === 'choice' && (
           <>
             {/* 🔍 DEBUG: Verificar datos de choice */}
