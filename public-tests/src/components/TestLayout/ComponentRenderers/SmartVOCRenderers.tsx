@@ -1,5 +1,11 @@
 import React from 'react';
 import { QuestionComponent } from '../QuestionComponent';
+import { 
+  DEFAULT_SMARTVOC_CONFIGS, 
+  createScaleConfig, 
+  extractMaxSelections, 
+  createQuestionConfig 
+} from '../../../utils/smartVOCUtils';
 
 interface RendererArgs {
   contentConfiguration?: Record<string, unknown>;
@@ -13,45 +19,25 @@ interface RendererArgs {
 export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.ReactNode> = {
   smartvoc_csat: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
     const displayType = contentConfiguration?.type || 'stars';
-
-    const baseConfig = {
-      min: 1,
-      max: 5,
-      leftLabel: 'Muy insatisfecho',
-      rightLabel: 'Muy satisfecho',
-      startLabel: 'Muy insatisfecho',
-      endLabel: 'Muy satisfecho'
-    };
-
+    const scaleConfig = createScaleConfig(DEFAULT_SMARTVOC_CONFIGS.CSAT);
+    
     const config = {
-      ...baseConfig,
+      ...scaleConfig,
       type: displayType,
-      ...(displayType === 'stars' && {
-        startLabel: '1 - Muy insatisfecho',
-        endLabel: '5 - Muy satisfecho'
-      }),
       ...(displayType === 'numbers' && {
         leftLabel: '1',
-        rightLabel: '5',
-        startLabel: '1 - Muy insatisfecho',
-        endLabel: '5 - Muy satisfecho'
+        rightLabel: '5'
       })
     };
 
     return (
       <QuestionComponent
-        question={{
-          title: String(contentConfiguration?.title || 'CSAT'),
-          questionKey: currentQuestionKey,
-          type: displayType === 'stars' ? 'emoji' : 'scale',
-          config: {
-            ...config,
-            instructions: contentConfiguration?.instructions as string,
-            type: displayType === 'stars' ? 'stars' : 'scale'  // 🎯 CORREGIDO: Usar 'stars' cuando el tipo es 'stars'
-          },
-          choices: [],
-          description: String(contentConfiguration?.description || '')
-        }}
+        question={createQuestionConfig(
+          contentConfiguration || {},
+          currentQuestionKey,
+          displayType === 'stars' ? 'emoji' : 'scale',
+          { ...config, type: displayType === 'stars' ? 'stars' : 'scale' }
+        )}
         currentStepKey={currentQuestionKey}
         initialFormData={formData}
       />
@@ -60,27 +46,25 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
 
   smartvoc_ces: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
     const scaleRange = (contentConfiguration?.scaleRange as { start: number; end: number }) || { start: 1, end: 5 };
-    const startLabel = String(contentConfiguration?.startLabel || 'Muy fácil');
-    const endLabel = String(contentConfiguration?.endLabel || 'Muy difícil');
+    const customLabels = {
+      startLabel: String(contentConfiguration?.startLabel || ''),
+      endLabel: String(contentConfiguration?.endLabel || '')
+    };
+    
+    const config = createScaleConfig(DEFAULT_SMARTVOC_CONFIGS.CES, {
+      min: scaleRange.start,
+      max: scaleRange.end,
+      ...customLabels
+    });
 
     return (
       <QuestionComponent
-        question={{
-          title: String(contentConfiguration?.title || 'CES'),
-          questionKey: currentQuestionKey,
-          type: 'scale',
-          config: {
-            min: scaleRange.start,
-            max: scaleRange.end,
-            leftLabel: startLabel,
-            rightLabel: endLabel,
-            startLabel: startLabel,
-            endLabel: endLabel,
-            instructions: contentConfiguration?.instructions as string
-          },
-          choices: [],
-          description: String(contentConfiguration?.description || '')
-        }}
+        question={createQuestionConfig(
+          contentConfiguration || {},
+          currentQuestionKey,
+          'scale',
+          config as Record<string, unknown>
+        )}
         currentStepKey={currentQuestionKey}
         initialFormData={formData}
       />
@@ -188,59 +172,19 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
 
   smartvoc_nev: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
     const instructions = String(contentConfiguration?.instructions || '');
-    console.log('[SmartVOCRenderers] 🔍 Instrucciones NEV:', instructions);
-    
-    const extractMaxSelections = (text: string): number => {
-      console.log('[SmartVOCRenderers] 🔍 Extrayendo maxSelections de:', text);
-      
-      const patterns = [
-        /selecciona\s+maximo\s+(\d+)\s+emociones/i, // 🎯 PATRÓN ESPECÍFICO PARA "Selecciona maximo 4 emociones"
-        /hasta\s+(\d+)/i,
-        /máximo\s+(\d+)/i,
-        /máx\s+(\d+)/i,
-        /max\s+(\d+)/i,
-        /selecciona\s+hasta\s+(\d+)/i,
-        /selecciona\s+máximo\s+(\d+)/i,
-        /selecciona\s+(\d+)\s+emociones/i,
-        /(\d+)\s+emociones/i
-      ];
-      
-      for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) {
-          const number = parseInt(match[1], 10);
-          console.log('[SmartVOCRenderers] ✅ Patrón encontrado:', pattern, 'Número extraído:', number);
-          if (number > 0 && number <= 10) { // Límite razonable
-            return number;
-          }
-        }
-      }
-      
-      console.log('[SmartVOCRenderers] ⚠️ No se encontró patrón, usando fallback: 4');
-      return 4; // Fallback por defecto (máximo 4 emociones)
-    };
-    
     const maxSelections = extractMaxSelections(instructions);
-    console.log('[SmartVOCRenderers] 🎯 maxSelections final:', maxSelections);
-    console.log('[SmartVOCRenderers] 🔍 Instrucciones completas:', {
-      instructions,
-      maxSelections,
-      extractedCorrectly: maxSelections === 4
-    });
 
     return (
       <QuestionComponent
-        question={{
-          title: String(contentConfiguration?.title || 'NEV'),
-          questionKey: currentQuestionKey,
-          type: 'emojis', // 🎯 TIPO CORRECTO PARA ACTIVAR AUTO-AVANCE
-          config: {
-            maxSelections: maxSelections,
+        question={createQuestionConfig(
+          contentConfiguration || {},
+          currentQuestionKey,
+          'emojis',
+          {
+            maxSelections,
             instructions: contentConfiguration?.instructions as string
-          },
-          choices: [],
-          description: ''
-        }}
+          }
+        )}
         currentStepKey={currentQuestionKey}
         initialFormData={formData}
       />
@@ -249,17 +193,14 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
 
   smartvoc_voc: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => (
     <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'VOC'),
-        questionKey: currentQuestionKey,
-        type: 'text',
-        config: {
-          placeholder: String(contentConfiguration?.placeholder || 'Escribe tu opinión aquí...'),
-          instructions: contentConfiguration?.instructions as string
-        },
-        choices: [],
-        description: String(contentConfiguration?.description || '')
-      }}
+      question={createQuestionConfig(
+        contentConfiguration || {},
+        currentQuestionKey,
+        'text',
+        {
+          placeholder: String(contentConfiguration?.placeholder || 'Escribe tu opinión aquí...')
+        }
+      )}
       currentStepKey={currentQuestionKey}
       initialFormData={formData}
     />
