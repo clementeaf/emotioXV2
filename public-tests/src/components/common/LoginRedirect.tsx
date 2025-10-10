@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTestStore } from '../../stores/useTestStore';
 import { useParticipantStore } from '../../stores/useParticipantStore';
@@ -9,6 +9,9 @@ const LoginRedirect: React.FC = () => {
   const location = useLocation();
   const params = useParams();
   const { setParticipant } = useTestStore();
+
+  // 🎯 ESTABILIZAR LA FUNCIÓN PARA EVITAR BUCLES INFINITOS
+  const stableSetParticipant = useCallback(setParticipant, [setParticipant]);
 
   useEffect(() => {
     const pathResearchId = params.researchId;
@@ -30,14 +33,13 @@ const LoginRedirect: React.FC = () => {
     }
 
     if (participantId) {
-
       setPreviewMode(false);
       setParticipantId(participantId);
 
       const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
       const participantEmail = `${participantId.slice(-8)}@participant.study`;
 
-      setParticipant(
+      stableSetParticipant(
         participantId,
         participantName,
         participantEmail,
@@ -54,7 +56,7 @@ const LoginRedirect: React.FC = () => {
       const participantName = `Preview User`;
       const participantEmail = `preview@test.local`;
 
-      setParticipant(
+      stableSetParticipant(
         previewParticipantId,
         participantName,
         participantEmail,
@@ -63,7 +65,7 @@ const LoginRedirect: React.FC = () => {
 
       navigate(`/test?researchId=${researchId}`);
     }
-  }, [location, navigate, setParticipant, params]);
+  }, [location, navigate, stableSetParticipant, params]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
