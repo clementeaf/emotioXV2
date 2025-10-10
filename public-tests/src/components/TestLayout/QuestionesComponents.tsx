@@ -153,13 +153,6 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
   onChange,
   multiple = false,
 }) => {
-  // 🔍 DEBUG: Verificar choices
-  console.log('[SingleAndMultipleChoiceQuestion] 🔍 Debug:', {
-    choices,
-    choicesLength: choices?.length,
-    value,
-    multiple
-  });
 
   // 🎯 FORZAR VALOR CORRECTO PARA MÚLTIPLE
   const currentValue = multiple && !Array.isArray(value) ? [] : value;
