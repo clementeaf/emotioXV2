@@ -216,6 +216,14 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
     formValues: formValues 
   });
 
+  // 🔍 DEBUG: Verificar formValues
+  console.log('[QuestionComponent] 🔍 formValues debug:', {
+    currentStepKey,
+    formValues,
+    formValuesKeys: Object.keys(formValues || {}),
+    formValuesLength: Object.keys(formValues || {}).length
+  });
+
   // 🎯 USAR HOOK PERSONALIZADO PARA INICIALIZACIÓN
   const { value, setValue } = useQuestionInitialization(
     question,

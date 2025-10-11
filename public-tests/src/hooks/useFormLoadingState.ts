@@ -94,8 +94,14 @@ export const useFormLoadingState = ({
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
     // 🎯 NO GUARDAR EN STORE LOCAL - Solo actualizar estado local
+    console.log('[useFormLoadingState] 🔍 saveToStore llamado:', {
+      questionKey,
+      data,
+      currentFormValues: formValues,
+      newData: data
+    });
     setFormValues(data);
-  }, []);
+  }, [questionKey, formValues]);
 
   return {
     isLoading: isLoading || isLoadingResponses,
