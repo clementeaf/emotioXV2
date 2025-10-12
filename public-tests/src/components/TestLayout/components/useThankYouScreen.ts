@@ -50,7 +50,7 @@ export const useThankYouScreen = ({
 
           await saveModuleResponseMutation.mutateAsync(createData);
         } catch (error) {
-          console.error('[useThankYouScreen] Error saving device info:', error);
+          // Error saving device info - fail silently
         }
       };
 

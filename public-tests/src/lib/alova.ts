@@ -11,15 +11,10 @@ const axiosInstance = axios.create({
   }
 });
 
-// Interceptor para logging de errores
+// Interceptor para manejo de errores
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    console.error('[API] Error en request:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data
-    });
 
     // Mensajes de error personalizados
     if (error.code === 'ECONNABORTED') {

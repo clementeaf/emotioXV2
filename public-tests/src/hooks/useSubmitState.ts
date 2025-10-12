@@ -23,11 +23,9 @@ export const useSubmitState = ({
       setTimeout(() => {
         setIsSuccess(false);
         if (onSuccess) onSuccess();
-        console.log('[useSubmitState] Pasando a la siguiente pregunta...');
       }, 1500);
 
     } catch (error) {
-      console.error('[useSubmitState] ❌ Error:', error);
       toast.error('Error al enviar respuesta');
     } finally {
       setIsSubmitting(false);

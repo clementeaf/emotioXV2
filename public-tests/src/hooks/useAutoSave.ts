@@ -60,14 +60,14 @@ export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps
     researchId
   });
 
-  const autoSave = useCallback(async () => {
+  const autoSave = useCallback(async (immediateData?: Record<string, unknown>) => {
     if (!researchId || !participantId) {
       return;
     }
 
     try {
-      // 🎯 USAR DATOS PASADOS COMO PARÁMETRO EN LUGAR DEL STORE
-      const currentFormData = formValues || {};
+      // 🎯 USAR DATOS INMEDIATOS SI SE PROPORCIONAN, SINO USAR FORMVALUES
+      const currentFormData = immediateData || formValues || {};
 
       if (!currentFormData || Object.keys(currentFormData).length === 0) {
         return;
@@ -134,7 +134,12 @@ export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps
             } else if (typeof value === 'number' || typeof value === 'boolean') {
               simpleObject[key] = value;
             } else if (Array.isArray(value)) {
-              simpleObject[key] = value.slice(0, 3).map(item => String(item)).join(',');
+              // Para smartvoc_nev, convertir a string SIN limitar cantidad
+              if (currentQuestionKey === 'smartvoc_nev') {
+                simpleObject[key] = value.map(item => String(item)).join(',');
+              } else {
+                simpleObject[key] = value.slice(0, 3).map(item => String(item)).join(',');
+              }
             } else if (typeof value === 'object') {
               const jsonStr = JSON.stringify(value);
               simpleObject[key] = jsonStr.length > 200 ? jsonStr.substring(0, 200) + '...' : jsonStr;
@@ -192,7 +197,6 @@ export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps
       const documentId = moduleResponses?.id;
 
       if (hasExistingResponse) {
-
         const updateData = {
           researchId: researchId || '',
           participantId: participantId || '',
@@ -215,6 +219,22 @@ export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps
           responseId: documentId,
           data: updateData
         });
+      } else {
+        const createData = {
+          researchId: researchId || '',
+          participantId: participantId || '',
+          questionKey: currentQuestionKey,
+          responses: [{
+            questionKey: currentQuestionKey,
+            response: formattedResponse,
+            timestamp,
+            createdAt: now,
+            updatedAt: undefined
+          }],
+          metadata: safeMetadata
+        };
+
+        await saveMutation.mutateAsync(createData);
       }
 
       if (participantId) {
@@ -246,7 +266,7 @@ export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps
     getTimingData,
     moduleResponses,
     steps,
-    // saveMutation,
+    saveMutation,
     updateMutation,
     sendParticipantResponseSaved
   ]);

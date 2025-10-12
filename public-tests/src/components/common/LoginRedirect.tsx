@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTestStore } from '../../stores/useTestStore';
 import { useParticipantStore } from '../../stores/useParticipantStore';
@@ -9,12 +9,19 @@ const LoginRedirect: React.FC = () => {
   const location = useLocation();
   const params = useParams();
   const { setParticipant } = useTestStore();
-
-  // 🎯 USAR REF PARA EVITAR BUCLES INFINITOS
-  const setParticipantRef = useRef(setParticipant);
-  setParticipantRef.current = setParticipant;
-
-  useEffect(() => {
+  
+  // 🎯 PREVENIR BUCLES INFINITOS - MULTIPLE PROTECTIONS
+  const [hasProcessed, setHasProcessed] = useState(false);
+  const processedRef = useRef<string | null>(null);
+  const isProcessingRef = useRef<boolean>(false);
+  
+  // 🎯 ESTABILIZAR FUNCIÓN DE NAVEGACIÓN
+  const handleNavigation = useCallback(() => {
+    // 🔒 MÚPLTIPLES PROTECCIONES CONTRA BUCLES INFINITOS
+    if (hasProcessed || isProcessingRef.current) {
+      return;
+    }
+    
     const pathResearchId = params.researchId;
     const pathParticipantId = params.participantId;
     const urlParams = new URLSearchParams(location.search);
@@ -23,15 +30,31 @@ const LoginRedirect: React.FC = () => {
     const queryUserId = urlParams.get('userId');
     const researchId = pathResearchId || queryResearchId;
     const participantId = pathParticipantId || queryParticipantId || queryUserId;
-
+    
+    // 🎯 CREAR CLAVE ÚNICA PARA EVITAR REPROCESAMIENTO
+    const processKey = `${researchId}-${participantId || 'preview'}`;
+    
+    // Si ya procesamos esta combinación, salir
+    if (processedRef.current === processKey) {
+      return;
+    }
+    
+    // 🔒 MARCAR COMO EN PROCESAMIENTO
+    isProcessingRef.current = true;
+    
+    
     const { setParticipantId } = useParticipantStore.getState();
     const { setPreviewMode } = usePreviewModeStore.getState();
 
     if (!researchId) {
-      console.error('[LoginRedirect] ❌ No researchId provided');
+      isProcessingRef.current = false;
       navigate('/error-no-research-id');
       return;
     }
+
+    // 🔒 MARCAR COMO PROCESADO ANTES DE HACER CAMBIOS
+    setHasProcessed(true);
+    processedRef.current = processKey;
 
     if (participantId) {
       setPreviewMode(false);
@@ -40,7 +63,7 @@ const LoginRedirect: React.FC = () => {
       const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
       const participantEmail = `${participantId.slice(-8)}@participant.study`;
 
-      setParticipantRef.current(
+      setParticipant(
         participantId,
         participantName,
         participantEmail,
@@ -57,7 +80,7 @@ const LoginRedirect: React.FC = () => {
       const participantName = `Preview User`;
       const participantEmail = `preview@test.local`;
 
-      setParticipantRef.current(
+      setParticipant(
         previewParticipantId,
         participantName,
         participantEmail,
@@ -66,7 +89,15 @@ const LoginRedirect: React.FC = () => {
 
       navigate(`/test?researchId=${researchId}`);
     }
-  }, [location, navigate, params]);
+    
+    // 🏁 FINALIZAR PROCESAMIENTO
+    isProcessingRef.current = false;
+  }, [params.researchId, params.participantId, location.search, navigate, setParticipant, hasProcessed]);
+
+  useEffect(() => {
+    // 🎯 EJECUTAR LÓGICA DE NAVEGACIÓN SOLO UNA VEZ
+    handleNavigation();
+  }, [handleNavigation]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

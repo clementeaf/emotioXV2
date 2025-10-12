@@ -33,7 +33,7 @@ async function checkForUpdates() {
       window.location.reload();
     }
   } catch (error) {
-    console.warn('Error checking for updates:', error);
+    // Error checking for updates - silently ignore
   }
 }
 

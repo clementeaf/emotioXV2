@@ -25,19 +25,50 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
   ...demographicRenderers,
 
   // 🎯 SMARTVOC RENDERERS
-  smartvoc: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Pregunta SmartVOC'),
-        questionKey: currentQuestionKey,
-        type: currentQuestionKey,
-        config: contentConfiguration,
-        choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
-        description: String(contentConfiguration?.description || '')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  smartvoc: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
+    // SmartVOC questions don't use choices - they use config.type for rendering
+    const displayType = contentConfiguration?.type || 'text';
+    
+    // Map SmartVOC config.type to appropriate question type
+    let questionType: string;
+    let config: Record<string, unknown>;
+    
+    switch (displayType) {
+      case 'stars':
+        questionType = 'emoji';
+        config = { ...contentConfiguration, type: 'stars' };
+        break;
+      case 'numbers':
+      case 'scale':
+        questionType = 'scale';
+        config = { ...contentConfiguration };
+        break;
+      case 'emojis':
+        questionType = 'emoji';
+        config = { ...contentConfiguration };
+        break;
+      case 'text':
+      default:
+        questionType = 'text';
+        config = { ...contentConfiguration };
+        break;
+    }
+    
+    return (
+      <QuestionComponent
+        question={{
+          title: String(contentConfiguration?.title || 'Pregunta SmartVOC'),
+          questionKey: currentQuestionKey,
+          type: questionType,
+          config,
+          choices: [], // SmartVOC doesn't use choices
+          description: String(contentConfiguration?.description || '')
+        }}
+        currentStepKey={currentQuestionKey}
+        initialFormData={formData}
+      />
+    );
+  },
   ...SmartVOCRenderers,
 
   // 🎯 COGNITIVE RENDERERS

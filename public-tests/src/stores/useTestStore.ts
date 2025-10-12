@@ -87,6 +87,17 @@ export const useTestStore = create<TestState>()(
 
       // Establecer información del participante
       setParticipant: (id: string, name: string, email: string, researchId: string) => {
+        const state = get();
+        
+        // 🔒 PREVENIR ACTUALIZACIONES INNECESARIAS
+        if (
+          state.participantId === id &&
+          state.participantName === name &&
+          state.participantEmail === email &&
+          state.researchId === researchId
+        ) {
+          return;
+        }
         set({
           participantId: id,
           participantName: name,

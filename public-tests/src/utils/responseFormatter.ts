@@ -1,4 +1,4 @@
-export const formatResponseData = (data: unknown, questionKey: string): string | number | boolean | string[] | Record<string, string | number | boolean | null> | null => {
+export const formatResponseData = (data: unknown, questionKey: string, instructions?: string): string | number | boolean | string[] | Record<string, string | number | boolean | null> | null => {
   if (data === null || data === undefined) {
     return null;
   }
@@ -16,11 +16,6 @@ export const formatResponseData = (data: unknown, questionKey: string): string |
     const simpleObject: Record<string, string | number | boolean | null> = {};
     const entries = Object.entries(data as Record<string, unknown>);
     
-    let maxSelections = 3;
-    if (questionKey === 'smartvoc_nev') {
-      maxSelections = extractMaxSelections();
-    }
-    
     for (const [key, value] of entries.slice(0, 5)) {
       if (value === null || value === undefined) {
         simpleObject[key] = null;
@@ -29,8 +24,13 @@ export const formatResponseData = (data: unknown, questionKey: string): string |
       } else if (typeof value === 'number' || typeof value === 'boolean') {
         simpleObject[key] = value;
       } else if (Array.isArray(value)) {
-        const arrayLimit = questionKey === 'smartvoc_nev' ? maxSelections : 3;
-        simpleObject[key] = value.slice(0, arrayLimit).map(item => String(item)).join(',');
+        // Para smartvoc_nev, convertir a string SIN limitar la cantidad
+        if (questionKey === 'smartvoc_nev') {
+          simpleObject[key] = value.map(item => String(item)).join(',');
+        } else {
+          // Para otros tipos, convertir a string con límite de 3
+          simpleObject[key] = value.slice(0, 3).map(item => String(item)).join(',');
+        }
       } else if (typeof value === 'object') {
         const jsonStr = JSON.stringify(value);
         simpleObject[key] = jsonStr.length > 200 ? jsonStr.substring(0, 200) + '...' : jsonStr;
@@ -44,30 +44,6 @@ export const formatResponseData = (data: unknown, questionKey: string): string |
   return String(data).substring(0, 100);
 };
 
-const extractMaxSelections = (): number => {
-  const patterns = [
-    /selecciona\s+maximo\s+(\d+)\s+emociones/i,
-    /hasta\s+(\d+)/i,
-    /máximo\s+(\d+)/i,
-    /máx\s+(\d+)/i,
-    /max\s+(\d+)/i,
-    /selecciona\s+hasta\s+(\d+)/i,
-    /selecciona\s+máximo\s+(\d+)/i,
-    /selecciona\s+(\d+)\s+emociones/i,
-    /(\d+)\s+emociones/i
-  ];
-  
-  for (const pattern of patterns) {
-    const match = 'Selecciona maximo 4 emociones'.match(pattern);
-    if (match) {
-      const number = parseInt(match[1], 10);
-      if (number > 0 && number <= 10) {
-        return number;
-      }
-    }
-  }
-  return 4;
-};
 
 export const optimizeFormData = (data: Record<string, unknown>): Record<string, unknown> => {
   const optimized: Record<string, unknown> = {};

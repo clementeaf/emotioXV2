@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTestStore } from '../stores/useTestStore';
 import { useModuleResponsesQuery } from './useApiQueries';
+import { useFormDataStore } from '../stores/useFormDataStore';
 
 interface UseFormLoadingStateProps {
   questionKey: string;
@@ -39,12 +40,11 @@ export const useFormLoadingState = ({
     }
   }, [onDataLoaded]);
 
-  // 🎯 RESET SUAVE DEL ESTADO CUANDO CAMBIA LA PREGUNTA (NO LIMPIAR STORE)
+  // 🎯 NO RESETEAR FORMVALUES - Mantener datos del usuario
   useEffect(() => {
-    setFormValues({});
     setHasLoadedData(false);
     setIsLoading(true);
-    // Reset logging removido
+    // NO resetear formValues para mantener datos del usuario
   }, [questionKey]);
 
   useEffect(() => {
@@ -82,8 +82,6 @@ export const useFormLoadingState = ({
         ...prevValues,
         [key]: value
       };
-
-      // 🎯 NO GUARDAR EN STORE LOCAL - Solo en estado local temporal
       return newValues;
     });
   }, []);
@@ -93,15 +91,29 @@ export const useFormLoadingState = ({
   // explícitamente a través de saveToStore() y handleInputChange()
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
-    // 🎯 NO GUARDAR EN STORE LOCAL - Solo actualizar estado local
-    console.log('[useFormLoadingState] 🔍 saveToStore llamado:', {
-      questionKey,
-      data,
-      currentFormValues: formValues,
-      newData: data
+    // 💾 Actualizar estado local
+    setFormValues(prevValues => {
+      const newLocalValues = {
+        ...prevValues,
+        ...data
+      };
+      
+      // 💾 Guardar también en FormDataStore global (usado por ButtonSteps)
+      const { setFormData } = useFormDataStore.getState();
+      const { getFormData } = useFormDataStore.getState();
+      const currentFormData = getFormData(questionKey) || {};
+      
+      const newGlobalData = {
+        ...currentFormData,
+        ...data
+      };
+      
+      setFormData(questionKey, newGlobalData);
+      
+      
+      return newLocalValues;
     });
-    setFormValues(data);
-  }, [questionKey, formValues]);
+  }, [questionKey]);
 
   return {
     isLoading: isLoading || isLoadingResponses,

@@ -8,8 +8,6 @@
     "build": "tsc -b && vite build",
     "build:ci": "vite build",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "test": "echo \"No tests specified\" && exit 0",
-    "test:ci": "npm run test",
     "tsprune": "ts-prune -p tsconfig.json",
     "depcheck": "depcheck",
     "clean:all": "npm run lint && npm run tsprune && npm run depcheck",

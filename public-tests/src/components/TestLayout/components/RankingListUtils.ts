@@ -19,7 +19,7 @@ export const parseRankingData = (data: unknown): string[] | null => {
       return data;
     }
   } catch (error) {
-    console.warn('[RankingListUtils] Error parsing ranking data:', error);
+    // Error parsing ranking data - returning null
   }
 
   return null;

@@ -42,6 +42,21 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     researchId || '',
     participantId || ''
   );
+  
+  // 🎯 HELPER PARA OBTENER DATOS FINALES (local vs backend)
+  const getFinalFormData = useCallback((): Record<string, unknown> => {
+    const currentFormData = getCurrentFormData();
+    const backendResponse = moduleResponses?.responses?.find(
+      (response: { questionKey: string }) => response.questionKey === currentQuestionKey
+    );
+    const backendData = (backendResponse?.response as Record<string, unknown>) || {};
+    
+    const localDataStr = JSON.stringify(currentFormData || {});
+    const backendDataStr = JSON.stringify(backendData);
+    const hasLocalChanges = localDataStr !== backendDataStr && localDataStr !== '{}';
+    
+    return hasLocalChanges ? (currentFormData || {}) : backendData;
+  }, [getCurrentFormData, moduleResponses, currentQuestionKey]);
 
   const [, setOptimisticSavedQuestions] = useState<Set<string>>(new Set());
 
@@ -59,7 +74,6 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
         .map((questionKey: string) => {
           const stepConfig = configMap.get(questionKey);
           if (!stepConfig) {
-            console.warn('[ButtonSteps] ⚠️ Step no encontrado en configuración:', questionKey);
             return null;
           }
 
@@ -101,7 +115,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       
       const newResponse = {
         questionKey: currentQuestionKey,
-        response: getCurrentFormData()
+        response: getFinalFormData()
       };
       
       const updatedResponses = [
@@ -118,7 +132,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
         sendParticipantResponseSaved(
           participantId,
           currentQuestionKey,
-          getCurrentFormData(),
+          getFinalFormData(),
           currentStepIndex + 1,
           steps.length,
           progress
@@ -155,7 +169,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
         sendParticipantResponseSaved(
           participantId,
           currentQuestionKey,
-          getCurrentFormData(),
+          getFinalFormData(),
           currentStepIndex + 1,
           steps.length,
           progress
@@ -177,7 +191,6 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       }, 500);
     },
     onError: (error) => {
-      console.error('Error al actualizar:', error);
       setIsSaving(false);
       setOptimisticSavedQuestions(prev => {
         const newSet = new Set(prev);
@@ -191,7 +204,13 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     (moduleResponse: { questionKey: string }) => moduleResponse.questionKey === currentQuestionKey
   );
 
-  const hasExistingResponse = !!existingResponse;
+  // 🎯 SOLO CONSIDERAR RESPUESTA EXISTENTE SI NO ESTÁ VACÍA
+  const hasValidResponse = !!(existingResponse?.response && 
+    typeof existingResponse.response === 'object' && 
+    Object.keys(existingResponse.response).length > 0);
+    
+  const hasExistingResponse = hasValidResponse;
+  
   const documentId = moduleResponses?.id;
 
   const getButtonText = (): string => {
@@ -253,9 +272,25 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     }
 
     const currentFormData = getCurrentFormData();
-    if (currentQuestionKey === 'demographics' && currentFormData && Object.keys(currentFormData).length > 0 && eyeTrackingConfig?.demographicQuestions) {
+    
+    // 🎯 OBTENER DATOS DEL BACKEND PARA COMPARAR
+    const backendResponse = moduleResponses?.responses?.find(
+      (response: { questionKey: string }) => response.questionKey === currentQuestionKey
+    );
+    const backendData = backendResponse?.response || {};
+    
+    // 🎯 DETECTAR SI HAY CAMBIOS REALES
+    const localDataStr = JSON.stringify(currentFormData || {});
+    const backendDataStr = JSON.stringify(backendData);
+    const hasLocalChanges = localDataStr !== backendDataStr && localDataStr !== '{}';
+    
+    // 🎯 USAR DATOS BACKEND SI NO HAY CAMBIOS LOCALES (evita enviar {})
+    const finalFormData = hasLocalChanges ? (currentFormData || {}) : backendData;
+    
+    
+    if (currentQuestionKey === 'demographics' && finalFormData && Object.keys(finalFormData).length > 0 && eyeTrackingConfig?.demographicQuestions) {
       const formValuesString = Object.fromEntries(
-        Object.entries(currentFormData).map(([key, value]) => [key, String(value || '')])
+        Object.entries(finalFormData).map(([key, value]) => [key, String(value || '')])
       ) as Record<string, string>;
 
       // const validationResult = validateDemographics(formValuesString, eyeTrackingConfig.demographicQuestions as DemographicQuestions);
@@ -276,7 +311,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
             disqualificationType: 'demographics'
           };
 
-          const optimizedFormData = optimizeFormData(currentFormData);
+          const optimizedFormData = optimizeFormData(finalFormData as Record<string, unknown>);
 
           const createData: CreateModuleResponseDto = {
             researchId: researchId || '',
@@ -293,7 +328,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
 
           await saveMutation.mutateAsync(createData);
         } catch (error) {
-          console.error('[ButtonSteps] ❌ Error guardando datos de descalificación:', error);
+          // Error saving demographics data - continue with flow
         }
 
         // redirectToDisqualification(eyeTrackingConfig, 'Demographics validation failed');
@@ -330,7 +365,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
           questionKey: currentQuestionKey,
           responses: [{
             questionKey: currentQuestionKey,
-            response: currentFormData,
+            response: finalFormData,
             timestamp,
             createdAt: now
           }],
@@ -339,7 +374,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
 
         await saveMutation.mutateAsync(createData);
       } catch (error) {
-        console.error('[ButtonSteps] ❌ Error guardando datos de descalificación por cuota:', error);
+        // Error saving quota disqualification data - continue with redirection
       }
 
       redirectToDisqualification(eyeTrackingConfig || undefined, quotaResult.reason || 'Cuota alcanzada');
@@ -375,11 +410,16 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
         }
       };
 
-      let formattedResponse = formatResponseData(currentFormData, currentQuestionKey);
+      // Obtener instrucciones para smartvoc_nev
+      const stepConfig = formsData?.stepsConfiguration?.find(
+        (config: StepConfiguration) => config.questionKey === currentQuestionKey
+      );
+      const instructions = stepConfig?.contentConfiguration?.instructions as string | undefined;
+      
+      let formattedResponse = formatResponseData(finalFormData, currentQuestionKey, instructions);
 
       const responseSize = JSON.stringify(formattedResponse).length;
       if (responseSize > 5000) {
-        console.warn('[ButtonSteps] ⚠️ Respuesta muy grande, truncando datos:', responseSize, 'bytes');
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
           const truncatedResponse: Record<string, string | number | boolean | null> = {};
           for (const [key, value] of Object.entries(formattedResponse).slice(0, 3)) {
@@ -397,7 +437,6 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       const estimatedNewSize = currentDocumentSize + responseSize;
       
       if (estimatedNewSize > 350000) {
-        console.warn('[ButtonSteps] ⚠️ Documento completo muy grande, aplicando truncamiento agresivo:', estimatedNewSize, 'bytes');
         
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
           const aggressiveTruncation: Record<string, string | number | boolean | null> = {};
@@ -471,7 +510,6 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       endTiming();
 
     } catch (error) {
-      console.error('Error en la operación:', error);
       setIsSaving(false);
       setOptimisticSavedQuestions(prev => {
         const newSet = new Set(prev);
@@ -486,6 +524,8 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     existingResponse,
     currentQuestionKey,
     getCurrentFormData,
+    moduleResponses,
+    formsData?.stepsConfiguration,
     eyeTrackingConfig,
     // validateDemographics,
     redirectToDisqualification,
@@ -499,7 +539,6 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     updateMutation,
     hasExistingResponse,
     documentId,
-    moduleResponses,
     steps,
     sendParticipantStep,
     endTiming

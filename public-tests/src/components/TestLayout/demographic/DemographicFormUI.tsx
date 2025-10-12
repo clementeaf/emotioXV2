@@ -1,4 +1,5 @@
 import React from 'react';
+import { ModernSelect, SelectOption } from '../../common/ModernSelect';
 
 interface DemographicQuestion {
   key: string;
@@ -62,33 +63,28 @@ export const DemographicFormUI: React.FC<DemographicFormUIProps> = ({
           </div>
         </div>
       ) : (
-        <form onSubmit={onSubmit} className="w-full max-w-lg mx-auto flex flex-col gap-4">
-          {questions.map(q => (
-            <div key={q.key} className="flex flex-col">
-              <label className="font-medium mb-1 text-gray-700">
-                {q.key.charAt(0).toUpperCase() + q.key.slice(1)}
-                {q.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-              <select
-                name={q.key}
+        <form onSubmit={onSubmit} className="w-full max-w-lg mx-auto flex flex-col gap-6">
+          {questions.map(q => {
+            // Convertir opciones al formato ModernSelect
+            const selectOptions: SelectOption[] = q.options.map((opt: string) => ({
+              value: opt,
+              label: opt,
+              className: q.disqualifyingOptions?.includes(opt) ? 'text-red-500' : undefined
+            }));
+
+            return (
+              <ModernSelect
+                key={q.key}
+                options={selectOptions}
                 value={formValues[q.key] || ''}
-                onChange={(e) => onInputChange(q.key, e.target.value)}
+                onChange={(value) => onInputChange(q.key, value)}
+                label={q.key.charAt(0).toUpperCase() + q.key.slice(1)}
                 required={q.required}
-                className="p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-              >
-                <option value="">Selecciona una opción</option>
-                {q.options.map((opt: string, i: number) => (
-                  <option
-                    key={`${q.key}-option-${i}-${opt}`}
-                    value={opt}
-                    className={q.disqualifyingOptions?.includes(opt) ? 'text-red-500' : ''}
-                  >
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+                placeholder="Selecciona una opción"
+                size="md"
+              />
+            );
+          })}
         </form>
       )}
     </div>

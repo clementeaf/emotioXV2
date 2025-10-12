@@ -27,7 +27,6 @@ const TestLayoutRenderer: React.FC = () => {
   // 🎯 SAFEGUARD: Redirigir si faltan datos del participante
   useEffect(() => {
     if (!researchId || !participantId) {
-      console.warn('Missing participant data, redirecting to error page');
       navigate('/error-no-research-id');
     }
   }, [researchId, participantId, navigate]);

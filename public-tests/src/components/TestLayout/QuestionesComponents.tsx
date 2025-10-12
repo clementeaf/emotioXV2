@@ -329,7 +329,7 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
   }, [isDragging, handleMouseMove]);
 
   return (
-    <div className="flex flex-col items-center w-full max-w-2xl">
+    <div className="flex flex-col items-center w-full max-w-2xl px-4">
       {/* 🎯 BARRA DESLIZANTE */}
       <div className="relative w-full h-8 mb-4">
         <div
@@ -348,10 +348,13 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
           
           {/* 🎯 INDICADOR DEL VALOR */}
           <div
-            className={`absolute top-1/2 w-6 h-6 bg-white border-2 border-green-500 rounded-full transform -translate-y-1/2 transition-all duration-200 shadow-lg ${
+            className={`absolute top-1/2 w-6 h-6 bg-white border-2 border-green-500 rounded-full transition-all duration-200 shadow-lg ${
               disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
             }`}
-            style={{ left: `calc(${percentage}% - 12px)` }}
+            style={{ 
+              left: `${Math.max(0, Math.min(100, percentage))}%`, 
+              transform: `translateX(-50%) translateY(-50%)` 
+            }}
           >
             {/* 🎯 ÍCONO DE CHECK */}
             <div className="absolute inset-0 flex items-center justify-center">

@@ -21,10 +21,8 @@ export const useDeleteState = ({
       }
 
       if (onSuccess) onSuccess();
-      console.log('[useDeleteState] Respuestas eliminadas exitosamente');
 
     } catch (error) {
-      console.error('[useDeleteState] ❌ Error:', error);
 
       // NUEVO: Solo mostrar toast si está habilitado
       if (showToasts) {

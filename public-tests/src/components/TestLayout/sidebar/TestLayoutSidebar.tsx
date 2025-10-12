@@ -31,7 +31,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
       resetStore();
     },
     onError: (error) => {
-      console.error('❌ Error al eliminar respuestas:', error);
+      // Error al eliminar respuestas
     }
   });
 

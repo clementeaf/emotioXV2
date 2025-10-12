@@ -74,7 +74,6 @@ export const useRankingData = ({ items, currentQuestionKey, initialFormData }: U
       setRankedItems(items);
 
     } catch (err) {
-      console.warn(`[useRankingData] Error loading ranking:`, err);
       setError('Error al cargar datos de ranking');
       setRankedItems(items);
     } finally {

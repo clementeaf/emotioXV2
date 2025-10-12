@@ -10,7 +10,6 @@ interface DemographicRendererArgs {
 export const demographicRenderers = {
   demographics: ({ contentConfiguration, currentQuestionKey }: DemographicRendererArgs) => {
     const handleDemographicSubmit = (data: Record<string, string>) => {
-      console.log('[DemographicRenderers] 🎯 Demographics enviados:', data);
       const { goToNextStep } = useStepStore.getState();
       goToNextStep();
     };
