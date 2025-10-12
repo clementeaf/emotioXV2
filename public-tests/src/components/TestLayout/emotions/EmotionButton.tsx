@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
 export interface EmotionButtonProps {
   emotion: string;
@@ -8,28 +8,21 @@ export interface EmotionButtonProps {
   selectedClass: string;
 }
 
-export const EmotionButton = React.memo<EmotionButtonProps>(({
+export const EmotionButton: React.FC<EmotionButtonProps> = ({
   emotion,
   isSelected,
   onClick,
   buttonClass,
   selectedClass
 }) => {
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
+    // 🎯 CLICK SIMPLE: Alternar selección (seleccionar si no está seleccionada, deseleccionar si está seleccionada)
     onClick(emotion);
-  };
-
-  const handleDoubleClick = () => {
-    // 🎯 DOBLE-CLICK PARA DESELECCIONAR
-    if (isSelected) {
-      onClick(emotion);
-    }
-  };
+  }, [emotion, onClick]);
 
   return (
     <button
       onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
       className={`px-2 py-3 rounded-lg border-2 text-xs font-medium transition-all cursor-pointer min-h-[56px] flex items-center justify-center text-center ${
         isSelected ? selectedClass : buttonClass
       }`}
@@ -37,6 +30,6 @@ export const EmotionButton = React.memo<EmotionButtonProps>(({
       <span className="leading-tight break-words px-1">{emotion}</span>
     </button>
   );
-});
+};
 
 EmotionButton.displayName = 'EmotionButton';

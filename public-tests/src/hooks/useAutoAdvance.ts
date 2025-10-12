@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { useStepStore } from '../stores/useStepStore';
 import { useLogger } from '../utils/logger';
 import { useButtonSteps } from './useButtonSteps';
@@ -18,13 +18,26 @@ export const useAutoAdvance = ({
 }: UseAutoAdvanceProps) => {
   const [isAdvancing, setIsAdvancing] = useState(false);
   const { goToNextStep } = useStepStore();
-  const { info, error } = useLogger('useAutoAdvance');
+  const { info, error, warn } = useLogger('useAutoAdvance');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // 🎯 Usar ButtonSteps para guardar en backend
   const { handleClick: saveToBackend } = useButtonSteps({
     currentQuestionKey,
     isWelcomeScreen: false
   });
+  
+  // 🚨 Cancelar timeout pendiente si cambia el step
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        warn('Cancelando auto-avance pendiente por cambio de step');
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+        setIsAdvancing(false);
+      }
+    };
+  }, [currentQuestionKey, warn]);
 
   const shouldAutoAdvance = useCallback((
     currentSelections: unknown[],
@@ -60,22 +73,42 @@ export const useAutoAdvance = ({
       info('✅ Datos guardados exitosamente en backend');
       
       // Esperar un momento para UX y luego navegar
-      setTimeout(() => {
-        info('🚀 Ejecutando goToNextStep() tras auto-avance y guardado');
-        goToNextStep();
-        onAdvance?.();
+      timeoutRef.current = setTimeout(() => {
+        // Verificar que seguimos en el mismo step antes de navegar
+        const currentStep = useStepStore.getState().currentQuestionKey;
+        if (currentStep === currentQuestionKey) {
+          info('🚀 Ejecutando goToNextStep() tras auto-avance y guardado');
+          goToNextStep();
+          onAdvance?.();
+        } else {
+          warn('Auto-avance cancelado: ya se navegó a otro step', {
+            expectedStep: currentQuestionKey,
+            actualStep: currentStep
+          });
+        }
         setIsAdvancing(false);
+        timeoutRef.current = null;
       }, 1000);
       
     } catch (saveError) {
       error('Error guardando en backend durante auto-avance:', saveError);
       
       // Navegar aunque falle el guardado (comportamiento de degradación)
-      setTimeout(() => {
-        info('⚠️ Navegando tras error en guardado');
-        goToNextStep();
-        onAdvance?.();
+      timeoutRef.current = setTimeout(() => {
+        // Verificar que seguimos en el mismo step antes de navegar
+        const currentStep = useStepStore.getState().currentQuestionKey;
+        if (currentStep === currentQuestionKey) {
+          info('⚠️ Navegando tras error en guardado');
+          goToNextStep();
+          onAdvance?.();
+        } else {
+          warn('Auto-avance de error cancelado: ya se navegó a otro step', {
+            expectedStep: currentQuestionKey,
+            actualStep: currentStep
+          });
+        }
         setIsAdvancing(false);
+        timeoutRef.current = null;
       }, 500);
     }
   }, [

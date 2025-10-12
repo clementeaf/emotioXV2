@@ -1,19 +1,11 @@
 
 import React from 'react';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
-import { useStepStore } from '../../stores/useStepStore';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion, LinearScaleSlider } from './QuestionesComponents';
-import { useLogger } from '../../utils/logger';
 import { useAutoAdvance } from '../../hooks/useAutoAdvance';
 import { useQuestionHandlers } from '../../hooks/useQuestionHandlers';
 import { useQuestionInitialization, Question, QuestionConfig, FormData } from '../../hooks/useQuestionInitialization';
 import { EmotionGrid } from './emotions';
-
-interface Choice {
-  value: string;
-  label: string;
-  description?: string;
-}
 
 interface QuestionComponentProps {
   question: Question;
@@ -24,8 +16,6 @@ interface QuestionComponentProps {
 
 
 export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({ question, currentStepKey, initialFormData }) => {
-  const { debug, info, warn, error } = useLogger('QuestionComponent');
-
   const {
     isLoading,
     hasLoadedData,
@@ -34,8 +24,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
   } = useFormLoadingState({
     questionKey: currentStepKey
   });
-
-  const { goToNextStep } = useStepStore();
 
   const { value, setValue } = useQuestionInitialization({
     question,
@@ -100,9 +88,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
 
       <div className="w-full max-w-2xl">
         {question.type === 'choice' && (
-          <>
-            {/* 🔍 DEBUG: Verificar datos de choice */}
-            <SingleAndMultipleChoiceQuestion
+          <SingleAndMultipleChoiceQuestion
               key={`choice-${currentStepKey}-${question.title.replace(/\s+/g, '-')}`}
               choices={(question.choices || []).map((choice: any) => ({
                 id: choice.id || choice.value || String(choice.text || choice.label),
@@ -114,7 +100,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
               onChange={handleChange}
               multiple={question.config?.multiple || false}
             />
-          </>
         )}
         {question.type === 'scale' && (
             <ScaleRangeQuestion
@@ -139,8 +124,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
           />
         )}
         {question.type === 'emoji' && (
-          <>
-            <EmojiRangeQuestion
+          <EmojiRangeQuestion
               emojis={question.config?.emojis}
               value={value as number}
               onChange={handleChange}
@@ -150,25 +134,20 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
               startLabel={question.config?.startLabel}
               endLabel={question.config?.endLabel}
             />
-          </>
         )}
         {question.type === 'text' && (
-          <>
-            <VOCTextQuestion
+          <VOCTextQuestion
               value={value as string}
               onChange={handleChange}
               placeholder={question.config?.placeholder as string}
             />
-          </>
         )}
         {(question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (
-          <>
-            <VOCTextQuestion
+          <VOCTextQuestion
               value={value as string}
               onChange={handleChange}
               placeholder={question.config?.placeholder as string || 'Escribe tu respuesta aquí...'}
             />
-          </>
         )}
         {(question.type === 'smartvoc_nev' || question.type === 'detailed' || question.type === 'emojis') && (
           <EmotionGrid

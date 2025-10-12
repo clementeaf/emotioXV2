@@ -10,29 +10,31 @@ export interface EmotionRowProps {
   selectedClass: string;
 }
 
-export const EmotionRow = React.memo<EmotionRowProps>(({
+export const EmotionRow: React.FC<EmotionRowProps> = ({
   emotions,
   value,
   onEmotionClick,
   gridClass,
   buttonClass,
   selectedClass
-}) => (
-  <div className={`grid ${gridClass} gap-2`}>
-    {emotions.map((emotion) => {
-      const isSelected = Array.isArray(value) ? value.includes(emotion) : value === emotion;
-      return (
-        <EmotionButton
-          key={emotion}
-          emotion={emotion}
-          isSelected={isSelected}
-          onClick={onEmotionClick}
-          buttonClass={buttonClass}
-          selectedClass={selectedClass}
-        />
-      );
-    })}
-  </div>
-));
+}) => {
+  return (
+    <div className={`grid ${gridClass} gap-2`}>
+      {emotions.map((emotion) => {
+        const isSelected = Array.isArray(value) ? value.includes(emotion) : value === emotion;
+        return (
+          <EmotionButton
+            key={`${emotion}-${isSelected}`}
+            emotion={emotion}
+            isSelected={isSelected}
+            onClick={onEmotionClick}
+            buttonClass={buttonClass}
+            selectedClass={selectedClass}
+          />
+        );
+      })}
+    </div>
+  );
+};
 
 EmotionRow.displayName = 'EmotionRow';

@@ -7,7 +7,7 @@ export interface EmotionGridProps {
   onEmotionClick: (emotion: string) => void;
 }
 
-export const EmotionGrid = React.memo<EmotionGridProps>(({
+export const EmotionGrid: React.FC<EmotionGridProps> = ({
   value,
   onEmotionClick
 }) => (
@@ -27,6 +27,6 @@ export const EmotionGrid = React.memo<EmotionGridProps>(({
       );
     })}
   </div>
-));
+);
 
 EmotionGrid.displayName = 'EmotionGrid';

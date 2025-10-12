@@ -236,7 +236,16 @@ const TestLayoutRenderer: React.FC = () => {
     const instructions = String(contentConfiguration?.instructions || '');
     const hasMaxSelectionPattern = /hasta\s+(\d+)|máximo\s+(\d+)|máx\s+(\d+)|max\s+(\d+)|selecciona\s+hasta\s+(\d+)|selecciona\s+máximo\s+(\d+)|selecciona\s+(\d+)\s+emociones|(\d+)\s+emociones/i.test(instructions);
     
-    return hasMaxSelectionPattern;
+    // Solo ocultar si hay patrón de máximo Y no hay selecciones aún
+    if (hasMaxSelectionPattern) {
+      const currentSelections = Array.isArray(formData.value) ? formData.value : [];
+      const hasSelections = currentSelections.length > 0;
+      
+      // Ocultar botón solo si NO hay selecciones (para forzar selección inicial)
+      return !hasSelections;
+    }
+    
+    return false;
   })();
 
   return (

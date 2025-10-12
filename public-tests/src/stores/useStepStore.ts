@@ -234,13 +234,8 @@ export const useStepStore = create<StepStore>()(
         const state = get();
         const nextStepKey = state.getNextStep();
         
-        // Go to next step logging removido
-        
         if (nextStepKey) {
-          // Advancing to next step logging removido
           state.setCurrentQuestionKey(nextStepKey);
-        } else {
-          // No next step available logging removido
         }
       }
     })

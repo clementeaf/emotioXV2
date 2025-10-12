@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, startTransition } from 'react';
 import { useLogger } from '../utils/logger';
 import { QuestionConfig } from './useQuestionInitialization';
 
@@ -22,6 +22,7 @@ export const useQuestionHandlers = ({
   isAdvancing
 }: UseQuestionHandlersProps) => {
   const { debug, info, warn } = useLogger('QuestionHandlers');
+  const isProcessingRef = useRef(false);
 
   // 🎯 HANDLER PRINCIPAL QUE DECIDE QUÉ LÓGICA USAR
   const handleChange = useCallback((newValue: unknown) => {
@@ -29,6 +30,13 @@ export const useQuestionHandlers = ({
       warn('Auto-avance en progreso, ignorando selección');
       return;
     }
+    
+    if (isProcessingRef.current) {
+      debug('Ya procesando cambio, ignorando llamada duplicada');
+      return;
+    }
+    
+    isProcessingRef.current = true;
 
     const isMultipleEmotionSelection = 
       questionType === 'emojis' && 
@@ -54,24 +62,43 @@ export const useQuestionHandlers = ({
           });
         } else {
           warn('Límite máximo alcanzado');
+          isProcessingRef.current = false;
           return;
         }
       }
 
-      // Actualizar estado y persistir
+      // Actualizar estado INMEDIATAMENTE para UX responsiva
       setValue(updatedSelections);
+      
       const dataToSave = {
         selectedValue: updatedSelections,
         value: updatedSelections
       };
-      onSave(dataToSave);
-
-      // Trigger auto-avance si está configurado
-      if (onAutoAdvance) {
-        onAutoAdvance(updatedSelections);
-      }
+      
+      // Diferir solo las operaciones del store
+      setTimeout(() => {
+        onSave(dataToSave);
+        
+        // Auto-avance si está configurado Y se alcanzó el máximo
+        if (onAutoAdvance && updatedSelections.length === config.maxSelections) {
+          info('Activando auto-avance', {
+            selectionsCount: updatedSelections.length,
+            maxSelections: config.maxSelections
+          });
+          
+          setTimeout(() => {
+            startTransition(() => {
+              onAutoAdvance(updatedSelections);
+            });
+          }, 50);
+        }
+        
+        // Resetear flag después de procesar
+        isProcessingRef.current = false;
+      }, 0);
     } else {
       // 🎯 LÓGICA SIMPLE PARA OTROS TIPOS DE PREGUNTA
+      // Actualizar estado INMEDIATAMENTE para UX responsiva
       setValue(newValue);
       debug('Valor simple', { value: newValue });
 
@@ -80,7 +107,13 @@ export const useQuestionHandlers = ({
         value: newValue
       };
       
-      onSave(dataToSave);
+      // Diferir solo las operaciones del store
+      setTimeout(() => {
+        onSave(dataToSave);
+        
+        // Resetear flag después de procesar
+        isProcessingRef.current = false;
+      }, 0);
     }
   }, [
     isAdvancing,

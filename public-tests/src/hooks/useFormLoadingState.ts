@@ -91,14 +91,17 @@ export const useFormLoadingState = ({
   // explícitamente a través de saveToStore() y handleInputChange()
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
-    // 💾 Actualizar estado local
+    // 💾 Actualizar estado local inmediatamente
     setFormValues(prevValues => {
       const newLocalValues = {
         ...prevValues,
         ...data
       };
-      
-      // 💾 Guardar también en FormDataStore global (usado por ButtonSteps)
+      return newLocalValues;
+    });
+    
+    // 💾 Diferir actualización del FormDataStore global para evitar setState durante render
+    setTimeout(() => {
       const { setFormData } = useFormDataStore.getState();
       const { getFormData } = useFormDataStore.getState();
       const currentFormData = getFormData(questionKey) || {};
@@ -109,10 +112,7 @@ export const useFormLoadingState = ({
       };
       
       setFormData(questionKey, newGlobalData);
-      
-      
-      return newLocalValues;
-    });
+    }, 0);
   }, [questionKey]);
 
   return {

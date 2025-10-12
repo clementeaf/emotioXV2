@@ -157,8 +157,7 @@ export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps
       const now = new Date().toISOString();
 
       const responseSize = JSON.stringify(formattedResponse).length;
-      if (responseSize > 5000) {
-
+      if (responseSize > 5000 && currentQuestionKey !== 'smartvoc_nev') {
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
           const truncatedResponse: Record<string, string | number | boolean | null> = {};
           for (const [key, value] of Object.entries(formattedResponse).slice(0, 3)) {
@@ -175,8 +174,7 @@ export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps
       const currentDocumentSize = moduleResponses ? JSON.stringify(moduleResponses).length : 0;
       const estimatedNewSize = currentDocumentSize + responseSize;
 
-      if (estimatedNewSize > 350000) {
-
+      if (estimatedNewSize > 350000 && currentQuestionKey !== 'smartvoc_nev') {
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
           const aggressiveTruncation: Record<string, string | number | boolean | null> = {};
           for (const [key, value] of Object.entries(formattedResponse).slice(0, 2)) { // Solo 2 propiedades
