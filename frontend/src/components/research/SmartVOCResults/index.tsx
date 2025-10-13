@@ -4,9 +4,7 @@ import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
-import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
-import { QuestionType } from 'shared/interfaces/question-types.enum';
-import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
+import { useSmartVOCResponses } from '@/hooks/useSmartVOCResponses';
 import { CPVCard } from './CPVCard';
 import { EmotionalStates } from './EmotionalStates';
 import { Filters } from './Filters';
@@ -17,144 +15,85 @@ import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { VOCQuestion } from './VOCQuestion';
 import { SmartVOCResultsProps } from './types';
 
-// Hook para obtener las preguntas de SmartVOC desde los datos pasados como parámetro
-const useSmartVOCQuestions = (smartVOCFormData: any, isSmartVOCFormLoading: boolean, smartVOCFormError: any) => {
-
-  // Preguntas por defecto si no hay configuración
-  const defaultQuestions: SmartVOCQuestion[] = [
-    {
-      id: 'smartvoc_nps',
-      type: QuestionType.SMARTVOC_NPS,
-      title: 'Net Promoter Score (NPS)',
-      description: 'On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?',
-      required: true,
-      showConditionally: false,
-      config: {
-        type: 'scale',
-        scaleRange: { start: 0, end: 10 }
-      }
-    },
-    {
-      id: 'smartvoc_voc',
-      type: QuestionType.SMARTVOC_VOC,
-      title: 'Voice of Customer (VOC)',
-      description: 'Please share your thoughts about your experience with our service.',
-      required: true,
-      showConditionally: false,
-      config: {
-        type: 'text'
-      }
-    },
-    {
-      id: 'smartvoc_csat',
-      type: QuestionType.SMARTVOC_CSAT,
-      title: 'Customer Satisfaction (CSAT)',
-      description: 'How would you rate your overall satisfaction level with our service?',
-      required: true,
-      showConditionally: false,
-      config: {
-        type: 'stars',
-        scaleRange: { start: 1, end: 5 }
-      }
-    },
-    {
-      id: 'smartvoc_ces',
-      type: QuestionType.SMARTVOC_CES,
-      title: 'Customer Effort Score (CES)',
-      description: 'How much effort did you personally have to put forth to handle your request?',
-      required: true,
-      showConditionally: false,
-      config: {
-        type: 'scale',
-        scaleRange: { start: 1, end: 7 }
-      }
-    },
-    {
-      id: 'smartvoc_cv',
-      type: QuestionType.SMARTVOC_CV,
-      title: 'Customer Value (CV)',
-      description: 'How would you rate the overall value you receive from our product/service?',
-      required: true,
-      showConditionally: false,
-      config: {
-        type: 'scale',
-        scaleRange: { start: 1, end: 7 }
-      }
-    },
-    {
-      id: 'smartvoc_nev',
-      type: QuestionType.SMARTVOC_NEV,
-      title: 'Net Emotional Value (NEV)',
-      description: 'How do you feel about your experience with our service?',
-      required: true,
-      showConditionally: false,
-      config: {
-        type: 'emojis'
-      }
-    }
-  ];
-
-  // Usar preguntas del formulario si existen, sino usar las por defecto
-  const questions = smartVOCFormData?.questions && smartVOCFormData.questions.length > 0
-    ? smartVOCFormData.questions
-    : defaultQuestions;
-
-  return {
-    questions,
-    isLoading: isSmartVOCFormLoading,
-    error: smartVOCFormError
-  };
-};
 
 export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps) {
   const [timeRange, setTimeRange] = useState<'Today' | 'Week' | 'Month'>('Today');
 
-  // Hook global único que maneja todas las llamadas
+  // Hook que carga datos SmartVOC automáticamente
   const {
-    groupedResponses,
-    smartVOCData,
-    cpvData,
-    trustFlowData,
-    smartVOCFormData,
+    data: smartVOCData,
     isLoading,
-    isSmartVOCLoading,
-    isCPVLoading,
-    isTrustFlowLoading,
-    isSmartVOCFormLoading,
-    error,
-    smartVOCError,
-    cpvError,
-    trustFlowError,
-    smartVOCFormError,
-    refetch
-  } = useGlobalResearchData(researchId);
+    error
+  } = useSmartVOCResponses(researchId);
 
-  // Hook para obtener las preguntas de SmartVOC
-  const {
-    questions: smartVOCQuestions,
-    isLoading: questionsLoading,
-    error: questionsError
-  } = useSmartVOCQuestions(smartVOCFormData, isSmartVOCFormLoading, smartVOCFormError);
+  // Usar preguntas por defecto para mostrar textos
+  const defaultQuestions = [
+    {
+      id: 'smartvoc_nps',
+      type: 'SMARTVOC_NPS',
+      title: 'Net Promoter Score (NPS)',
+      description: 'On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?'
+    },
+    {
+      id: 'smartvoc_voc',
+      type: 'SMARTVOC_VOC',
+      title: 'Voice of Customer (VOC)',
+      description: 'Please share your thoughts about your experience with our service.'
+    },
+    {
+      id: 'smartvoc_csat',
+      type: 'SMARTVOC_CSAT',
+      title: 'Customer Satisfaction (CSAT)',
+      description: 'How would you rate your overall satisfaction level with our service?'
+    },
+    {
+      id: 'smartvoc_ces',
+      type: 'SMARTVOC_CES',
+      title: 'Customer Effort Score (CES)',
+      description: 'How much effort did you personally have to put forth to handle your request?'
+    },
+    {
+      id: 'smartvoc_cv',
+      type: 'SMARTVOC_CV',
+      title: 'Customer Value (CV)',
+      description: 'How would you rate the overall value you receive from our product/service?'
+    },
+    {
+      id: 'smartvoc_nev',
+      type: 'SMARTVOC_NEV',
+      title: 'Net Emotional Value (NEV)',
+      description: 'How do you feel about your experience with our service?',
+      instructions: 'Please select up to 3 options from these 20 emotional moods'
+    }
+  ];
 
-  // Usar datos reales en lugar de datos de prueba
-  const shouldUseTestData = false; // Usar datos reales
+  // Datos disponibles del nuevo hook
+  const hasData = smartVOCData !== null && !error;
+  
+  // Preparar datos para CPVCard usando timeSeriesData
+  const cpvTrendData = smartVOCData?.timeSeriesData?.map(item => ({
+    date: new Date(item.date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+    value: item.score
+  })) || [];
 
-  // Preparar datos para CPVCard
-  const cpvTrendData = trustFlowData.length > 0 ? trustFlowData.map(item => ({
-    date: item.stage,
-    value: (item.nps + item.nev) / 2 // Promedio de NPS y NEV
-  })) : [];
+  // Datos CPV derivados de smartVOCData
+  const cpvData = smartVOCData ? {
+    cpvValue: smartVOCData.cpvValue,
+    satisfaction: smartVOCData.satisfaction,
+    retention: smartVOCData.retention,
+    impact: smartVOCData.impact,
+    trend: smartVOCData.trend,
+    csatPercentage: smartVOCData.csatScores.length > 0 ? Math.round((smartVOCData.csatScores.filter(s => s >= 4).length / smartVOCData.csatScores.length) * 100) : 0,
+    cesPercentage: smartVOCData.cesScores.length > 0 ? Math.round((smartVOCData.cesScores.filter(s => s <= 2).length / smartVOCData.cesScores.length) * 100) : 0,
+    peakValue: Math.max(smartVOCData.cpvValue, smartVOCData.satisfaction),
+    npsValue: smartVOCData.npsScore,
+    promoters: smartVOCData.promoters,
+    neutrals: smartVOCData.neutrals,
+    detractors: smartVOCData.detractors
+  } : null;
 
-  // Usar datos reales o valores por defecto
-  const finalCPVData = cpvData;
-  const finalTrustFlowData = trustFlowData;
-
-  // Determinar si hay datos reales
-  const hasCPVData = cpvData !== null && !cpvError;
-  const hasTrustFlowData = trustFlowData.length > 0 && !trustFlowError;
-
-  const finalTrustFlowDataForDemo = shouldUseTestData ? [] : finalTrustFlowData;
-  const hasTrustFlowDataForDemo = shouldUseTestData ? true : hasTrustFlowData;
+  // TrustFlow data derivado
+  const trustFlowData = smartVOCData?.timeSeriesData || [];
 
   // Debug logs removed
 
@@ -188,16 +127,30 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     if (smartVOCData && smartVOCData.smartVOCResponses && smartVOCData.smartVOCResponses.length > 0) {
       smartVOCData.smartVOCResponses.forEach(response => {
         if (response.questionKey && response.questionKey.toLowerCase().includes('nev')) {
-          // La estructura correcta es response.response (no response.response.value)
-          if (response.response && Array.isArray(response.response)) {
-            const emotions = response.response;
-            emotions.forEach((emotion: string) => {
-              if (emotionCounts.hasOwnProperty(emotion)) {
-                emotionCounts[emotion]++;
-                totalEmotionResponses++;
-              }
-            });
+          // 🔄 FIX: Los datos vienen como string separado por comas, no como array
+          let emotions: string[] = [];
+          
+          if (typeof response.response === 'string') {
+            // Caso: "Feliz,Satisfecho,Confiado,Valorado"
+            emotions = response.response.split(',').map((e: string) => e.trim());
+          } else if (Array.isArray(response.response)) {
+            // Caso: ya es array
+            emotions = response.response;
+          } else if (response.response && typeof response.response === 'object' && response.response.value) {
+            // Caso: {value: "Feliz,Satisfecho,Confiado,Valorado"}
+            if (typeof response.response.value === 'string') {
+              emotions = response.response.value.split(',').map((e: string) => e.trim());
+            } else if (Array.isArray(response.response.value)) {
+              emotions = response.response.value;
+            }
           }
+          
+          emotions.forEach((emotion: string) => {
+            if (emotionCounts.hasOwnProperty(emotion)) {
+              emotionCounts[emotion]++;
+              totalEmotionResponses++;
+            }
+          });
         }
       });
     }
@@ -238,7 +191,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
       { name: 'Engagement', value: totalEmotionResponses > 0 ? Math.round((emotionCounts['Interesado'] / totalEmotionResponses) * 100) : 0, trend: 'up' as const }
     ];
 
-    const totalResponses = smartVOCData?.totalResponses || 0;
+    const totalResponses = smartVOCData?.smartVOCResponses?.filter(r => r.questionKey?.toLowerCase().includes('nev')).length || 0;
 
     return {
       emotionalStates,
@@ -252,16 +205,30 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
   const nevData = processNEVData();
 
-  // Funciones helper para obtener preguntas reales
+  // Helper functions for safe calculations
+  const safeCalculateAverage = (scores: number[] | undefined): number => {
+    if (!scores || scores.length === 0) return 0;
+    return parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2));
+  };
+
+  const safeCalculatePercentage = (scores: number[] | undefined, filterFn: (score: number) => boolean): number => {
+    if (!scores || scores.length === 0) return 0;
+    return Math.round((scores.filter(filterFn).length / scores.length) * 100);
+  };
+
+  const hasScores = (scores: number[] | undefined): boolean => {
+    return !!(scores && scores.length > 0);
+  };
+
+  // Funciones helper para obtener preguntas
   const getQuestionText = (questionType: string) => {
-    const question = smartVOCQuestions.find((q: any) => q.id && q.id.toLowerCase().includes(questionType.toLowerCase()));
-    console.log(`[DEBUG] Buscando pregunta ${questionType}:`, question);
+    const question = defaultQuestions.find(q => q.id.toLowerCase().includes(questionType.toLowerCase()));
     return question ? (question.title || question.description) : '';
   };
 
   const getQuestionInstructions = (questionType: string) => {
-    const question = smartVOCQuestions.find((q: any) => q.id && q.id.toLowerCase().includes(questionType.toLowerCase()));
-    return question ? (question.instructions || question.description) : '';
+    const question = defaultQuestions.find(q => q.id.toLowerCase().includes(questionType.toLowerCase()));
+    return question ? ((question as any).instructions || question.description) : '';
   };
 
   // Obtener textos de preguntas reales
@@ -272,8 +239,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   const nevInstructions = getQuestionInstructions('nev') || "Please select up to 3 options from these 20 emotional moods";
   const npsQuestion = getQuestionText('nps') || "How likely are you to recommend [company] to a friend or colleague?";
   const vocQuestion = getQuestionText('voc') || "What else would you like to tell us about your experience?";
-  
-  console.log('[DEBUG] Preguntas obtenidas:', { csatQuestion, cesQuestion, cvQuestion, nevQuestion, nevInstructions, npsQuestion });
 
   // Procesar datos para MetricCards basados en respuestas reales
   const processMetricData = (scores: number[], type: 'csat' | 'ces' | 'cv') => {
@@ -346,140 +311,68 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
       {/* Contenido superior sin sidebar */}
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* CPVCard con manejo de errores individual */}
+          {/* CPVCard */}
           <div className="md:col-span-1">
-            {cpvError ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">Error en CPVCard</h3>
-                    <p className="text-sm text-red-700 mt-1">{cpvError?.message || 'Error desconocido'}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <CPVCard
-                value={finalCPVData?.cpvValue || 0}
-                timeRange={timeRange}
-                onTimeRangeChange={setTimeRange}
-                trendData={cpvTrendData}
-                satisfaction={finalCPVData?.satisfaction || 0}
-                retention={finalCPVData?.retention || 0}
-                impact={finalCPVData?.impact || 'Bajo'}
-                trend={finalCPVData?.trend || 'Neutral'}
-                hasData={hasCPVData}
-                csatPercentage={finalCPVData?.csatPercentage || 0}
-                cesPercentage={finalCPVData?.cesPercentage || 0}
-                peakValue={finalCPVData?.peakValue || 0}
-                isLoading={isCPVLoading}
-              />
-            )}
+            <CPVCard
+              value={cpvData?.cpvValue || 0}
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
+              trendData={cpvTrendData}
+              satisfaction={cpvData?.satisfaction || 0}
+              retention={cpvData?.retention || 0}
+              impact={cpvData?.impact || 'Bajo'}
+              trend={cpvData?.trend || 'Neutral'}
+              hasData={hasData}
+              csatPercentage={cpvData?.csatPercentage || 0}
+              cesPercentage={cpvData?.cesPercentage || 0}
+              peakValue={cpvData?.peakValue || 0}
+              isLoading={isLoading}
+            />
           </div>
 
-          {/* TrustRelationshipFlow con manejo de errores individual */}
+          {/* TrustRelationshipFlow */}
           <div className="md:col-span-2">
-            {trustFlowError ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">Error en Trust Flow</h3>
-                    <p className="text-sm text-red-700 mt-1">{trustFlowError?.message || 'Error desconocido'}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <TrustRelationshipFlow
-                data={finalTrustFlowDataForDemo}
-                hasData={hasTrustFlowDataForDemo}
-                isLoading={isTrustFlowLoading}
-              />
-            )}
+            <TrustRelationshipFlow
+              data={trustFlowData.map(item => ({
+                stage: new Date(item.date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+                nps: item.nps,
+                nev: item.nev,
+                timestamp: item.date
+              }))}
+              hasData={hasData}
+              isLoading={isLoading}
+            />
           </div>
         </div>
 
-        {/* Selector de preguntas SmartVOC - Solo se muestra cuando hay datos */}
-        {/* {!questionsLoading && !questionsError && smartVOCQuestions.length > 0 && (
-          <QuestionSelector
-            questions={smartVOCQuestions}
-            smartVOCData={smartVOCData}
-          />
-        )} */}
-
-        {questionsLoading && (
-          <div className="flex items-center justify-center h-32">
-            <div className="text-gray-500">Cargando preguntas SmartVOC...</div>
-          </div>
-        )}
-
-        {questionsError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error al cargar preguntas</h3>
-                <p className="text-sm text-red-700 mt-1">{questionsError?.message || 'Error desconocido'}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Mensaje cuando no hay preguntas disponibles */}
-        {!questionsLoading && !questionsError && smartVOCQuestions.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-gray-500">No hay preguntas SmartVOC disponibles con datos.</p>
-          </div>
-        )}
 
         {/* Las 3 tarjetas de métricas siempre están presentes */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Customer Satisfaction */}
           <MetricCard
             title="Customer Satisfaction"
-            score={smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0
-              ? parseFloat((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length).toFixed(2))
-              : 0
-            }
+            score={safeCalculateAverage(smartVOCData?.csatScores)}
             question={csatQuestion}
             data={csatData}
-            hasData={!!(smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0)}
+            hasData={hasScores(smartVOCData?.csatScores)}
           />
 
           {/* Customer Effort Score */}
           <MetricCard
             title="Customer Effort Score"
-            score={smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0
-              ? parseFloat((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length).toFixed(2))
-              : 0
-            }
+            score={safeCalculateAverage(smartVOCData?.cesScores)}
             question={cesQuestion}
             data={cesData}
-            hasData={!!(smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0)}
+            hasData={hasScores(smartVOCData?.cesScores)}
           />
 
           {/* Cognitive Value */}
           <MetricCard
             title="Cognitive Value"
-            score={smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0
-              ? parseFloat((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length).toFixed(2))
-              : 0
-            }
+            score={safeCalculateAverage(smartVOCData?.cvScores)}
             question={cvQuestion}
             data={cvData}
-            hasData={!!(smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0)}
+            hasData={hasScores(smartVOCData?.cvScores)}
           />
         </div>
       </div>
@@ -499,33 +392,24 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 questionType="CSAT"
                 question={csatQuestion}
                 responses={{
-                  count: smartVOCData?.totalResponses || 0,
+                  count: smartVOCData?.csatScores?.length || 0,
                   timeAgo: '0s'
                 }}
-                score={smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0
-                  ? parseFloat((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length).toFixed(2))
-                  : 0.00
-                }
+                score={safeCalculateAverage(smartVOCData?.csatScores)}
                 distribution={[
                   { 
-                    label: 'Promoters', 
-                    percentage: smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0 
-                      ? Math.round((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length) * 0.6) 
-                      : 0, 
+                    label: 'Satisfied', 
+                    percentage: safeCalculatePercentage(smartVOCData?.csatScores, s => s >= 4), 
                     color: '#10B981' 
                   },
                   { 
-                    label: 'Neutrals', 
-                    percentage: smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0 
-                      ? Math.round((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length) * 0.3) 
-                      : 0, 
+                    label: 'Neutral', 
+                    percentage: safeCalculatePercentage(smartVOCData?.csatScores, s => s === 3), 
                     color: '#F59E0B' 
                   },
                   { 
-                    label: 'Detractors', 
-                    percentage: smartVOCData && smartVOCData.csatScores && smartVOCData.csatScores.length > 0 
-                      ? Math.round((smartVOCData.csatScores.reduce((a, b) => a + b, 0) / smartVOCData.csatScores.length) * 0.1) 
-                      : 0, 
+                    label: 'Dissatisfied', 
+                    percentage: safeCalculatePercentage(smartVOCData?.csatScores, s => s <= 2), 
                     color: '#EF4444' 
                   }
                 ]}
@@ -538,33 +422,24 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 questionType="CES"
                 question={cesQuestion}
                 responses={{
-                  count: smartVOCData?.totalResponses || 0,
+                  count: smartVOCData?.cesScores?.length || 0,
                   timeAgo: '0s'
                 }}
-                score={smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0
-                  ? parseFloat((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length).toFixed(2))
-                  : 0.00
-                }
+                score={safeCalculateAverage(smartVOCData?.cesScores)}
                 distribution={[
                   { 
                     label: 'Little effort', 
-                    percentage: smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0 
-                      ? Math.round((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length) * 0.6) 
-                      : 0, 
+                    percentage: safeCalculatePercentage(smartVOCData?.cesScores, s => s <= 2), 
                     color: '#10B981' 
                   },
                   { 
-                    label: 'Neutrals', 
-                    percentage: smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0 
-                      ? Math.round((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length) * 0.3) 
-                      : 0, 
+                    label: 'Neutral', 
+                    percentage: safeCalculatePercentage(smartVOCData?.cesScores, s => s >= 3 && s <= 4), 
                     color: '#F59E0B' 
                   },
                   { 
                     label: 'Much effort', 
-                    percentage: smartVOCData && smartVOCData.cesScores && smartVOCData.cesScores.length > 0 
-                      ? Math.round((smartVOCData.cesScores.reduce((a, b) => a + b, 0) / smartVOCData.cesScores.length) * 0.1) 
-                      : 0, 
+                    percentage: safeCalculatePercentage(smartVOCData?.cesScores, s => s >= 5), 
                     color: '#EF4444' 
                   }
                 ]}
@@ -577,33 +452,24 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 questionType="CV"
                 question={cvQuestion}
                 responses={{
-                  count: smartVOCData?.totalResponses || 0,
+                  count: smartVOCData?.cvScores?.length || 0,
                   timeAgo: '0s'
                 }}
-                score={smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0
-                  ? parseFloat((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length).toFixed(2))
-                  : 0.00
-                }
+                score={safeCalculateAverage(smartVOCData?.cvScores)}
                 distribution={[
                   { 
                     label: 'Worth', 
-                    percentage: smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0 
-                      ? Math.round((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length) * 0.6) 
-                      : 0, 
+                    percentage: safeCalculatePercentage(smartVOCData?.cvScores, s => s >= 4), 
                     color: '#10B981' 
                   },
                   { 
-                    label: 'Neutrals', 
-                    percentage: smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0 
-                      ? Math.round((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length) * 0.3) 
-                      : 0, 
+                    label: 'Neutral', 
+                    percentage: safeCalculatePercentage(smartVOCData?.cvScores, s => s === 3), 
                     color: '#F59E0B' 
                   },
                   { 
                     label: 'Worthless', 
-                    percentage: smartVOCData && smartVOCData.cvScores && smartVOCData.cvScores.length > 0 
-                      ? Math.round((smartVOCData.cvScores.reduce((a, b) => a + b, 0) / smartVOCData.cvScores.length) * 0.1) 
-                      : 0, 
+                    percentage: safeCalculatePercentage(smartVOCData?.cvScores, s => s <= 2), 
                     color: '#EF4444' 
                   }
                 ]}
@@ -626,7 +492,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
               {/* 2.5.- Question: Net Promoter Score (NPS) */}
               <NPSQuestion
-                monthlyData={[
+                monthlyData={smartVOCData?.monthlyNPSData || [
                   { month: 'Ene', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
                   { month: 'Feb', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
                   { month: 'Mar', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
@@ -634,12 +500,12 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                   { month: 'May', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 },
                   { month: 'Jun', promoters: 0, neutrals: 0, detractors: 0, npsRatio: 0 }
                 ]}
-                npsScore={cpvData?.npsValue || 0}
-                promoters={cpvData?.promoters || 0}
-                detractors={cpvData?.detractors || 0}
-                neutrals={cpvData?.neutrals || 0}
-                totalResponses={smartVOCData?.totalResponses || 0}
-                isLoading={isSmartVOCLoading}
+                npsScore={smartVOCData?.npsScore || 0}
+                promoters={smartVOCData?.promoters || 0}
+                detractors={smartVOCData?.detractors || 0}
+                neutrals={smartVOCData?.neutrals || 0}
+                totalResponses={smartVOCData?.npsScores?.length || 0}
+                isLoading={isLoading}
                 questionText={npsQuestion}
                 questionNumber="2.5"
                 questionType="NPS"

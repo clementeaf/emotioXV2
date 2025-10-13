@@ -13,8 +13,6 @@ interface QuestionComponentProps {
   initialFormData?: FormData;
 }
 
-
-
 export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({ question, currentStepKey, initialFormData }) => {
   const {
     isLoading,
@@ -33,7 +31,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
     hasLoadedData
   });
 
-  // 🎯 HOOK PARA AUTO-AVANCE
   const { isAdvancing, triggerAutoAdvance } = useAutoAdvance({
     questionType: question.type,
     maxSelections: question.config?.maxSelections,
