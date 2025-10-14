@@ -72,6 +72,22 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Participants
   { pathPattern: /^\/participants/, controllerType: 'participants' },
 
+  // IAT Test Execution - DEBE IR ANTES de las rutas IAT básicas
+  { pathPattern: /^\/iat\/test\/start/, controllerType: 'iat-test-execution' },
+  { pathPattern: /^\/iat\/test\/response/, controllerType: 'iat-test-execution' },
+  { pathPattern: /^\/iat\/test\/session\/[^\/]+/, controllerType: 'iat-test-execution' },
+
+  // IAT Performance Optimization - DEBE IR ANTES de las rutas IAT básicas
+  { pathPattern: /^\/iat\/optimized-analysis/, controllerType: 'iat-performance' },
+  { pathPattern: /^\/iat\/performance-stats/, controllerType: 'iat-performance' },
+  { pathPattern: /^\/iat\/performance\/clean-cache/, controllerType: 'iat-performance' },
+  { pathPattern: /^\/iat\/performance\/batch-sessions/, controllerType: 'iat-performance' },
+  { pathPattern: /^\/iat\/performance\/participant\/[^\/]+\/sessions/, controllerType: 'iat-performance' },
+
+  // IAT Analysis (Python Bridge) - DEBE IR ANTES de las rutas IAT básicas
+  { pathPattern: /^\/iat\/advanced-analysis/, controllerType: 'iat-analysis' },
+  { pathPattern: /^\/iat\/analyze/, controllerType: 'iat-analysis' },
+  { pathPattern: /^\/iat\/python-status/, controllerType: 'iat-analysis' },
 
   // IAT (Implicit Association Test) - DEBE IR ANTES de config
   { pathPattern: /^\/iat\/test-configs/, controllerType: 'iat' },

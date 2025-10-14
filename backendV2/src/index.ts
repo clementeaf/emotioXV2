@@ -39,6 +39,9 @@ const controllerImports = {
   'researchInProgress': () => import('./controllers/researchInProgress.controller'),
   'config': () => import('./controllers/config.controller'),
   'iat': () => import('./controllers/iat.controller'),
+  'iat-analysis': () => import('./controllers/iat-analysis.controller'),
+  'iat-test-execution': () => import('./controllers/iat-test-execution.controller'),
+  'iat-performance': () => import('./controllers/iat-performance.controller'),
 };
 
 // Función para obtener un handler de forma lazy (refactorizada)
