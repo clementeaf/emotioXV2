@@ -72,6 +72,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Participants
   { pathPattern: /^\/participants/, controllerType: 'participants' },
 
+
   // IAT (Implicit Association Test) - DEBE IR ANTES de config
   { pathPattern: /^\/iat\/test-configs/, controllerType: 'iat' },
   { pathPattern: /^\/iat\/sessions/, controllerType: 'iat' },
