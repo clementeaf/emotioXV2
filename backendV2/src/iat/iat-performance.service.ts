@@ -73,7 +73,7 @@ export class IATPerformanceService {
       
       // Calcular métricas de rendimiento
       const processingTime = Date.now() - startTime;
-      const performanceMetrics = this.calculatePerformanceMetrics(processingTime, analysisResult);
+      const performanceMetrics = this.calculatePerformanceMetrics(processingTime);
       
       // Compilar resultado final
       const result: PerformanceOptimizedResponse = {
@@ -304,7 +304,7 @@ export class IATPerformanceService {
   /**
    * Calcula métricas de rendimiento
    */
-  private calculatePerformanceMetrics(processingTime: number, analysisResult: PerformanceOptimizedResponse): any {
+  private calculatePerformanceMetrics(processingTime: number): any {
     try {
       return {
         processing_time: processingTime,

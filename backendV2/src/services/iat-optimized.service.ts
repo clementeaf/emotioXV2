@@ -4,9 +4,7 @@ import { ApiError } from '../utils/errors';
 import type { 
   IATTestConfigModel, 
   IATSessionModel, 
-  IATResultsModel,
-  IATStatisticalAnalysisModel,
-  IATEmotionalIntegrationModel 
+  IATResultsModel
 } from '../models/iat.model';
 
 /**
@@ -43,7 +41,7 @@ export class IATOptimizedService {
       // Consulta optimizada a DynamoDB
       const command = new GetCommand({
         TableName: process.env.IAT_TEST_CONFIG_TABLE,
-        Key: { id },
+        Key: { id: id },
         ProjectionExpression: 'id, #name, description, categories, attributes, instructions, timing, blocks_config, status, created_at, updated_at',
         ExpressionAttributeNames: {
           '#name': 'name'
@@ -66,7 +64,7 @@ export class IATOptimizedService {
 
     } catch (error: unknown) {
       console.error(`[${this.serviceName}.${context}] Error obteniendo configuración:`, error);
-      throw new ApiError(500, 'Error interno del servidor');
+      throw new ApiError('Error interno del servidor', 500);
     }
   }
 
@@ -108,7 +106,7 @@ export class IATOptimizedService {
 
     } catch (error: unknown) {
       console.error(`[${this.serviceName}.${context}] Error obteniendo sesión:`, error);
-      throw new ApiError(500, 'Error interno del servidor');
+      throw new ApiError('Error interno del servidor', 500);
     }
   }
 
@@ -146,7 +144,7 @@ export class IATOptimizedService {
 
     } catch (error: unknown) {
       console.error(`[${this.serviceName}.${context}] Error creando sesión:`, error);
-      throw new ApiError(500, 'Error interno del servidor');
+      throw new ApiError('Error interno del servidor', 500);
     }
   }
 
@@ -174,7 +172,7 @@ export class IATOptimizedService {
       const result = await this.dynamoClient.send(command);
       
       if (!result.Attributes) {
-        throw new ApiError(404, 'Sesión no encontrada');
+        throw new ApiError('Sesión no encontrada', 404);
       }
 
       const updatedSession = result.Attributes as IATSessionModel;
@@ -187,7 +185,7 @@ export class IATOptimizedService {
 
     } catch (error: unknown) {
       console.error(`[${this.serviceName}.${context}] Error actualizando sesión:`, error);
-      throw new ApiError(500, 'Error interno del servidor');
+      throw new ApiError('Error interno del servidor', 500);
     }
   }
 
@@ -229,7 +227,7 @@ export class IATOptimizedService {
 
     } catch (error: unknown) {
       console.error(`[${this.serviceName}.${context}] Error obteniendo sesiones en lote:`, error);
-      throw new ApiError(500, 'Error interno del servidor');
+      throw new ApiError('Error interno del servidor', 500);
     }
   }
 
@@ -268,7 +266,7 @@ export class IATOptimizedService {
 
     } catch (error: unknown) {
       console.error(`[${this.serviceName}.${context}] Error obteniendo sesiones por participante:`, error);
-      throw new ApiError(500, 'Error interno del servidor');
+      throw new ApiError('Error interno del servidor', 500);
     }
   }
 
@@ -301,7 +299,7 @@ export class IATOptimizedService {
 
     } catch (error: unknown) {
       console.error(`[${this.serviceName}.${context}] Error guardando resultados:`, error);
-      throw new ApiError(500, 'Error interno del servidor');
+      throw new ApiError('Error interno del servidor', 500);
     }
   }
 

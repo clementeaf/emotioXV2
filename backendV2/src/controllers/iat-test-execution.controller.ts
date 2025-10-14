@@ -85,8 +85,8 @@ export class IATTestExecutionController {
 
       // Crear sesión en DynamoDB
       const session = await iatService.createSession({
-        sessionId: validatedRequest.sessionId,
         participantId: validatedRequest.participantId,
+        testId: testConfig.id,
         testConfig: testConfig,
         status: 'not-started',
         currentBlock: 1,
@@ -95,12 +95,6 @@ export class IATTestExecutionController {
         startTime: new Date().toISOString(),
         lastActivity: new Date().toISOString(),
         responses: [],
-        deviceInfo: {
-          userAgent: event.headers['User-Agent'] || 'Unknown',
-          screenResolution: 'Unknown',
-          platform: 'Unknown'
-        },
-        userAgent: event.headers['User-Agent'] || 'Unknown'
       });
 
       console.log(`[${this.serviceName}.${context}] Sesión IAT iniciada exitosamente`, {
@@ -212,26 +206,13 @@ export class IATTestExecutionController {
         }
       });
 
-      // Crear objeto de respuesta
-      const response = {
-        trialNumber: validatedRequest.trialNumber,
-        blockNumber: validatedRequest.blockNumber,
-        stimulus: validatedRequest.stimulus,
-        response: validatedRequest.response,
-        responseTime: validatedRequest.responseTime,
-        correct: validatedRequest.correct,
-        timestamp: new Date().toISOString()
-      };
 
       // Actualizar sesión con la nueva respuesta
-      const updatedSession = await iatService.updateSession(validatedRequest.sessionId, {
-        responses: [...(session.responses || []), response],
-        currentBlock: validatedRequest.blockNumber,
-        currentTrial: validatedRequest.trialNumber,
-        progress: responseResult.progress || 0.0,
-        lastActivity: new Date().toISOString(),
-        status: responseResult.is_last_response ? 'completed' : 'test'
-      });
+      const updatedSession = await iatService.updateSessionStatus(
+        validatedRequest.sessionId,
+        responseResult.is_last_response ? 'completed' : 'test',
+        responseResult.progress || 0.0
+      );
 
       console.log(`[${this.serviceName}.${context}] Respuesta procesada exitosamente`, {
         sessionId: validatedRequest.sessionId,
