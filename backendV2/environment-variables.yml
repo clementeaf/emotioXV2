@@ -43,5 +43,12 @@ ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, '*'} # Permitir cualquier origen por defec
 # Location Tracking
 LOCATION_TRACKING_TABLE: location-tracking-table
 
+# IAT (Implicit Association Test) Tables
+IAT_TEST_CONFIG_TABLE: ${self:service}-iat-test-configs-${self:provider.stage}
+IAT_SESSION_TABLE: ${self:service}-iat-sessions-${self:provider.stage}
+IAT_RESULTS_TABLE: ${self:service}-iat-results-${self:provider.stage}
+IAT_ANALYSIS_TABLE: ${self:service}-iat-analysis-${self:provider.stage}
+IAT_INTEGRATION_TABLE: ${self:service}-iat-integration-${self:provider.stage}
+
 # Public Tests URL (Local dev vs Production)
 PUBLIC_TESTS_URL: ${env:PUBLIC_TESTS_URL, 'http://localhost:4700'}

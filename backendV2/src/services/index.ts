@@ -14,5 +14,6 @@ export * from './s3.service';
 export * from './cognitiveTask.service';
 export * from './moduleResponse.service';
 export * from './company.service';
+export * from './iat.service';
 
 // Otros servicios serán exportados aquí a medida que se creen 

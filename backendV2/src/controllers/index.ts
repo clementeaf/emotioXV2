@@ -12,6 +12,7 @@
 // export * from './eyeTracking.controller';
 // export * from './s3.controller';
 export * from './moduleResponse.controller';
+export * from './iat.controller';
 
 // Exportar controlador de Eye Tracking Recruit
 // export * from './eyeTrackingRecruit.controller';

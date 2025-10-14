@@ -418,4 +418,248 @@ EducationalContentTable:
       SSEType: KMS
       KMSMasterKeyId: alias/aws/dynamodb
 
+# ======================================================================
+# 🎯 TABLAS IAT (Implicit Association Test)
+# ======================================================================
+
+# Tabla para configuraciones de prueba IAT
+IATTestConfigTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.IAT_TEST_CONFIG_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: createdBy
+        AttributeType: S
+      - AttributeName: status
+        AttributeType: S
+      - AttributeName: createdAt
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: CreatedByIndex
+        KeySchema:
+          - AttributeName: createdBy
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: StatusIndex
+        KeySchema:
+          - AttributeName: status
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
+# Tabla para sesiones IAT
+IATSessionTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.IAT_SESSION_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: sessionId
+        AttributeType: S
+      - AttributeName: participantId
+        AttributeType: S
+      - AttributeName: testId
+        AttributeType: S
+      - AttributeName: status
+        AttributeType: S
+      - AttributeName: createdAt
+        AttributeType: S
+    KeySchema:
+      - AttributeName: sessionId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: ParticipantIndex
+        KeySchema:
+          - AttributeName: participantId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: TestIndex
+        KeySchema:
+          - AttributeName: testId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: StatusIndex
+        KeySchema:
+          - AttributeName: status
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
+# Tabla para resultados IAT
+IATResultsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.IAT_RESULTS_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: resultId
+        AttributeType: S
+      - AttributeName: participantId
+        AttributeType: S
+      - AttributeName: testId
+        AttributeType: S
+      - AttributeName: sessionId
+        AttributeType: S
+      - AttributeName: completedAt
+        AttributeType: S
+    KeySchema:
+      - AttributeName: resultId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: ParticipantIndex
+        KeySchema:
+          - AttributeName: participantId
+            KeyType: HASH
+          - AttributeName: completedAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: TestIndex
+        KeySchema:
+          - AttributeName: testId
+            KeyType: HASH
+          - AttributeName: completedAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: SessionIndex
+        KeySchema:
+          - AttributeName: sessionId
+            KeyType: HASH
+          - AttributeName: completedAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
+# Tabla para análisis estadístico IAT
+IATStatisticalAnalysisTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.IAT_ANALYSIS_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: analysisId
+        AttributeType: S
+      - AttributeName: resultId
+        AttributeType: S
+      - AttributeName: participantId
+        AttributeType: S
+      - AttributeName: testId
+        AttributeType: S
+      - AttributeName: createdAt
+        AttributeType: S
+    KeySchema:
+      - AttributeName: analysisId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: ResultIndex
+        KeySchema:
+          - AttributeName: resultId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: ParticipantIndex
+        KeySchema:
+          - AttributeName: participantId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: TestIndex
+        KeySchema:
+          - AttributeName: testId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
+# Tabla para integración emocional IAT
+IATEmotionalIntegrationTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.IAT_INTEGRATION_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: integrationId
+        AttributeType: S
+      - AttributeName: resultId
+        AttributeType: S
+      - AttributeName: participantId
+        AttributeType: S
+      - AttributeName: createdAt
+        AttributeType: S
+    KeySchema:
+      - AttributeName: integrationId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: ResultIndex
+        KeySchema:
+          - AttributeName: resultId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: ParticipantIndex
+        KeySchema:
+          - AttributeName: participantId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
 # --- Fin de las definiciones de Recursos ---
