@@ -50,5 +50,11 @@ IAT_RESULTS_TABLE: ${self:service}-iat-results-${self:provider.stage}
 IAT_ANALYSIS_TABLE: ${self:service}-iat-analysis-${self:provider.stage}
 IAT_INTEGRATION_TABLE: ${self:service}-iat-integration-${self:provider.stage}
 
+# Eye Tracking (TheEyeTribe) Tables
+EYE_TRACKING_SESSIONS_TABLE: ${self:service}-eye-tracking-sessions-${self:provider.stage}
+EYE_TRACKING_ANALYSES_TABLE: ${self:service}-eye-tracking-analyses-${self:provider.stage}
+IAT_EYE_TRACKING_CONFIGS_TABLE: ${self:service}-iat-eye-tracking-configs-${self:provider.stage}
+IAT_EYE_TRACKING_RESULTS_TABLE: ${self:service}-iat-eye-tracking-results-${self:provider.stage}
+
 # Public Tests URL (Local dev vs Production)
 PUBLIC_TESTS_URL: ${env:PUBLIC_TESTS_URL, 'http://localhost:4700'}

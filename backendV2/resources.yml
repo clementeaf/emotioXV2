@@ -662,4 +662,146 @@ IATEmotionalIntegrationTable:
       SSEType: KMS
       KMSMasterKeyId: alias/aws/dynamodb
 
+# ======================================================================
+# 👁️ TABLAS EYE TRACKING (TheEyeTribe Integration)
+# ======================================================================
+
+# Tabla para sesiones de eye tracking
+EyeTrackingSessionsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.EYE_TRACKING_SESSIONS_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: sessionId
+        AttributeType: S
+      - AttributeName: participantId
+        AttributeType: S
+      - AttributeName: startTime
+        AttributeType: S
+    KeySchema:
+      - AttributeName: sessionId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: participant-index
+        KeySchema:
+          - AttributeName: participantId
+            KeyType: HASH
+          - AttributeName: startTime
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
+# Tabla para análisis de eye tracking
+EyeTrackingAnalysesTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.EYE_TRACKING_ANALYSES_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: analysisId
+        AttributeType: S
+      - AttributeName: sessionId
+        AttributeType: S
+      - AttributeName: participantId
+        AttributeType: S
+    KeySchema:
+      - AttributeName: analysisId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: session-index
+        KeySchema:
+          - AttributeName: sessionId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+      - IndexName: participant-index
+        KeySchema:
+          - AttributeName: participantId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
+# Tabla para configuraciones IAT + Eye Tracking
+IATEyeTrackingConfigsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.IAT_EYE_TRACKING_CONFIGS_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: testId
+        AttributeType: S
+      - AttributeName: name
+        AttributeType: S
+    KeySchema:
+      - AttributeName: testId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: name-index
+        KeySchema:
+          - AttributeName: name
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
+# Tabla para resultados combinados IAT + Eye Tracking
+IATEyeTrackingResultsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.IAT_EYE_TRACKING_RESULTS_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: sessionId
+        AttributeType: S
+      - AttributeName: participantId
+        AttributeType: S
+      - AttributeName: testId
+        AttributeType: S
+      - AttributeName: createdAt
+        AttributeType: S
+    KeySchema:
+      - AttributeName: sessionId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: participant-index
+        KeySchema:
+          - AttributeName: participantId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: test-index
+        KeySchema:
+          - AttributeName: testId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+      KMSMasterKeyId: alias/aws/dynamodb
+
 # --- Fin de las definiciones de Recursos ---

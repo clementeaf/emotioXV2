@@ -45,6 +45,25 @@ const nextConfig = {
   // Configuración específica para AWS Amplify
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+
+  // 🎯 Headers para Seeso.io
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'require-corp',
+          },
+        ],
+      },
+    ];
   }
 
   // 🎯 REWRITES REMOVIDOS

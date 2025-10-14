@@ -96,5 +96,19 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   { pathPattern: /^\/iat\/statistics/, controllerType: 'iat' },
   { pathPattern: /^\/iat/, controllerType: 'iat' },
 
+  // Eye Tracking Unificado (Eyedid SDK + Ogama) - RUTAS OPTIMIZADAS
+  { pathPattern: /^\/eye-tracking\/start/, controllerType: 'unified-eye-tracking' },
+  { pathPattern: /^\/eye-tracking\/stop/, controllerType: 'unified-eye-tracking' },
+  { pathPattern: /^\/eye-tracking\/saliency/, controllerType: 'unified-eye-tracking' },
+  { pathPattern: /^\/eye-tracking\/stats/, controllerType: 'unified-eye-tracking' },
+  { pathPattern: /^\/eye-tracking/, controllerType: 'unified-eye-tracking' },
+
+  // Ogama Integration (Análisis Avanzado) - RUTAS ESPECÍFICAS
+  { pathPattern: /^\/ogama\/analyze/, controllerType: 'ogama-integration' },
+  { pathPattern: /^\/ogama\/multi-device/, controllerType: 'ogama-integration' },
+  { pathPattern: /^\/ogama\/devices/, controllerType: 'ogama-integration' },
+  { pathPattern: /^\/ogama\/status/, controllerType: 'ogama-integration' },
+  { pathPattern: /^\/ogama/, controllerType: 'ogama-integration' },
+
   // Añadir más definiciones de ruta aquí...
 ];

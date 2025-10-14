@@ -42,6 +42,8 @@ const controllerImports = {
   'iat-analysis': () => import('./controllers/iat-analysis.controller'),
   'iat-test-execution': () => import('./controllers/iat-test-execution.controller'),
   'iat-performance': () => import('./controllers/iat-performance.controller'),
+  'unified-eye-tracking': () => import('./controllers/unified-eye-tracking.controller'),
+  'ogama-integration': () => import('./controllers/ogama-integration.controller'),
 };
 
 // Función para obtener un handler de forma lazy (refactorizada)
