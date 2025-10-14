@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 🎯 DEPLOY SCRIPT PARA public-tests EN AWS S3/CLOUDFRONT
-# Uso: ./deploy-aws.sh
+# Uso (desde public-tests/aws-deploy/): ./deploy-aws.sh
 
 set -e
 
@@ -10,7 +10,12 @@ BUCKET_NAME="emotioxv2-public-tests-dev-041238861016"
 DISTRIBUTION_ID="E1234567890ABC" # Se actualizará después de crear CloudFront
 REGION="us-east-1"
 
+# 🎯 OBTENER DIRECTORIO DEL SCRIPT Y NAVEGAR AL ROOT DE PUBLIC-TESTS
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PUBLIC_TESTS_DIR="$(dirname "$SCRIPT_DIR")"
+
 echo "🚀 Iniciando deploy de public-tests a AWS..."
+echo "📂 Directorio: $PUBLIC_TESTS_DIR"
 
 # 🎯 VERIFICAR DEPENDENCIAS
 if ! command -v aws &> /dev/null; then
@@ -22,6 +27,9 @@ if ! command -v npm &> /dev/null; then
     echo "❌ npm no está instalado"
     exit 1
 fi
+
+# 🎯 CAMBIAR AL DIRECTORIO PUBLIC-TESTS
+cd "$PUBLIC_TESTS_DIR"
 
 # 🎯 INSTALAR DEPENDENCIAS
 echo "📦 Instalando dependencias..."
