@@ -92,10 +92,12 @@ class UnifiedEyeTrackingController {
       if (validatedRequest.useOgama && result.success) {
         setTimeout(async () => {
           try {
-            await ogamaIntegrationService.startOgamaAnalysis(
-              result.data.sessionId, 
-              validatedRequest.config.platform === 'web' ? 'theeyetribe' : 'eyedid'
-            );
+            if (result.data?.sessionId) {
+              await ogamaIntegrationService.startOgamaAnalysis(
+                result.data.sessionId, 
+                validatedRequest.config.platform === 'web' ? 'theeyetribe' : 'eyedid'
+              );
+            }
           } catch (error) {
             console.warn('[UnifiedEyeTrackingController] Error iniciando análisis Ogama:', error);
           }
@@ -183,10 +185,10 @@ class UnifiedEyeTrackingController {
           );
           
           if (ogamaResult.success) {
-            result.data = {
-              ...result.data,
-              ogamaAnalysis: ogamaResult.data
-            };
+            // Agregar análisis Ogama como metadata adicional
+            if (result.data?.metadata) {
+              (result.data.metadata as any).ogamaAnalysis = ogamaResult.data;
+            }
           }
         } catch (error) {
           console.warn('[UnifiedEyeTrackingController] Error en análisis Ogama:', error);

@@ -36,7 +36,7 @@ export class EyedidSDKService {
     console.log(`[${this.serviceName}.${context}] Iniciando eye tracking con Eyedid SDK`, {
       participantId: params.participantId,
       testId: params.testId,
-      platform: params.config.platform
+      platform: 'eyedid'
     });
 
     try {
@@ -52,12 +52,13 @@ export class EyedidSDKService {
         status: 'connecting',
         config: {
           ...params.config,
-          // Eyedid SDK específico
-          platform: params.config.platform || 'web',
-          sdkVersion: '1.0.0',
-          enableRemoteTesting: true,
-          enableHeatmaps: true,
-          enableRealTimeInsights: true
+          // Configuración base compatible
+          sampleRate: params.config.sampleRate || 60,
+          enableCalibration: params.config.enableCalibration || true,
+          calibrationPoints: params.config.calibrationPoints || 9,
+          trackingMode: params.config.trackingMode || 'screen',
+          smoothing: params.config.smoothing || true,
+          smoothingFactor: params.config.smoothingFactor || 0.7
         },
         gazeData: [],
         metadata: {
@@ -82,7 +83,7 @@ export class EyedidSDKService {
       console.log(`[${this.serviceName}.${context}] Sesión Eyedid SDK iniciada`, {
         sessionId,
         participantId: params.participantId,
-        platform: params.config.platform
+        platform: 'eyedid'
       });
 
       return {
@@ -145,7 +146,7 @@ export class EyedidSDKService {
       console.log(`[${this.serviceName}.${context}] Sesión Eyedid SDK detenida`, {
         sessionId: params.sessionId,
         totalGazePoints: session.gazeData.length,
-        platform: session.config.platform
+        platform: 'eyedid'
       });
 
       return {
@@ -375,7 +376,7 @@ export class EyedidSDKService {
       startTime: session.startTime,
       gazePoints: session.gazeData.length,
       duration: Date.now() - new Date(session.startTime).getTime(),
-      platform: session.config.platform || 'web'
+      platform: 'eyedid'
     }));
 
     return {
@@ -415,7 +416,7 @@ export class EyedidSDKService {
       attentionMetrics,
       areasOfInterest: [], // Se implementará en análisis avanzado
       qualityMetrics,
-      recommendations: this.generateEyedidRecommendations(qualityMetrics, session.config.platform)
+      recommendations: this.generateEyedidRecommendations(qualityMetrics, 'eyedid')
     };
   }
 

@@ -232,7 +232,7 @@ export class OgamaIntegrationService {
         screenWidth: session.metadata.deviceInfo.screenWidth,
         screenHeight: session.metadata.deviceInfo.screenHeight,
         devicePixelRatio: session.metadata.deviceInfo.devicePixelRatio,
-        platform: session.config.platform || 'web'
+        platform: 'ogama'
       },
       config: {
         sampleRate: session.config.sampleRate,
@@ -518,7 +518,7 @@ def generate_saliency_map(data):
       const deviceType = result.deviceType;
       const analysis = result.analysis;
       
-      comparativeAnalysis.deviceComparison[deviceType] = {
+      (comparativeAnalysis.deviceComparison as any)[deviceType] = {
         totalFixations: analysis.statistics?.total_fixations || 0,
         totalSaccades: analysis.statistics?.total_saccades || 0,
         averageFixationDuration: analysis.statistics?.average_fixation_duration || 0,
