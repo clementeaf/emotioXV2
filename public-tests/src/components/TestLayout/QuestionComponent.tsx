@@ -6,6 +6,7 @@ import { useAutoAdvance } from '../../hooks/useAutoAdvance';
 import { useQuestionHandlers } from '../../hooks/useQuestionHandlers';
 import { useQuestionInitialization, Question, QuestionConfig, FormData } from '../../hooks/useQuestionInitialization';
 import { EmotionGrid } from './emotions';
+import { DetailedEmotionSelector } from './emotion/DetailedEmotionSelector';
 
 interface QuestionComponentProps {
   question: Question;
@@ -147,10 +148,18 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
             />
         )}
         {(question.type === 'smartvoc_nev' || question.type === 'detailed' || question.type === 'emojis') && (
-          <EmotionGrid
-            value={value}
-            onEmotionClick={handleEmotionClick}
-          />
+          question.type === 'detailed' ? (
+            <DetailedEmotionSelector
+              selectedEmotions={Array.isArray(value) ? value : []}
+              onEmotionSelect={handleEmotionClick}
+              maxSelections={question.config?.maxSelections || 3}
+            />
+          ) : (
+            <EmotionGrid
+              value={value}
+              onEmotionClick={handleEmotionClick}
+            />
+          )
         )}
       </div>
     </div>

@@ -265,7 +265,7 @@ export class CognitiveTaskModel {
           data.questions.forEach(q => {
             if (q.files && q.files.length > 0) {
               try {
-                // Filtrar solo archivos que tienen información completa
+                // Filtrar archivos usando el mismo criterio que create() - solo s3Key es vital
                 const validFiles = q.files.filter(f => {
                   try {
                     if (!f) {
@@ -273,16 +273,10 @@ export class CognitiveTaskModel {
                       return false;
                     }
 
-                    const isValid = f.id && f.name && f.size && f.type && f.s3Key;
+                    // ✅ FIX: Usar el mismo filtro que create() - solo s3Key es vital
+                    const isValid = f && f.s3Key;
                     if (!isValid) {
-                      structuredLog('warn', 'CognitiveTaskModel.update', 'Archivo inválido en pregunta', { questionId: q.id, file: f });
-
-                      // Log detallado de campos faltantes para diagnóstico
-                      if (!f.id) console.warn(`[MODEL:update] Campo faltante: id en pregunta ${q.id}`);
-                      if (!f.name) console.warn(`[MODEL:update] Campo faltante: name en pregunta ${q.id}`);
-                      if (!f.size) console.warn(`[MODEL:update] Campo faltante: size en pregunta ${q.id}`);
-                      if (!f.type) console.warn(`[MODEL:update] Campo faltante: type en pregunta ${q.id}`);
-                      if (!f.s3Key) console.warn(`[MODEL:update] Campo faltante: s3Key en pregunta ${q.id}`);
+                      structuredLog('warn', 'CognitiveTaskModel.update', 'Archivo sin s3Key en pregunta', { questionId: q.id, file: f });
                     }
                     return isValid;
                   } catch (fileError: unknown) {

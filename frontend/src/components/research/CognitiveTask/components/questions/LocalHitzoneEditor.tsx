@@ -144,6 +144,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
             draggable={false}
             onLoad={handleImgLoad}
             style={{ display: 'block' }}
+            crossOrigin="anonymous"
           />
         )}
         {imgSize && imgNatural && (

@@ -210,6 +210,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
         alt="Imagen base"
         style={{ width: '100%', height: '100%', display: 'block', borderRadius: 8, objectFit: 'contain', background: '#f8fafc' }}
         draggable={false}
+        crossOrigin="anonymous"
         onError={(e) => {
           e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="575" height="575"><rect width="575" height="575" fill="%23f8fafc"/><text x="287" y="287" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
         }}

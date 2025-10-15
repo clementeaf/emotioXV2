@@ -179,7 +179,7 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
         question={createQuestionConfig(
           contentConfiguration || {},
           currentQuestionKey,
-          'emojis',
+          'detailed',
           {
             maxSelections,
             instructions: contentConfiguration?.instructions as string

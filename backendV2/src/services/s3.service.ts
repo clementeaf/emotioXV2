@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { uuidv4 } from '../utils/id-generator';
 import { toApplicationError } from '../types/errors';
@@ -40,19 +40,6 @@ const ALLOWED_MIME_TYPES: Record<FileType, string[]> = {
   ],
   [FileType.AUDIO]: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4']
 };
-
-/**
- * Límites de tamaño por tipo de archivo (en bytes)
- */
-// Límites de tamaño comentados para evitar variable no usada
-/*
-const _MAX_FILE_SIZE: Record<FileType, number> = {
-  [FileType.IMAGE]: 50 * 1024 * 1024, // 50 MB (aumentado)
-  [FileType.VIDEO]: 500 * 1024 * 1024, // 500 MB (aumentado)
-  [FileType.DOCUMENT]: 100 * 1024 * 1024, // 100 MB (aumentado)
-  [FileType.AUDIO]: 100 * 1024 * 1024 // 100 MB (aumentado)
-};
-*/
 
 /**
  * Parámetros para la generación de URL prefirmada
@@ -152,8 +139,6 @@ export class S3Service {
    * @throws Error si los parámetros no son válidos
    */
   private validateParams(params: PresignedUrlParams): void {
-    console.log('S3Service.validateParams - Validando parámetros:', JSON.stringify(params, null, 2));
-    
     // Verificar tipo de archivo
     if (!Object.values(FileType).includes(params.fileType)) {
       console.error('S3Service.validateParams - Tipo de archivo inválido:', {
@@ -180,11 +165,7 @@ export class S3Service {
         fileName: params.fileName,
         allowedTypes: ALLOWED_MIME_TYPES[params.fileType]
       });
-      // throw new Error(`Tipo MIME no permitido para ${params.fileType}: ${params.mimeType}`);
     }
-
-    // Log del tamaño recibido (sin validación estricta)
-    console.log(`Archivo: ${params.fileName}, Tamaño recibido: ${params.fileSize} bytes (${(params.fileSize / (1024 * 1024)).toFixed(2)} MB)`);
 
     // Verificar ID de investigación
     if (!params.researchId || params.researchId.trim() === '') {
@@ -209,7 +190,6 @@ export class S3Service {
    * @returns Respuesta con URL prefirmada y metadatos
    */
   async generateUploadUrl(params: PresignedUrlParams): Promise<PresignedUrlResponse> {
-    console.log('S3Service.generateUploadUrl - Iniciando con parámetros:', JSON.stringify(params, null, 2));
     try {
       this.validateParams(params);
       const extension = this.getFileExtension(params.fileName);
@@ -221,6 +201,7 @@ export class S3Service {
         Bucket: this.bucketName,
         Key: key,
         ContentType: params.mimeType,
+        // ACL removido - el bucket usa solo políticas
         Metadata: {
           'original-filename': params.fileName,
           'research-id': params.researchId,
@@ -257,32 +238,15 @@ export class S3Service {
    * @param expiresIn Tiempo de expiración en segundos (default: 1 hora)
    * @returns URL prefirmada para descargar
    */
-  async generateDownloadUrl(key: string, expiresIn: number = 60 * 60): Promise<string> {
+  async generateDownloadUrl(key: string, _expiresIn: number = 60 * 60): Promise<string> {
     const operation = 'S3Service.generateDownloadUrl';
-    console.log(`${operation} - Solicitando URL de descarga para la clave: ${key}`);
 
     try {
-      // PASO 1: Verificar existencia con HeadObjectCommand
-      console.log(`${operation} - Verificando existencia con HeadObject para la clave: ${key}`);
-      const headCommand = new HeadObjectCommand({
-        Bucket: this.bucketName,
-        Key: key
-      });
-      await this.s3Client.send(headCommand);
-      console.log(`${operation} - Verificación de existencia exitosa (HeadObject OK) para la clave: ${key}`);
+      // ✅ SIMPLE: Bucket es público, usar URL directa
+      const directUrl = `https://${this.bucketName}.s3.${process.env.APP_REGION || 'us-east-1'}.amazonaws.com/${key}`;
 
-      // PASO 2: Si existe, generar la URL de descarga
-      const getCommand = new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: key
-      });
-
-      console.log(`${operation} - Comando GetObject preparado para la clave: ${key}`);
-      console.log(`${operation} - Llamando a getSignedUrl para la clave: ${key}`);
-      const downloadUrl = await getSignedUrl(this.s3Client, getCommand, { expiresIn });
-      console.log(`${operation} - URL de descarga generada exitosamente para la clave: ${key}`);
-
-      return downloadUrl;
+      console.log(`${operation} - URL directa generada para: ${key}`);
+      return directUrl;
 
     } catch (error: unknown) {
       const appError = toApplicationError(error);
@@ -334,17 +298,11 @@ export class S3Service {
         throw new Error('Se requiere una clave de objeto válida para eliminar');
       }
 
-      console.log(`${operation} - Intentando eliminar objeto con clave: ${key}`);
-
       const command = new DeleteObjectCommand({
         Bucket: this.bucketName,
         Key: key
       });
-
-      console.log(`${operation} - Comando DeleteObject preparado para la clave: ${key}`);
-      console.log(`${operation} - Llamando a s3Client.send(command) para la clave: ${key}`);
-
-      // Ejecutar el comando
+      
       const output = await this.s3Client.send(command);
 
       console.log(`${operation} - Resultado de s3Client.send(command):`, output);

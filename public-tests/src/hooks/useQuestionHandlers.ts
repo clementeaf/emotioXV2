@@ -39,7 +39,7 @@ export const useQuestionHandlers = ({
     isProcessingRef.current = true;
 
     const isMultipleEmotionSelection = 
-      questionType === 'emojis' && 
+      (questionType === 'emojis' || questionType === 'detailed') && 
       config?.maxSelections && 
       config.maxSelections > 1;
 

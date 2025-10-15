@@ -231,18 +231,16 @@ const TestLayoutRenderer: React.FC = () => {
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
   
   const shouldHideButton = (() => {
+    // 🎯 OCULTAR BOTÓN PARA SMARTVOC_NEV Y DETAILED (DetailedEmotionSelector)
     if (questionType !== 'smartvoc_nev') return false;
     
     const instructions = String(contentConfiguration?.instructions || '');
     const hasMaxSelectionPattern = /hasta\s+(\d+)|máximo\s+(\d+)|máx\s+(\d+)|max\s+(\d+)|selecciona\s+hasta\s+(\d+)|selecciona\s+máximo\s+(\d+)|selecciona\s+(\d+)\s+emociones|(\d+)\s+emociones/i.test(instructions);
     
-    // Solo ocultar si hay patrón de máximo Y no hay selecciones aún
+    // 🎯 SIEMPRE OCULTAR BOTÓN PARA DETAILED (DetailedEmotionSelector)
+    // porque tiene su propia lógica de selección limitada y auto-avance
     if (hasMaxSelectionPattern) {
-      const currentSelections = Array.isArray(formData.value) ? formData.value : [];
-      const hasSelections = currentSelections.length > 0;
-      
-      // Ocultar botón solo si NO hay selecciones (para forzar selección inicial)
-      return !hasSelections;
+      return true; // Siempre ocultar para DetailedEmotionSelector
     }
     
     return false;

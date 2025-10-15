@@ -259,6 +259,7 @@ const FileUploadQuestionComponent: React.FC<FileUploadQuestionProps> = ({
                             alt={file.name}
                             loading="lazy"
                             className={`w-10 h-10 object-cover rounded ${file.isLoading ? 'opacity-50' : ''}`}
+                            crossOrigin="anonymous"
                             onError={(e) => {
                               e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23f0f0f0"/><text x="20" y="20" font-family="Arial" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
                             }}
@@ -376,6 +377,7 @@ const FileUploadQuestionComponent: React.FC<FileUploadQuestionProps> = ({
                         alt={file.name}
                         loading="lazy"
                         className="w-full h-48 object-cover rounded border border-gray-200"
+                        crossOrigin="anonymous"
                         onError={(e) => {
                           e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23f0f0f0"/><text x="100" y="100" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="%23999">Imagen no disponible</text></svg>';
                         }}
@@ -470,8 +472,18 @@ export const FileUploadQuestion = React.memo(FileUploadQuestionComponent, (prevP
     prevProps.disabled === nextProps.disabled &&
     prevProps.isUploading === nextProps.isUploading &&
     prevProps.uploadProgress === nextProps.uploadProgress &&
-    JSON.stringify(prevProps.question.files?.map(f => ({ id: f.id, s3Key: f.s3Key, status: (f as any).status }))) ===
-    JSON.stringify(nextProps.question.files?.map(f => ({ id: f.id, s3Key: f.s3Key, status: (f as any).status }))) &&
+    JSON.stringify(prevProps.question.files?.map(f => ({
+      id: f.id,
+      s3Key: f.s3Key,
+      status: (f as any).status,
+      hitZones: (f as any).hitZones
+    }))) ===
+    JSON.stringify(nextProps.question.files?.map(f => ({
+      id: f.id,
+      s3Key: f.s3Key,
+      status: (f as any).status,
+      hitZones: (f as any).hitZones
+    }))) &&
     JSON.stringify(prevProps.validationErrors) === JSON.stringify(nextProps.validationErrors)
   );
 });

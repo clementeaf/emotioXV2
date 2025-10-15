@@ -47,24 +47,25 @@ const nextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
 
-  // 🎯 Headers para Seeso.io
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin',
-          },
-          {
-            key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp',
-          },
-        ],
-      },
-    ];
-  }
+  // 🎯 Headers para Seeso.io - REMOVIDOS porque output: 'export' no los soporta
+  // Los headers COEP se configurarán en CloudFront Lambda@Edge o CloudFront Functions
+  // async headers() {
+  //   return [
+  //     {
+  //       source: '/(.*)',
+  //       headers: [
+  //         {
+  //           key: 'Cross-Origin-Opener-Policy',
+  //           value: 'same-origin',
+  //         },
+  //         {
+  //           key: 'Cross-Origin-Embedder-Policy',
+  //           value: 'credentialless',
+  //         },
+  //       ],
+  //     },
+  //   ];
+  // }
 
   // 🎯 REWRITES REMOVIDOS
   // Con output: 'export', Next.js no soporta rewrites/redirects/headers

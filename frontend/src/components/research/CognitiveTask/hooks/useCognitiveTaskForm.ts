@@ -210,15 +210,23 @@ export const useCognitiveTaskForm = (
         const processedData = {
           ...cognitiveTaskData,
           questions: cognitiveTaskData.questions.map(question => {
-            if (question.files && question.files.length > 0) {
-              const existingQuestion = formData.questions.find(q => q.id === question.id);
+            // ✅ FIX: Normalizar tipo al cargar desde backend (remover prefijo cognitive_)
+            const normalizedQuestion = {
+              ...question,
+              type: question.type.startsWith('cognitive_')
+                ? question.type.replace('cognitive_', '')
+                : question.type
+            };
 
-              const processedFiles = question.files.map(file => {
+            if (normalizedQuestion.files && normalizedQuestion.files.length > 0) {
+              const existingQuestion = formData.questions.find(q => q.id === normalizedQuestion.id);
+
+              const processedFiles = normalizedQuestion.files.map(file => {
                 const existingFile = existingQuestion?.files?.find(f => f.id === file.id);
 
                 // Priorizar hitZones del backend si están disponibles, sino usar los del estado local
                 let hitZonesToUse = undefined;
-                
+
                 if (file.hitZones && file.hitZones.length > 0) {
                   // Usar hitZones del backend (datos guardados)
                   hitZonesToUse = file.hitZones.map((hz: any) => {
@@ -243,9 +251,9 @@ export const useCognitiveTaskForm = (
                   hitZones: hitZonesToUse
                 };
               });
-              return { ...question, files: processedFiles };
+              return { ...normalizedQuestion, files: processedFiles };
             }
-            return question;
+            return normalizedQuestion;
           })
         };
 
@@ -281,7 +289,8 @@ export const useCognitiveTaskForm = (
         setCognitiveTaskId(responseWithId.id);
       }
 
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
+      // ✅ FIX: Comentar invalidación que causa recarga y pérdida de imágenes
+      // queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
       modals.closeModal();
       // Usar toast en lugar de modal para éxito
       toastHelpers.saveSuccess('Configuración de tareas cognitivas');
@@ -781,27 +790,26 @@ export const useCognitiveTaskForm = (
       return;
     }
 
-    const dataToSend = filterValidQuestionsLocal(formData);
-
     const enrichedDataToSend = {
-      ...dataToSend,
-      questions: dataToSend.questions.map(q => ({
+      ...formData,
+      questions: formData.questions.map(q => ({
         ...q,
         questionKey: getCognitiveQuestionType(q.type),
-        type: `cognitive_${q.type}`
+        type: q.type.startsWith('cognitive_') ? q.type : `cognitive_${q.type}`
       }))
     };
 
-    debugQuestionsToSendLocal(formData);
+    const dataToSend = convertToSharedFormat(enrichedDataToSend);
 
-    const questionsWithFiles = enrichedDataToSend.questions.filter((q: Question) => q.files && q.files.length > 0);
-    if (questionsWithFiles.length > 0) {
-      questionsWithFiles.forEach((q: Question) => {
-        const filesWithHitZones = q.files?.filter((f: any) => f.hitZones && f.hitZones.length > 0) || [];
-      });
-    }
+    console.log('🔍 DATA ANTES DE ENVIAR AL BACKEND:', JSON.stringify(dataToSend, null, 2));
+    console.log('🔍 PREGUNTAS CON FILES:', dataToSend.questions.filter(q => q.files && q.files.length > 0).map(q => ({
+      id: q.id,
+      title: q.title,
+      filesCount: q.files?.length,
+      files: q.files
+    })));
 
-    saveMutation.mutate(convertToSharedFormat(enrichedDataToSend));
+    saveMutation.mutate(dataToSend);
   };
 
   const continueWithAction = () => {
@@ -812,7 +820,8 @@ export const useCognitiveTaskForm = (
         questions: dataToSend.questions.map(q => ({
           ...q,
           questionKey: getCognitiveQuestionType(q.type),
-          type: `cognitive_${q.type}`
+          // ✅ FIX: No duplicar prefijo cognitive_
+          type: q.type.startsWith('cognitive_') ? q.type : `cognitive_${q.type}`
         }))
       };
       saveMutation.mutate(convertToSharedFormat(enrichedDataToSend));
@@ -841,10 +850,27 @@ export const useCognitiveTaskForm = (
   const convertToSharedFormat = (localData: UICognitiveTaskFormData): CognitiveTaskFormData => {
     return {
       researchId: localData.researchId,
-      questions: localData.questions.map(q => ({
-        ...q,
-        type: q.type as any
-      })),
+      questions: localData.questions.map(q => {
+        const cleanQuestion = {
+          ...q,
+          type: q.type as any
+        };
+
+        // Limpiar archivos: remover campos UI-específicos antes de enviar al backend
+        if (cleanQuestion.files && cleanQuestion.files.length > 0) {
+          cleanQuestion.files = cleanQuestion.files.map((file: any) => ({
+            id: file.id,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: file.url,
+            s3Key: file.s3Key,
+            ...(file.hitZones && file.hitZones.length > 0 ? { hitZones: file.hitZones } : {})
+          }));
+        }
+
+        return cleanQuestion;
+      }),
       randomizeQuestions: localData.randomizeQuestions,
       metadata: localData.metadata
     };

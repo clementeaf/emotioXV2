@@ -44,7 +44,7 @@ export const useAutoAdvance = ({
     questionType: string,
     maxSelections?: number
   ): boolean => {
-    if (questionType !== 'emojis') return false;
+    if (questionType !== 'emojis' && questionType !== 'detailed') return false;
     if (!maxSelections || maxSelections <= 1) return false;
     return currentSelections.length === maxSelections;
   }, []);
