@@ -105,19 +105,41 @@ const TestLayoutRenderer: React.FC = () => {
     }
   }, [formsData?.steps]);
 
-  // 🎯 LÓGICA DE REDIRECCIÓN DESPUÉS DE HOOKS
+  // 🎯 MEJORAR LÓGICA DE REDIRECCIÓN - PREVENIR BUCLES INFINITOS
   if (!researchId) {
     const urlParams = new URLSearchParams(window.location.search);
     const urlResearchId = urlParams.get('researchId');
+    const currentPath = window.location.pathname;
 
+    console.log('[TestLayoutRenderer] Verificando redirección:', {
+      researchId,
+      urlResearchId,
+      currentPath,
+      search: window.location.search
+    });
+
+    // 🎯 SOLO REDIRIGIR SI REALMENTE NO HAY researchId EN NINGÚN LADO
     if (urlResearchId) {
-      // Redirigir a login CON el researchId de la URL
-      window.location.href = `/?researchId=${urlResearchId}`;
+      // 🎯 EVITAR BUCLE INFINITO: Solo redirigir si no estamos ya en la ruta correcta
+      if (currentPath !== '/' && !currentPath.includes('/test')) {
+        console.log('[TestLayoutRenderer] Redirigiendo a login con researchId:', urlResearchId);
+        window.location.href = `/?researchId=${urlResearchId}`;
+      } else {
+        // 🎯 SI YA ESTAMOS EN LA RUTA CORRECTA, MOSTRAR LOADING
+        console.log('[TestLayoutRenderer] Ya en ruta correcta, esperando configuración del store...');
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Configurando investigación...</p>
+          </div>
+        );
+      }
     } else {
       // Si no hay researchId en ningún lado, ir a error
+      console.log('[TestLayoutRenderer] No hay researchId, redirigiendo a error');
       window.location.href = '/error-no-research-id';
     }
-    return <div>Redirigiendo al login...</div>;
+    return <div>Redirigiendo...</div>;
   }
 
   // 🚨 BLOQUEAR STEPS SI ES MÓVIL NO PERMITIDO

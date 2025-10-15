@@ -1,5 +1,6 @@
 import React from 'react';
-import { DetailedEmotionSelector, EmotionHierarchySelector } from './emotion';
+import { EmotionHierarchySelector } from './emotion';
+import { DetailedEmotionSelector } from './emotion/DetailedEmotionSelector';
 import { ScaleRangeQuestionProps, SingleAndMultipleChoiceQuestionProps } from './types';
 
 export function ScaleRangeQuestion({
@@ -236,23 +237,10 @@ export const EmotionHierarchyQuestion: React.FC<EmotionHierarchyQuestionProps> =
   />
 );
 
-export interface DetailedEmotionQuestionProps {
-  selectedEmotions?: string[];
-  onEmotionSelect?: (emotionId: string) => void;
-  maxSelections?: number;
-}
-
-export const DetailedEmotionQuestion: React.FC<DetailedEmotionQuestionProps> = ({
-  selectedEmotions = [],
-  onEmotionSelect,
-  maxSelections = 3,
-}) => (
-  <DetailedEmotionSelector
-    selectedEmotions={selectedEmotions}
-    onEmotionSelect={onEmotionSelect}
-    maxSelections={maxSelections}
-  />
-);
+// 🎯 WRAPPER ELIMINADO - USAR COMPONENTE DIRECTO
+// DetailedEmotionQuestion era solo un wrapper innecesario
+// Usar directamente DetailedEmotionSelector desde:
+// ./emotion/DetailedEmotionSelector
 
 // 🎯 NUEVO COMPONENTE: ESCALA LINEAL CON BARRA DESLIZANTE
 export interface LinearScaleSliderProps {

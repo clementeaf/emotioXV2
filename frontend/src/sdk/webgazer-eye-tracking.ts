@@ -1,6 +1,6 @@
 /**
- * WebGazer Eye Tracking SDK para EmotioXV2
- * Implementa eye tracking real con WebGazer.js
+ * WebGazer Eye Tracking SDK LOCAL para EmotioXV2
+ * Implementa eye tracking real con WebGazer.js SIN BACKEND
  */
 
 import type {
@@ -11,10 +11,11 @@ import type {
 } from '../../../shared/eye-tracking-types';
 
 /**
- * SDK de Eye Tracking Real con WebGazer
- * Utiliza machine learning para detectar la mirada real
+ * SDK de Eye Tracking LOCAL con WebGazer
+ * Utiliza machine learning para detectar la mirada real SIN conexión al backend
  */
 export class WebGazerEyeTrackingSDK {
+  private readonly isLocalMode: boolean;
   private readonly apiBaseUrl: string;
   private readonly apiKey?: string;
   private currentSessionId?: string;
@@ -29,7 +30,8 @@ export class WebGazerEyeTrackingSDK {
   constructor(apiBaseUrl: string, apiKey?: string) {
     this.apiBaseUrl = apiBaseUrl;
     this.apiKey = apiKey;
-    console.log('[WebGazerEyeTrackingSDK] Inicializando SDK con WebGazer');
+    this.isLocalMode = apiBaseUrl === 'local-demo';
+    console.log('[WebGazerEyeTrackingSDK] Inicializando SDK LOCAL con WebGazer');
   }
 
   // Event Emitter
@@ -164,11 +166,11 @@ export class WebGazerEyeTrackingSDK {
   }
 
   /**
-   * Inicia una sesión de eye tracking real
+   * Inicia una sesión de eye tracking LOCAL
    */
   async startTracking(params: StartEyeTrackingParams): Promise<EyeTrackingAPIResponse<any>> {
     try {
-      console.log('[WebGazerEyeTrackingSDK] Iniciando eye tracking real con WebGazer');
+      console.log('[WebGazerEyeTrackingSDK] Iniciando eye tracking LOCAL con WebGazer');
 
       // 1. Inicializar WebGazer si no está inicializado
       const initResult = await this.initializeWebGazer();
@@ -176,7 +178,21 @@ export class WebGazerEyeTrackingSDK {
         throw new Error(`Error inicializando WebGazer: ${initResult.error}`);
       }
 
-      // 2. Iniciar sesión con backend
+      // ✅ MODO LOCAL: Crear sesión local sin backend
+      if (this.isLocalMode) {
+        this.currentSessionId = `local-session-${Date.now()}`;
+        this.isTracking = true;
+        this.emit('sessionStarted', { sessionId: this.currentSessionId });
+        console.log('[WebGazerEyeTrackingSDK] Sesión LOCAL iniciada:', this.currentSessionId);
+        
+        return {
+          success: true,
+          data: { sessionId: this.currentSessionId },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      // 2. Iniciar sesión con backend (solo si no es modo local)
       const eyeTrackingResponse = await this.makeRequest('POST', '/eye-tracking/start', {
         ...params,
         config: {
@@ -209,11 +225,11 @@ export class WebGazerEyeTrackingSDK {
   }
 
   /**
-   * Detiene la sesión de eye tracking
+   * Detiene la sesión de eye tracking LOCAL
    */
   async stopTracking(params: StopEyeTrackingParams): Promise<EyeTrackingAPIResponse<any>> {
     try {
-      console.log('[WebGazerEyeTrackingSDK] Deteniendo eye tracking');
+      console.log('[WebGazerEyeTrackingSDK] Deteniendo eye tracking LOCAL');
 
       // Detener WebGazer
       if (this.webgazer) {
@@ -222,6 +238,20 @@ export class WebGazerEyeTrackingSDK {
 
       this.isTracking = false;
 
+      // ✅ MODO LOCAL: Detener sesión local sin backend
+      if (this.isLocalMode) {
+        this.currentSessionId = undefined;
+        this.emit('sessionStopped', { sessionId: this.currentSessionId });
+        console.log('[WebGazerEyeTrackingSDK] Sesión LOCAL detenida');
+        
+        return {
+          success: true,
+          data: { sessionId: this.currentSessionId },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      // Detener sesión con backend (solo si no es modo local)
       const stopResponse = await this.makeRequest('POST', '/eye-tracking/stop', params);
 
       if (stopResponse.success) {
@@ -241,9 +271,19 @@ export class WebGazerEyeTrackingSDK {
   }
 
   /**
-   * Realiza una petición HTTP al API
+   * Realiza una petición HTTP al API (solo si no es modo local)
    */
   private async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
+    // ✅ MODO LOCAL: No hacer peticiones HTTP
+    if (this.isLocalMode) {
+      console.log('[WebGazerEyeTrackingSDK] Modo LOCAL: No se realizan peticiones HTTP');
+      return {
+        success: true,
+        data: { message: 'Modo local activo' },
+        timestamp: new Date().toISOString()
+      };
+    }
+
     const url = `${this.apiBaseUrl}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'

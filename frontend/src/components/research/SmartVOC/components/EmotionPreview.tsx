@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
 import { EMOTION_SELECTOR_CONFIGS } from '../constants/emotionHierarchy';
-import { DetailedEmotionSelector, EmotionHierarchySelector } from './EmotionHierarchySelector';
+import { EmotionHierarchySelector } from './EmotionHierarchySelector';
+// 🎯 DetailedEmotionSelector eliminado - usar componente consolidado en public-tests
 
 interface EmotionPreviewProps {
   type: string;
@@ -16,21 +17,9 @@ export const EmotionPreview: React.FC<EmotionPreviewProps> = ({
   className = ''
 }) => {
   const [selectedCluster, setSelectedCluster] = useState<string>('');
-  const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
 
   const handleClusterSelect = (clusterId: string) => {
     setSelectedCluster(clusterId);
-  };
-
-  const handleEmotionSelect = (emotionId: string) => {
-    setSelectedEmotions(prev => {
-      if (prev.includes(emotionId)) {
-        return prev.filter(id => id !== emotionId);
-      } else if (prev.length < 3) {
-        return [...prev, emotionId];
-      }
-      return prev;
-    });
   };
 
   const renderPreview = () => {
@@ -48,11 +37,10 @@ export const EmotionPreview: React.FC<EmotionPreviewProps> = ({
       case 'detailed':
         return (
           <div className="p-6 bg-white rounded-lg border border-gray-200">
-            <DetailedEmotionSelector
-              selectedEmotions={selectedEmotions}
-              onEmotionSelect={handleEmotionSelect}
-              maxSelections={3}
-            />
+            <div className="text-center text-gray-500 py-8">
+              <p>DetailedEmotionSelector consolidado en public-tests</p>
+              <p className="text-sm mt-2">Usar componente consolidado</p>
+            </div>
           </div>
         );
 

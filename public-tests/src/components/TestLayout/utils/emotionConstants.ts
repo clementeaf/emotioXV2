@@ -70,36 +70,32 @@ export const EMOTION_CLUSTERS: EmotionCluster[] = [
 
 /**
  * Lista completa de emociones con sus propiedades
- * Basado en la imagen con 22 emociones en español
+ * Basado en la imagen con 20 emociones en español - EXACTA COMO FRONTEND
  */
 export const ALL_EMOTIONS: EmotionOption[] = [
-  // Primera fila - Advocacy y Recommendation (Verde Claro)
+  // Primera fila - Emociones Positivas (7 emociones) - Verde Claro
   { id: 'feliz', name: 'Feliz', cluster: 'advocacy', value: 4, color: '#86efac' },
+  { id: 'satisfecho', name: 'Satisfecho', cluster: 'advocacy', value: 4, color: '#86efac' },
+  { id: 'confiado', name: 'Confiado', cluster: 'advocacy', value: 4, color: '#86efac' },
   { id: 'valorado', name: 'Valorado', cluster: 'advocacy', value: 4, color: '#86efac' },
-  { id: 'importancia', name: 'Importancia', cluster: 'advocacy', value: 4, color: '#86efac' },
-  { id: 'apreciacion', name: 'Apreciación', cluster: 'advocacy', value: 4, color: '#86efac' },
-  { id: 'cuidado', name: 'Cuidado', cluster: 'recommendation', value: 3, color: '#bbf7d0' },
-  { id: 'confianza', name: 'Confianza', cluster: 'recommendation', value: 3, color: '#bbf7d0' },
-  { id: 'seguro', name: 'Seguro', cluster: 'recommendation', value: 3, color: '#bbf7d0' },
+  { id: 'cuidado', name: 'Cuidado', cluster: 'advocacy', value: 4, color: '#86efac' },
+  { id: 'seguro', name: 'Seguro', cluster: 'advocacy', value: 4, color: '#86efac' },
+  { id: 'enfocado', name: 'Enfocado', cluster: 'advocacy', value: 4, color: '#86efac' },
 
-  // Segunda fila - Recommendation y Attention (Verde Medio)
-  { id: 'satisfecho', name: 'Satisfecho', cluster: 'recommendation', value: 3, color: '#bbf7d0' },
-  { id: 'complacido', name: 'Complacido', cluster: 'recommendation', value: 3, color: '#bbf7d0' },
-  { id: 'indulgente', name: 'Indulgente', cluster: 'attention', value: 2, color: '#dcfce7' },
-  { id: 'reconocido', name: 'Reconocido', cluster: 'attention', value: 2, color: '#dcfce7' },
-  { id: 'espiritu', name: 'Espíritu', cluster: 'attention', value: 2, color: '#dcfce7' },
-  { id: 'foco', name: 'Foco', cluster: 'attention', value: 2, color: '#dcfce7' },
+  // Segunda fila - Emociones de Atención (6 emociones) - Verde Medio
+  { id: 'indulgente', name: 'Indulgente', cluster: 'attention', value: 2, color: '#bbf7d0' },
+  { id: 'estimulado', name: 'Estimulado', cluster: 'attention', value: 2, color: '#bbf7d0' },
+  { id: 'exploratorio', name: 'Exploratorio', cluster: 'attention', value: 2, color: '#bbf7d0' },
+  { id: 'interesado', name: 'Interesado', cluster: 'attention', value: 2, color: '#bbf7d0' },
+  { id: 'energico', name: 'Enérgico', cluster: 'attention', value: 2, color: '#bbf7d0' },
+  { id: 'descontento', name: 'Descontento', cluster: 'attention', value: 2, color: '#bbf7d0' },
 
-  // Tercera fila - Attention y Destroying (Amarillo y Rojo)
-  { id: 'informativo', name: 'Informativo', cluster: 'attention', value: 2, color: '#dcfce7' },
-  { id: 'comprendido', name: 'Comprendido', cluster: 'attention', value: 2, color: '#dcfce7' },
-  { id: 'sin-problemas', name: 'Sin problemas', cluster: 'attention', value: 2, color: '#dcfce7' },
-  { id: 'energetico', name: 'Energético', cluster: 'attention', value: 2, color: '#dcfce7' },
-  { id: 'exploratorio', name: 'Exploratorio', cluster: 'attention', value: 2, color: '#dcfce7' },
+  // Tercera fila - Emociones Negativas (7 emociones) - Rojo Claro
   { id: 'frustrado', name: 'Frustrado', cluster: 'destroying', value: 1, color: '#fecaca' },
   { id: 'irritado', name: 'Irritado', cluster: 'destroying', value: 1, color: '#fecaca' },
-
-  // Cuarta fila - Destroying (Rojo)
   { id: 'decepcion', name: 'Decepción', cluster: 'destroying', value: 1, color: '#fecaca' },
-  { id: 'estresado', name: 'Estresado', cluster: 'destroying', value: 1, color: '#fecaca' }
+  { id: 'estresado', name: 'Estresado', cluster: 'destroying', value: 1, color: '#fecaca' },
+  { id: 'infeliz', name: 'Infeliz', cluster: 'destroying', value: 1, color: '#fecaca' },
+  { id: 'desatendido', name: 'Desatendido', cluster: 'destroying', value: 1, color: '#fecaca' },
+  { id: 'apresurado', name: 'Apresurado', cluster: 'destroying', value: 1, color: '#fecaca' }
 ];
