@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { EducationalContentSidebar } from '@/components/research/shared/EducationalContentSidebar';
+import { EducationalSidebar } from '@/components/common/EducationalSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
 import { cn } from '@/lib/utils';
 import { ConfirmationModal } from '../SmartVOC/components/ConfirmationModal';
@@ -155,7 +155,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
       {/* Columna derecha - Sidebar fijo con contenido educativo */}
       <div className="flex-[1] min-w-[400px]">
         <div className="sticky top-6">
-          <EducationalContentSidebar
+          <EducationalSidebar
             content={cognitiveTaskContent}
             loading={educationalLoading}
             error={educationalError}

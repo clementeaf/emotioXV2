@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { EducationalContentSidebar } from '@/components/research/shared/EducationalContentSidebar';
+import { EducationalSidebar } from '@/components/common/EducationalSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
 import {
   ConfirmationModal,
@@ -116,7 +116,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
       {/* Columna derecha - Sidebar fijo con contenido educativo */}
       <div className="flex-[1] min-w-[400px]">
         <div className="sticky top-6">
-          <EducationalContentSidebar
+          <EducationalSidebar
             content={smartVocContent}
             loading={educationalLoading}
             error={educationalError}
