@@ -130,22 +130,24 @@ function ResearchTableContent() {
   };
 
   return (
-    <div className="bg-white overflow-hidden">
+    <div className="overflow-hidden">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-neutral-900">Proyectos de Investigación</h2>
-        <p className="text-sm text-neutral-500 mt-1">
-          Última actualización: {new Date().toLocaleString()}
-        </p>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Proyectos de Investigación</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Última actualización: {new Date().toLocaleString()}
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          title="Actualizar"
+        >
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
       </div>
-      <button
-        onClick={handleRefresh}
-        className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
-        title="Actualizar"
-      >
-        <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </button>
 
       {error && (
         <Alert variant="destructive" className="m-6">
@@ -215,25 +217,25 @@ function ResearchTableContent() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-neutral-200">
-              <thead className="border-b border-neutral-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr key="header-row">
-                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>
-                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Estado</th>
-                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Técnica</th>
-                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Acciones</th>
+                  <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Nombre</th>
+                  <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
+                  <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Técnica</th>
+                  <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-neutral-200">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {research.map((item: ResearchTableItem, index: number) => (
-                  <tr key={`research-item-${item.id || index}`} className="hover:bg-neutral-50">
-                    <td className="px-6 py-4 text-sm text-neutral-900 max-w-xs truncate">
+                  <tr key={`research-item-${item.id || index}`} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 max-w-xs truncate">
                       {item.name}
                     </td>
                     <td className="px-6 py-4">
                       {getStatusBadge(item.status)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-neutral-500 whitespace-nowrap">
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                       {item.technique || 'No especificada'}
                     </td>
                     <td className="px-6 py-4 text-sm whitespace-nowrap">
@@ -243,12 +245,12 @@ function ResearchTableContent() {
                             ? `/dashboard?research=${item.id}&section=welcome-screen`
                             : `/dashboard?research=${item.id}`
                           }
-                          className="inline-flex items-center px-3 py-1.5 border border-neutral-200 text-sm font-medium rounded-md text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
                         >
                           Ver
                         </Link>
                         <button
-                          className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300 transition-all duration-200"
                           onClick={(e) => handleDeleteResearch(e, item)}
                           title="Eliminar investigación"
                         >

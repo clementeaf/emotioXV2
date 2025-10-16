@@ -7,11 +7,11 @@ import { ResearchTypes } from './ResearchTypes';
  */
 export const DashboardMainContent = memo(() => (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div className="lg:col-span-2 bg-white rounded-lg shadow-md border border-neutral-100 hover:shadow-lg transition-shadow duration-300 p-6 hover:cursor-pointer">
+    <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 p-6 hover:scale-[1.01]">
       <ResearchTable />
     </div>
-    <div className="rounded-lg shadow-md border border-neutral-100 hover:shadow-lg transition-shadow duration-300 p-6 hover:cursor-pointer">
-      <h2 className="text-lg font-medium mb-6">Tipos de Investigación</h2>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 p-6 hover:scale-[1.01]">
+      <h2 className="text-xl font-semibold text-gray-900 mb-6">Tipos de Investigación</h2>
       <ResearchTypes />
     </div>
   </div>

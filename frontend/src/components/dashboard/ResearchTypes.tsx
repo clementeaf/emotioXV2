@@ -59,30 +59,28 @@ function ResearchTypesContent() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] overflow-hidden">
-      <div className="px-6 py-4 border-b border-neutral-100">
-        <h2 className="text-base font-medium text-neutral-900">Tipos de Investigación</h2>
-      </div>
-      <div className="p-6">
-        {researchTypes.length === 0 ? (
-          <div className="text-center text-neutral-500 text-sm">
-            No hay tipos de investigación disponibles
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {researchTypes.map((type, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                <span className="text-sm font-medium text-neutral-700">
+    <div className="space-y-4">
+      {researchTypes.length === 0 ? (
+        <div className="text-center text-gray-500 text-sm py-8">
+          No hay tipos de investigación disponibles
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {researchTypes.map((type, index) => (
+            <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm font-semibold text-gray-900">
                   {getTypeDisplayName(type)}
                 </span>
-                <span className="text-xs text-neutral-500 bg-white px-2 py-1 rounded">
-                  {getTypeCount(type || '')} investigación{getTypeCount(type || '') !== 1 ? 'es' : ''}
-                </span>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <span className="text-xs font-medium text-blue-700 bg-blue-100 px-3 py-1 rounded-full">
+                {getTypeCount(type || '')} investigación{getTypeCount(type || '') !== 1 ? 'es' : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
