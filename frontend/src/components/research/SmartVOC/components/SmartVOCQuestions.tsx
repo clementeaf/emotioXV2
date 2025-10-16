@@ -12,6 +12,8 @@ import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { UI_TEXTS } from '../constants';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
 import { getQuestionTypeConfig } from '../config/question-types.config';
+import { DynamicFieldRenderer } from './DynamicFieldRenderer';
+import { getNestedValue, createFieldChangeHandler } from '../utils/field-helpers';
 import { AddQuestionModal } from './AddQuestionModal';
 
 export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
@@ -31,86 +33,36 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
     type: q.type
   }));
 
-  // Renderiza la configuración específica para cada tipo de pregunta usando JSON-driven approach
-  const renderQuestionConfig = (question: SmartVOCQuestion) => {
+  // Renderiza dinámicamente todos los campos basado en la configuración JSON
+  const renderQuestionFields = (question: SmartVOCQuestion) => {
     const config = getQuestionTypeConfig(question.type);
     if (!config) return null;
 
     return (
       <div className="space-y-4">
-        {/* Display Type para CSAT */}
-        {config.hasDisplayType && (
-          <FormSelect
-            label="Tipo de visualización"
-            value={question.config.type || 'stars'}
-            onChange={(value) => onUpdateQuestion(question.id, {
-              config: { ...question.config, type: value as any }
-            })}
-            options={config.displayOptions || []}
-            disabled={disabled}
-          />
-        )}
+        {/* Renderizar todos los campos dinámicamente */}
+        {config.fields.map((field, index) => {
+          const fieldValue = getNestedValue(question, field.name);
+          const handleChange = createFieldChangeHandler(question.id, field.name, onUpdateQuestion);
 
-        {/* Scale Selector para CV y NPS */}
-        {config.hasScale && (
-          <ScaleSelector
-            value={question.config.scaleRange || { start: 1, end: 5 }}
-            onChange={(range) => onUpdateQuestion(question.id, {
-              config: { ...question.config, scaleRange: range }
-            })}
-            options={config.scaleOptions?.map(opt => ({ value: opt.value, label: opt.label }))}
-            disabled={disabled}
-          />
-        )}
-
-        {/* Labels para CV */}
-        {config.hasLabels && (
-          <div className="space-y-3">
-            <LabeledInput
-              label={UI_TEXTS.QUESTIONS.START_LABEL_TEXT}
-              value={question.config.startLabel || ''}
-              onChange={(value) => onUpdateQuestion(question.id, {
-                config: { ...question.config, startLabel: value }
-              })}
-              placeholder={UI_TEXTS.QUESTIONS.START_LABEL_PLACEHOLDER}
+          return (
+            <DynamicFieldRenderer
+              key={`${question.id}-${field.name}-${index}`}
+              field={field}
+              value={fieldValue}
+              onChange={handleChange}
               disabled={disabled}
             />
-            <LabeledInput
-              label={UI_TEXTS.QUESTIONS.END_LABEL_TEXT}
-              value={question.config.endLabel || ''}
-              onChange={(value) => onUpdateQuestion(question.id, {
-                config: { ...question.config, endLabel: value }
-              })}
-              placeholder={UI_TEXTS.QUESTIONS.END_LABEL_PLACEHOLDER}
-              disabled={disabled}
-            />
-          </div>
-        )}
+          );
+        })}
 
-        {/* Info para CES */}
-        {question.type === QuestionType.SMARTVOC_CES && (
+        {/* Info específica del tipo */}
+        {config.info && (
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-neutral-900">CES</span>
+            <span className="text-sm font-medium text-neutral-900">{config.name}</span>
             <div className="text-sm text-neutral-600 bg-neutral-100 px-3 py-2 rounded-lg">
-              Escala fija 1-5
+              {config.info}
             </div>
-          </div>
-        )}
-
-        {/* Info para NEV */}
-        {question.type === QuestionType.SMARTVOC_NEV && (
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-neutral-900">NEV</span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-neutral-900">Jerarquía de Valor Emocional</span>
-            </div>
-          </div>
-        )}
-
-        {/* Info para CV */}
-        {question.type === QuestionType.SMARTVOC_CV && (
-          <div className="bg-amber-50 p-2 rounded text-xs text-amber-700">
-            3 escalas principales de valoración en la región
           </div>
         )}
       </div>
@@ -126,35 +78,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
       {questionsForUI.map((question, index) => (
         <FormCard key={question.id || index} title={`Pregunta ${index + 1}: ${question.title}`}>
           <div className="space-y-5">
-            {/* Campos básicos usando commons */}
-            <FormInput
-              label="Título de la pregunta"
-              value={question.title}
-              onChange={(value) => onUpdateQuestion(question.id, { title: value })}
-              placeholder="Introduzca el título de la pregunta"
-              disabled={disabled}
-            />
-
-            <FormTextarea
-              label="Descripción (opcional)"
-              value={question.description || ''}
-              onChange={(value) => onUpdateQuestion(question.id, { description: value })}
-              placeholder="Introduzca una descripción opcional para la pregunta"
-              rows={3}
-              disabled={disabled}
-            />
-
-            <FormTextarea
-              label="Instrucciones (opcional)"
-              value={question.instructions || ''}
-              onChange={(value) => onUpdateQuestion(question.id, { instructions: value })}
-              placeholder="Añada instrucciones o información adicional para los participantes"
-              rows={3}
-              disabled={disabled}
-            />
-
-            {/* Configuración específica del tipo */}
-            {renderQuestionConfig(question)}
+            {/* Renderizar todos los campos dinámicamente */}
+            {renderQuestionFields(question)}
 
             {/* Vista previa usando commons */}
             <QuestionPreview
@@ -182,12 +107,11 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
         </FormCard>
       ))}
 
-      {/* Botón para agregar nueva pregunta */}
       <div className="pt-4">
         <Button
           variant="outline"
           onClick={() => setIsAddModalOpen(true)}
-          disabled={disabled || existingQuestionTypes.length === 7} // Deshabilitar si todos los tipos ya existen
+          disabled={disabled || existingQuestionTypes.length === 7}
           className="w-full"
         >
           Añadir pregunta

@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { EMOTION_CLUSTERS, EmotionCluster } from '../constants/emotionHierarchy';
-
 interface EmotionHierarchySelectorProps {
   selectedCluster?: string;
   onClusterSelect?: (clusterId: string) => void;
