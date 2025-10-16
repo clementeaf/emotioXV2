@@ -2,12 +2,53 @@ import { useCallback, useEffect, useState } from 'react';
 import { useThankYouScreenData } from '@/hooks/useThankYouScreenData';
 import { ThankYouScreenModel } from '@/shared/interfaces/thank-you-screen.interface';
 import { toastHelpers } from '@/utils/toast';
-import {
-  ErrorModalData,
-  UseThankYouScreenFormResult,
-  ValidationErrors,
-  ThankYouScreenFormData,
-} from '../types';
+
+// Tipos locales del hook
+interface ErrorModalData {
+  type: 'error' | 'warning' | 'info';
+  title?: string;
+  message: string;
+}
+
+interface ValidationErrors {
+  title?: string;
+  message?: string;
+  redirectUrl?: string;
+}
+
+interface ThankYouScreenFormData {
+  isEnabled: boolean;
+  title: string;
+  message: string;
+  redirectUrl: string;
+  questionKey: string;
+  metadata: {
+    version: string;
+    lastUpdated: string;
+    lastModifiedBy: string;
+  };
+}
+
+interface UseThankYouScreenFormResult {
+  formData: ThankYouScreenFormData;
+  thankYouScreenId: string | null;
+  validationErrors: ValidationErrors;
+  isLoading: boolean;
+  isSaving: boolean;
+  modalError: ErrorModalData | null;
+  modalVisible: boolean;
+  handleChange: (field: string, value: unknown) => void;
+  handleSave: () => Promise<void>;
+  handlePreview: () => void;
+  closeModal: () => void;
+  handleDelete: () => Promise<void>;
+  isDeleting: boolean;
+  showDelete: boolean;
+  confirmModalVisible: boolean;
+  showConfirmModal: () => void;
+  closeConfirmModal: () => void;
+  confirmDelete: () => Promise<void>;
+}
 
 // Initial form data
 const INITIAL_FORM_DATA: ThankYouScreenFormData = {
@@ -18,7 +59,7 @@ const INITIAL_FORM_DATA: ThankYouScreenFormData = {
   questionKey: 'THANK_YOU_SCREEN',
   metadata: {
     version: '1.0.0',
-    lastUpdated: new Date(),
+    lastUpdated: new Date().toISOString(),
     lastModifiedBy: 'user'
   }
 };
@@ -60,8 +101,8 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         questionKey: 'THANK_YOU_SCREEN',
         metadata: {
           version: existingScreen.metadata?.version || '1.0.0',
-          lastUpdated: existingScreen.metadata?.lastUpdated || new Date(),
-          lastModifiedBy: existingScreen.metadata?.lastModifiedBy || 'user'
+          lastUpdated: new Date().toISOString(),
+          lastModifiedBy: String(existingScreen.metadata?.lastModifiedBy || 'user')
         }
       };
       setFormData(formDataToSet);
@@ -80,14 +121,14 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     return Object.keys(errors).length === 0;
   };
 
-  const handleChange = useCallback((field: string | number | symbol, value: string | boolean): void => {
+  const handleChange = useCallback((field: string, value: unknown): void => {
     setFormData((prev: ThankYouScreenFormData) => ({
       ...prev,
       [field]: value,
       metadata: {
         ...(prev.metadata || INITIAL_FORM_DATA.metadata),
         version: prev.metadata?.version || '1.0.0',
-        lastUpdated: new Date(),
+        lastUpdated: new Date().toISOString(),
         lastModifiedBy: prev.metadata?.lastModifiedBy || 'user'
       }
     }));
@@ -267,9 +308,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     handleChange,
     handleSave,
     handlePreview,
-    validateForm,
     closeModal,
-    isExisting: !!(existingScreen?.id),
     handleDelete,
     isDeleting,
     showDelete: !!(existingScreen?.id),

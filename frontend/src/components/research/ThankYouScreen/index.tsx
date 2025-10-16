@@ -1,17 +1,19 @@
 import React from 'react';
-
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { cn } from '@/lib/utils';
-
-import {
-    ErrorModal,
-    ThankYouScreenContent,
-    ThankYouScreenFooter,
-    ThankYouScreenSettings,
-    DeleteConfirmationModal
-} from './components';
+import { FormToggle } from '@/components/common/FormToggle';
+import { FormCard } from '@/components/common/FormCard';
+import { FormInput } from '@/components/common/FormInput';
+import { FormTextarea } from '@/components/common/FormTextarea';
+import { ActionButton } from '@/components/common/ActionButton';
+import { ErrorModal } from '@/components/common/ErrorModal';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { useThankYouScreenForm } from './hooks/useThankYouScreenForm';
-import { ThankYouScreenFormProps } from './types';
+
+interface ThankYouScreenFormProps {
+  className?: string;
+  researchId: string;
+  onSave?: () => void;
+}
 
 export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
   className,
@@ -59,27 +61,27 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
   const handleSaveAndNotify = () => {
     handleSave();
     if (onSave) {
-      onSave(formData);
+      onSave();
     }
   };
 
 
   if (isLoading) {
-    return (
-      <div className={cn('max-w-4xl space-y-4', className)}>
-        <LoadingSkeleton type="form" count={4} />
-      </div>
-    );
+    return <LoadingSkeleton type="form" count={4} />;
   }
 
   return (
-    <div className={cn('max-w-4xl space-y-4', className)}>
-      <ThankYouScreenSettings
-        isEnabled={formData.isEnabled}
-        onEnabledChange={handleEnabledChange}
+    <div className="max-w-4xl space-y-4">
+      {/* Toggle de habilitación */}
+      <FormToggle
+        label="Habilitar pantalla de agradecimiento"
+        description="La pantalla de agradecimiento se mostrará al finalizar la investigación"
+        checked={formData.isEnabled}
+        onChange={handleEnabledChange}
         disabled={isLoading || isSaving}
       />
 
+      {/* Debug info en desarrollo */}
       {process.env.NODE_ENV === 'development' && (
         <div className="mb-4 p-2 bg-transparent border border-neutral-200 text-[14px] rounded-lg p-4">
           <p>Estado: {thankYouScreenId ? 'Configuración existente' : 'Nueva configuración'}</p>
@@ -89,41 +91,85 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
         </div>
       )}
 
-      {/* Contenido del formulario */}
-      <ThankYouScreenContent
-        title={formData.title}
-        message={formData.message}
-        redirectUrl={formData.redirectUrl ?? ''}
-        onTitleChange={handleTitleChange}
-        onMessageChange={handleMessageChange}
-        onRedirectUrlChange={handleRedirectUrlChange}
-        validationErrors={validationErrors}
-        disabled={isLoading || isSaving || !formData.isEnabled}
-      />
+      {/* Formulario principal */}
+      <FormCard title="Configuración de Pantalla de Agradecimiento">
+        <div className="space-y-6">
+          <FormInput
+            label="Título"
+            value={formData.title}
+            onChange={handleTitleChange}
+            placeholder="Ingresa el título de agradecimiento"
+            disabled={isLoading || isSaving || !formData.isEnabled}
+            error={validationErrors.title}
+          />
 
-      {/* Pie de página con acciones */}
-      <ThankYouScreenFooter
-        isSaving={isSaving}
-        isLoading={isLoading}
-        isEnabled={formData.isEnabled}
-        thankYouScreenId={thankYouScreenId}
-        onSave={handleSaveAndNotify}
-        onPreview={handlePreview}
-        // NUEVO: Props para eliminar
-        onDelete={showConfirmModal}
-        isDeleting={isDeleting}
-        showDelete={showDelete}
-      />
+          <FormTextarea
+            label="Mensaje"
+            value={formData.message}
+            onChange={handleMessageChange}
+            placeholder="Ingresa el mensaje de agradecimiento"
+            rows={4}
+            disabled={isLoading || isSaving || !formData.isEnabled}
+            error={validationErrors.message}
+          />
 
-      {/* Modal para mostrar errores y mensajes */}
-      <ErrorModal
-        isOpen={modalVisible}
-        onClose={closeModal}
-        error={modalError}
-      />
+          <FormInput
+            label="URL de redirección"
+            value={formData.redirectUrl ?? ''}
+            onChange={handleRedirectUrlChange}
+            placeholder="https://ejemplo.com"
+            disabled={isLoading || isSaving || !formData.isEnabled}
+            error={validationErrors.redirectUrl}
+          />
+        </div>
+      </FormCard>
 
-      {/* Modal de confirmación para eliminar */}
-      <DeleteConfirmationModal
+      {/* Botones de acción */}
+      <div className="flex justify-between items-center pt-4 gap-3">
+        {/* Botón de eliminar */}
+        {showDelete && (
+          <ActionButton
+            variant="danger"
+            onClick={showConfirmModal}
+            disabled={isDeleting || isSaving || !formData.isEnabled}
+            loading={isDeleting}
+            icon="🗑️"
+          >
+            {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de agradecimiento'}
+          </ActionButton>
+        )}
+
+        {/* Botones principales */}
+        <div className="flex gap-3 ml-auto">
+          <ActionButton
+            variant="secondary"
+            onClick={handlePreview}
+            disabled={!formData.isEnabled || isSaving}
+          >
+            Vista previa
+          </ActionButton>
+          
+          <ActionButton
+            variant="primary"
+            onClick={handleSaveAndNotify}
+            disabled={!formData.isEnabled || isSaving}
+            loading={isSaving}
+          >
+            {isSaving ? 'Guardando...' : (thankYouScreenId ? 'Actualizar' : 'Guardar')}
+          </ActionButton>
+        </div>
+      </div>
+
+      {/* Modales */}
+      {modalError && (
+        <ErrorModal
+          isOpen={modalVisible}
+          onClose={closeModal}
+          error={modalError}
+        />
+      )}
+
+      <ConfirmationModal
         isOpen={confirmModalVisible}
         title="Confirmar eliminación"
         message="¿Estás seguro de que quieres eliminar la pantalla de agradecimiento? Esta acción no se puede deshacer."
@@ -133,6 +179,7 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
         onClose={closeConfirmModal}
         onCancel={closeConfirmModal}
         isLoading={isDeleting}
+        variant="danger"
       />
     </div>
   );

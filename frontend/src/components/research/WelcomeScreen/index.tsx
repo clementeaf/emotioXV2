@@ -92,7 +92,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
             onClick={showConfirmModal}
             disabled={isDeleting || isSaving || !formData.isEnabled}
             loading={isDeleting}
-            icon="🗑️"
+            icon=""
           >
             {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de bienvenida'}
           </ActionButton>

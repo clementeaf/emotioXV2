@@ -12,7 +12,7 @@ import { ThankYouScreenForm as ModularThankYouScreenForm } from './ThankYouScree
 interface ThankYouScreenFormProps {
   className?: string;
   researchId: string;
-  onSave?: (data: ThankYouScreenFormData) => void;
+  onSave?: () => void;
 }
 
 /**
