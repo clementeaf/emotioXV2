@@ -96,5 +96,29 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
     children: () => React.createElement('div', null,
       React.createElement('p', null, "SimulatedDataBanner component example")
     )
+  },
+  FormToggle: {
+    title: "FormToggle - Switch/Toggle",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => React.createElement('div', { className: "space-y-4" },
+      React.createElement('p', null, "FormToggle component example"),
+      React.createElement('p', null, `Current state: ${formData.isEnabled}`)
+    )
+  },
+  FormInput: {
+    title: "FormInput - Campo de Texto",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => React.createElement('div', { className: "space-y-4" },
+      React.createElement('p', null, "FormInput component example"),
+      React.createElement('p', null, `Current value: ${formData.title}`)
+    )
+  },
+  FormTextarea: {
+    title: "FormTextarea - Área de Texto",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => React.createElement('div', { className: "space-y-4" },
+      React.createElement('p', null, "FormTextarea component example"),
+      React.createElement('p', null, `Current message: ${formData.message}`)
+    )
   }
 } as const;
