@@ -11,16 +11,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: '#f1f5f9' }}>
-      <div className="w-60 mt-10 mx-5">
+    <div className="flex h-screen p-6 gap-6" style={{ backgroundColor: '#f1f5f9' }}>
+      <div className="w-60 bg-white rounded-lg shadow-lg">
         {researchId ? (
           <ResearchSidebar researchId={researchId} />
         ) : (
           <Sidebar />
         )}
       </div>
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-6">
+      <div className="flex-1 bg-white rounded-lg shadow-lg">
+        <main className="h-full p-6">
           {children}
         </main>
       </div>

@@ -16,7 +16,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   useAppInitialization();
 
   return (
-    <html lang="es">
+    <html lang="es" style={{ backgroundColor: '' }}>
       <body className={inter.className}>
         <AppProviders>
           {children}

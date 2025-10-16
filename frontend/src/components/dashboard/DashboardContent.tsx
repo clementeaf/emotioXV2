@@ -33,7 +33,7 @@ export const DashboardContent = memo(() => {
 
   if (shouldShowLoading) {
     return (
-      <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)] overflow-y-auto">
+      <div className="h-full overflow-y-auto">
         <div className="mx-auto px-6 py-8 w-full">
           <LoadingSkeleton type="dashboard" />
         </div>
@@ -48,7 +48,7 @@ export const DashboardContent = memo(() => {
 
   // Dashboard principal
   return (
-    <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)] flex flex-col justify-start overflow-y-auto">
+    <div className="h-full overflow-y-auto">
       <div className="mx-auto px-6 py-8 w-full">
         <DashboardStats {...dashboardStats} />
         <DashboardMainContent />

@@ -27,14 +27,12 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
     type: q.type
   }));
 
-  // Renderiza dinámicamente todos los campos basado en la configuración JSON
   const renderQuestionFields = (question: SmartVOCQuestion) => {
     const config = getQuestionTypeConfig(question.type);
     if (!config) return null;
 
     return (
       <div className="space-y-4">
-        {/* Renderizar todos los campos dinámicamente */}
         {config.fields.map((field, index) => {
           const fieldValue = getNestedValue(question, field.name);
           const handleChange = createFieldChangeHandler(question.id, field.name, onUpdateQuestion);
