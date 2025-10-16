@@ -38,11 +38,6 @@ export default defineConfig({
 
 
           // Feature chunks - solo archivos que existen
-          'auth': [
-            './src/components/auth/AuthSubmitButton.tsx',
-            './src/components/auth/AuthLegalText.tsx',
-            './src/components/auth/AuthHeader.tsx'
-          ],
           'common': [
             './src/components/common/FormField.tsx'
           ],
