@@ -19,6 +19,10 @@ import { ReorderableGrid } from '@/components/common/ReorderableGrid';
 import { LoadingTransition } from '@/components/common/LoadingTransition';
 import { ConflictResolutionModal } from '@/components/common/ConflictResolutionModal';
 import { ConditionalSection } from '@/components/common/ConditionalSection';
+import { FormSelect } from '@/components/common/FormSelect';
+import { LabeledInput } from '@/components/common/LabeledInput';
+import { ScaleSelector } from '@/components/common/ScaleSelector';
+import { QuestionPreview } from '@/components/common/QuestionPreview';
 
 // Tipos para los handlers
 export interface ComponentHandlers {
@@ -484,6 +488,101 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
             <strong>Props disponibles:</strong> isVisible, children, className, animation, fadeIn, slideDown
           </p>
         </div>
+      </div>
+    )
+  },
+  FormSelect: {
+    title: "FormSelect - Selector/Dropdown",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => (
+      <div className="space-y-4">
+        <FormSelect
+          label="Tipo de visualización"
+          value={formData.displayType || 'stars'}
+          onChange={(value) => handlers.handleChange('displayType', value)}
+          options={[
+            { value: 'stars', label: 'Estrellas' },
+            { value: 'numbers', label: 'Números' }
+          ]}
+          placeholder="Selecciona un tipo"
+        />
+        
+        <FormSelect
+          label="Escala de valoración"
+          value={formData.scale || '1-5'}
+          onChange={(value) => handlers.handleChange('scale', value)}
+          options={[
+            { value: '1-5', label: 'Escala 1-5' },
+            { value: '1-7', label: 'Escala 1-7' },
+            { value: '1-10', label: 'Escala 1-10' },
+            { value: '0-10', label: 'Escala 0-10' }
+          ]}
+        />
+      </div>
+    )
+  },
+  LabeledInput: {
+    title: "LabeledInput - Input con Etiqueta",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => (
+      <div className="space-y-4">
+        <LabeledInput
+          label="Etiqueta inicio"
+          value={formData.startLabel || ''}
+          onChange={(value) => handlers.handleChange('startLabel', value)}
+          placeholder="Texto de inicio"
+        />
+        
+        <LabeledInput
+          label="Etiqueta fin"
+          value={formData.endLabel || ''}
+          onChange={(value) => handlers.handleChange('endLabel', value)}
+          placeholder="Texto de fin"
+        />
+      </div>
+    )
+  },
+  ScaleSelector: {
+    title: "ScaleSelector - Selector de Escalas",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => (
+      <div className="space-y-4">
+        <ScaleSelector
+          value={formData.scaleRange || { start: 1, end: 5 }}
+          onChange={(range) => handlers.handleChange('scaleRange', range)}
+        />
+      </div>
+    )
+  },
+  QuestionPreview: {
+    title: "QuestionPreview - Vista Previa de Preguntas",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => (
+      <div className="space-y-4">
+        <p className="text-gray-600 mb-4">
+          QuestionPreview muestra cómo se verá una pregunta para los participantes.
+        </p>
+        
+        <QuestionPreview
+          title={formData.title || '¿Qué tan satisfecho estás con nuestro servicio?'}
+          description={formData.description || 'Por favor califica tu experiencia'}
+          instructions={formData.instructions || 'Selecciona una opción'}
+          type="CSAT"
+          config={{ type: 'stars' }}
+        />
+        
+        <QuestionPreview
+          title="¿Qué tan fácil fue completar esta tarea?"
+          description="Califica la facilidad de uso"
+          type="CES"
+        />
+        
+        <QuestionPreview
+          title="¿Qué tan probable es que recomiendes nuestro producto?"
+          description="Escala de 0 a 10"
+          type="NPS"
+          config={{ scaleRange: { start: 0, end: 10 } }}
+        />
       </div>
     )
   }

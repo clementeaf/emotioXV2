@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { FormCard } from '@/components/common/FormCard';
+import { FormInput } from '@/components/common/FormInput';
+import { FormTextarea } from '@/components/common/FormTextarea';
+import { FormSelect } from '@/components/common/FormSelect';
+import { LabeledInput } from '@/components/common/LabeledInput';
+import { ScaleSelector } from '@/components/common/ScaleSelector';
+import { QuestionPreview } from '@/components/common/QuestionPreview';
+import { ActionButton } from '@/components/common/ActionButton';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { UI_TEXTS } from '../constants';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
+import { getQuestionTypeConfig } from '../config/question-types.config';
 import { AddQuestionModal } from './AddQuestionModal';
 
 export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({

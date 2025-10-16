@@ -12,7 +12,7 @@ import { DashboardStats } from './DashboardStats';
  * Componente principal del contenido del dashboard
  */
 export const DashboardContent = memo(() => {
-  const { researchId, section, isAimFramework, activeResearch, isLoading } = useDashboardResearch();
+  const { section, isAimFramework, activeResearch, isLoading } = useDashboardResearch();
   const { data: researchList = [], isLoading: isLoadingResearch } = useResearchList();
 
 

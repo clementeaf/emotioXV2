@@ -18,6 +18,10 @@ import { ReorderableGrid } from '@/components/common/ReorderableGrid';
 import { LoadingTransition } from '@/components/common/LoadingTransition';
 import { ConflictResolutionModal } from '@/components/common/ConflictResolutionModal';
 import { ConditionalSection } from '@/components/common/ConditionalSection';
+import { FormSelect } from '@/components/common/FormSelect';
+import { LabeledInput } from '@/components/common/LabeledInput';
+import { ScaleSelector } from '@/components/common/ScaleSelector';
+import { QuestionPreview } from '@/components/common/QuestionPreview';
 import { COMPONENT_EXAMPLES, ComponentHandlers } from './component-examples.config';
 
 const COMPONENT_MAP = {
@@ -39,7 +43,11 @@ const COMPONENT_MAP = {
   ReorderableGrid,
   LoadingTransition,
   ConflictResolutionModal,
-  ConditionalSection
+  ConditionalSection,
+  FormSelect,
+  LabeledInput,
+  ScaleSelector,
+  QuestionPreview
 } as const;
 
 /**

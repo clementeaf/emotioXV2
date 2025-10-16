@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shield, Users, Settings, Database, AlertTriangle, LogOut } from 'lucide-react';
+import { Shield, Users, AlertTriangle, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAdmin } from '@/contexts/AdminContext';
 
