@@ -231,7 +231,8 @@ export function mergeCognitiveTaskFormData(
     });
     const validFiles = Array.from(allFilesMap.values())
       .filter((file: FileInfo) => {
-        const isValid = file && file.id && file.name && file.size && (file.url || file.s3Key);
+        // ✅ FIX: Permitir archivos con size 0 o undefined, solo validar que existan id, name y s3Key/url
+        const isValid = file && file.id && file.name && (file.url || file.s3Key);
         if (!isValid) {
           // eslint-disable-next-line no-console
         }
@@ -239,6 +240,8 @@ export function mergeCognitiveTaskFormData(
       })
       .map((file: FileInfo) => ({
         ...file,
+        // ✅ FIX: Asegurar que size tenga un valor por defecto si no existe
+        size: file.size || 0,
         url: file.url || `https://placehold.co/300x300/gray/white?text=${encodeURIComponent(file.name)}`,
         type: file.type || 'image/jpeg',
         status: (file as any).status || 'uploaded',

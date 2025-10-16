@@ -65,11 +65,28 @@ export function generateFileUrl(file: Record<string, unknown>): string {
  * @returns Array de archivos con URLs generadas
  */
 export function processFilesWithUrls(files: Record<string, unknown>[]): Record<string, unknown>[] {
-  return files.map(file => ({
-    ...file,
-    url: generateFileUrl(file),
-    fileUrl: generateFileUrl(file),
-    id: String(file.id || ''),
-    name: String(file.name || '')
-  }));
+  console.log('🔍 [processFilesWithUrls] Input files:', files);
+  
+  const processedFiles = files.map(file => {
+    const generatedUrl = generateFileUrl(file);
+    console.log('🔍 [processFilesWithUrls] Processing file:', {
+      originalFile: file,
+      generatedUrl,
+      hasUrl: !!file.url,
+      hasFileUrl: !!file.fileUrl,
+      hasS3Key: !!file.s3Key,
+      hasId: !!file.id
+    });
+    
+    return {
+      ...file,
+      url: generatedUrl,
+      fileUrl: generatedUrl,
+      id: String(file.id || ''),
+      name: String(file.name || '')
+    };
+  });
+  
+  console.log('🔍 [processFilesWithUrls] Processed files:', processedFiles);
+  return processedFiles;
 }

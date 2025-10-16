@@ -60,12 +60,24 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
   };
 
   const handleEmotionClick = (emotionId: string) => {
+    console.log('🔍 [DetailedEmotionSelector] handleEmotionClick:', {
+      emotionId,
+      selectedEmotions,
+      isSelected: selectedEmotions.includes(emotionId),
+      maxSelections,
+      currentLength: selectedEmotions.length
+    });
+    
     if (selectedEmotions.includes(emotionId)) {
       // Deseleccionar
+      console.log('🔍 [DetailedEmotionSelector] Deseleccionando:', emotionId);
       onEmotionSelect(emotionId);
     } else if (selectedEmotions.length < maxSelections) {
       // Seleccionar si no se ha alcanzado el límite
+      console.log('🔍 [DetailedEmotionSelector] Seleccionando:', emotionId);
       onEmotionSelect(emotionId);
+    } else {
+      console.log('🔍 [DetailedEmotionSelector] Límite alcanzado, no se puede seleccionar:', emotionId);
     }
   };
 
@@ -74,9 +86,19 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
       {/* Fila 1: Advocacy (2 emociones) - Verde claro */}
       <div className="grid grid-cols-2 gap-2">
         {EMOTION_CLUSTERS[0].emotions.map((emotion) => {
-          const emotionId = emotion.toLowerCase().replace(' ', '_');
+          const emotionId = emotion.toLowerCase().replace(/\s+/g, '_').replace(/[áéíóú]/g, (match) => {
+            const accents: { [key: string]: string } = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u' };
+            return accents[match] || match;
+          });
           const isSelected = selectedEmotions.includes(emotionId);
           const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
+          
+          console.log('🔍 [DetailedEmotionSelector] Renderizando botón:', {
+            emotion,
+            emotionId,
+            isSelected,
+            selectedEmotions
+          });
 
           return (
             <button
@@ -106,7 +128,10 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
       {/* Fila 2: Recommendation (5 emociones) - Verde medio */}
       <div className="grid grid-cols-5 gap-2">
         {EMOTION_CLUSTERS[1].emotions.map((emotion) => {
-          const emotionId = emotion.toLowerCase().replace(' ', '_');
+          const emotionId = emotion.toLowerCase().replace(/\s+/g, '_').replace(/[áéíóú]/g, (match) => {
+            const accents: { [key: string]: string } = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u' };
+            return accents[match] || match;
+          });
           const isSelected = selectedEmotions.includes(emotionId);
           const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
 
@@ -138,7 +163,10 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
       {/* Fila 3: Attention (5 emociones) - Verde oscuro */}
       <div className="grid grid-cols-5 gap-2">
         {EMOTION_CLUSTERS[2].emotions.map((emotion) => {
-          const emotionId = emotion.toLowerCase().replace(' ', '_');
+          const emotionId = emotion.toLowerCase().replace(/\s+/g, '_').replace(/[áéíóú]/g, (match) => {
+            const accents: { [key: string]: string } = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u' };
+            return accents[match] || match;
+          });
           const isSelected = selectedEmotions.includes(emotionId);
           const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
 
@@ -170,7 +198,10 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
       {/* Fila 4: Destroying (6 emociones) - Rojo claro */}
       <div className="grid grid-cols-6 gap-2">
         {EMOTION_CLUSTERS[3].emotions.slice(0, 6).map((emotion) => {
-          const emotionId = emotion.toLowerCase().replace(' ', '_');
+          const emotionId = emotion.toLowerCase().replace(/\s+/g, '_').replace(/[áéíóú]/g, (match) => {
+            const accents: { [key: string]: string } = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u' };
+            return accents[match] || match;
+          });
           const isSelected = selectedEmotions.includes(emotionId);
           const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
 
@@ -202,7 +233,10 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
       {/* Fila 5: Destroying restantes (2 emociones) - Rojo claro */}
       <div className="grid grid-cols-2 gap-2">
         {EMOTION_CLUSTERS[3].emotions.slice(6, 8).map((emotion) => {
-          const emotionId = emotion.toLowerCase().replace(' ', '_');
+          const emotionId = emotion.toLowerCase().replace(/\s+/g, '_').replace(/[áéíóú]/g, (match) => {
+            const accents: { [key: string]: string } = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u' };
+            return accents[match] || match;
+          });
           const isSelected = selectedEmotions.includes(emotionId);
           const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
 

@@ -78,7 +78,7 @@ export const useQuestionInitialization = ({
     questionType: string, 
     config?: QuestionConfig
   ): unknown => {
-    if (questionType === 'emojis' && 
+    if ((questionType === 'emojis' || questionType === 'detailed') && 
         config?.maxSelections && 
         config.maxSelections > 1 && 
         typeof backendValue === 'string') {

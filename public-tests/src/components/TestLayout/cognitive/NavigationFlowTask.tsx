@@ -328,7 +328,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>): void => {
     console.error('❌ [NavigationFlowTask] Error cargando imagen:', {
-      url: selectedImage.url,
+      url: selectedImage?.url || 'undefined',
       error: e.nativeEvent
     });
   };
@@ -351,7 +351,9 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     }
   };
 
-  const selectedImage: ImageFile = images[localSelectedImageIndex];
+  // 🎯 VERIFICACIÓN DE SEGURIDAD PARA EVITAR ERRORES
+  const isValidImageIndex = localSelectedImageIndex >= 0 && localSelectedImageIndex < images.length;
+  const selectedImage: ImageFile | undefined = isValidImageIndex ? images[localSelectedImageIndex] : undefined;
   const availableHitzones: ConvertedHitZone[] = selectedImage?.hitZones
     ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones)
     : [];
@@ -458,22 +460,24 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
               <div className="text-center">
                 <p className="text-gray-600 mb-2">Cargando imagen...</p>
-                <p className="text-sm text-gray-400">{selectedImage.name}</p>
+                <p className="text-sm text-gray-400">{selectedImage.name || 'Imagen'}</p>
               </div>
             </div>
           )}
-          <img
-            ref={imageRef}
-            src={selectedImage.url}
-            alt={selectedImage.name || `Imagen detallada ${localSelectedImageIndex + 1}`}
-            className="w-full h-full object-contain bg-white"
-            loading="eager"
-            style={{ display: 'block' }}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            onClick={handleImageClick}
-            crossOrigin="anonymous"
-          />
+          {selectedImage && selectedImage.url && (
+            <img
+              ref={imageRef}
+              src={selectedImage.url}
+              alt={selectedImage.name || `Imagen detallada ${localSelectedImageIndex + 1}`}
+              className="w-full h-full object-contain bg-white"
+              loading="eager"
+              style={{ display: 'block' }}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              onClick={handleImageClick}
+              crossOrigin="anonymous"
+            />
+          )}
           {imageNaturalSize && imgRenderSize && (
             (() => {
               const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);

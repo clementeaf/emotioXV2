@@ -194,9 +194,16 @@ export class CognitiveTaskService {
           400
         );
       }
-      if (!file.id || !file.name || !file.size || !file.type) {
+      if (!file.id || !file.name || !file.type) {
         throw new ApiError(
-          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener id, name, size y type`,
+          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener id, name y type`,
+          400
+        );
+      }
+      // ✅ FIX: Permitir size 0 o undefined, pero validar que sea un número si existe
+      if (file.size !== undefined && (typeof file.size !== 'number' || file.size < 0)) {
+        throw new ApiError(
+          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener un size válido (número >= 0)`,
           400
         );
       }
@@ -206,7 +213,8 @@ export class CognitiveTaskService {
           400
         );
       }
-      if (file.size > COGNITIVE_TASK_VALIDATION.files.maxSize) {
+      // ✅ FIX: Solo validar tamaño máximo si size existe y es mayor que 0
+      if (file.size && file.size > COGNITIVE_TASK_VALIDATION.files.maxSize) {
         throw new ApiError(
           `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) excede el tamaño máximo (${COGNITIVE_TASK_VALIDATION.files.maxSize / (1024 * 1024)} MB)`,
           400

@@ -29,9 +29,14 @@ export const cognitiveRenderers = {
   ),
 
   cognitive_navigation_flow: ({ contentConfiguration, currentQuestionKey }: CognitiveRendererArgs) => {
+    console.log('🔍 [CognitiveRenderers] cognitive_navigation_flow - contentConfiguration:', contentConfiguration);
+    console.log('🔍 [CognitiveRenderers] cognitive_navigation_flow - files:', contentConfiguration?.files);
+    
     const filesWithUrls = Array.isArray(contentConfiguration?.files)
       ? processFilesWithUrls(contentConfiguration.files as ImageFile[])
       : [] as ImageFile[];
+
+    console.log('🔍 [CognitiveRenderers] cognitive_navigation_flow - filesWithUrls:', filesWithUrls);
 
     return (
       <NavigationFlowTask
