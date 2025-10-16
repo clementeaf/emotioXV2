@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 
 import { ConfigCard } from '@/components/common/ConfigCard';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { StageLoadingState } from './loading/StageLoadingState';
+import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { useStageManager } from './hooks/useStageManager';
 
 
@@ -32,7 +32,7 @@ const ResearchStageManagerContentWithParams = withSearchParams(ResearchStageMana
 // Componente público que exportamos
 export function ResearchStageManager(props: ResearchStageManagerProps) {
   return (
-    <Suspense fallback={<StageLoadingState />}>
+    <Suspense fallback={<LoadingSkeleton type="layout" />}>
       <ResearchStageManagerContentWithParams {...props} />
     </Suspense>
   );

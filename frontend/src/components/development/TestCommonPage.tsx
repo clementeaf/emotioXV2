@@ -13,6 +13,11 @@ import { ProgressiveLoader } from '@/components/common/ProgressiveLoader';
 import { SimulatedDataBanner } from '@/components/common/SimulatedDataBanner';
 import { PlaceholderCard } from '@/components/common/PlaceholderCard';
 import { QRCodeModal } from '@/components/common/QRCodeModal';
+import { EducationalSidebar } from '@/components/common/EducationalSidebar';
+import { ReorderableGrid } from '@/components/common/ReorderableGrid';
+import { LoadingTransition } from '@/components/common/LoadingTransition';
+import { ConflictResolutionModal } from '@/components/common/ConflictResolutionModal';
+import { ConditionalSection } from '@/components/common/ConditionalSection';
 import { COMPONENT_EXAMPLES, ComponentHandlers } from './component-examples.config';
 
 const COMPONENT_MAP = {
@@ -29,7 +34,12 @@ const COMPONENT_MAP = {
   ProgressiveLoader,
   SimulatedDataBanner,
   PlaceholderCard,
-  QRCodeModal
+  QRCodeModal,
+  EducationalSidebar,
+  ReorderableGrid,
+  LoadingTransition,
+  ConflictResolutionModal,
+  ConditionalSection
 } as const;
 
 /**

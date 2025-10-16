@@ -14,9 +14,7 @@ import { SmartVOCResults } from '../SmartVOCResults/index';
 import { ThankYouScreenForm } from '../ThankYouScreen';
 import { WelcomeScreenForm } from '../WelcomeScreen';
 import { ScreenerForm } from '../forms/ScreenerForm';
-import { ConfigurationPlaceholder } from '../placeholders/ConfigurationPlaceholder';
-import { ParticipantsPlaceholder } from '../placeholders/ParticipantsPlaceholder';
-import { DefaultPlaceholder } from '../placeholders/DefaultPlaceholder';
+import { PlaceholderCard } from '@/components/common/PlaceholderCard';
 import { TestCommonPage } from '@/components/development/TestCommonPage';
 import { STAGE_TITLES, STAGE_COMPONENTS, DEFAULT_SECTION } from '@/config/research-stages.config';
 
@@ -49,9 +47,7 @@ export function useStageManager(researchId: string): StageManagerResult {
     SmartVOCResults,
     CognitiveTaskResults,
     ResearchInProgressPage,
-    ConfigurationPlaceholder,
-    ParticipantsPlaceholder,
-    DefaultPlaceholder,
+    PlaceholderCard,
     TestCommonPage
   } as const;
 
@@ -61,14 +57,19 @@ export function useStageManager(researchId: string): StageManagerResult {
 
     if (!ComponentToRender) {
       console.warn(`Component ${stageConfig.component} not found for section ${currentSection}`);
-      const DefaultComponent = componentMap.DefaultPlaceholder;
-      return <DefaultComponent researchId={researchId} />;
+      return (
+        <PlaceholderCard
+          title="Funcionalidad en desarrollo"
+          description={`La funcionalidad para ${currentSection} está en desarrollo. Pronto estará disponible.`}
+          variant="coming-soon"
+        />
+      );
     }
 
     const componentProps = {
       researchId,
       ...stageConfig.props
-    };
+    } as any;
 
     const component = <ComponentToRender {...componentProps} />;
 

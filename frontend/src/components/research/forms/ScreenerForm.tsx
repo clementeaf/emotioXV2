@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Button } from '@/components/ui/Button';
-import { Switch } from '@/components/ui/Switch';
+import { FormToggle } from '@/components/common/FormToggle';
+import { ActionButton } from '@/components/common/ActionButton';
+import { ConditionalSection } from '@/components/common/ConditionalSection';
 import { ChoiceQuestion } from '@/components/research/CognitiveTask/components/questions/ChoiceQuestion';
 import type { Question, Choice } from '@/components/research/CognitiveTask/types';
 
@@ -53,31 +54,26 @@ export const ScreenerForm = ({ researchId }: ScreenerFormProps) => {
     }));
   };
 
+  const handlePreview = () => {
+    console.log('Vista previa del screener:', question, 'para investigación:', researchId);
+  };
+
+  const handleSave = () => {
+    console.log('Guardando screener:', question, 'para investigación:', researchId);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Toggle */}
-      <div className="p-4 bg-gray-50 rounded-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900">Screener</h3>
-            <p className="text-sm text-gray-600">
-              Habilitar o deshabilitar el Screener para esta investigación
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
-              {isEnabled ? 'Habilitado' : 'Deshabilitado'}
-            </span>
-            <Switch
-              checked={isEnabled}
-              onCheckedChange={setIsEnabled}
-              aria-label="Habilitar o deshabilitar Screener"
-            />
-          </div>
-        </div>
-      </div>
+      {/* ✅ USAR FormToggle de commons */}
+      <FormToggle
+        label="Screener"
+        description="Habilitar o deshabilitar el Screener para esta investigación"
+        checked={isEnabled}
+        onChange={setIsEnabled}
+      />
 
-      {isEnabled && (
+      {/* ✅ USAR ConditionalSection de commons */}
+      <ConditionalSection isVisible={isEnabled} animation={true} fadeIn={true}>
         <div className="space-y-6">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -94,12 +90,17 @@ export const ScreenerForm = ({ researchId }: ScreenerFormProps) => {
             />
           </div>
 
+          {/* ✅ USAR ActionButton de commons */}
           <div className="flex justify-end space-x-3">
-            <Button variant="outline">Vista Previa</Button>
-            <Button>Guardar</Button>
+            <ActionButton variant="secondary" onClick={handlePreview}>
+              Vista Previa
+            </ActionButton>
+            <ActionButton variant="primary" onClick={handleSave}>
+              Guardar
+            </ActionButton>
           </div>
         </div>
-      )}
+      </ConditionalSection>
     </div>
   );
 };

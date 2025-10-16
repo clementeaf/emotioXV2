@@ -14,6 +14,11 @@ import { ProgressiveLoader } from '@/components/common/ProgressiveLoader';
 import { SimulatedDataBanner } from '@/components/common/SimulatedDataBanner';
 import { PlaceholderCard } from '@/components/common/PlaceholderCard';
 import { QRCodeModal } from '@/components/common/QRCodeModal';
+import { EducationalSidebar } from '@/components/common/EducationalSidebar';
+import { ReorderableGrid } from '@/components/common/ReorderableGrid';
+import { LoadingTransition } from '@/components/common/LoadingTransition';
+import { ConflictResolutionModal } from '@/components/common/ConflictResolutionModal';
+import { ConditionalSection } from '@/components/common/ConditionalSection';
 
 // Tipos para los handlers
 export interface ComponentHandlers {
@@ -287,6 +292,196 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
           </p>
           <p className="text-sm text-gray-500 mt-2">
             URL de ejemplo: https://example.com/research/123
+          </p>
+        </div>
+      </div>
+    )
+  },
+  EducationalSidebar: {
+    title: "EducationalSidebar - Sidebar Educativo",
+    props: {},
+    children: () => (
+      <div className="space-y-4">
+        <EducationalSidebar
+          content={{
+            title: "Técnica de Investigación",
+            generalDescription: "Esta técnica te permite recopilar datos de manera efectiva.",
+            typeExplanation: "Detalles específicos sobre cómo funciona esta técnica y qué beneficios aporta."
+          }}
+          loading={false}
+          error={null}
+          title="Guía de Configuración"
+        />
+        <EducationalSidebar
+          content={null}
+          loading={true}
+          error={null}
+          title="Cargando Contenido"
+        />
+        <EducationalSidebar
+          content={null}
+          loading={false}
+          error="Error al cargar el contenido educativo"
+          title="Estado de Error"
+        />
+      </div>
+    )
+  },
+  ReorderableGrid: {
+    title: "ReorderableGrid - Grid Reordenable",
+    props: {},
+    children: () => {
+      const sampleItems = [
+        { id: '1', name: 'Item 1', description: 'Primer elemento' },
+        { id: '2', name: 'Item 2', description: 'Segundo elemento' },
+        { id: '3', name: 'Item 3', description: 'Tercer elemento' }
+      ];
+
+      return (
+        <div className="space-y-4">
+          <ReorderableGrid
+            items={sampleItems}
+            onReorder={(items) => console.log('Reordered:', items)}
+            onRemove={(id) => console.log('Remove:', id)}
+            renderItem={(item) => (
+              <div className="p-2">
+                <h4 className="font-medium">{item.name}</h4>
+                <p className="text-sm text-gray-600">{item.description}</p>
+              </div>
+            )}
+            columns={2}
+            showDragHandle={true}
+            showRemoveButton={true}
+          />
+        </div>
+      );
+    }
+  },
+  LoadingTransition: {
+    title: "LoadingTransition - Transición con Loading",
+    props: {},
+    children: () => (
+      <div className="space-y-4">
+        <p className="text-gray-600 mb-4">
+          LoadingTransition se muestra como pantalla completa. Aquí se muestra una versión simplificada.
+        </p>
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <p className="text-sm text-gray-500">
+            Para probar el LoadingTransition completo, necesitarías implementarlo en un contexto real con redirección.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Props: redirectTo, message, delay, showSpinner, spinnerSize
+          </p>
+        </div>
+      </div>
+    )
+  },
+  ConflictResolutionModal: {
+    title: "ConflictResolutionModal - Modal de Resolución de Conflictos",
+    props: {},
+    children: () => (
+      <div className="space-y-4">
+        <p className="text-gray-600 mb-4">
+          ConflictResolutionModal se muestra como modal. Aquí se muestran ejemplos de diferentes variantes.
+        </p>
+        
+        {/* Ejemplo Info */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h4 className="font-medium text-gray-800 mb-2">Variante: Info (Azul)</h4>
+          <p className="text-sm text-gray-600 mb-2">
+            Título: "Información importante"<br/>
+            Mensaje: "Se ha detectado una situación que requiere tu atención."<br/>
+            Botones: "Continuar" / "Crear nuevo"
+          </p>
+        </div>
+
+        {/* Ejemplo Warning */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h4 className="font-medium text-gray-800 mb-2">Variante: Warning (Ámbar)</h4>
+          <p className="text-sm text-gray-600 mb-2">
+            Título: "Investigación en curso detectada"<br/>
+            Mensaje: "Ya tienes una investigación activa. ¿Qué deseas hacer?"<br/>
+            Botones: "Ir a la investigación actual" / "Reemplazar con nueva"
+          </p>
+        </div>
+
+        {/* Ejemplo Draft */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h4 className="font-medium text-gray-800 mb-2">Variante: Draft (Ámbar)</h4>
+          <p className="text-sm text-gray-600 mb-2">
+            Título: "Borrador encontrado"<br/>
+            Mensaje: "Tienes un borrador sin completar. ¿Deseas continuar?"<br/>
+            Botones: "Continuar con el borrador" / "Crear nuevo borrador"
+          </p>
+        </div>
+
+        <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+          <p className="text-sm text-blue-600">
+            <strong>Props disponibles:</strong> isOpen, onClose, onContinue, onNew, title, message, continueText, newText, variant, icon, className
+          </p>
+        </div>
+      </div>
+    )
+  },
+  ConditionalSection: {
+    title: "ConditionalSection - Sección Condicional",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => (
+      <div className="space-y-4">
+        <p className="text-gray-600 mb-4">
+          ConditionalSection muestra contenido solo cuando isVisible es true, con animaciones opcionales.
+        </p>
+        
+        {/* Ejemplo con FormToggle */}
+        <div className="space-y-4">
+          <FormToggle
+            label="Mostrar contenido condicional"
+            description="Toggle para mostrar/ocultar el contenido"
+            checked={formData.showConditional || false}
+            onChange={(checked) => handlers.handleChange('showConditional', checked)}
+          />
+          
+          <ConditionalSection 
+            isVisible={formData.showConditional || false}
+            animation={true}
+            fadeIn={true}
+          >
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="font-medium text-green-800 mb-2">Contenido Condicional</h4>
+              <p className="text-green-600 text-sm">
+                Este contenido solo se muestra cuando el toggle está habilitado.
+                Tiene animación de fade-in suave.
+              </p>
+            </div>
+          </ConditionalSection>
+        </div>
+
+        {/* Ejemplo con slide down */}
+        <div className="space-y-4">
+          <FormToggle
+            label="Mostrar con slide down"
+            description="Toggle para mostrar con animación de slide"
+            checked={formData.showSlide || false}
+            onChange={(checked) => handlers.handleChange('showSlide', checked)}
+          />
+          
+          <ConditionalSection 
+            isVisible={formData.showSlide || false}
+            animation={true}
+            slideDown={true}
+          >
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-medium text-blue-800 mb-2">Contenido con Slide</h4>
+              <p className="text-blue-600 text-sm">
+                Este contenido se muestra con animación de slide down.
+              </p>
+            </div>
+          </ConditionalSection>
+        </div>
+
+        <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+          <p className="text-sm text-blue-600">
+            <strong>Props disponibles:</strong> isVisible, children, className, animation, fadeIn, slideDown
           </p>
         </div>
       </div>

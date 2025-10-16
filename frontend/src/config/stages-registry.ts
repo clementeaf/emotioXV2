@@ -72,13 +72,23 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
     id: 'configuration',
     title: 'Configuration',
     displayTitle: 'Configuración del Reclutamiento',
-    component: 'ConfigurationPlaceholder'
+    component: 'PlaceholderCard',
+    props: {
+      title: 'Configuración',
+      description: 'La configuración de reclutamiento estará disponible pronto.',
+      variant: 'coming-soon'
+    }
   },
   'participants': {
     id: 'participants',
     title: 'Participants',
     displayTitle: 'Gestión de Participantes',
-    component: 'ParticipantsPlaceholder'
+    component: 'PlaceholderCard',
+    props: {
+      title: 'Gestión de Participantes',
+      description: 'La gestión de participantes estará disponible pronto.',
+      variant: 'coming-soon'
+    }
   },
 
   // ========== RESULTS STAGES ==========
@@ -121,7 +131,12 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
     id: 'default',
     title: 'Default',
     displayTitle: 'Configuración de investigación',
-    component: 'DefaultPlaceholder'
+    component: 'PlaceholderCard',
+    props: {
+      title: 'Configuración de Investigación',
+      description: 'La configuración de investigación estará disponible pronto.',
+      variant: 'coming-soon'
+    }
   },
 
   // ========== DEVELOPMENT STAGES ==========
