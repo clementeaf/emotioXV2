@@ -14,7 +14,7 @@ const DashboardLayout = memo(() => {
   // Para investigaciones con AIM framework o sección específica
   if (research && (isAimFramework || section)) {
     return (
-      <div className="bg-neutral-50">
+      <div style={{ backgroundColor: '#f1f5f9' }}>
         <ErrorBoundary>
           <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
             <DashboardContentWithSuspense />
@@ -26,11 +26,13 @@ const DashboardLayout = memo(() => {
 
   // Dashboard principal
   return (
-    <ErrorBoundary>
-      <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
-        <DashboardContentWithSuspense />
-      </Suspense>
-    </ErrorBoundary>
+    <div style={{ backgroundColor: '#f1f5f9' }}>
+      <ErrorBoundary>
+        <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
+          <DashboardContentWithSuspense />
+        </Suspense>
+      </ErrorBoundary>
+    </div>
   );
 });
 

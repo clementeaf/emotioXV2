@@ -11,7 +11,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen" style={{ backgroundColor: '#f1f5f9' }}>
       <div className="w-60 mt-10 mx-5">
         {researchId ? (
           <ResearchSidebar researchId={researchId} />

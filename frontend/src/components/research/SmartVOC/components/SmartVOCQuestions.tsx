@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { FormCard } from '@/components/common/FormCard';
-import { FormInput } from '@/components/common/FormInput';
-import { FormTextarea } from '@/components/common/FormTextarea';
-import { FormSelect } from '@/components/common/FormSelect';
-import { LabeledInput } from '@/components/common/LabeledInput';
-import { ScaleSelector } from '@/components/common/ScaleSelector';
 import { QuestionPreview } from '@/components/common/QuestionPreview';
 import { ActionButton } from '@/components/common/ActionButton';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
-import { UI_TEXTS } from '../constants';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
 import { getQuestionTypeConfig } from '../config/question-types.config';
 import { DynamicFieldRenderer } from './DynamicFieldRenderer';
@@ -78,10 +72,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
       {questionsForUI.map((question, index) => (
         <FormCard key={question.id || index} title={`Pregunta ${index + 1}: ${question.title}`}>
           <div className="space-y-5">
-            {/* Renderizar todos los campos dinámicamente */}
             {renderQuestionFields(question)}
 
-            {/* Vista previa usando commons */}
             <QuestionPreview
               title={question.title}
               description={question.description}
@@ -90,7 +82,6 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               config={question.config}
             />
 
-            {/* Botón eliminar usando commons */}
             {questions.length > 1 && (
               <div className="flex justify-end pt-4 border-t">
                 <ActionButton
