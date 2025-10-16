@@ -12,18 +12,12 @@ export type {
   WelcomeScreenUpdate
 } from '../../../../../shared/interfaces/welcome-screen.interface';
 
-// Import local types
-import type { WelcomeScreenData, WelcomeScreenResponse } from '@/components/research/WelcomeScreen/types/index';
-
 // API Response wrapper
 export interface ApiResponse<T> {
   success?: boolean;
   data: T;
   message?: string;
 }
-
-// Export local types as well
-export type { WelcomeScreenData, WelcomeScreenResponse };
 
 // Request types for API
 export interface CreateWelcomeScreenRequest {

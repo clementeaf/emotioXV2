@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { welcomeScreenApi } from './welcome-screen.api';
 import type {
-  WelcomeScreenData,
+  WelcomeScreenRecord,
   CreateWelcomeScreenRequest,
   UpdateWelcomeScreenRequest
 } from './welcome-screen.types';
@@ -72,7 +72,7 @@ export function useWelcomeScreenData(researchId: string | null) {
   });
 
   // Wrapper functions for easier use
-  const createWelcomeScreen = async (data: WelcomeScreenData): Promise<WelcomeScreenData> => {
+  const createWelcomeScreen = async (data: CreateWelcomeScreenRequest): Promise<WelcomeScreenRecord> => {
     if (!researchId) throw new Error('Research ID is required');
 
     const createData: CreateWelcomeScreenRequest = {
@@ -84,7 +84,7 @@ export function useWelcomeScreenData(researchId: string | null) {
     return createMutation.mutateAsync(createData);
   };
 
-  const updateWelcomeScreen = async (researchId: string, data: Partial<WelcomeScreenData>): Promise<WelcomeScreenData> => {
+  const updateWelcomeScreen = async (researchId: string, data: UpdateWelcomeScreenRequest): Promise<WelcomeScreenRecord> => {
     const updateData: UpdateWelcomeScreenRequest = {
       isEnabled: data.isEnabled,
       title: data.title,

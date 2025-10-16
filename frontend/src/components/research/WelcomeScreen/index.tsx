@@ -1,19 +1,18 @@
 import React from 'react';
-
-import {
-    ErrorModal,
-    FormsSkeleton,
-    WelcomeScreenContent,
-    WelcomeScreenFooter,
-    WelcomeScreenSettings,
-    DeleteConfirmationModal
-} from './components';
+import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
+import { FormToggle } from '@/components/common/FormToggle';
+import { FormCard } from '@/components/common/FormCard';
+import { FormInput } from '@/components/common/FormInput';
+import { FormTextarea } from '@/components/common/FormTextarea';
+import { ActionButton } from '@/components/common/ActionButton';
+import { ErrorModal } from '@/components/common/ErrorModal';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { useWelcomeScreenForm } from './hooks/useWelcomeScreenForm';
-import { WelcomeScreenFormProps } from './types';
 
-/**
- * Componente principal para el formulario de configuración de la pantalla de bienvenida
- */
+interface WelcomeScreenFormProps {
+  researchId: string;
+}
+
 export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
   researchId,
 }) => {
@@ -39,65 +38,105 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
   const isExisting = !!existingScreen?.id && !existingScreen?.metadata?.isDefault;
 
   if (isLoading) {
-    return (
-
-      <FormsSkeleton />
-    );
+    return <LoadingSkeleton type="form" count={4} />;
   }
 
   return (
     <>
-      {/* Toggle de habilitación */}
-      <WelcomeScreenSettings
-        isEnabled={formData.isEnabled ?? false}
+      <FormToggle
+        label="Habilitar pantalla de bienvenida"
+        description="La pantalla de bienvenida se mostrará al iniciar la investigación"
+        checked={formData.isEnabled ?? false}
         onChange={(checked) => handleChange('isEnabled', checked)}
         disabled={isLoading || isSaving}
       />
 
-      {/* Contenido del formulario */}
       <div className="mt-8">
-        <WelcomeScreenContent
-        title={formData.title}
-        message={formData.message}
-        startButtonText={formData.startButtonText}
-        onTitleChange={(value) => handleChange('title', value)}
-        onMessageChange={(value) => handleChange('message', value)}
-        onStartButtonTextChange={(value) => handleChange('startButtonText', value)}
-        validationErrors={validationErrors}
-        disabled={isLoading || isSaving || !formData.isEnabled}
-        />
+        <FormCard title="Configuración de Pantalla de Bienvenida">
+          <div className="space-y-6">
+            <FormInput
+              label="Título"
+              value={formData.title}
+              onChange={(value) => handleChange('title', value)}
+              placeholder="Ingresa el título de la pantalla de bienvenida"
+              disabled={isLoading || isSaving || !formData.isEnabled}
+              error={validationErrors.title}
+            />
+
+            <FormTextarea
+              label="Mensaje"
+              value={formData.message}
+              onChange={(value) => handleChange('message', value)}
+              placeholder="Ingresa el mensaje de bienvenida"
+              rows={4}
+              disabled={isLoading || isSaving || !formData.isEnabled}
+              error={validationErrors.message}
+            />
+
+            <FormInput
+              label="Texto del botón"
+              value={formData.startButtonText}
+              onChange={(value) => handleChange('startButtonText', value)}
+              placeholder="Ingresa el texto del botón de inicio"
+              disabled={isLoading || isSaving || !formData.isEnabled}
+              error={validationErrors.startButtonText}
+            />
+          </div>
+        </FormCard>
       </div>
 
-      {/* Pie de página con acciones */}
-      <WelcomeScreenFooter
-        isSaving={isSaving}
-        disabled={!formData.isEnabled || isSaving}
-        onSave={handleSubmit}
-        onPreview={handlePreview}
-        isUpdate={isExisting}
-        // NUEVO: Props para eliminar
-        onDelete={showConfirmModal}
-        isDeleting={isDeleting}
-        showDelete={isExisting}
-      />
+      <div className="flex justify-between items-center pt-4 gap-3">
+        {isExisting && (
+          <ActionButton
+            variant="danger"
+            onClick={showConfirmModal}
+            disabled={isDeleting || isSaving || !formData.isEnabled}
+            loading={isDeleting}
+            icon="🗑️"
+          >
+            {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de bienvenida'}
+          </ActionButton>
+        )}
 
-      {/* Modal para mostrar errores y mensajes */}
-      <ErrorModal
-        isOpen={modalVisible}
-        onClose={closeModal}
-        error={modalError}
-      />
+        {/* Botones principales */}
+        <div className="flex gap-3 ml-auto">
+          <ActionButton
+            variant="secondary"
+            onClick={handlePreview}
+            disabled={!formData.isEnabled || isSaving}
+          >
+            Vista previa
+          </ActionButton>
+          
+          <ActionButton
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={!formData.isEnabled || isSaving}
+            loading={isSaving}
+          >
+            {isSaving ? 'Guardando...' : (isExisting ? 'Actualizar' : 'Guardar')}
+          </ActionButton>
+        </div>
+      </div>
 
-      {/* Modal de confirmación para eliminar */}
-      <DeleteConfirmationModal
+      {modalError && (
+        <ErrorModal
+          isOpen={modalVisible}
+          onClose={closeModal}
+          error={modalError}
+        />
+      )}
+
+      <ConfirmationModal
         isOpen={confirmModalVisible}
         title="Confirmar eliminación"
         message="¿Estás seguro de que quieres eliminar la pantalla de bienvenida? Esta acción no se puede deshacer."
         confirmText="Eliminar"
         cancelText="Cancelar"
         onConfirm={confirmDelete}
-        onCancel={closeConfirmModal}
+        onClose={closeConfirmModal}
         isLoading={isDeleting}
+        variant="danger"
       />
     </>
   );

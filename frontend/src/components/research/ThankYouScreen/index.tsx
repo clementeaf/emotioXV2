@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
+import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { cn } from '@/lib/utils';
 
 import {
@@ -67,7 +67,7 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
   if (isLoading) {
     return (
       <div className={cn('max-w-4xl space-y-4', className)}>
-        <FormsSkeleton />
+        <LoadingSkeleton type="form" count={4} />
       </div>
     );
   }
@@ -130,6 +130,7 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
         confirmText="Eliminar"
         cancelText="Cancelar"
         onConfirm={confirmDelete}
+        onClose={closeConfirmModal}
         onCancel={closeConfirmModal}
         isLoading={isDeleting}
       />

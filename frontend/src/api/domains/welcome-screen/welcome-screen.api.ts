@@ -6,7 +6,6 @@
 import { apiClient } from '@/api/config/axios';
 import type {
   ApiResponse,
-  WelcomeScreenData,
   WelcomeScreenRecord,
   CreateWelcomeScreenRequest,
   UpdateWelcomeScreenRequest,
@@ -20,9 +19,9 @@ export const welcomeScreenApi = {
   /**
    * Get welcome screen by research ID
    */
-  getByResearchId: async (researchId: string): Promise<WelcomeScreenData | null> => {
+  getByResearchId: async (researchId: string): Promise<WelcomeScreenRecord | null> => {
     try {
-      const response = await apiClient.get<ApiResponse<WelcomeScreenData>>(`/research/${researchId}/welcome-screen`);
+      const response = await apiClient.get<ApiResponse<WelcomeScreenRecord>>(`/research/${researchId}/welcome-screen`);
       return response.data.data || response.data || null;
     } catch (error) {
       if ((error as any)?.response?.status === 404) {
@@ -35,8 +34,8 @@ export const welcomeScreenApi = {
   /**
    * Create welcome screen
    */
-  create: async (data: CreateWelcomeScreenRequest): Promise<WelcomeScreenData> => {
-    const response = await apiClient.post<ApiResponse<WelcomeScreenData>>(
+  create: async (data: CreateWelcomeScreenRequest): Promise<WelcomeScreenRecord> => {
+    const response = await apiClient.post<ApiResponse<WelcomeScreenRecord>>(
       `/research/${data.researchId}/welcome-screen`,
       data
     );
@@ -46,8 +45,8 @@ export const welcomeScreenApi = {
   /**
    * Update welcome screen (backend uses POST for upsert)
    */
-  update: async (researchId: string, data: UpdateWelcomeScreenRequest): Promise<WelcomeScreenData> => {
-    const response = await apiClient.post<ApiResponse<WelcomeScreenData>>(
+  update: async (researchId: string, data: UpdateWelcomeScreenRequest): Promise<WelcomeScreenRecord> => {
+    const response = await apiClient.post<ApiResponse<WelcomeScreenRecord>>(
       `/research/${researchId}/welcome-screen`,
       data
     );

@@ -9,12 +9,10 @@ import { OptimisticFormWrapper } from '@/components/common/OptimisticFormWrapper
 import { OptimisticButton } from '@/components/common/OptimisticButton';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ConfigCard } from '@/components/common/ConfigCard';
-import { DevModeInfo } from '@/components/common/DevModeInfo';
 import { ProgressiveLoader } from '@/components/common/ProgressiveLoader';
 import { SimulatedDataBanner } from '@/components/common/SimulatedDataBanner';
 import { COMPONENT_EXAMPLES, ComponentHandlers } from './component-examples.config';
 
-// Mapeo dinámico de componentes
 const COMPONENT_MAP = {
   FormCard,
   FormToggle,
@@ -26,7 +24,6 @@ const COMPONENT_MAP = {
   OptimisticButton,
   ErrorBoundary,
   ConfigCard,
-  DevModeInfo,
   ProgressiveLoader,
   SimulatedDataBanner
 } as const;
@@ -60,10 +57,8 @@ export const TestCommonPage: React.FC = () => {
     console.log('Delete clicked');
   };
 
-  // Lista de componentes disponibles - GENERADA AUTOMÁTICAMENTE
   const commonComponents = Object.keys(COMPONENT_MAP);
 
-  // Handlers para pasar a los componentes
   const handlers: ComponentHandlers = {
     handleChange,
     handleSubmit,
@@ -71,11 +66,10 @@ export const TestCommonPage: React.FC = () => {
     handleDelete
   };
 
-  // Función para renderizar componente dinámicamente
   const renderComponent = (componentName: string) => {
     const Component = COMPONENT_MAP[componentName as keyof typeof COMPONENT_MAP];
     const example = COMPONENT_EXAMPLES[componentName as keyof typeof COMPONENT_EXAMPLES];
-    
+
     if (!Component || !example) {
       return <div>Componente no encontrado: {componentName}</div>;
     }
@@ -89,7 +83,6 @@ export const TestCommonPage: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar izquierdo con lista de componentes */}
       <div className="w-80 bg-white border-r border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Components Common
@@ -112,23 +105,10 @@ export const TestCommonPage: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {/* Contenido principal */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-4xl mx-auto p-6 space-y-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Test Common Components
-            </h1>
-            <p className="text-gray-600">
-              Página de prueba para componentes comunes reutilizables
-            </p>
-          </div>
-
-          {/* Renderizar componente seleccionado - DINÁMICO */}
           {selectedComponent && renderComponent(selectedComponent)}
-          
-          {/* Mostrar ejemplos principales si no hay selección */}
+
           {!selectedComponent && (
             <>
               {renderComponent('FormCard')}

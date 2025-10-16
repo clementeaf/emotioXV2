@@ -148,8 +148,8 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
   OptimisticButton: {
     title: "OptimisticButton - Botón Optimista",
     props: {},
-    children: (formData: any, handlers: ComponentHandlers) => (
-      <div className="space-y-4">
+    children: (handlers: ComponentHandlers) => (
+      <div className="flex gap-5">
         <OptimisticButton onClick={handlers.handleSubmit}>
           Botón Optimista
         </OptimisticButton>
@@ -174,11 +174,6 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
         </div>
       </ConfigCard>
     )
-  },
-  DevModeInfo: {
-    title: "DevModeInfo - Información de Desarrollo",
-    props: {},
-    children: () => <DevModeInfo />
   },
   ErrorBoundary: {
     title: "ErrorBoundary - Manejo de Errores",
@@ -222,12 +217,6 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
           checked={formData.isEnabled}
           onChange={(checked) => handlers.handleChange('isEnabled', checked)}
         />
-        <FormToggle
-          label="Segunda opción"
-          description="Esta es una segunda opción de toggle"
-          checked={false}
-          onChange={() => {}}
-        />
       </div>
     )
   },
@@ -241,12 +230,6 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
           value={formData.title}
           onChange={(value) => handlers.handleChange('title', value)}
           placeholder="Ingresa el título"
-        />
-        <FormInput
-          label="Campo de prueba"
-          value=""
-          onChange={() => {}}
-          placeholder="Campo de ejemplo"
         />
       </div>
     )
@@ -262,13 +245,6 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
           onChange={(value) => handlers.handleChange('message', value)}
           placeholder="Ingresa el mensaje"
           rows={4}
-        />
-        <FormTextarea
-          label="Descripción"
-          value=""
-          onChange={() => {}}
-          placeholder="Campo de descripción"
-          rows={3}
         />
       </div>
     )

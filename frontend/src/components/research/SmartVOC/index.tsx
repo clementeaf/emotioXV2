@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
+import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { EducationalContentSidebar } from '@/components/research/shared/EducationalContentSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
 import {
@@ -82,7 +82,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   if (isLoading) {
     return (
       <div className={className}>
-        <FormsSkeleton />
+        <LoadingSkeleton type="form" count={4} />
       </div>
     );
   }

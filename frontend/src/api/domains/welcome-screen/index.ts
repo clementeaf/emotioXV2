@@ -19,8 +19,6 @@ export {
 // Export types
 export type {
   ApiResponse,
-  WelcomeScreenData,
-  WelcomeScreenResponse,
   WelcomeScreenRecord,
   WelcomeScreenFormData,
   WelcomeScreenConfig,

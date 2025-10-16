@@ -4,11 +4,38 @@ import { toastHelpers } from '@/utils/toast';
 
 // ❌ ELIMINADO: No usar welcomeScreenService - todo debe venir del hook centralizado
 import { WelcomeScreenRecord, WelcomeScreenFormData as WelcomeScreenServiceData } from '../../../../../../shared/interfaces/welcome-screen.interface';
-import {
-  ErrorModalData,
-  UseWelcomeScreenFormResult,
-  ValidationErrors,
-} from '../types';
+
+// Tipos locales del hook
+interface ErrorModalData {
+  type: 'error' | 'warning' | 'info';
+  title?: string;
+  message: string;
+}
+
+interface ValidationErrors {
+  title?: string;
+  message?: string;
+  startButtonText?: string;
+}
+
+interface UseWelcomeScreenFormResult {
+  formData: WelcomeScreenServiceData;
+  validationErrors: ValidationErrors;
+  isLoading: boolean;
+  isSaving: boolean;
+  modalError: ErrorModalData | null;
+  modalVisible: boolean;
+  handleChange: (field: string, value: unknown) => void;
+  handleSubmit: () => Promise<void>;
+  handlePreview: () => void;
+  closeModal: () => void;
+  existingScreen: WelcomeScreenRecord | null;
+  isDeleting: boolean;
+  confirmModalVisible: boolean;
+  showConfirmModal: () => void;
+  closeConfirmModal: () => void;
+  confirmDelete: () => Promise<void>;
+}
 
 // Elimina la interfaz extendida y usa WelcomeScreenServiceData para formData
 // Cambia el tipo de formData y setFormData
@@ -104,7 +131,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   };
 
   // Corrige el tipo de handleChange para que coincida con la interfaz pública
-  const handleChange = useCallback((field: string | number | symbol, value: string | boolean): void => {
+  const handleChange = useCallback((field: string, value: unknown): void => {
     setFormData((prev: WelcomeScreenServiceData) => ({
       ...prev,
       [field]: value,
@@ -293,7 +320,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
   return {
     formData,
-    setFormData,
     validationErrors,
     isLoading,
     isSaving,
@@ -304,10 +330,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     handleSubmit,
     handlePreview,
     closeModal,
-    isEmpty,
-    handleDelete,
     isDeleting,
-    showDelete: !!(existingScreen?.id),
     confirmModalVisible,
     showConfirmModal,
     closeConfirmModal,

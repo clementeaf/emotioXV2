@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
+import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { EducationalContentSidebar } from '@/components/research/shared/EducationalContentSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
 import { cn } from '@/lib/utils';
@@ -114,7 +114,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   if (isLoading) {
     return (
       <div className={className}>
-        <FormsSkeleton />
+        <LoadingSkeleton type="form" count={4} />
       </div>
     );
   }
