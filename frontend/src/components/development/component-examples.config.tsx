@@ -12,6 +12,8 @@ import { ConfigCard } from '@/components/common/ConfigCard';
 import { DevModeInfo } from '@/components/common/DevModeInfo';
 import { ProgressiveLoader } from '@/components/common/ProgressiveLoader';
 import { SimulatedDataBanner } from '@/components/common/SimulatedDataBanner';
+import { PlaceholderCard } from '@/components/common/PlaceholderCard';
+import { QRCodeModal } from '@/components/common/QRCodeModal';
 
 // Tipos para los handlers
 export interface ComponentHandlers {
@@ -246,6 +248,47 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
           placeholder="Ingresa el mensaje"
           rows={4}
         />
+      </div>
+    )
+  },
+  PlaceholderCard: {
+    title: "PlaceholderCard - Card de Placeholder",
+    props: {},
+    children: () => (
+      <div className="space-y-4">
+        <PlaceholderCard
+          title="Configuración"
+          description="Configuración para investigación coming soon..."
+          variant="coming-soon"
+        />
+        <PlaceholderCard
+          title="Estado Vacío"
+          description="No hay datos disponibles en este momento"
+          variant="empty-state"
+        />
+        <PlaceholderCard
+          title="Placeholder por Defecto"
+          description="Este es un placeholder genérico"
+        />
+      </div>
+    )
+  },
+  QRCodeModal: {
+    title: "QRCodeModal - Modal de Código QR",
+    props: {},
+    children: (formData: any, handlers: ComponentHandlers) => (
+      <div className="space-y-4">
+        <p className="text-gray-600 mb-4">
+          QRCodeModal se muestra como modal. Aquí se muestra el componente sin el modal wrapper.
+        </p>
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <p className="text-sm text-gray-500">
+            Para probar el QRCodeModal completo, necesitarías implementarlo en un contexto real con estado de modal.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            URL de ejemplo: https://example.com/research/123
+          </p>
+        </div>
       </div>
     )
   }

@@ -11,6 +11,8 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ConfigCard } from '@/components/common/ConfigCard';
 import { ProgressiveLoader } from '@/components/common/ProgressiveLoader';
 import { SimulatedDataBanner } from '@/components/common/SimulatedDataBanner';
+import { PlaceholderCard } from '@/components/common/PlaceholderCard';
+import { QRCodeModal } from '@/components/common/QRCodeModal';
 import { COMPONENT_EXAMPLES, ComponentHandlers } from './component-examples.config';
 
 const COMPONENT_MAP = {
@@ -25,7 +27,9 @@ const COMPONENT_MAP = {
   ErrorBoundary,
   ConfigCard,
   ProgressiveLoader,
-  SimulatedDataBanner
+  SimulatedDataBanner,
+  PlaceholderCard,
+  QRCodeModal
 } as const;
 
 /**
