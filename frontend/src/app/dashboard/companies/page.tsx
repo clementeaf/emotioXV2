@@ -108,9 +108,8 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)] flex flex-col justify-start overflow-y-auto">
+    <div className="flex-1  flex flex-col justify-start">
       <div className="mx-auto px-6 py-8 w-full">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

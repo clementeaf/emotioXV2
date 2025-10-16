@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Loader2 } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { DYNAMIC_API_ENDPOINTS } from '@/api/dynamic-endpoints';
+import { FormTextarea } from '@/components/common/FormTextarea';
 
 interface EducationalContent {
   id: string;
@@ -25,7 +26,6 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados para los valores de los inputs
   const [smartVocDescription, setSmartVocDescription] = useState('');
   const [smartVocExplanation, setSmartVocExplanation] = useState('');
   const [cognitiveDescription, setCognitiveDescription] = useState('');
@@ -88,7 +88,6 @@ export default function SettingsPage() {
         return;
       }
 
-      // Guardar SmartVOC content
       await fetch(`${DYNAMIC_API_ENDPOINTS.http}/educational-content/smart_voc`, {
         method: 'PUT',
         headers: {
@@ -101,7 +100,6 @@ export default function SettingsPage() {
         }),
       });
 
-      // Guardar Cognitive Task content
       await fetch(`${DYNAMIC_API_ENDPOINTS.http}/educational-content/cognitive_task`, {
         method: 'PUT',
         headers: {
@@ -114,7 +112,6 @@ export default function SettingsPage() {
         }),
       });
 
-      // Recargar el contenido después de guardar
       await loadEducationalContent();
       
     } catch (error) {
@@ -124,122 +121,156 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+  const [activeSection, setActiveSection] = useState('smartvoc');
+
+  const sections = [
+    {
+      id: 'smartvoc',
+      title: 'SmartVOC',
+      description: 'Configuración de contenido educativo para SmartVOC'
+    },
+    {
+      id: 'cognitive',
+      title: 'Cognitive Task',
+      description: 'Configuración de contenido educativo para Cognitive Task'
+    }
+  ];
+
   return (
-    <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)] flex flex-col justify-start overflow-y-auto">
-      <div className="px-6 py-8 w-full">
+    <div className="flex h-full max-h-screen">
+      <div className="w-80 bg-white rounded-xl shadow-sm border border-gray-100 p-6 mr-6 flex-shrink-0">
         <div className="mb-8">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-4">
             <Settings className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Configuraciones</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Configuraciones</h1>
           </div>
-          <p className="text-gray-600 mt-2">
+          <p className="text-sm text-gray-600">
             Gestiona las configuraciones generales del sistema
           </p>
         </div>
 
-        <div className="space-y-6">
-          {/* Configuración de Información Educativa */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Información Educativa de Formularios
-            </h2>
-            <p className="text-sm text-gray-600 mb-6">
-              Configura el contenido educativo que aparece en las columnas laterales para explicar qué se está configurando y para qué sirve cada pregunta
-            </p>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
-                {error}
-              </div>
-            )}
-
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                <span className="ml-2 text-gray-600">Cargando contenido educativo...</span>
-              </div>
-            ) : (
-            <div className="space-y-8">
-              {/* SmartVOC Educational Content */}
+        <nav className="space-y-3">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`w-full text-left p-4 rounded-xl transition-all duration-200 hover:scale-[1.02] ${
+                activeSection === section.id
+                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-700 shadow-md'
+                  : 'bg-gray-50 border-2 border-transparent text-gray-700 hover:bg-gray-100 hover:shadow-sm'
+              }`}
+            >
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                  SmartVOC - Contenido Educativo
-                </h3>
-                <div className="space-y-4">
+                <div className="font-semibold text-lg">{section.title}</div>
+                <div className="text-sm text-gray-500 mt-1">{section.description}</div>
+              </div>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Contenido principal - Estilo Vambeai */}
+      <div className="flex-1 min-h-0">
+        <div className="p-6 h-full overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <span className="ml-3 text-gray-600">Cargando contenido educativo...</span>
+            </div>
+          ) : (
+            <div className="max-w-4xl">
+              {activeSection === 'smartvoc' && (
+                <div className="space-y-8">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Descripción General de SmartVOC
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={smartVocDescription}
-                      onChange={(e) => setSmartVocDescription(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Explica qué es SmartVOC y para qué sirve"
-                    />
+                    <h2 className="text-3xl font-bold text-gray-900 mb-3">SmartVOC - Contenido Educativo</h2>
+                    <p className="text-gray-600 text-lg">
+                      Configura el contenido educativo que aparece en las columnas laterales para explicar qué es SmartVOC y para qué sirve cada pregunta
+                    </p>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Explicación de Tipos de Preguntas
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={smartVocExplanation}
-                      onChange={(e) => setSmartVocExplanation(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Describe para qué sirve cada tipo de pregunta SmartVOC"
-                    />
+
+                  <div className="space-y-8">
+                    <div>
+                      <label className="block text-lg font-semibold text-gray-900 mb-4">
+                        Descripción General de SmartVOC
+                      </label>
+                      <FormTextarea
+                        label=""
+                        rows={3}
+                        value={smartVocDescription}
+                        onChange={(value) => setSmartVocDescription(value)}
+                        placeholder="Explica qué es SmartVOC y para qué sirve"
+                        className="w-full resize-none"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-lg font-semibold text-gray-900 mb-4">
+                        Explicación de Tipos de Preguntas
+                      </label>
+                      <FormTextarea
+                        label=""
+                        rows={5}
+                        value={smartVocExplanation}
+                        onChange={(value) => setSmartVocExplanation(value)}
+                        placeholder="Describe para qué sirve cada tipo de pregunta SmartVOC"
+                        className="w-full resize-none"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Cognitive Task Educational Content */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                  Cognitive Task - Contenido Educativo
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Descripción General de Cognitive Task
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={cognitiveDescription}
-                      onChange={(e) => setCognitiveDescription(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Explica qué son las Tareas Cognitivas y para qué sirven"
-                    />
+              {activeSection === 'cognitive' && (
+                <div className="space-y-8">
+                  <div className="mb-8">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-3">Cognitive Task - Contenido Educativo</h2>
+                    <p className="text-gray-600 text-lg">
+                      Configura el contenido educativo que aparece en las columnas laterales para explicar qué son las Tareas Cognitivas y para qué sirven
+                    </p>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Explicación de Tipos de Tareas
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={cognitiveExplanation}
-                      onChange={(e) => setCognitiveExplanation(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Describe los diferentes tipos de tareas cognitivas y su propósito"
-                    />
+
+                  <div className="space-y-8">
+                    <div>
+                      <label className="block text-lg font-semibold text-gray-900 mb-4">
+                        Descripción General de Cognitive Task
+                      </label>
+                      <FormTextarea
+                        label=""
+                        rows={15}
+                        value={cognitiveDescription}
+                        onChange={(value) => setCognitiveDescription(value)}
+                        placeholder="Explica qué son las Tareas Cognitivas y para qué sirven"
+                        className="w-full resize-none"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-lg font-semibold text-gray-900 mb-4">
+                        Explicación de Tipos de Tareas
+                      </label>
+                      <FormTextarea
+                        label=""
+                        rows={20}
+                        value={cognitiveExplanation}
+                        onChange={(value) => setCognitiveExplanation(value)}
+                        placeholder="Describe los diferentes tipos de tareas cognitivas y su propósito"
+                        className="w-full resize-none"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Botón de Guardar */}
-              <div className="mt-6 flex justify-end">
+              )}
+
+              {/* Botón de Guardar - Estilo Vambeai */}
+              <div className="pt-10 border-t border-gray-200">
                 <button 
                   onClick={saveEducationalContent}
                   disabled={saving}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <Loader2 className="w-5 h-5 animate-spin mr-3" />
                       Guardando...
                     </>
                   ) : (
@@ -248,8 +279,7 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

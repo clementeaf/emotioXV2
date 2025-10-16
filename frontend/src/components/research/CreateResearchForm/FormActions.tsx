@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from '@/components/ui/Button';
+import { ActionButton } from '@/components/common/ActionButton';
 
 interface FormActionsProps {
   currentStep: number;
@@ -25,36 +25,35 @@ export const FormActions: React.FC<FormActionsProps> = ({
   const isLastStep = currentStep === totalSteps;
 
   return (
-    <div className="flex justify-between mt-4">
+    <div className="flex justify-between mt-6">
       {currentStep > 1 && (
-        <Button
-          type="button"
-          variant="outline"
+        <ActionButton
+          variant="secondary"
           onClick={onPrevious}
         >
-          Previous
-        </Button>
+          Anterior
+        </ActionButton>
       )}
       <div className="ml-auto">
         {!isLastStep ? (
-          <Button
-            type="button"
+          <ActionButton
+            variant="primary"
             onClick={onNext}
             disabled={!canGoNext}
           >
-            Next
-          </Button>
+            Siguiente
+          </ActionButton>
         ) : (
-          <Button
-            type="button"
+          <ActionButton
+            variant="primary"
             onClick={onSubmit}
             loading={isSubmitting}
             disabled={!selectedTechnique}
           >
             {selectedTechnique === 'aim-framework'
-              ? 'Setup AIM Framework'
-              : 'Create Research'}
-          </Button>
+              ? 'Configurar AIM Framework'
+              : 'Crear Investigación'}
+          </ActionButton>
         )}
       </div>
     </div>

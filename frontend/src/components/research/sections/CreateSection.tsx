@@ -8,15 +8,15 @@ import { CreateSectionProps } from '../../../../../shared/interfaces/research-cr
  * Sección de creación de investigación
  */
 export const CreateSection = memo<CreateSectionProps>(({ onResearchCreated }) => (
-  <div className="space-y-6">
-    <div className="mb-4">
+  <>
+    <div className="mb-6">
       <h1 className="text-2xl font-semibold text-neutral-900">
         Nueva Investigación
       </h1>
     </div>
 
     <CreateResearchForm onResearchCreated={onResearchCreated} />
-  </div>
+  </>
 ));
 
 CreateSection.displayName = 'CreateSection';

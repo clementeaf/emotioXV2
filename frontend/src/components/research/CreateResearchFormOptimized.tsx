@@ -87,9 +87,8 @@ export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedPr
   };
 
   return (
-    <div className={cn('max-w-4xl mx-auto p-6', className)}>
-      <div className="space-y-4">
-        {/* Indicador de pasos */}
+    <div className={cn('max-w-4xl mx-auto', className)}>
+      <div className="space-y-6">
         <FormSteps
           steps={steps}
           currentStep={formData.currentStep}
