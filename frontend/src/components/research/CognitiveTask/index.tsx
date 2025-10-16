@@ -5,7 +5,7 @@ import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { EducationalSidebar } from '@/components/common/EducationalSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
 import { cn } from '@/lib/utils';
-import { ConfirmationModal } from '../SmartVOC/components/ConfirmationModal';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import {
   CognitiveTaskFooter,
   ErrorModal,

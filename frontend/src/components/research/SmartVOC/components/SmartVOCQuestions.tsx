@@ -1,17 +1,10 @@
-import React, { useEffect, useState } from 'react';
-
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Switch } from '@/components/ui/Switch';
-
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { UI_TEXTS } from '../constants';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
-
 import { AddQuestionModal } from './AddQuestionModal';
 
-/**
- * Componente para gestionar las preguntas de SmartVOC
- */
 export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   questions,
   onUpdateQuestion,
@@ -20,25 +13,15 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   disabled
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-
-
-
-  // Obtener los tipos de preguntas ya existentes
   const existingQuestionTypes = questions
     .map(q => q.type)
     .filter((t): t is QuestionType => ['CSAT', 'CES', 'CV', 'NEV', 'NPS', 'VOC'].includes(t));
 
-
-  // Normalizar preguntas para la UI (solo para el componente, no para el backend)
   const questionsForUI = questions.map(q => ({
     ...q,
-    // Mantener el tipo original para renderQuestionConfig
     type: q.type
   }));
 
-
-  // Renderiza la configuración específica para cada tipo de pregunta
   const renderQuestionConfig = (question: SmartVOCQuestion) => {
     switch (question.type) {
       case QuestionType.SMARTVOC_CSAT:
@@ -186,7 +169,6 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
 
   return (
     <div className="space-y-6">
-
       {questionsForUI.map((question, index) => (
         <div key={question.id || index} className="p-6 border border-neutral-200 rounded-lg bg-white shadow-sm">
           <div className="flex justify-between items-center mb-6">

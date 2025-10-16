@@ -4,11 +4,11 @@ import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { EducationalSidebar } from '@/components/common/EducationalSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
 import {
-  ConfirmationModal,
-  ErrorModal,
-  SmartVOCFooter,
   SmartVOCQuestions,
 } from './components';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
+import { ErrorModal } from '@/components/common/ErrorModal';
+import { FormFooter } from '@/components/common/FormFooter';
 import { useSmartVOCForm } from './hooks/useSmartVOCForm';
 import { SmartVOCFormProps } from './types';
 
@@ -101,15 +101,14 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           disabled={isLoading || isSaving}
         />
         {/* Pie de página con acciones */}
-        <SmartVOCFooter
+        <FormFooter
           isSaving={isSaving}
           isLoading={isLoading}
-          smartVocId={smartVocId}
-          isExisting={isExisting}
-          researchId={researchId}
           onSave={handleSaveAndNotify}
           onPreview={handlePreview}
           onDelete={handleDelete}
+          isExisting={isExisting}
+          deleteText="Eliminar datos SmartVOC"
         />
       </div>
 
@@ -126,11 +125,17 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
       </div>
 
       {/* Modales */}
-      <ErrorModal
-        isOpen={modalVisible}
-        onClose={closeModal}
-        error={modalError}
-      />
+      {modalError && (
+        <ErrorModal
+          isOpen={modalVisible}
+          onClose={closeModal}
+          error={{
+            type: modalError.type === 'success' ? 'info' : modalError.type,
+            title: modalError.title,
+            message: typeof modalError.message === 'string' ? modalError.message : String(modalError.message)
+          }}
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
