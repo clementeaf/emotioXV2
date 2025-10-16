@@ -29,8 +29,6 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     handlePreview,
     closeModal,
     existingScreen,
-    isEmpty,
-    handleDelete,
     isDeleting,
     confirmModalVisible,
     showConfirmModal,
@@ -38,10 +36,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     confirmDelete,
   } = useWelcomeScreenForm(researchId);
 
-  // Determine if it's an existing config based on real saved data (not default config)
-  // Check if it's NOT a default configuration (isDefault flag from backend)
   const isExisting = !!existingScreen?.id && !existingScreen?.metadata?.isDefault;
-
 
   if (isLoading) {
     return (
@@ -52,14 +47,6 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   return (
     <>
-      {/* Mensaje amigable si no hay configuración previa */}
-      {isEmpty && (
-        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
-          <strong>¡Aún no has configurado la pantalla de bienvenida!</strong><br />
-          Completa el formulario y guarda para que los participantes vean una pantalla personalizada al iniciar la investigación.
-        </div>
-      )}
-
       {/* Toggle de habilitación */}
       <WelcomeScreenSettings
         isEnabled={formData.isEnabled ?? false}

@@ -122,6 +122,14 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
     title: 'Default',
     displayTitle: 'Configuración de investigación',
     component: 'DefaultPlaceholder'
+  },
+
+  // ========== DEVELOPMENT STAGES ==========
+  'test-common': {
+    id: 'test-common',
+    title: 'Test Common',
+    displayTitle: 'Test Common Components',
+    component: 'TestCommonPage'
   }
 };
 

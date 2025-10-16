@@ -17,6 +17,7 @@ import { ScreenerForm } from '../forms/ScreenerForm';
 import { ConfigurationPlaceholder } from '../placeholders/ConfigurationPlaceholder';
 import { ParticipantsPlaceholder } from '../placeholders/ParticipantsPlaceholder';
 import { DefaultPlaceholder } from '../placeholders/DefaultPlaceholder';
+import { TestCommonPage } from '@/components/development/TestCommonPage';
 import { STAGE_TITLES, STAGE_COMPONENTS, DEFAULT_SECTION } from '@/config/research-stages.config';
 
 interface StageManagerResult {
@@ -50,7 +51,8 @@ export function useStageManager(researchId: string): StageManagerResult {
     ResearchInProgressPage,
     ConfigurationPlaceholder,
     ParticipantsPlaceholder,
-    DefaultPlaceholder
+    DefaultPlaceholder,
+    TestCommonPage
   } as const;
 
   const renderStageContent = (): ReactElement => {

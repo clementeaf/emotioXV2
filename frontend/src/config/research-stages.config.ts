@@ -48,6 +48,14 @@ export const BASE_SECTIONS: ResearchSection[] = [
       { id: 'research-in-progress', title: 'Investigación en curso' }
     ]
   },
+  // Solo en ambiente local/desarrollo
+  ...(process.env.NODE_ENV === 'development' ? [{
+    id: 'development',
+    title: 'Development',
+    stages: [
+      { id: 'test-common', title: 'Test Common' }
+    ]
+  }] : []),
 ];
 
 // Function to get BUILD stages based on research technique
