@@ -14,7 +14,6 @@ export const MobileBlockedScreen: React.FC<MobileBlockedScreenProps> = ({
   return (
     <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-gray-50 z-50">
       <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md mx-4 text-center">
-        {/* Icono de dispositivo móvil */}
         <div className="mb-6 flex justify-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
             <svg
@@ -33,12 +32,10 @@ export const MobileBlockedScreen: React.FC<MobileBlockedScreenProps> = ({
           </div>
         </div>
 
-        {/* Título */}
         <h1 className="text-2xl font-bold text-gray-900 mb-4">
           Acceso No Permitido
         </h1>
 
-        {/* Mensaje principal */}
         <div className="space-y-4 mb-6">
           <p className="text-gray-700 leading-relaxed">
             Esta investigación no permite el acceso desde un {deviceName}.
@@ -49,7 +46,6 @@ export const MobileBlockedScreen: React.FC<MobileBlockedScreenProps> = ({
           </p>
         </div>
 
-        {/* Información adicional */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h3 className="text-sm font-medium text-blue-900 mb-2">
             ¿Por qué no puedo usar mi {deviceName}?
@@ -59,7 +55,6 @@ export const MobileBlockedScreen: React.FC<MobileBlockedScreenProps> = ({
           </p>
         </div>
 
-        {/* Botón de acción */}
         <div className="space-y-3">
           <button
             onClick={() => window.history.back()}
@@ -76,7 +71,6 @@ export const MobileBlockedScreen: React.FC<MobileBlockedScreenProps> = ({
           </button>
         </div>
 
-        {/* Información de contacto */}
         {researchId && (
           <div className="mt-6 pt-4 border-t border-gray-200">
             <p className="text-xs text-gray-500">

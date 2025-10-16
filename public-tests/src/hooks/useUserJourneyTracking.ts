@@ -50,9 +50,7 @@ export const useUserJourneyTracking = ({
       sessionStartTime: Date.now()
     };
 
-    setIsTracking(true);
-
-    console.log('[useUserJourneyTracking] 🗺️ Iniciando tracking de recorrido del usuario');
+    setIsTracking(true);;
   }, [enabled]);
 
   const trackStepVisit = useCallback((step: string, action: 'visit' | 'complete' | 'back' | 'skip' = 'visit') => {
@@ -104,12 +102,6 @@ export const useUserJourneyTracking = ({
 
     // Iniciar tiempo para el siguiente step
     stepStartTimeRef.current = now;
-
-    console.log(`[useUserJourneyTracking] 📍 Step registrado: ${step} (${action})`, {
-      duration: duration ? `${duration}ms` : 'N/A',
-      totalSteps: journeyRef.current.totalSteps,
-      totalTime: `${journeyRef.current.totalTime}ms`
-    });
   }, [enabled, initializeJourney]);
 
   const getJourneyData = useCallback(() => {
@@ -120,8 +112,6 @@ export const useUserJourneyTracking = ({
     journeyRef.current = null;
     stepStartTimeRef.current = 0;
     setIsTracking(false);
-
-    console.log('[useUserJourneyTracking] 🔄 Recorrido del usuario reseteado');
   }, []);
 
   return {

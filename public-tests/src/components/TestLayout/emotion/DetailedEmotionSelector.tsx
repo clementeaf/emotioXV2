@@ -60,24 +60,10 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
   };
 
   const handleEmotionClick = (emotionId: string) => {
-    console.log('🔍 [DetailedEmotionSelector] handleEmotionClick:', {
-      emotionId,
-      selectedEmotions,
-      isSelected: selectedEmotions.includes(emotionId),
-      maxSelections,
-      currentLength: selectedEmotions.length
-    });
-    
     if (selectedEmotions.includes(emotionId)) {
-      // Deseleccionar
-      console.log('🔍 [DetailedEmotionSelector] Deseleccionando:', emotionId);
       onEmotionSelect(emotionId);
     } else if (selectedEmotions.length < maxSelections) {
-      // Seleccionar si no se ha alcanzado el límite
-      console.log('🔍 [DetailedEmotionSelector] Seleccionando:', emotionId);
       onEmotionSelect(emotionId);
-    } else {
-      console.log('🔍 [DetailedEmotionSelector] Límite alcanzado, no se puede seleccionar:', emotionId);
     }
   };
 
@@ -92,13 +78,6 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
           });
           const isSelected = selectedEmotions.includes(emotionId);
           const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
-          
-          console.log('🔍 [DetailedEmotionSelector] Renderizando botón:', {
-            emotion,
-            emotionId,
-            isSelected,
-            selectedEmotions
-          });
 
           return (
             <button

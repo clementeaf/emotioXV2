@@ -1,6 +1,3 @@
-// 🎯 SISTEMA DE LOGGING PARA QUESTIONCOMPONENT
-// Reemplaza console.logs con sistema estructurado
-
 export enum LogLevel {
   DEBUG = 'debug',
   INFO = 'info',

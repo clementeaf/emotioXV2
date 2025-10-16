@@ -10,16 +10,12 @@ const LoginRedirect: React.FC = () => {
   const params = useParams();
   const { setParticipant } = useTestStore();
   
-  // 🎯 PREVENIR BUCLES INFINITOS - MULTIPLE PROTECTIONS
   const [hasProcessed, setHasProcessed] = useState(false);
   const processedRef = useRef<string | null>(null);
   const isProcessingRef = useRef<boolean>(false);
   
-  // 🎯 MEJORAR FUNCIÓN DE NAVEGACIÓN - PREVENIR CONDICIÓN DE CARRERA
   const handleNavigation = useCallback(() => {
-    // 🔒 MÚPLTIPLES PROTECCIONES CONTRA BUCLES INFINITOS
     if (hasProcessed || isProcessingRef.current) {
-      console.log('[LoginRedirect] Ya procesado o en proceso, saltando...');
       return;
     }
     
@@ -31,45 +27,25 @@ const LoginRedirect: React.FC = () => {
     const queryUserId = urlParams.get('userId');
     const researchId = pathResearchId || queryResearchId;
     const participantId = pathParticipantId || queryParticipantId || queryUserId;
-    
-    console.log('[LoginRedirect] Procesando navegación:', {
-      pathResearchId,
-      pathParticipantId,
-      queryResearchId,
-      queryParticipantId,
-      queryUserId,
-      researchId,
-      participantId,
-      currentPath: location.pathname
-    });
-    
-    // 🎯 CREAR CLAVE ÚNICA PARA EVITAR REPROCESAMIENTO
     const processKey = `${researchId}-${participantId || 'preview'}`;
     
-    // Si ya procesamos esta combinación, salir
     if (processedRef.current === processKey) {
-      console.log('[LoginRedirect] Ya procesado esta combinación:', processKey);
       return;
     }
-    
-    // 🔒 MARCAR COMO EN PROCESAMIENTO
+
     isProcessingRef.current = true;
     
     const { setParticipantId } = useParticipantStore.getState();
     const { setPreviewMode } = usePreviewModeStore.getState();
 
     if (!researchId) {
-      console.log('[LoginRedirect] No hay researchId, redirigiendo a error');
       isProcessingRef.current = false;
       navigate('/error-no-research-id');
       return;
     }
 
-    // 🔒 MARCAR COMO PROCESADO ANTES DE HACER CAMBIOS
     setHasProcessed(true);
     processedRef.current = processKey;
-
-    console.log('[LoginRedirect] Configurando participante:', { researchId, participantId });
 
     if (participantId) {
       setPreviewMode(false);
@@ -85,7 +61,6 @@ const LoginRedirect: React.FC = () => {
         researchId
       );
 
-      console.log('[LoginRedirect] Navegando a test con participante:', participantId);
       navigate(`/test?researchId=${researchId}&participantId=${participantId}`);
     } else {
       setPreviewMode(true);
@@ -103,16 +78,13 @@ const LoginRedirect: React.FC = () => {
         researchId
       );
 
-      console.log('[LoginRedirect] Navegando a test en modo preview');
       navigate(`/test?researchId=${researchId}`);
     }
     
-    // 🏁 FINALIZAR PROCESAMIENTO
     isProcessingRef.current = false;
   }, [params.researchId, params.participantId, location.search, navigate, setParticipant, hasProcessed]);
 
   useEffect(() => {
-    // 🎯 EJECUTAR LÓGICA DE NAVEGACIÓN SOLO UNA VEZ
     handleNavigation();
   }, [handleNavigation]);
 

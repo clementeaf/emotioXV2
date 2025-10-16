@@ -3,7 +3,6 @@ import { useFormDataStore } from '../../../stores/useFormDataStore';
 import { useStepStore } from '../../../stores/useStepStore';
 import { PreferenceFile, PreferenceTestTaskProps } from '../types/types';
 
-// 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
 interface BackendResponse {
   questionKey: string;
   response: {
@@ -31,22 +30,16 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const imgContainerRef = useRef<HTMLDivElement>(null);
 
-  // 🎯 CARGAR RESPUESTA EXISTENTE AL MONTAR O CAMBIAR STEP
   useEffect(() => {
-    console.log('[PreferenceTestTask] 🔄 useEffect inicial ejecutándose...');
     if (currentQuestionKey) {
-      // 1. Buscar respuesta del backend para este step
       const store = useStepStore.getState();
       const backendResponse = store.backendResponses.find(
         (r: unknown): r is BackendResponse => (r as BackendResponse).questionKey === currentQuestionKey
       );
 
-      console.log('[PreferenceTestTask] 🔍 Backend response:', backendResponse);
-
       if (backendResponse?.response) {
         const responseData = backendResponse.response as { selectedValue?: string; textValue?: string };
         if (responseData.selectedValue) {
-          console.log('[PreferenceTestTask] ✅ Cargando desde backend:', responseData.selectedValue);
           setSelectedImageId(responseData.selectedValue);
         }
         return;
@@ -54,19 +47,12 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
 
       // 2. Si no hay respuesta del backend, cargar del store local
       const localData = getFormData(currentQuestionKey);
-      console.log('[PreferenceTestTask] 🔍 FormData local:', localData);
       
       if (localData?.selectedValue) {
-        console.log('[PreferenceTestTask] ✅ Cargando desde FormData:', localData.selectedValue);
         setSelectedImageId(localData.selectedValue as string);
-      } else {
-        console.log('[PreferenceTestTask] ⚠️ No hay datos previos');
       }
     }
   }, [currentQuestionKey, getFormData]); // Incluir getFormData para asegurar sincronización
-
-  // 🎯 ACTUALIZACIÓN: Eliminar el useEffect problemático, la sincronización debería funcionar 
-  // con el useEffect principal que solo se ejecuta al cambiar de step
 
   // Extraer la configuración de la pregunta
   let preferenceQuestion: Record<string, unknown> | null = null;
@@ -87,26 +73,15 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   const config = preferenceQuestion || stepConfig;
   const images = (config?.files as PreferenceFile[]) || [];
 
-  // 🎯 USAR FormData DIRECTAMENTE PARA ESTADO VISUAL (APPROACH DIRECTO)
   const localData = getFormData(currentQuestionKey || '');
   const effectiveSelectedImageId = localData?.selectedValue as string || selectedImageId;
-  
-  console.log('[PreferenceTestTask] 🔍 Estado actual:', {
-    selectedImageId,
-    localDataValue: localData?.selectedValue,
-    effectiveSelectedImageId,
-    currentQuestionKey,
-    imagesCount: images.length
-  });
 
-  // Sincronizar con prop externa
   useEffect(() => {
     if (externalSelectedImageId !== selectedImageId) {
       setSelectedImageId(externalSelectedImageId);
     }
   }, [externalSelectedImageId, selectedImageId]);
 
-  // Reset zoom y pan al cambiar de imagen
   useEffect(() => {
     setZoom(1);
     setOffset({ x: 0, y: 0 });
@@ -115,25 +90,18 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   }, [zoomImage]);
 
   const handleImageSelect = (imageId: string) => {
-    console.log('[PreferenceTestTask] 🖱️ Click en imagen:', imageId);
-    
-    // 🎯 GUARDAR EN FORMDATA PRIMERO
     if (currentQuestionKey) {
       setFormData(currentQuestionKey, {
         selectedValue: imageId
       });
-      console.log('[PreferenceTestTask] 💾 Guardado en FormData:', { currentQuestionKey, imageId });
     }
 
-    // 🎯 ACTUALIZAR ESTADO VISUAL DESPUÉS DE GUARDAR
     setSelectedImageId(imageId);
-    console.log('[PreferenceTestTask] 🎨 Estado visual actualizado a:', imageId);
     setError(null);
 
     onImageSelect?.(imageId);
   };
 
-  // Función para navegar entre imágenes en el modal
   const handleZoomNav = (direction: 'prev' | 'next') => {
     if (!zoomImage) return;
     const currentIdx = images.findIndex((img: PreferenceFile) => img.id === zoomImage.id);
@@ -229,7 +197,6 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
         <div className="flex flex-row gap-4 justify-center mb-8">
           {images.map((image: PreferenceFile, index: number) => {
             const isSelected = effectiveSelectedImageId === image.id;
-            console.log(`[PreferenceTestTask] 🎨 Imagen ${image.id}: isSelected=${isSelected}, effective=${effectiveSelectedImageId}`);
             return (
             <div
               key={image.id}

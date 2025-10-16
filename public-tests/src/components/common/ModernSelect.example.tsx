@@ -1,14 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ModernSelect, SelectOption } from './ModernSelect';
-
-// 🎯 EJEMPLOS DE USO DEL COMPONENTE MODERNSELECT
 
 export const ModernSelectExamples = () => {
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedAge, setSelectedAge] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
 
-  // Ejemplo 1: Países
   const countryOptions: SelectOption[] = [
     { value: 'mexico', label: 'México' },
     { value: 'colombia', label: 'Colombia' },
@@ -18,17 +15,15 @@ export const ModernSelectExamples = () => {
     { value: 'other', label: 'Otro país', disabled: true }
   ];
 
-  // Ejemplo 2: Edades (con opciones descalificantes)
   const ageOptions: SelectOption[] = [
     { value: '18-24', label: '18-24 años' },
     { value: '25-34', label: '25-34 años' },
     { value: '35-44', label: '35-44 años' },
     { value: '45-54', label: '45-54 años' },
     { value: '55-64', label: '55-64 años' },
-    { value: '65+', label: '65+ años', className: 'text-red-500' } // Opción descalificante
+    { value: '65+', label: '65+ años', className: 'text-red-500' }
   ];
 
-  // Ejemplo 3: Género
   const genderOptions: SelectOption[] = [
     { value: 'male', label: 'Masculino' },
     { value: 'female', label: 'Femenino' },
@@ -42,7 +37,6 @@ export const ModernSelectExamples = () => {
         Ejemplos de ModernSelect
       </h1>
 
-      {/* Ejemplo básico */}
       <div>
         <h2 className="text-lg font-semibold mb-4">1. Selector básico</h2>
         <ModernSelect
@@ -55,7 +49,6 @@ export const ModernSelectExamples = () => {
         />
       </div>
 
-      {/* Ejemplo con diferentes tamaños */}
       <div>
         <h2 className="text-lg font-semibold mb-4">2. Diferentes tamaños</h2>
         <div className="space-y-4">
@@ -86,7 +79,6 @@ export const ModernSelectExamples = () => {
         </div>
       </div>
 
-      {/* Ejemplo con error */}
       <div>
         <h2 className="text-lg font-semibold mb-4">3. Con validación de error</h2>
         <ModernSelect
@@ -100,7 +92,6 @@ export const ModernSelectExamples = () => {
         />
       </div>
 
-      {/* Ejemplo deshabilitado */}
       <div>
         <h2 className="text-lg font-semibold mb-4">4. Selector deshabilitado</h2>
         <ModernSelect
@@ -113,7 +104,6 @@ export const ModernSelectExamples = () => {
         />
       </div>
 
-      {/* Valores seleccionados */}
       <div className="mt-8 p-4 bg-gray-100 rounded-lg">
         <h3 className="font-semibold mb-2">Valores seleccionados:</h3>
         <ul className="text-sm text-gray-700">
@@ -126,7 +116,6 @@ export const ModernSelectExamples = () => {
   );
 };
 
-// 🎯 EJEMPLO DE IMPLEMENTACIÓN EN DEMOGRAPHICS
 export const DemographicSelectExample = () => {
   const [formData, setFormData] = useState<Record<string, string>>({});
 

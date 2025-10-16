@@ -48,10 +48,6 @@ export function getApiUrl(path: string): string {
 export function getWebsocketUrl(): string {
   const wsUrl = API_WEBSOCKET_ENDPOINT;
   
-  if (typeof window !== 'undefined') {
-    console.log('🔌 WebSocket URL configurada:', wsUrl);
-  }
-  
   return wsUrl;
 }
 

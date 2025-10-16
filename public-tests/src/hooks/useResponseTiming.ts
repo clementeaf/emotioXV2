@@ -32,8 +32,6 @@ export const useResponseTiming = ({
       startTime: Date.now()
     };
     setIsTracking(true);
-
-    console.log(`[useResponseTiming] 🕐 Iniciando cronometraje para: ${questionKey}`);
   }, [enabled, questionKey]);
 
   const endTiming = useCallback(() => {
@@ -49,12 +47,6 @@ export const useResponseTiming = ({
     };
 
     setIsTracking(false);
-
-    console.log(`[useResponseTiming] ✅ Cronometraje completado para ${questionKey}:`, {
-      duration: `${duration}ms`,
-      startTime: new Date(timingRef.current.startTime).toISOString(),
-      endTime: new Date(endTime).toISOString()
-    });
   }, [enabled, questionKey]);
 
   const getTimingData = useCallback(() => {

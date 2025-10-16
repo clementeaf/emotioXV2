@@ -382,30 +382,6 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
 
   const currentImageClickPoints = visualClickPoints[localSelectedImageIndex] || [];
 
-  const handleClearPoints = () => {
-    setVisualClickPoints({});
-    console.log('🧹 Puntos visuales limpiados');
-  };
-
-  const handleExportData = () => {
-    const exportData = {
-      questionKey: currentQuestionKey,
-      visualClickPoints: visualClickPoints,
-      imageSelections: imageSelections,
-      allClicksTracking: allClicksTracking,
-      timestamp: new Date().toISOString()
-    };
-
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `navigation-flow-data-${Date.now()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="flex flex-col bg-white p-6" data-testid="navigation-flow-task">
       <div className="w-full flex flex-col items-center">

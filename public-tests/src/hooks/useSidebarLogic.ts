@@ -121,13 +121,10 @@ export const useSidebarLogic = ({
     }
   }, [steps]);
 
-  // INICIALIZACIÓN DEL PASO ACTIVO
   const initializeActiveStep = useCallback(() => {
-    // 🛡️ SOLO INICIALIZAR SI NO HAY STEP ACTIVO Y NO ESTAMOS CARGANDO DATOS DEL BACKEND
     if (steps.length > 0 && !effectiveCurrentQuestionKey && !hasInitializedRef.current) {
       const initialStep = getInitialStep();
       
-      console.log('[useSidebarLogic] 🎯 Inicializando step:', initialStep);
       setSelectedQuestionKey(initialStep);
       setCurrentQuestionKey(initialStep);
       hasInitializedRef.current = true;

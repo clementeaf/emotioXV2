@@ -1,4 +1,3 @@
-import React from 'react';
 import { useStepStore } from '../../../stores/useStepStore';
 import { DemographicForm } from './DemographicForm';
 
@@ -9,7 +8,7 @@ interface DemographicRendererArgs {
 
 export const demographicRenderers = {
   demographics: ({ contentConfiguration, currentQuestionKey }: DemographicRendererArgs) => {
-    const handleDemographicSubmit = (data: Record<string, string>) => {
+    const handleDemographicSubmit = () => {
       const { goToNextStep } = useStepStore.getState();
       goToNextStep();
     };

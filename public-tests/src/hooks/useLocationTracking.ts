@@ -63,29 +63,18 @@ export const useLocationTracking = ({
         reject(new Error('Geolocalización no soportada'));
         return;
       }
-
-      // 🎯 DETECTAR SAFARI Y AJUSTAR CONFIGURACIÓN
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      
-      console.log('[useLocationTracking] Navegador detectado:', {
-        isSafari,
-        isIOS,
-        userAgent: navigator.userAgent
-      });
 
-      // 🎯 CONFIGURACIÓN OPTIMIZADA PARA SAFARI
       const geolocationOptions = isSafari || isIOS ? {
-        enableHighAccuracy: false,  // Safari prefiere false
-        timeout: 30000,            // 30 segundos para Safari
-        maximumAge: 60000          // 1 minuto para Safari
+        enableHighAccuracy: false,
+        timeout: 30000,           
+        maximumAge: 60000         
       } : {
         enableHighAccuracy: true,
-        timeout: 15000,            // 15 segundos para otros navegadores
-        maximumAge: 300000         // 5 minutos para otros navegadores
+        timeout: 15000,           
+        maximumAge: 300000
       };
-
-      console.log('[useLocationTracking] Opciones de geolocalización:', geolocationOptions);
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -96,7 +85,6 @@ export const useLocationTracking = ({
             timestamp: new Date().toISOString(),
             source: 'gps'
           };
-          console.log('[useLocationTracking] Ubicación GPS obtenida:', locationData);
           resolve(locationData);
         },
         (error) => {
@@ -107,7 +95,6 @@ export const useLocationTracking = ({
             isIOS
           });
           
-          // 🎯 MENSAJES DE ERROR ESPECÍFICOS PARA SAFARI
           let errorMessage = `Error de geolocalización: ${error.message}`;
           
           if (isSafari || isIOS) {
@@ -131,7 +118,6 @@ export const useLocationTracking = ({
     });
   }, []);
 
-  // Función para obtener ubicación aproximada por IP
   const getIPLocation = useCallback(async (): Promise<LocationData> => {
     try {
       const response = await fetch('https://ipapi.co/json/');
@@ -151,7 +137,6 @@ export const useLocationTracking = ({
   // Función principal para solicitar ubicación
   const requestLocation = useCallback(async () => {
     if (!trackLocationEnabled || !researchId) {
-      console.log('[useLocationTracking] Tracking de ubicación deshabilitado');
       return;
     }
 
@@ -178,7 +163,6 @@ export const useLocationTracking = ({
       // Enviar al backend
       await sendLocationToBackend(locationData);
 
-      console.log('[useLocationTracking] Ubicación obtenida por GPS:', locationData);
     } catch (gpsError) {
       console.warn('[useLocationTracking] GPS falló, intentando IP:', gpsError);
 
@@ -202,7 +186,6 @@ export const useLocationTracking = ({
         // Enviar al backend
         await sendLocationToBackend(ipLocationData);
 
-        console.log('[useLocationTracking] Ubicación obtenida por IP:', ipLocationData);
       } catch (ipError) {
         setError('No se pudo obtener ubicación');
         console.error('[useLocationTracking] Error obteniendo ubicación:', ipError);
@@ -234,10 +217,8 @@ export const useLocationTracking = ({
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      console.log('[useLocationTracking] Ubicación enviada al backend exitosamente');
     } catch (error) {
       console.error('[useLocationTracking] Error enviando ubicación al backend:', error);
-      // No lanzar error para no interrumpir el flujo
     }
   }, [researchId]);
 
@@ -252,8 +233,6 @@ export const useLocationTracking = ({
     localStorage.setItem(consentKey, JSON.stringify(consentData));
     setHasConsent(false);
     setHasRequested(true);
-
-    console.log('[useLocationTracking] Tracking de ubicación rechazado');
   }, [researchId]);
 
   // Función para limpiar datos de ubicación

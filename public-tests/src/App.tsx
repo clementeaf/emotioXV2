@@ -28,34 +28,23 @@ function App() {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [isStoreInitialized, setIsStoreInitialized] = useState(false);
 
-  // 🎯 MEJORAR SINCRONIZACIÓN DEL STORE - PREVENIR CONDICIÓN DE CARRERA
   useEffect(() => {
     const initializeStoreFromURL = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const urlResearchId = urlParams.get('researchId');
 
-      // 🎯 CONFIGURAR STORE INMEDIATAMENTE SI HAY researchId EN URL
       if (urlResearchId && urlResearchId !== researchId) {
-        console.log('[App] Configurando researchId desde URL:', urlResearchId);
-        
-        // Usar setParticipant para actualizar el researchId en el store
-        // Mantener otros valores existentes
         setParticipant(
-          '', // participantId - se mantendrá vacío hasta el login
-          '', // participantName - se mantendrá vacío hasta el login  
-          '', // participantEmail - se mantendrá vacío hasta el login
-          urlResearchId // researchId - se actualiza con el de la URL
+          '',
+          '',
+          '',
+          urlResearchId
         );
         
-        // 🎯 MARCAR COMO INICIALIZADO DESPUÉS DE CONFIGURAR
         setIsStoreInitialized(true);
       } else if (researchId) {
-        // 🎯 SI YA HAY researchId EN STORE, MARCAR COMO INICIALIZADO
-        console.log('[App] researchId ya existe en store:', researchId);
         setIsStoreInitialized(true);
       } else {
-        // 🎯 SI NO HAY researchId EN NINGÚN LADO, TAMBIÉN MARCAR COMO INICIALIZADO
-        console.log('[App] No hay researchId en URL ni store');
         setIsStoreInitialized(true);
       }
     };
