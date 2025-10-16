@@ -1,6 +1,5 @@
 import React from 'react';
 import { EmotionHierarchySelector } from './emotion';
-import { DetailedEmotionSelector } from './emotion/DetailedEmotionSelector';
 import { ScaleRangeQuestionProps, SingleAndMultipleChoiceQuestionProps } from './types';
 
 export function ScaleRangeQuestion({
@@ -14,8 +13,6 @@ export function ScaleRangeQuestion({
   onChange,
 }: ScaleRangeQuestionProps) {
   const range = Array.from({ length: max - min + 1 }, (_, i) => min + i);
-
-  // 🎯 USAR STARTLABEL/ENDLABEL SI ESTÁN DISPONIBLES
   const displayStartLabel = startLabel || leftLabel;
   const displayEndLabel = endLabel || rightLabel;
 
@@ -45,7 +42,6 @@ export function ScaleRangeQuestion({
   );
 }
 
-// Nuevo componente para selector de emojis
 export interface EmojiRangeQuestionProps {
   emojis?: string[];
   value?: number;
@@ -67,10 +63,7 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
   startLabel,
   endLabel,
 }) => {
-  // 🎯 DETERMINAR SI USAR ESTRELLAS O EMOJIS
   const useStars = type === 'stars';
-  
-  // 🎯 ESTADO PARA MANEJAR HOVER EN ESTRELLAS
   const [hoverValue, setHoverValue] = React.useState<number | null>(null);
 
   const elements = useStars
@@ -80,10 +73,8 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
   const displayStartLabel = useStars ? startLabel || '1 - Muy insatisfecho' : '';
   const displayEndLabel = useStars ? endLabel || '5 - Muy satisfecho' : '';
 
-  // 🎯 FUNCIÓN PARA DETERMINAR SI UNA ESTRELLA DEBE ESTAR ILUMINADA
   const isStarActive = (elementId: number) => {
     if (useStars) {
-      // Durante hover, mostrar progresión hasta la estrella hovereada
       const currentValue = hoverValue !== null ? hoverValue : (value ?? 0);
       return currentValue >= elementId;
     }
@@ -120,7 +111,6 @@ export const EmojiRangeQuestion: React.FC<EmojiRangeQuestionProps> = ({
   );
 };
 
-// Nuevo componente para respuestas abiertas tipo texto
 export interface VOCTextQuestionProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -155,9 +145,7 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
   multiple = false,
 }) => {
 
-  // 🎯 FORZAR VALOR CORRECTO PARA MÚLTIPLE
   const currentValue = multiple && !Array.isArray(value) ? [] : value;
-
 
   const isSelected = (id: string) => {
     const selected = multiple && Array.isArray(currentValue)
@@ -171,7 +159,6 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
   const handleClick = (id: string) => {
 
     if (multiple) {
-      // 🎯 FORZAR COMPORTAMIENTO MÚLTIPLE
       const currentArray = Array.isArray(currentValue) ? currentValue : [];
 
       if (currentArray.includes(id)) {
@@ -186,7 +173,6 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
     }
   };
 
-  // 🔍 VERIFICAR SI HAY CHOICES
   if (!choices || choices.length === 0) {
     return (
       <div className="flex flex-col items-center w-full gap-4">
@@ -221,7 +207,6 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
   );
 };
 
-// Nuevos componentes para jerarquía de emociones
 export interface EmotionHierarchyQuestionProps {
   selectedCluster?: string;
   onClusterSelect?: (clusterId: string) => void;
@@ -237,12 +222,6 @@ export const EmotionHierarchyQuestion: React.FC<EmotionHierarchyQuestionProps> =
   />
 );
 
-// 🎯 WRAPPER ELIMINADO - USAR COMPONENTE DIRECTO
-// DetailedEmotionQuestion era solo un wrapper innecesario
-// Usar directamente DetailedEmotionSelector desde:
-// ./emotion/DetailedEmotionSelector
-
-// 🎯 NUEVO COMPONENTE: ESCALA LINEAL CON BARRA DESLIZANTE
 export interface LinearScaleSliderProps {
   value?: number;
   onChange?: (value: number) => void;
@@ -281,7 +260,6 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
     onChange?.(clampedValue);
   };
 
-  // 🎯 MANEJAR ARRASTRE
   const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (disabled) return;
     setIsDragging(true);
@@ -304,7 +282,6 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
     setIsDragging(false);
   };
 
-  // 🎯 EFECTOS PARA ARRASTRE
   React.useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
@@ -318,7 +295,6 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
 
   return (
     <div className="flex flex-col items-center w-full max-w-2xl px-4">
-      {/* 🎯 BARRA DESLIZANTE */}
       <div className="relative w-full h-8 mb-4">
         <div
           ref={sliderRef}
@@ -328,13 +304,11 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
           onClick={handleSliderClick}
           onMouseDown={handleMouseDown}
         >
-          {/* 🎯 BARRA DE PROGRESO */}
           <div
             className="absolute top-0 left-0 h-full bg-green-500 rounded-full transition-all duration-200"
             style={{ width: `${percentage}%` }}
           />
           
-          {/* 🎯 INDICADOR DEL VALOR */}
           <div
             className={`absolute top-1/2 w-6 h-6 bg-white border-2 border-green-500 rounded-full transition-all duration-200 shadow-lg ${
               disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
@@ -344,7 +318,6 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
               transform: `translateX(-50%) translateY(-50%)` 
             }}
           >
-            {/* 🎯 ÍCONO DE CHECK */}
             <div className="absolute inset-0 flex items-center justify-center">
               <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -354,13 +327,11 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
         </div>
       </div>
 
-      {/* 🎯 ETIQUETAS DE EXTREMOS */}
       <div className="flex justify-between w-full text-sm text-gray-600">
         <span className="text-left">{startLabel}</span>
         <span className="text-right">{endLabel}</span>
       </div>
 
-      {/* 🎯 VALOR ACTUAL */}
       <div className="mt-2 text-lg font-semibold text-green-600">
         {value}
       </div>

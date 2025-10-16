@@ -18,18 +18,12 @@ interface RendererArgs {
 }
 
 const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
-  // 🎯 SCREEN RENDERERS
   ...screenRenderers,
-
-  // 🎯 DEMOGRAPHIC RENDERERS  
   ...demographicRenderers,
 
-  // 🎯 SMARTVOC RENDERERS
   smartvoc: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
-    // SmartVOC questions don't use choices - they use config.type for rendering
     const displayType = contentConfiguration?.type || 'text';
     
-    // Map SmartVOC config.type to appropriate question type
     let questionType: string;
     let config: Record<string, unknown>;
     
@@ -61,7 +55,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           questionKey: currentQuestionKey,
           type: questionType,
           config,
-          choices: [], // SmartVOC doesn't use choices
+          choices: [],
           description: String(contentConfiguration?.description || '')
         }}
         currentStepKey={currentQuestionKey}
@@ -70,8 +64,6 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
     );
   },
   ...SmartVOCRenderers,
-
-  // 🎯 COGNITIVE RENDERERS
   ...cognitiveRenderers
 };
 

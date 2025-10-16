@@ -17,14 +17,10 @@ import { RENDERERS, UnknownStepComponent } from './ComponentRenderers';
 import { getCurrentStepData, getQuestionType } from './utils';
 
 
-
-
-
 const TestLayoutRenderer: React.FC = () => {
   const navigate = useNavigate();
   const { researchId, participantId, participantEmail } = useTestStore();
 
-  // 🎯 SAFEGUARD: Redirigir si faltan datos del participante
   useEffect(() => {
     if (!researchId || !participantId) {
       navigate('/error-no-research-id');
@@ -34,69 +30,50 @@ const TestLayoutRenderer: React.FC = () => {
   const { getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
 
-  // 🎯 OBTENER RESPUESTAS DEL BACKEND
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',
     participantId || ''
   );
 
-  // 🎯 HOOK WEBSOCKET OPTIMIZADO PARA NOTIFICACIONES
   const { sendParticipantLogin, isConnected, participantState } = useOptimizedMonitoringWebSocket();
 
-  // 🎯 HOOK PARA SINCRONIZACIÓN CON BACKEND
   useStepStoreWithBackend();
-
-  // 🎯 DEBUG HOOK PARA DIAGNOSTICAR PROBLEMAS
   useDebugSteps();
 
-  // 🎯 VERIFICACIÓN MÓVIL EN STEPS
   const {
-    // isBlocked, // Not used
     deviceType,
-    // allowMobile, // Not used
-    // configFound, // Not used
     isLoading: isLoadingMobileCheck,
     error: mobileCheckError,
     shouldShowBlockScreen
   } = useMobileStepVerification(researchId);
 
-  // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
 
-  // 🎯 TRACKING DE RECORRIDO NO INTRUSIVO
   const { trackStepVisit } = useUserJourneyTracking({
     enabled: shouldTrackUserJourney,
     researchId
   });
 
-  // 🎯 QUERY DE FORMS - SIEMPRE EJECUTAR
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
 
-  // 🎯 ENVIAR EVENTO DE LOGIN CUANDO EL PARTICIPANTE INICIA LA SESIÓN
-  // 🎯 NOTIFICAR AL DASHBOARD POR WEBSOCKET (OPTIMIZADO - SIN DUPLICADOS)
   useEffect(() => {
-    // Solo enviar si no se ha enviado ya y tenemos todos los datos
     if (researchId && participantId && isConnected && !participantState.hasLoggedIn) {
-      // Usar el email del participante si existe, sino generar uno basado en el ID
       const email = participantEmail || `${participantId.slice(-8)}@participant.study`;
       sendParticipantLogin(participantId, email);
     }
   }, [researchId, participantId, participantEmail, isConnected, participantState.hasLoggedIn, sendParticipantLogin]);
 
-  // 🎯 TRACKING DE VISITA DE STEP
   useEffect(() => {
     if (currentQuestionKey && shouldTrackUserJourney) {
       trackStepVisit(currentQuestionKey, 'visit');
     }
   }, [currentQuestionKey, shouldTrackUserJourney, trackStepVisit]);
 
-  // 🎯 INICIALIZAR STEPS CUANDO SE OBTIENEN LOS FORMS
   useEffect(() => {
     if (formsData?.steps && formsData.steps.length > 0) {
 
       const { setSteps } = useStepStore.getState();
-      // Convertir strings a Step objects
       const stepObjects = formsData.steps.map((questionKey: string) => ({
         questionKey,
         title: questionKey
@@ -105,28 +82,15 @@ const TestLayoutRenderer: React.FC = () => {
     }
   }, [formsData?.steps]);
 
-  // 🎯 MEJORAR LÓGICA DE REDIRECCIÓN - PREVENIR BUCLES INFINITOS
   if (!researchId) {
     const urlParams = new URLSearchParams(window.location.search);
     const urlResearchId = urlParams.get('researchId');
     const currentPath = window.location.pathname;
 
-    console.log('[TestLayoutRenderer] Verificando redirección:', {
-      researchId,
-      urlResearchId,
-      currentPath,
-      search: window.location.search
-    });
-
-    // 🎯 SOLO REDIRIGIR SI REALMENTE NO HAY researchId EN NINGÚN LADO
     if (urlResearchId) {
-      // 🎯 EVITAR BUCLE INFINITO: Solo redirigir si no estamos ya en la ruta correcta
       if (currentPath !== '/' && !currentPath.includes('/test')) {
-        console.log('[TestLayoutRenderer] Redirigiendo a login con researchId:', urlResearchId);
         window.location.href = `/?researchId=${urlResearchId}`;
       } else {
-        // 🎯 SI YA ESTAMOS EN LA RUTA CORRECTA, MOSTRAR LOADING
-        console.log('[TestLayoutRenderer] Ya en ruta correcta, esperando configuración del store...');
         return (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -135,14 +99,11 @@ const TestLayoutRenderer: React.FC = () => {
         );
       }
     } else {
-      // Si no hay researchId en ningún lado, ir a error
-      console.log('[TestLayoutRenderer] No hay researchId, redirigiendo a error');
       window.location.href = '/error-no-research-id';
     }
     return <div>Redirigiendo...</div>;
   }
 
-  // 🚨 BLOQUEAR STEPS SI ES MÓVIL NO PERMITIDO
   if (shouldShowBlockScreen && (deviceType === 'mobile' || deviceType === 'tablet')) {
     return (
       <MobileStepBlockedScreen
@@ -153,7 +114,6 @@ const TestLayoutRenderer: React.FC = () => {
     );
   }
 
-  // Mostrar loading mientras se verifica la configuración móvil
   if (isLoadingMobileCheck) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -163,7 +123,6 @@ const TestLayoutRenderer: React.FC = () => {
     );
   }
 
-  // Mostrar error si falla la verificación móvil
   if (mobileCheckError) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -253,27 +212,23 @@ const TestLayoutRenderer: React.FC = () => {
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
   
   const shouldHideButton = (() => {
-    // 🎯 OCULTAR BOTÓN PARA SMARTVOC_NEV Y DETAILED (DetailedEmotionSelector)
     if (questionType !== 'smartvoc_nev') return false;
     
     const instructions = String(contentConfiguration?.instructions || '');
     const hasMaxSelectionPattern = /hasta\s+(\d+)|máximo\s+(\d+)|máx\s+(\d+)|max\s+(\d+)|selecciona\s+hasta\s+(\d+)|selecciona\s+máximo\s+(\d+)|selecciona\s+(\d+)\s+emociones|(\d+)\s+emociones/i.test(instructions);
     
-    // 🎯 SIEMPRE OCULTAR BOTÓN PARA DETAILED (DetailedEmotionSelector)
-    // porque tiene su propia lógica de selección limitada y auto-avance
     if (hasMaxSelectionPattern) {
-      return true; // Siempre ocultar para DetailedEmotionSelector
+      return true;
     }
     
     return false;
   })();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <div className="flex-1">
         {renderedForm}
       </div>
-      {/* 🎯 OCULTAR BOTÓN SI NO HAY CONFIGURACIÓN O SI ES NEV CON AUTO-AVANCE */}
       {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && !shouldHideButton && (
         <ButtonSteps
           currentQuestionKey={currentQuestionKey}

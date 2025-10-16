@@ -416,9 +416,6 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
           <p className="text-gray-600 mb-2">
             {description}
           </p>
-          <p className="text-sm text-gray-500 italic">
-            Haz clic en una zona interactiva para seleccionarla
-          </p>
         </div>
 
         {images.length > 1 && (
@@ -444,12 +441,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         )}
 
         <div
-          className="relative w-[80vw] max-w-4xl bg-white rounded-lg shadow-lg"
-          style={{ 
-            aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : '16/9',
-            maxHeight: '85vh',
-            minHeight: '400px'
-          }}
+          className="relative w-[70vw] max-w-4xl bg-white rounded-lg shadow-lg"
         >
           {!selectedImage && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
@@ -584,14 +576,6 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
           )}
         </div>
       </div>
-
-      {/* 🎯 DEBUGGER INTEGRADO */}
-      <NavigationFlowDebugger
-        currentImageIndex={localSelectedImageIndex}
-        visualClickPoints={visualClickPoints}
-        onClearPoints={handleClearPoints}
-        onExportData={handleExportData}
-      />
     </div>
   );
 };

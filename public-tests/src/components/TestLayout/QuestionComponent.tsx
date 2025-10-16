@@ -4,7 +4,7 @@ import { useFormLoadingState } from '../../hooks/useFormLoadingState';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion, LinearScaleSlider } from './QuestionesComponents';
 import { useAutoAdvance } from '../../hooks/useAutoAdvance';
 import { useQuestionHandlers } from '../../hooks/useQuestionHandlers';
-import { useQuestionInitialization, Question, QuestionConfig, FormData } from '../../hooks/useQuestionInitialization';
+import { useQuestionInitialization, Question, FormData } from '../../hooks/useQuestionInitialization';
 import { EmotionGrid } from './emotions';
 import { DetailedEmotionSelector } from './emotion/DetailedEmotionSelector';
 
@@ -36,12 +36,8 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
     questionType: question.type,
     maxSelections: question.config?.maxSelections,
     currentQuestionKey: currentStepKey,
-    onAdvance: () => {
-      // Callback opcional después del avance
-    }
   });
 
-  // 🎯 HOOK PARA MANEJAR CAMBIOS SEGÚN TIPO DE PREGUNTA
   const { handleChange } = useQuestionHandlers({
     questionType: question.type,
     config: question.config,
@@ -49,7 +45,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
     setValue,
     onSave: (dataToSave) => {
       saveToStore(dataToSave);
-      // ✅ Solo guarda en FormDataStore, NO envía al backend
     },
     onAutoAdvance: (selections) => {
       triggerAutoAdvance(selections);
@@ -57,7 +52,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
     isAdvancing
   });
 
-  // 🎯 HANDLER MEMOIZADO PARA CLICKS DE EMOCIONES
   const handleEmotionClick = React.useCallback((emotion: string) => {
     handleChange(emotion);
   }, [handleChange]);
@@ -166,5 +160,4 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
   );
 });
 
-// 🎯 DISPLAY NAME PARA MEJOR DEBUGGING
 QuestionComponent.displayName = 'QuestionComponent';

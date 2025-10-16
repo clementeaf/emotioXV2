@@ -18,18 +18,13 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
       case 'form':
         return (
           <div className={`space-y-4 ${className}`}>
-            {/* Título del formulario */}
             <div className={`${baseClasses} h-8 w-3/4`}></div>
-            
-            {/* Campos del formulario */}
             {Array.from({ length: count || 3 }, (_, i) => (
               <div key={i} className="space-y-2">
                 <div className={`${baseClasses} h-4 w-1/3`}></div>
                 <div className={`${baseClasses} h-10 w-full`}></div>
               </div>
             ))}
-            
-            {/* Botón */}
             <div className={`${baseClasses} h-12 w-48 mx-auto`}></div>
           </div>
         );

@@ -83,7 +83,7 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
   }, [shouldTrackUserJourney, trackStepVisit]);
 
   return (
-    <div className='flex flex-col items-center justify-center h-full w-full'>
+    <div className='flex flex-col items-center justify-center h-auto w-auto'>
       <h2 className='text-2xl font-bold mb-2'>{data.title || ''}</h2>
       <p>{data.message || ''}</p>
       {data.startButtonText && (
