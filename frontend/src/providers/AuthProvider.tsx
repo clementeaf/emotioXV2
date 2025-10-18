@@ -1,8 +1,7 @@
 'use client';
 
-import { useAuth as useNewAuth, useLogout as useNewLogout } from '@/api/domains/auth';
 import { User } from '@/api/domains/auth/auth.types';
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
   user: User | null;
@@ -26,16 +25,50 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const newAuth = useNewAuth();
-  const logoutMutation = useNewLogout();
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const { user, token, isAuthenticated, isLoading } = newAuth;
+  // Check auth state on mount and listen for changes
+  useEffect(() => {
+    const checkAuthState = () => {
+      if (typeof window !== 'undefined') {
+        const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+        
+        if (storedToken && storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            setToken(storedToken);
+            setUser(userData);
+          } catch {
+            // Invalid user data, clear storage
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
+          }
+        }
+        setAuthLoading(false);
+      }
+    };
 
-  // This login method is kept for compatibility but the real login happens through useLogin hook
+    checkAuthState();
+
+    // Listen for auth state changes
+    const handleAuthChange = () => {
+      checkAuthState();
+    };
+
+    window.addEventListener('authStateChanged', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('authStateChanged', handleAuthChange);
+    };
+  }, []);
+
   const login = useCallback(async (newToken: string, rememberMe: boolean) => {
-    // This is mainly for legacy compatibility - the actual login should use useLogin hook
-    console.warn('AuthProvider login called - consider using useLogin hook directly');
     try {
       const tokenParts = newToken.split('.');
       if (tokenParts.length !== 3) throw new Error('Token inválido');
@@ -47,14 +80,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: payload.name
       };
 
-      // Save to storage (the new auth hooks will pick this up)
+      // Save to storage
       const storage = rememberMe ? localStorage : sessionStorage;
       storage.setItem('token', newToken);
       storage.setItem('user', JSON.stringify(userData));
       storage.setItem('auth_type', rememberMe ? 'local' : 'session');
 
+      // Update state
+      setToken(newToken);
+      setUser(userData);
       setAuthError(null);
-      // The new auth hooks will automatically pick up the stored data
     } catch (error) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -66,16 +101,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await logoutMutation.mutateAsync();
-    } catch (error) {
-      // The mutation handles cleanup even on error
-    }
-  }, [logoutMutation]);
+    // Clear storage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('auth_type');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('auth_type');
+    
+    // Clear state
+    setToken(null);
+    setUser(null);
+    setAuthError(null);
+  }, []);
 
   const restoreSession = useCallback(async (): Promise<boolean> => {
-    return isAuthenticated;
-  }, [isAuthenticated]);
+    return token !== null;
+  }, [token]);
 
   const clearError = useCallback(() => {
     setAuthError(null);
@@ -85,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={{
       user,
       token,
-      authLoading: isLoading,
+      authLoading,
       authError,
       login,
       logout,

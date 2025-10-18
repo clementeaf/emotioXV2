@@ -40,7 +40,8 @@ export const apiClient: AxiosInstance = axios.create({
 // Interceptor de request
 apiClient.interceptors.request.use(
   (config) => {
-    const token = getAuthToken();
+    // Always get fresh token from storage
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -68,7 +69,9 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        // No redirigir automáticamente - dejar que los componentes manejen la navegación
       }
     }
 

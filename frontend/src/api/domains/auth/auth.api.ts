@@ -12,8 +12,17 @@ export const authApi = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     // Extract rememberMe since it's only for frontend use
     const { rememberMe, ...loginData } = credentials;
-    const response = await apiClient.post<LoginResponse>('/auth/login', loginData);
-    return response.data;
+    const response = await apiClient.post<any>('/auth/login', loginData);
+    
+    // Transform backend response to frontend format
+    if (response.data.success && response.data.data) {
+      return {
+        token: response.data.data.token,
+        user: response.data.data.user
+      };
+    }
+    
+    throw new Error('Invalid response format');
   },
 
   /**

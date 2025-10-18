@@ -41,18 +41,6 @@ export function useLogin() {
       // Notify auth state change for same-tab updates
       window.dispatchEvent(new CustomEvent('authStateChanged'));
 
-      // Prefetch dashboard data in parallel while navigating
-      queryClient.prefetchQuery({
-        queryKey: ['research', 'list'],
-        queryFn: async () => {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/research`, {
-            headers: { 'Authorization': `Bearer ${data.token}` }
-          });
-          return response.json();
-        },
-        staleTime: 30000, // Consider fresh for 30 seconds
-      });
-
       // Redirect immediately (no toast, no delay)
       router.push('/dashboard');
 
