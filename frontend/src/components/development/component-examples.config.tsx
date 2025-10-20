@@ -1,5 +1,4 @@
 import React from 'react';
-import { FormCard } from '@/components/common/FormCard';
 import { FormToggle } from '@/components/common/FormToggle';
 import { FormInput } from '@/components/common/FormInput';
 import { FormTextarea } from '@/components/common/FormTextarea';
@@ -9,15 +8,11 @@ import { OptimisticFormWrapper } from '@/components/common/OptimisticFormWrapper
 import { OptimisticButton } from '@/components/common/OptimisticButton';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ConfigCard } from '@/components/common/ConfigCard';
-import { DevModeInfo } from '@/components/common/DevModeInfo';
 import { ProgressiveLoader } from '@/components/common/ProgressiveLoader';
 import { SimulatedDataBanner } from '@/components/common/SimulatedDataBanner';
 import { PlaceholderCard } from '@/components/common/PlaceholderCard';
-import { QRCodeModal } from '@/components/common/QRCodeModal';
 import { EducationalSidebar } from '@/components/common/EducationalSidebar';
 import { ReorderableGrid } from '@/components/common/ReorderableGrid';
-import { LoadingTransition } from '@/components/common/LoadingTransition';
-import { ConflictResolutionModal } from '@/components/common/ConflictResolutionModal';
 import { ConditionalSection } from '@/components/common/ConditionalSection';
 import { FormSelect } from '@/components/common/FormSelect';
 import { LabeledInput } from '@/components/common/LabeledInput';
@@ -77,7 +72,7 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
   ActionButton: {
     title: "ActionButton - Variantes",
     props: {},
-    children: (formData: any, handlers: ComponentHandlers) => (
+    children: (handlers: ComponentHandlers) => (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-4">
           <ActionButton variant="primary" onClick={handlers.handleSubmit}>

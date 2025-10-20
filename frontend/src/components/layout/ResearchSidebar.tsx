@@ -84,7 +84,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const researchName = researchData?.name || (researchId ? `Research ${researchId.slice(-8)}` : 'Research');
   const researchTechnique = researchData
     ? (researchData as { technique?: string; basic?: { technique?: string } }).technique ||
-      (researchData as { technique?: string; basic?: { technique?: string } }).basic?.technique
+    (researchData as { technique?: string; basic?: { technique?: string } }).basic?.technique
     : null;
 
   const sections = useMemo(() => {
@@ -125,11 +125,10 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const isLoadingName = isLoadingSpecific && !researchData;
   const error = null;
 
-  const handleBackToDashboard = useCallback(() => { 
-    router.push('/dashboard'); 
+  const handleBackToDashboard = useCallback(() => {
+    router.push('/dashboard');
   }, [router]);
 
-  // Bloque superior: nombre proyecto y enlaces
   const TopBlock = (
     <div className='py-2'>
       <div>
@@ -164,7 +163,7 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   );
 
   const MenuBlock = useMemo(() => (
-    <nav className="space-y-4">
+    <nav className="space-y-4 pl-2">
       {sections.map((section) => (
         <div key={section.id} className="space-y-1">
           <div>

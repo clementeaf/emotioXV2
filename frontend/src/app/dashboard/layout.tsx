@@ -8,18 +8,19 @@ import { Suspense } from 'react';
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const researchId = searchParams ? searchParams.get('research') : '';
+  const hasSection = searchParams ? Boolean(searchParams.get('section')) : false;
 
 
   return (
     <div className="flex h-screen p-6 gap-6" style={{ backgroundColor: '#f1f5f9' }}>
-      <div className="w-60 bg-white rounded-lg shadow-lg">
+      <div className="w-60 bg-white rounded-xl">
         {researchId ? (
           <ResearchSidebar researchId={researchId} />
         ) : (
           <Sidebar />
         )}
       </div>
-      <div className="flex-1 bg-white rounded-lg shadow-lg">
+      <div className={hasSection ? 'flex-1 bg-white rounded-lg border border-neutral-200' : 'flex-1 bg-white rounded-lg shadow-lg'}>
         <main className="h-full p-6">
           {children}
         </main>

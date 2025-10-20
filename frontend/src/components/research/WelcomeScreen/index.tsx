@@ -43,16 +43,16 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   return (
     <>
-      <FormToggle
-        label="Habilitar pantalla de bienvenida"
-        description="La pantalla de bienvenida se mostrará al iniciar la investigación"
-        checked={formData.isEnabled ?? false}
-        onChange={(checked) => handleChange('isEnabled', checked)}
-        disabled={isLoading || isSaving}
-      />
-
-      <div className="mt-8">
+      <div>
         <FormCard title="Configuración de Pantalla de Bienvenida">
+          <FormToggle
+            label="Habilitar pantalla de bienvenida"
+            description="La pantalla de bienvenida se mostrará al iniciar la investigación"
+            checked={formData.isEnabled ?? false}
+            onChange={(checked) => handleChange('isEnabled', checked)}
+            disabled={isLoading || isSaving}
+            className='mb-4'
+          />
           <div className="space-y-6">
             <FormInput
               label="Título"
@@ -107,7 +107,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
           >
             Vista previa
           </ActionButton>
-          
+
           <ActionButton
             variant="primary"
             onClick={handleSubmit}

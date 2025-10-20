@@ -14,15 +14,12 @@ interface ResearchStageManagerProps {
 
 // Componente interno que usa useSearchParams
 function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) {
-  const { stageTitle, renderStageContent } = useStageManager(researchId);
+  const { renderStageContent } = useStageManager(researchId);
 
   return (
-    <div className="liquid-glass flex-1 mt-8 ml-4 p-10 rounded-2xl mb-4 flex flex-col justify-start">
-      <h1 className="text-2xl font-semibold text-neutral-900">{stageTitle}</h1>
-      <ConfigCard>
-        {renderStageContent()}
-      </ConfigCard>
-    </div>
+    <ConfigCard>
+      {renderStageContent()}
+    </ConfigCard>
   );
 }
 
