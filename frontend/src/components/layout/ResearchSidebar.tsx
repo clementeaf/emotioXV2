@@ -18,23 +18,23 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   const searchParams = useSearchParams();
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || DEFAULT_SECTION;
-  // Usar hook específico para obtener research por ID
+
   const { data: specificResearchData, isLoading: isLoadingSpecific } = useResearchById(researchId || '');
   const { data: researches = [] } = useResearchList();
 
-  // Usar datos específicos si están disponibles, sino buscar en la lista
   const researchData = specificResearchData || researches.find((r: any) => r.id === researchId);
 
 
   const UserInfo = memo(() => {
     if (!user) {
       return (
-        <div className="flex items-center gap-3 p-3">
-          <div className="w-12 h-12 rounded-full bg-neutral-200 flex items-center justify-center">
-            <span className="text-lg font-medium text-neutral-600">U</span>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+            <span className="text-lg font-bold text-blue-600">U</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-md font-medium text-neutral-900 truncate">Usuario</p>
+            <p className="text-sm font-bold text-neutral-900 truncate">Usuario</p>
+            <p className="text-xs text-neutral-500 truncate">Sin email</p>
           </div>
         </div>
       );
@@ -44,12 +44,12 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     const userInitial = userName.charAt(0).toUpperCase();
     return (
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-blue-300 flex items-center justify-center">
-          <span className="text-lg font-medium text-blue-900">{userInitial}</span>
+        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+          <span className="text-lg font-bold text-blue-600">{userInitial}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-md font-medium text-neutral-900 truncate">{userName}</p>
-          <p className="text-md text-neutral-500 truncate">{userEmail}</p>
+          <p className="text-sm font-bold text-neutral-900 truncate">{userName}</p>
+          <p className="text-xs text-neutral-500 truncate">{userEmail}</p>
         </div>
       </div>
     );
@@ -68,13 +68,15 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     }, [logout]);
 
     return (
-      <button
-        onClick={handleLogout}
-        className="w-full flex items-center gap-2 px-4 py-2 ml-2 text-[15px] text-red-600 hover:bg-red-200 rounded-lg transition-colors border border-red-200 hover:border-red-300"
-        title="Cerrar sesión"
-      >
-        <span className="font-[400]">Cerrar sesión</span>
-      </button>
+      <div className="flex items-center gap-3 px-2">
+        <button
+          onClick={handleLogout}
+          className="flex-1 flex items-center justify-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200 hover:border-red-300"
+          title="Cerrar sesión"
+        >
+          <span className="font-medium">Cerrar sesión</span>
+        </button>
+      </div>
     );
   });
   LogoutButton.displayName = 'LogoutButton';
@@ -129,41 +131,44 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
 
   // Bloque superior: nombre proyecto y enlaces
   const TopBlock = (
-    <div>
-      <div className="mb-2">
-      <button
-        onClick={handleBackToDashboard}
-        className="py-2 text-sm text-neutral-700 font-medium transition-colors text-left"
-        aria-label="Volver al dashboard"
-      >
-        ← Volver al dashboard
-      </button>
-        <h2 className="text-lg font-semibold text-neutral-900 truncate" title={typeof researchName === 'string' ? researchName : ''}>
+    <div className='py-2'>
+      <div>
+        <button
+          onClick={handleBackToDashboard}
+          className="flex items-center gap-1.5 py-1.5 text-xs text-neutral-700 font-medium transition-colors hover:text-neutral-900 mt-3"
+          aria-label="Volver al dashboard"
+        >
+          <span>←</span>
+          <span>Volver al dashboard</span>
+        </button>
+      </div>
+      <div className="space-y-1.5 py-2">
+        <h2 className="text-base font-bold text-neutral-900 truncate" title={typeof researchName === 'string' ? researchName : ''}>
           {isLoadingName ? (
-            <div className="animate-pulse bg-gray-200 rounded h-6 w-32"></div>
+            <div className="animate-pulse bg-gray-200 rounded h-5 w-28"></div>
           ) : (
             researchName
           )}
         </h2>
         {researchTechnique && !isLoadingName && (
-          <p className="text-sm text-neutral-600 mt-1 truncate" title={researchTechnique}>
+          <p className="text-[13px] leading-4 text-neutral-500 truncate" title={researchTechnique}>
             {researchTechnique}
           </p>
         )}
         {isLoadingName && (
-          <div className="animate-pulse bg-gray-200 rounded h-4 w-24 mt-1"></div>
+          <div className="animate-pulse bg-gray-200 rounded h-3.5 w-20"></div>
         )}
       </div>
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
     </div>
   );
 
   const MenuBlock = useMemo(() => (
-    <nav className="space-y-6">
+    <nav className="space-y-4">
       {sections.map((section) => (
         <div key={section.id} className="space-y-1">
           <div>
-            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            <h3 className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-2">
               {section.title}
             </h3>
           </div>
@@ -172,13 +177,13 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
               key={stage.id}
               href={`/dashboard?research=${researchId}&aim=true&section=${stage.id}`}
               className={cn(
-                'flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors',
+                'flex items-center gap-2 px-2.5 py-1.5 text-[13px] rounded-md transition-colors duration-200',
                 currentSection === stage.id
-                  ? 'bg-blue-200 text-blue-600 font-medium'
-                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+                  ? 'bg-blue-100 text-blue-700 font-medium border border-blue-200'
+                  : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
               )}
             >
-              <span className="flex-1">{stage.title}</span>
+              <span className="flex-1 leading-5">{stage.title}</span>
             </Link>
           ))}
         </div>

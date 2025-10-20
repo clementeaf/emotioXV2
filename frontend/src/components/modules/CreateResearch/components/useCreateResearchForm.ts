@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { useCreateResearch, useResearchList } from '@/api/domains/research';
 import { useResearchStore, researchHelpers } from '@/stores/useResearchStore';
 import { getTechniqueStages } from '@/config/techniques-registry';
-import { ResearchBasicData, ResearchType } from '../../../../../shared/interfaces/research.model';
+import { ResearchBasicData, ResearchType } from '../../../../../../shared/interfaces/research.model';
 import { CreateResearchRequest } from '@/api/domains/research/research.types';
 
 interface Step {
@@ -312,14 +312,16 @@ export default function useCreateResearchForm(onResearchCreated?: (researchId: s
       const firstSection = techniqueStages[0] || 'welcome-screen';
       const researchId = resultData.data?.id || resultData.id;
 
+      // Llamar al callback ANTES de la redirección para evitar conflictos
+      if (onResearchCreated) {
+        onResearchCreated(researchId, resultData.data?.name || resultData.name);
+      }
+
+      // Redirección después del callback
       if ((resultData.data?.technique || resultData.technique) === 'aim-framework') {
         router.push(`/dashboard?research=${researchId}&aim=true&section=${firstSection}`);
       } else {
         router.push(`/dashboard?research=${researchId}&section=${firstSection}`);
-      }
-
-      if (onResearchCreated) {
-        onResearchCreated(researchId, resultData.data?.name || resultData.name);
       }
 
     } catch (error: unknown) {

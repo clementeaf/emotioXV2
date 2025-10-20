@@ -186,7 +186,7 @@ function SidebarContent({ className }: SidebarProps) {
     const userInitial = userName.charAt(0).toUpperCase();
     return (
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-blue-300 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-blue-300 flex items-center justify-center">
           <span className="text-lg font-medium text-blue-900">{userInitial}</span>
         </div>
         <div className="flex-1 min-w-0">

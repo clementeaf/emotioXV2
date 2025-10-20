@@ -1,27 +1,31 @@
-import React, { useState } from 'react';
-import { FormSteps } from './FormSteps';
-import { BasicInfoStep } from './BasicInfoStep';
-import { ResearchTypeStep } from './ResearchTypeStep';
-import { TechniqueStep } from './TechniqueStep';
-import { FormActions } from './FormActions';
-import { ResearchSummary } from './ResearchSummary';
-import { useCreateResearchForm } from './useCreateResearchForm';
-import type { CreateSectionProps } from '../../../types/research-creation.interface';
+import React, { memo } from 'react';
+import { cn } from '@/lib/utils';
+import { useCompanies } from '@/hooks/useCompanies';
+import { FormSteps } from './components/FormSteps';
+import { BasicInfoStep } from './components/BasicInfoStep';
+import { ResearchTypeStep } from './components/ResearchTypeStep';
+import { TechniqueStep } from './components/TechniqueStep';
+import { FormActions } from './components/FormActions';
+import { ResearchSummary } from './components/ResearchSummary';
+import useCreateResearchForm from './components/useCreateResearchForm';
 
-/**
- * Sección de creación de investigación con formulario multi-paso
- */
-export const CreateSection: React.FC<CreateSectionProps> = ({ onResearchCreated }) => {
+interface CreateResearchFormOptimizedProps {
+  className?: string;
+  onResearchCreated?: (researchId: string, researchName: string) => void;
+}
+
+export const CreateResearchFormOptimized: React.FC<CreateResearchFormOptimizedProps> = memo(({
+  className,
+  onResearchCreated
+}) => {
+  // Hooks personalizados
+  const { companies, loading: loadingCompanies, error: companiesError, refreshCompanies } = useCompanies();
   const {
     formData,
     steps,
     isSubmitting,
     showSummary,
     countdown,
-    companies,
-    loadingCompanies,
-    companiesError,
-    refreshCompanies,
     updateFormData,
     goToNextStep,
     goToPreviousStep,
@@ -34,9 +38,10 @@ export const CreateSection: React.FC<CreateSectionProps> = ({ onResearchCreated 
   // Si ya se completó, mostrar resumen
   if (showSummary) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
+      <div className={cn('max-w-2xl mx-auto p-6', className)}>
         <ResearchSummary
           formData={formData.basic}
+          companies={companies}
           countdown={countdown}
         />
       </div>
@@ -65,14 +70,14 @@ export const CreateSection: React.FC<CreateSectionProps> = ({ onResearchCreated 
       case 2:
         return (
           <ResearchTypeStep
-            selectedType={formData.basic.type || ''}
+            selectedType={formData.basic.type}
             onTypeToggle={toggleResearchType}
           />
         );
       case 3:
         return (
           <TechniqueStep
-            selectedTechnique={formData.basic.technique || ''}
+            selectedTechnique={formData.basic.technique}
             onTechniqueToggle={toggleTechnique}
           />
         );
@@ -82,7 +87,7 @@ export const CreateSection: React.FC<CreateSectionProps> = ({ onResearchCreated 
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className={cn('max-w-4xl mx-auto', className)}>
       <div className="space-y-6">
         <FormSteps
           steps={steps}
@@ -108,4 +113,8 @@ export const CreateSection: React.FC<CreateSectionProps> = ({ onResearchCreated 
       </div>
     </div>
   );
-};
+});
+
+CreateResearchFormOptimized.displayName = 'CreateResearchFormOptimized';
+
+export default CreateResearchFormOptimized;

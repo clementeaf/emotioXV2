@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { useCreateResearch } from '../../../hooks/research/useResearch';
 import { useCompanies } from '../../../hooks/companies/useCompanies';
 import { useResearchStore, researchHelpers } from '../../../stores/useResearchStore';
 import { useResearchList } from '../../../hooks/research/useResearch';
+import { getTechniqueStages } from '../../../config/techniques-registry';
+import type { ResearchBasicData } from '../../../types/research.model';
+import { ResearchType } from '../../../types/research.model';
+
+export interface CreateResearchRequest {
+  name: string;
+  companyId: string;
+  type: ResearchType;
+  technique: string;
+  description?: string;
+}
 
 interface FormState {
-  basic: {
-    name: string;
-    companyId: string;
-    type?: string;
-    technique?: string;
-    description?: string;
-  };
+  basic: ResearchBasicData;
   currentStep: number;
   errors: Record<string, string>;
 }
@@ -38,54 +45,82 @@ const initialFormState: FormState = {
 };
 
 export const useCreateResearchForm = (onResearchCreated?: (researchId: string, researchName: string) => void) => {
-  // Zustand store for optimistic updates
-  const { optimisticAdd, reconcileByClientId, rollback } = useResearchStore();
-  
+  const navigate = useNavigate();
+  const { currentDraft, updateDraft, clearDraft, optimisticAdd, reconcileByClientId, rollback } = useResearchStore();
+
+  const [formData, setFormData] = useState<FormState>(initialFormState);
+  const [showSummary, setShowSummary] = useState(false);
+  const [countdown] = useState(3);
+
+  const createResearchMutation = useCreateResearch();
+  const isSubmitting = createResearchMutation.isPending;
+
+  // Get existing research to validate duplicate names
+  const { data: existingResearch = [] } = useResearchList();
+
+  // Debounce timer for real-time validation
+  const [validationTimer, setValidationTimer] = useState<NodeJS.Timeout | null>(null);
+
   // Hooks
   const companiesQuery = useCompanies();
-  const { data: existingResearch = [] } = useResearchList();
-  
   const companies = companiesQuery.data?.data || [];
   const loadingCompanies = companiesQuery.isLoading;
   const companiesError = companiesQuery.error?.message || null;
   const refreshCompanies = companiesQuery.refetch;
-  const createResearchMutation = useCreateResearch();
-  
-  // Local state
-  const [formData, setFormData] = useState<FormState>(initialFormState);
-  const [showSummary, setShowSummary] = useState(false);
-  const [countdown, setCountdown] = useState(3);
-  const [validationTimer, setValidationTimer] = useState<NodeJS.Timeout | null>(null);
-  
-  const isSubmitting = createResearchMutation.isPending;
 
   // Real-time validation for research name
   useEffect(() => {
+    // Clear existing timer
     if (validationTimer) {
       clearTimeout(validationTimer);
     }
 
-    if (formData.basic.name.length > 2) {
+    // Only validate if there's a name and it's at least 3 characters
+    if (formData.basic.name && formData.basic.name.length >= 3) {
       const timer = setTimeout(() => {
+        // Check for duplicate names
         const researchList = Array.isArray(existingResearch) ? existingResearch : existingResearch.data || [];
         const isDuplicate = researchList.some(
-          (research: any) => research.name.toLowerCase() === formData.basic.name.toLowerCase()
+          (research: any) => research.name.toLowerCase().trim() === formData.basic.name.toLowerCase().trim()
         );
-        
+
         if (isDuplicate) {
           setFormData(prev => ({
             ...prev,
             errors: {
               ...prev.errors,
-              name: 'Research name already exists. Please choose a different name.'
+              name: 'A research with this name already exists'
             }
           }));
+        } else {
+          // Clear the name error if it exists
+          setFormData(prev => {
+            const newErrors = { ...prev.errors };
+            delete newErrors.name;
+            return {
+              ...prev,
+              errors: newErrors
+            };
+          });
         }
-      }, 500);
+      }, 1000); // 1 second debounce
 
+      setValidationTimer(timer);
+    } else if (formData.basic.name && formData.basic.name.length > 0 && formData.basic.name.length < 3) {
+      // Show error for names too short
+      const timer = setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          errors: {
+            ...prev.errors,
+            name: 'Name must be at least 3 characters'
+          }
+        }));
+      }, 1000);
       setValidationTimer(timer);
     }
 
+    // Cleanup
     return () => {
       if (validationTimer) {
         clearTimeout(validationTimer);
@@ -93,10 +128,31 @@ export const useCreateResearchForm = (onResearchCreated?: (researchId: string, r
     };
   }, [formData.basic.name, existingResearch]);
 
+  // Restaurar borrador si existe
+  useEffect(() => {
+    if (currentDraft && currentDraft.data && currentDraft.data.basic) {
+      setFormData((prev) => ({
+        ...prev,
+        basic: {
+          ...prev.basic,
+          name: prev.basic.name || currentDraft.data.basic?.name || '',
+          companyId: prev.basic.companyId || currentDraft.data.basic?.description || '',
+          type: prev.basic.type || (currentDraft.data.basic?.type as ResearchType) || undefined,
+          technique: prev.basic.technique || (currentDraft.data.configuration?.technique || '')
+        },
+        currentStep: currentDraft.step === 'basic' ? 1 :
+          currentDraft.step === 'configuration' ? 2 : 3,
+        errors: {}
+      }));
+    }
+  }, [currentDraft]);
+
   // Countdown effect
   useEffect(() => {
     if (showSummary && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      const timer = setTimeout(() => {
+        // Countdown is handled by the parent component
+      }, 1000);
       return () => clearTimeout(timer);
     } else if (showSummary && countdown === 0) {
       if (onResearchCreated) {
@@ -109,24 +165,36 @@ export const useCreateResearchForm = (onResearchCreated?: (researchId: string, r
   const validateStep = (step: number): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
-    if (step === 1) {
-      if (!formData.basic.name.trim()) {
-        newErrors.name = 'Research name is required';
-      } else if (formData.basic.name.length < 3) {
-        newErrors.name = 'Research name must be at least 3 characters';
-      }
-      
-      if (!formData.basic.companyId) {
-        newErrors.companyId = 'Please select a company';
-      }
-    }
+    switch (step) {
+      case 1:
+        if (!formData.basic.name || formData.basic.name.length < 3) {
+          newErrors.name = 'Name must be at least 3 characters';
+        } else {
+          // Check for duplicate names (case insensitive)
+          const researchList = Array.isArray(existingResearch) ? existingResearch : existingResearch.data || [];
+          const isDuplicate = researchList.some(
+            (research: any) => research.name.toLowerCase().trim() === formData.basic.name.toLowerCase().trim()
+          );
+          if (isDuplicate) {
+            newErrors.name = 'A research with this name already exists';
+          }
+        }
+        if (!formData.basic.companyId) {
+          newErrors.companyId = 'Company is required';
+        }
+        break;
 
-    if (step === 2 && !formData.basic.type) {
-      newErrors.type = 'Please select a research type';
-    }
+      case 2:
+        if (!formData.basic.type) {
+          newErrors.type = 'Research type is required';
+        }
+        break;
 
-    if (step === 3 && !formData.basic.technique) {
-      newErrors.technique = 'Please select a technique';
+      case 3:
+        if (!formData.basic.technique) {
+          newErrors.technique = 'Technique is required';
+        }
+        break;
     }
 
     return newErrors;
@@ -134,17 +202,39 @@ export const useCreateResearchForm = (onResearchCreated?: (researchId: string, r
 
   // Update form data
   const updateFormData = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      basic: {
-        ...prev.basic,
-        [field]: value
-      },
-      errors: {
-        ...prev.errors,
+    const currentFormData = { ...formData };
+    currentFormData.basic = {
+      ...currentFormData.basic,
+      [field]: value
+    };
+
+    // Clear error for this field when user starts typing
+    if (currentFormData.errors[field]) {
+      currentFormData.errors = {
+        ...currentFormData.errors,
         [field]: ''
-      }
-    }));
+      };
+    }
+
+    setFormData(currentFormData);
+
+    // Actualizar borrador
+    setTimeout(() => {
+      updateDraft(
+        {
+          basic: {
+            title: currentFormData.basic.name,
+            description: currentFormData.basic.companyId,
+            type: currentFormData.basic.type
+          },
+          configuration: {
+            technique: currentFormData.basic.technique
+          }
+        },
+        currentFormData.currentStep === 1 ? 'basic' :
+          currentFormData.currentStep === 2 ? 'configuration' : 'review'
+      );
+    }, 0);
   };
 
   // Navigation functions
@@ -153,6 +243,18 @@ export const useCreateResearchForm = (onResearchCreated?: (researchId: string, r
 
     if (Object.keys(errors).length > 0) {
       setFormData(prev => ({ ...prev, errors }));
+
+      // Focus en el primer campo con error
+      setTimeout(() => {
+        if (errors.name) {
+          const nameInput = document.getElementById('name');
+          nameInput?.focus();
+        } else if (errors.companyId) {
+          const companySelect = document.getElementById('companyId');
+          companySelect?.focus();
+        }
+      }, 0);
+
       return;
     }
 
@@ -196,11 +298,10 @@ export const useCreateResearchForm = (onResearchCreated?: (researchId: string, r
 
     const clientId = researchHelpers.newClientId();
     console.log('🚀 GENERATED CLIENT ID:', clientId);
-    
-    const createData = {
+    const createData: CreateResearchRequest = {
       name: formData.basic.name,
       companyId: formData.basic.companyId,
-      type: formData.basic.type || 'behavioural',
+      type: formData.basic.type || ResearchType.BEHAVIOURAL,
       technique: formData.basic.technique || '',
       description: formData.basic.description || ''
     };
@@ -220,18 +321,44 @@ export const useCreateResearchForm = (onResearchCreated?: (researchId: string, r
     try {
       console.log('🚀 SENDING CREATE REQUEST TO BACKEND');
       const result = await createResearchMutation.mutateAsync(createData);
-      
-      console.log('🚀 CREATE SUCCESS - Reconciling with real data');
-      reconcileByClientId(clientId, result.data);
-      
-      setShowSummary(true);
-      
-      if (onResearchCreated && result.data) {
-        onResearchCreated(result.data.id, result.data.name);
+      console.log('🚀 BACKEND CREATE SUCCESS:', result);
+
+      const resultData = result as { data?: any; id?: string; name?: string; message?: string; [key: string]: any };
+
+      console.log('🚀 RECONCILING OPTIMISTIC DATA WITH REAL ID');
+      reconcileByClientId(clientId, {
+        id: resultData.data?.id || resultData.id,
+        name: resultData.data?.name || resultData.name,
+        companyId: resultData.data?.companyId || resultData.companyId,
+        technique: resultData.data?.technique || resultData.technique,
+        status: resultData.data?.status || resultData.status || 'draft',
+        stage: resultData.data?.stage || 'basic-info',
+        createdAt: resultData.data?.createdAt || resultData.createdAt,
+        updatedAt: resultData.data?.updatedAt || resultData.updatedAt,
+      });
+
+      toast.success(resultData.message || 'Investigación creada correctamente');
+      clearDraft();
+
+      const techniqueStages = getTechniqueStages(resultData.data?.technique || resultData.technique || '');
+      const firstSection = techniqueStages[0] || 'welcome-screen';
+      const researchId = resultData.data?.id || resultData.id;
+
+      if ((resultData.data?.technique || resultData.technique) === 'aim-framework') {
+        navigate(`/dashboard?research=${researchId}&aim=true&section=${firstSection}`);
+      } else {
+        navigate(`/dashboard?research=${researchId}&section=${firstSection}`);
       }
-    } catch (error) {
-      console.error('🚀 CREATE ERROR - Rolling back:', error);
+
+      if (onResearchCreated) {
+        onResearchCreated(researchId, resultData.data?.name || resultData.name);
+      }
+
+    } catch (error: unknown) {
+      console.log('🚀 CREATE FAILED - ROLLING BACK:', error);
       rollback();
+      const errorMessage = error instanceof Error ? error.message : 'Error al crear la investigación';
+      toast.error(errorMessage);
     }
   };
 

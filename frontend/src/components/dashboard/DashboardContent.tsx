@@ -1,6 +1,6 @@
 'use client';
 
-import { ResearchStageManager } from '@/components/research/ResearchStageManager';
+import { ResearchStageManager } from '@/components/modules/CreateResearch';
 import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { useDashboardResearch } from '@/hooks/useDashboardResearch';
 import { useResearchList } from '@/api/domains/research';

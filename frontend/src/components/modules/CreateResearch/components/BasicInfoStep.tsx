@@ -1,9 +1,8 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
-import { Input } from '../../ui/Input';
-import { CompanySelectWithCreate } from '../../ui/CompanySelectWithCreate';
-import type { Option } from '../../../types/option.interface';
-import type { Company } from '../../../types/api.types';
+import { Input } from '@/components/ui/Input';
+import { CompanySelectWithCreate, Option } from '@/components/ui/CompanySelectWithCreate';
+import { Company } from '../../../../../../shared/interfaces/company.interface';
 
 interface BasicInfoStepProps {
   formData: {
