@@ -21,15 +21,14 @@ export { companyService } from './companyService';
 // Servicios de eye tracking
 export { default as eyeTrackingService } from './eyeTrackingService';
 
-// Servicio de tareas cognitivas
-export { default as cognitiveTaskService } from './cognitiveTaskService';
+// ❌ ELIMINADO: cognitiveTaskService - usar /api/domains/cognitive-task/
 
 // Servicio de almacenamiento S3
 export { default as s3Service } from './s3Service';
 
 // Exportar también los tipos
 // ❌ ELIMINADO: authService types - usar tipos de /api/domains/auth/
-export * from './cognitiveTaskService';
+// ❌ ELIMINADO: cognitiveTaskService - usar /api/domains/cognitive-task/
 export * from './companyService';
 export * from './eyeTrackingService';
 // ❌ ELIMINADO: smartVOCFormService - usar /api/domains/smart-voc/

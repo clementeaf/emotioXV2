@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import type { HitzoneArea } from '../../types/index';
+import type { HitzoneArea } from '../../types';
 
 interface LocalHitzoneEditorProps {
   imageUrl: string;

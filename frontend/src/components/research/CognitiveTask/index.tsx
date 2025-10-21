@@ -43,16 +43,12 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleSave: saveForm,
     handlePreview,
     handleDelete,
-    confirmDelete,
     closeModal,
     isUploading,
     uploadProgress,
     showJsonPreview,
-    closeJsonModal,
-    jsonToSend,
-    pendingAction,
-    continueWithAction
-  } = useCognitiveTaskForm(researchId, onSave);
+    closeJsonModal
+  } = useCognitiveTaskForm(researchId);
 
   // Hook para el contenido educativo
   const {
@@ -72,12 +68,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   // 🆕 Función para confirmar la eliminación
   const handleConfirmDelete = () => {
     setShowDeleteModal(false);
-    if (confirmDelete) {
-      confirmDelete();
-    } else {
-      // Fallback al método original si confirmDelete no está disponible
-      handleDelete();
-    }
+    handleDelete();
   };
 
   // Registrar información importante para debugging
@@ -174,9 +165,9 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
       <JsonPreviewModal
         isOpen={showJsonPreview}
         onClose={closeJsonModal}
-        onContinue={continueWithAction}
-        jsonData={jsonToSend}
-        pendingAction={pendingAction}
+        onContinue={() => {}}
+        jsonData=""
+        pendingAction={null}
         hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
       />
 

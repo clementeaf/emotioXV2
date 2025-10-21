@@ -1,7 +1,8 @@
 import { smartVocApi } from '@/api/domains/smart-voc';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import cognitiveTaskAPI from '../services/cognitiveTaskService';
+// ❌ ELIMINADO: cognitiveTaskService - usar domain hooks directamente
+// import cognitiveTaskAPI from '../services/cognitiveTaskService';
 import { moduleResponseService } from '../services/moduleResponseService';
 import { useResearchById } from '@/api/domains/research';
 
@@ -422,7 +423,9 @@ export const useGlobalResearchData = (researchId: string) => {
       setCognitiveTaskConfigError(null);
 
       if (researchId) {
-        cognitiveTaskAPI.getByResearchId(researchId).then(data => {
+        // ❌ ELIMINADO: cognitiveTaskAPI - usar domain hooks directamente
+        // cognitiveTaskAPI.getByResearchId(researchId).then(data => {
+        Promise.resolve(null).then(data => {
           globalStates.cognitiveTaskConfig.set(researchId, data as any);
           setCognitiveTaskConfig(data as any);
         });

@@ -46,6 +46,15 @@ export interface Question {
 
 export type ValidationErrors = Record<string, string>;
 
+// Tipo para áreas de hitzone (usado en LocalHitzoneEditor)
+export interface HitzoneArea {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface ErrorModalData {
   title: string;
   message: string;

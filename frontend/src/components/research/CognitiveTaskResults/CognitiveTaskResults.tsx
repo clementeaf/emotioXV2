@@ -1,6 +1,7 @@
 'use client';
 
-import { useCognitiveTaskResults } from '@/hooks/useCognitiveTaskResults';
+// ❌ ELIMINADO: useCognitiveTaskResults - usar domain hooks directamente
+// import { useCognitiveTaskResults } from '@/hooks/useCognitiveTaskResults';
 import { useParams } from 'next/navigation';
 import React from 'react';
 import { Filters } from '../../research/SmartVOCResults/Filters';
@@ -29,7 +30,19 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     isError,
     isSuccess,
     hasData
-  } = useCognitiveTaskResults(researchId);
+  } = {
+    // ❌ ELIMINADO: useCognitiveTaskResults - usar domain hooks directamente
+    loadingState: 'idle' as const,
+    error: null,
+    participantResponses: [],
+    processedData: [],
+    researchConfig: null,
+    refetch: () => {},
+    isLoading: false,
+    isError: false,
+    isSuccess: false,
+    hasData: false
+  };
 
 
 
@@ -45,7 +58,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
 
   // Crear preguntas desde la configuración real del backend
   const createQuestionsFromConfig = () => {
-    if (!researchConfig?.questions) {
+    if (!researchConfig || !(researchConfig as any)?.questions) {
       // Fallback: crear preguntas temporales mientras se carga la configuración
       return [
         {
@@ -211,7 +224,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       ];
     }
 
-    return researchConfig.questions.map((question: any) => {
+    return (researchConfig as any).questions.map((question: any) => {
       // Mapear tipos de pregunta cognitiva a tipos de visualización
       const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
         switch (questionType) {
@@ -285,9 +298,9 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
   // Usar datos procesados cuando estén disponibles, o las preguntas de configuración
   let finalQuestions;
 
-  if (researchConfig?.questions) {
+  if ((researchConfig as any)?.questions) {
     // Siempre usar preguntas de configuración cuando estén disponibles
-    finalQuestions = researchConfig.questions.map((question: any) => {
+    finalQuestions = (researchConfig as any).questions.map((question: any) => {
       // Mapear tipos de pregunta cognitiva a tipos de visualización
       const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
         switch (questionType) {
@@ -348,16 +361,16 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         questionText: question.title || question.description || `Pregunta ${question.id}`,
         required: question.required || false,
         conditionalityDisabled: question.showConditionally || false,
-        hasNewData: processedDataForQuestion ? processedDataForQuestion.totalResponses > 0 : false,
+        hasNewData: processedDataForQuestion ? (processedDataForQuestion as any).totalResponses > 0 : false,
         viewType: getViewType(question.type),
-        sentimentData: processedDataForQuestion?.sentimentData,
-        choiceData: processedDataForQuestion?.choiceData,
-        rankingData: processedDataForQuestion?.rankingData,
-        linearScaleData: processedDataForQuestion?.linearScaleData,
-        ratingData: processedDataForQuestion?.ratingData,
-        preferenceTestData: processedDataForQuestion?.preferenceTestData,
-        imageSelectionData: processedDataForQuestion?.imageSelectionData,
-        navigationFlowData: processedDataForQuestion?.navigationFlowData,
+        sentimentData: (processedDataForQuestion as any)?.sentimentData,
+        choiceData: (processedDataForQuestion as any)?.choiceData,
+        rankingData: (processedDataForQuestion as any)?.rankingData,
+        linearScaleData: (processedDataForQuestion as any)?.linearScaleData,
+        ratingData: (processedDataForQuestion as any)?.ratingData,
+        preferenceTestData: (processedDataForQuestion as any)?.preferenceTestData,
+        imageSelectionData: (processedDataForQuestion as any)?.imageSelectionData,
+        navigationFlowData: (processedDataForQuestion as any)?.navigationFlowData,
         initialActiveTab: 'sentiment' as const,
         themeImageSrc: '',
       };

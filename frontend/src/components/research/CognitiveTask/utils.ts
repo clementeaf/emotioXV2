@@ -1,5 +1,5 @@
 import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
-import { Question, UICognitiveTaskFormData } from '../types';
+import { Question, UICognitiveTaskFormData } from './types';
 
 /**
  * Valida si una pregunta individual tiene todos los campos requeridos

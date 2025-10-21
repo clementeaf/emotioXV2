@@ -19,12 +19,12 @@ export const CognitiveTaskSettings: React.FC<CognitiveTaskSettingsProps> = ({
         <div className="space-y-0.5">
           <h3 className="text-md font-medium">Configuración</h3>
           <p className="text-sm text-neutral-500">
-            {UI_TEXTS.FORM.RANDOMIZE_DESCRIPTION}
+            {UI_TEXTS.SETTINGS.RANDOMIZE_DESCRIPTION}
           </p>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-neutral-500">
-            {UI_TEXTS.FORM.RANDOMIZE_TITLE}
+            {UI_TEXTS.SETTINGS.RANDOMIZE_LABEL}
           </span>
           <Switch
             checked={randomizeQuestions}
