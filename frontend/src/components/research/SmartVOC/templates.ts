@@ -1,8 +1,8 @@
-import { QuestionType, SmartVOCQuestion } from '../types';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
+import { SmartVOCQuestion } from '@/api/domains/smart-voc';
 
 /**
  * Plantillas disponibles para crear nuevas preguntas
- * Estas NO son preguntas por defecto, sino plantillas que el usuario puede usar para crear preguntas
  */
 export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuestion, 'id'>>> = {
   [QuestionType.SMARTVOC_CSAT]: {
@@ -78,29 +78,25 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
 };
 
 /**
- * Obtiene los tipos de preguntas disponibles que no han sido creados aún
+ * Crea una pregunta desde una plantilla
  */
-export const getAvailableQuestionTypes = (existingTypes: QuestionType[]): QuestionType[] => {
-  return Object.keys(QUESTION_TEMPLATES).filter(
-    type => !existingTypes.includes(type as QuestionType)
-  ) as QuestionType[];
+export const createQuestionFromTemplate = (type: QuestionType, instructions?: string): SmartVOCQuestion => {
+  const template = QUESTION_TEMPLATES[type];
+  if (!template) {
+    throw new Error(`Template not found for type: ${type}`);
+  }
+  
+  return {
+    ...template,
+    id: Math.random().toString(36).substring(2, 15),
+    instructions: instructions || template.instructions
+  };
 };
 
 /**
- * Crea una nueva pregunta basada en una plantilla
+ * Obtiene los tipos de preguntas disponibles que no han sido creados aún
  */
-export const createQuestionFromTemplate = (
-  type: QuestionType,
-  customInstructions?: string
-): SmartVOCQuestion => {
-  const template = QUESTION_TEMPLATES[type];
-  if (!template) {
-    throw new Error(`No existe plantilla para el tipo: ${type}`);
-  }
-  const uniqueId = `${type.toLowerCase()}_${Date.now()}`;
-  return {
-    ...template,
-    id: uniqueId,
-    instructions: customInstructions || template.instructions
-  };
+export const getAvailableQuestionTypes = (existingTypes: QuestionType[]): QuestionType[] => {
+  const allTypes = Object.keys(QUESTION_TEMPLATES) as QuestionType[];
+  return allTypes.filter(type => !existingTypes.includes(type));
 };

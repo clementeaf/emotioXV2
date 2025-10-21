@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 
-import { EMOTION_SELECTOR_CONFIGS } from '../constants/emotionHierarchy';
+// TODO: Implementar configuración de emociones
+const EMOTION_SELECTOR_CONFIGS = {
+  quadrants: {
+    name: 'Cuadrantes Emocionales',
+    description: 'Selecciona el cuadrante emocional que mejor represente tu estado',
+    quadrants: [
+      { name: 'Alto Placer', description: 'Emociones positivas intensas', color: '#4ade80', emotions: ['Felicidad', 'Alegría', 'Éxtasis'] },
+      { name: 'Bajo Placer', description: 'Emociones negativas intensas', color: '#ef4444', emotions: ['Tristeza', 'Ira', 'Miedo'] },
+      { name: 'Alto Dominio', description: 'Sentimiento de control', color: '#3b82f6', emotions: ['Confianza', 'Poder', 'Control'] },
+      { name: 'Bajo Dominio', description: 'Sentimiento de impotencia', color: '#8b5cf6', emotions: ['Vergüenza', 'Culpa', 'Impaciencia'] }
+    ]
+  }
+};
 import { EmotionHierarchySelector } from './EmotionHierarchySelector';
 // 🎯 DetailedEmotionSelector eliminado - usar componente consolidado en public-tests
 

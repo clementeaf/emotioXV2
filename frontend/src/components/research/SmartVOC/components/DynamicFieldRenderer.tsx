@@ -4,7 +4,7 @@ import { FormTextarea } from '@/components/common/FormTextarea';
 import { FormSelect } from '@/components/common/FormSelect';
 import { LabeledInput } from '@/components/common/LabeledInput';
 import { ScaleSelector } from '@/components/common/ScaleSelector';
-import { FieldConfig } from '../config/question-types.config';
+import { FieldConfig } from '../config';
 
 interface DynamicFieldRendererProps {
   field: FieldConfig;

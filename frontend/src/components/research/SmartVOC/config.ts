@@ -3,22 +3,25 @@ import { QuestionType } from 'shared/interfaces/question-types.enum';
 export interface FieldConfig {
   name: string;
   label: string;
-  component: 'FormInput' | 'FormTextarea' | 'FormSelect' | 'LabeledInput' | 'ScaleSelector';
+  component: string;
   placeholder?: string;
-  options?: Array<{ value: string; label: string }>;
-  rows?: number;
   required?: boolean;
-  conditional?: {
-    field: string;
-    value: any;
-  };
+  rows?: number;
+  options?: Array<{ value: string; label: string }>;
 }
 
 export interface QuestionTypeConfig {
   id: string;
   name: string;
   description: string;
-  fields: FieldConfig[];
+  fields: Array<{
+    name: string;
+    label: string;
+    component: string;
+    placeholder?: string;
+    required?: boolean;
+    options?: Array<{ value: string; label: string }>;
+  }>;
   previewType: string;
   info?: string;
 }
@@ -40,20 +43,19 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         name: 'description',
         label: 'Descripción (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Introduzca una descripción opcional para la pregunta',
-        rows: 3
+        placeholder: 'Introduzca una descripción opcional para la pregunta'
       },
       {
         name: 'instructions',
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Añada instrucciones o información adicional para los participantes',
-        rows: 3
+        placeholder: 'Añada instrucciones o información adicional para los participantes'
       },
       {
         name: 'config.type',
         label: 'Tipo de visualización',
         component: 'FormSelect',
+        placeholder: 'Seleccionar tipo',
         options: [
           { value: 'stars', label: 'Estrellas' },
           { value: 'numbers', label: 'Números' }
@@ -78,15 +80,13 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         name: 'description',
         label: 'Descripción (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Introduzca una descripción opcional para la pregunta',
-        rows: 3
+        placeholder: 'Introduzca una descripción opcional para la pregunta'
       },
       {
         name: 'instructions',
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Añada instrucciones o información adicional para los participantes',
-        rows: 3
+        placeholder: 'Añada instrucciones o información adicional para los participantes'
       }
     ],
     previewType: 'CES',
@@ -108,37 +108,13 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         name: 'description',
         label: 'Descripción (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Introduzca una descripción opcional para la pregunta',
-        rows: 3
+        placeholder: 'Introduzca una descripción opcional para la pregunta'
       },
       {
         name: 'instructions',
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Añada instrucciones o información adicional para los participantes',
-        rows: 3
-      },
-      {
-        name: 'config.scaleRange',
-        label: 'Escala',
-        component: 'ScaleSelector',
-        options: [
-          { value: '1-5', label: 'Escala 1-5' },
-          { value: '1-7', label: 'Escala 1-7' },
-          { value: '1-10', label: 'Escala 1-10' }
-        ]
-      },
-      {
-        name: 'config.startLabel',
-        label: 'Etiqueta inicio',
-        component: 'LabeledInput',
-        placeholder: 'Texto de inicio'
-      },
-      {
-        name: 'config.endLabel',
-        label: 'Etiqueta fin',
-        component: 'LabeledInput',
-        placeholder: 'Texto de fin'
+        placeholder: 'Añada instrucciones o información adicional para los participantes'
       }
     ],
     previewType: 'CV',
@@ -160,15 +136,13 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         name: 'description',
         label: 'Descripción (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Introduzca una descripción opcional para la pregunta',
-        rows: 3
+        placeholder: 'Introduzca una descripción opcional para la pregunta'
       },
       {
         name: 'instructions',
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Añada instrucciones o información adicional para los participantes',
-        rows: 3
+        placeholder: 'Añada instrucciones o información adicional para los participantes'
       }
     ],
     previewType: 'NEV',
@@ -190,24 +164,13 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         name: 'description',
         label: 'Descripción (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Introduzca una descripción opcional para la pregunta',
-        rows: 3
+        placeholder: 'Introduzca una descripción opcional para la pregunta'
       },
       {
         name: 'instructions',
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Añada instrucciones o información adicional para los participantes',
-        rows: 3
-      },
-      {
-        name: 'config.scaleRange',
-        label: 'Escala',
-        component: 'ScaleSelector',
-        options: [
-          { value: '0-10', label: 'Escala 0-10' },
-          { value: '0-6', label: 'Escala 0-6' }
-        ]
+        placeholder: 'Añada instrucciones o información adicional para los participantes'
       }
     ],
     previewType: 'NPS'
@@ -228,15 +191,13 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         name: 'description',
         label: 'Descripción (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Introduzca una descripción opcional para la pregunta',
-        rows: 3
+        placeholder: 'Introduzca una descripción opcional para la pregunta'
       },
       {
         name: 'instructions',
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
-        placeholder: 'Añada instrucciones o información adicional para los participantes',
-        rows: 3
+        placeholder: 'Añada instrucciones o información adicional para los participantes'
       }
     ],
     previewType: 'VOC'
@@ -245,8 +206,4 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
 
 export const getQuestionTypeConfig = (type: string): QuestionTypeConfig | null => {
   return QUESTION_TYPE_CONFIGS[type] || null;
-};
-
-export const getAvailableQuestionTypes = (): QuestionTypeConfig[] => {
-  return Object.values(QUESTION_TYPE_CONFIGS);
 };

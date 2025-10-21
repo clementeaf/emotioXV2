@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 import { UI_TEXTS } from '../constants';
-import { QUESTION_TEMPLATES, createQuestionFromTemplate, getAvailableQuestionTypes } from '../templates/questionTemplates';
-import { QuestionType, SmartVOCQuestion } from '../types';
+import { QUESTION_TEMPLATES, createQuestionFromTemplate, getAvailableQuestionTypes } from '../templates';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
+import { SmartVOCQuestion } from '@/api/domains/smart-voc';
 
 interface AddQuestionModalProps {
   isOpen: boolean;

@@ -4,10 +4,18 @@ import { FormCard } from '@/components/common/FormCard';
 import { QuestionPreview } from '@/components/common/QuestionPreview';
 import { ActionButton } from '@/components/common/ActionButton';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
-import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
-import { getQuestionTypeConfig } from '../config/question-types.config';
+import { SmartVOCQuestion } from '@/api/domains/smart-voc';
+import { getQuestionTypeConfig } from '../config';
 import { DynamicFieldRenderer } from './DynamicFieldRenderer';
-import { getNestedValue, createFieldChangeHandler } from '../utils/field-helpers';
+import { getNestedValue, createFieldChangeHandler } from '../utils';
+
+interface SmartVOCQuestionsProps {
+  questions: SmartVOCQuestion[];
+  onUpdateQuestion: (id: string, updates: Partial<SmartVOCQuestion>) => void;
+  onAddQuestion: (question: SmartVOCQuestion) => void;
+  onRemoveQuestion: (id: string) => void;
+  disabled?: boolean;
+}
 import { AddQuestionModal } from './AddQuestionModal';
 
 export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({

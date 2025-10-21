@@ -1,21 +1,40 @@
-import { v4 as uuidv4 } from 'uuid';
+/**
+ * Utilidades para SmartVOC
+ */
 
-import { QuestionType } from 'shared/interfaces/question-types.enum';
-import { SmartVOCQuestion } from './types'; // Asegúrate que la ruta a types sea correcta
+/**
+ * Obtiene un valor anidado de un objeto usando notación de punto
+ */
+export const getNestedValue = (obj: any, path: string): any => {
+  return path.split('.').reduce((current, key) => current?.[key], obj);
+};
 
-// Instala uuid si no lo has hecho: npm install uuid @types/uuid
-
-export const generateNewQuestion = (index: number): SmartVOCQuestion => {
-  const newId = uuidv4();
-  return {
-    id: newId,
-    type: QuestionType.SMARTVOC_VOC,
-    title: `Nueva Pregunta ${index + 1}`,
-    description: '',
-    showConditionally: false,
-    config: {
-      type: 'text'
-    },
-    instructions: ''
+/**
+ * Crea un manejador de cambios para campos anidados
+ */
+export const createFieldChangeHandler = (
+  questionId: string,
+  fieldPath: string,
+  onUpdateQuestion: (id: string, updates: any) => void
+) => {
+  return (value: any) => {
+    const updates = { [fieldPath]: value };
+    onUpdateQuestion(questionId, updates);
   };
+};
+
+/**
+ * Valida que un campo requerido no esté vacío
+ */
+export const validateRequiredField = (value: any): boolean => {
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+  if (typeof value === 'number') {
+    return !isNaN(value);
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return value != null && value !== undefined;
 };

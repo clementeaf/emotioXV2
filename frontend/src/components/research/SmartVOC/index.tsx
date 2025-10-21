@@ -1,21 +1,22 @@
 import React from 'react';
-
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { EducationalSidebar } from '@/components/common/EducationalSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
-import {
-  SmartVOCQuestions,
-} from './components';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { FormFooter } from '@/components/common/FormFooter';
 import { useSmartVOCForm } from './hooks/useSmartVOCForm';
-import { SmartVOCFormProps } from './types';
+import { SmartVOCQuestions } from './components/SmartVOCQuestions';
+
+interface SmartVOCFormProps {
+  className?: string;
+  researchId: string;
+  onSave?: (data: any) => void;
+}
 
 /**
  * Componente principal del formulario SmartVOC
- * Esta versión refactorizada separa las responsabilidades en subcomponentes
- * y utiliza un hook personalizado para la lógica del formulario
+ * Estructura organizada siguiendo el patrón de WelcomeScreen/ThankYouScreen
  */
 export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   className,
@@ -23,13 +24,14 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   onSave
 }) => {
   const {
-    questions,
     formData,
     smartVocId,
+    validationErrors,
     isLoading,
     isSaving,
     modalError,
     modalVisible,
+    questions,
     updateQuestion,
     addQuestion,
     removeQuestion,
@@ -50,30 +52,24 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     error: educationalError
   } = useEducationalContent();
 
-
   // Callback para guardar y notificar al componente padre si es necesario
   const handleSaveAndNotify = () => {
     handleSave();
     if (onSave) {
-      // Asegurar que metadata y createdAt existan para cumplir el tipo esperado por onSave
       const metadataToSend = {
-        createdAt: new Date().toISOString(), // Valor por defecto
-        estimatedCompletionTime: 'unknown', // Valor por defecto
-        ...(formData.metadata || {}), // Sobrescribir con valores existentes si existen
+        createdAt: new Date().toISOString(),
+        estimatedCompletionTime: '5-10',
+        ...(formData.metadata || {}),
       };
-      // Asegurar que createdAt es string
-      if (typeof metadataToSend.createdAt !== 'string') {
-        metadataToSend.createdAt = new Date().toISOString();
-      }
-      // Asegurar que estimatedCompletionTime es string
-      if (typeof metadataToSend.estimatedCompletionTime !== 'string') {
-        metadataToSend.estimatedCompletionTime = 'unknown';
-      }
 
       onSave({
         ...formData,
-        questions, // Asegúrate que 'questions' también esté actualizado si es necesario
-        metadata: metadataToSend as { createdAt: string; updatedAt?: string; estimatedCompletionTime: string; }, // Type assertion
+        questions,
+        metadata: metadataToSend as { 
+          createdAt: string; 
+          updatedAt?: string; 
+          estimatedCompletionTime: string; 
+        },
       });
     }
   };
@@ -91,7 +87,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     <div className="flex gap-6 min-w-[1200px]">
       {/* Columna izquierda - Contenido principal con scroll */}
       <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4">
-
         {/* Gestión de preguntas */}
         <SmartVOCQuestions
           questions={questions}
@@ -100,6 +95,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           onRemoveQuestion={removeQuestion}
           disabled={isLoading || isSaving}
         />
+        
         {/* Pie de página con acciones */}
         <FormFooter
           isSaving={isSaving}
