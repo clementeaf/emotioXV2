@@ -1,5 +1,5 @@
 // Exportar módulos organizados
-export * from './forms';
+// ❌ ELIMINADO: forms - carpeta eliminada
 export * from './participants';
 export * from './responses';
 export * from './research-management';

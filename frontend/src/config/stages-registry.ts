@@ -20,7 +20,7 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
     id: 'screener',
     title: 'Screener',
     displayTitle: 'Configuración de Screener',
-    component: 'ScreenerForm'
+    component: 'PlaceholderCard' // ❌ ELIMINADO: ScreenerForm - componente no existe
   },
   'welcome-screen': {
     id: 'welcome-screen',

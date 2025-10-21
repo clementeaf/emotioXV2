@@ -13,7 +13,7 @@ import { SmartVOCForm } from '../SmartVOC';
 import { SmartVOCResults } from '../SmartVOCResults/index';
 import { ThankYouScreenForm } from '../ThankYouScreen';
 import { WelcomeScreenForm } from '../WelcomeScreen';
-import { ScreenerForm } from '../forms/ScreenerForm';
+// ❌ ELIMINADO: ScreenerForm - componente no existe
 import { PlaceholderCard } from '@/components/common/PlaceholderCard';
 import { TestCommonPage } from '@/components/development/TestCommonPage';
 import { STAGE_TITLES, STAGE_COMPONENTS, DEFAULT_SECTION } from '@/config/research-stages.config';
@@ -34,7 +34,7 @@ export function useStageManager(researchId: string): StageManagerResult {
 
   // Component mapping for dynamic rendering
   const componentMap = {
-    ScreenerForm,
+    // ❌ ELIMINADO: ScreenerForm - componente no existe
     WelcomeScreenForm,
     ImplicitAssociationForm,
     SmartVOCForm,
