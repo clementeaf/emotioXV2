@@ -3,8 +3,8 @@ export * from './CognitiveTaskFields';
 export * from './CognitiveTaskFooter';
 export * from './CognitiveTaskHeader';
 export { CognitiveTaskSettings } from './CognitiveTaskSettings';
-export { ConfirmModal } from './ConfirmModal';
-export * from './ErrorModal';
+// ❌ ELIMINADO: ConfirmModal - usar /components/common/ConfirmationModal
+// ❌ ELIMINADO: ErrorModal - usar /components/common/ErrorModal
 export * from './HitZoneViewer';
 export * from './JsonPreviewModal';
 export * from './NavigationFlowPreview';

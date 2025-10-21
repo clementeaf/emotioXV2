@@ -26,9 +26,9 @@ import { QuestionType } from 'shared/interfaces/question-types.enum';
 
 // Interfaces
 interface ErrorModalData {
-  title: string;
-  message: string | React.ReactNode;
-  type: 'error' | 'info' | 'success' | 'warning';
+  title?: string;
+  message: string;
+  type: 'error' | 'info' | 'warning';
 }
 
 interface UseEyeTrackingRecruitProps {

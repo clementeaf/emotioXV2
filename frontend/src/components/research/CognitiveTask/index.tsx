@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import {
   CognitiveTaskFooter,
-  ErrorModal,
   JsonPreviewModal
 } from './components';
+import { ErrorModal } from '@/components/common/ErrorModal';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { useCognitiveTaskForm } from './hooks/useCognitiveTaskForm';
 import { CognitiveTaskFormProps } from './types';
@@ -156,11 +156,13 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
       </div>
 
       {/* Modales */}
-      <ErrorModal
-        isOpen={modalVisible}
-        onClose={closeModal}
-        error={modalError}
-      />
+      {modalError && (
+        <ErrorModal
+          isOpen={modalVisible}
+          onClose={closeModal}
+          error={modalError}
+        />
+      )}
 
       <JsonPreviewModal
         isOpen={showJsonPreview}

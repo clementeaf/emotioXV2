@@ -9,7 +9,7 @@ export interface ErrorModalProps {
 
 // Interfaz para los datos que se muestran en el modal
 export interface ErrorModalData {
-  title: string;
-  message: string | ReactNode;
-  type: 'error' | 'info' | 'success' | 'warning';
+  title?: string;
+  message: string;
+  type: 'error' | 'info' | 'warning';
 } 

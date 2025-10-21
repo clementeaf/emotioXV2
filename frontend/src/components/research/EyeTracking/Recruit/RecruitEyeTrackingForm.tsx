@@ -9,7 +9,7 @@ import { AgeQuota } from '@/types/eye-tracking';
 import { eyeTrackingApi } from '@/api/domains/eye-tracking';
 import { Trash2 } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/utils/toast';
-import { ErrorModal } from './components';
+import { ErrorModal } from '@/components/common/ErrorModal';
 import AgeConfigModal from './components/AgeConfigModal';
 import CountryConfigModal from './components/CountryConfigModal';
 import { DailyHoursOnlineConfigModal } from './components/DailyHoursOnlineConfigModal';
@@ -887,11 +887,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       </div>
 
       {/* Modal para mostrar mensajes y errores */}
-      <ErrorModal
-        isOpen={modalVisible}
-        onClose={closeModal}
-        error={modalError}
-      />
+      {modalError && (
+        <ErrorModal
+          isOpen={modalVisible}
+          onClose={closeModal}
+          error={modalError}
+        />
+      )}
 
       {/* Modal para configuración de edad */}
       <AgeConfigModal

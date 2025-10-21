@@ -56,9 +56,9 @@ export interface HitzoneArea {
 }
 
 export interface ErrorModalData {
-  title: string;
+  title?: string;
   message: string;
-  type: 'error' | 'warning' | 'info' | 'success';
+  type: 'error' | 'warning' | 'info';
 }
 
 export interface CognitiveTaskFormProps {
