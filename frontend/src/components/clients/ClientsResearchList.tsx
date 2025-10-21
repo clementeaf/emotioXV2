@@ -1,9 +1,11 @@
 'use client';
 
-import { ResearchActions } from '@/components/research-actions';
+import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ResearchListProps } from '@/shared/interfaces/research.interface';
+import { useDeleteResearch } from '@/api/domains/research';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 interface ClientsResearchListProps extends ResearchListProps {
@@ -17,6 +19,32 @@ export function ClientsResearchList({
   onDuplicateSuccess,
   onDeleteSuccess
 }: ClientsResearchListProps) {
+  const router = useRouter();
+  const deleteResearchMutation = useDeleteResearch();
+
+  const handleView = (researchId: string) => {
+    router.push(`/research/${researchId}`);
+  };
+
+  const handleDelete = async (researchId: string, researchName: string) => {
+    const confirmed = window.confirm(
+      `¿Estás seguro de que quieres eliminar la investigación "${researchName}"? Esta acción no se puede deshacer.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteResearchMutation.mutateAsync(researchId);
+      onDeleteSuccess?.(researchId);
+    } catch (error) {
+      console.error('Error deleting research:', error);
+    }
+  };
+
+  const handleDuplicate = (researchId: string, researchName: string) => {
+    // ❌ FUNCIONALIDAD NO DISPONIBLE - Backend no soporta duplicación
+    alert(`La funcionalidad de duplicar "${researchName}" no está disponible actualmente.`);
+  };
   return (
     <div className={cn('bg-white rounded-lg shadow-sm overflow-hidden', className)}>
       <div className="p-6">
@@ -55,12 +83,34 @@ export function ClientsResearchList({
                       {research.researcher}
                     </td>
                     <td className="whitespace-nowrap py-3">
-                      <ResearchActions
-                        researchId={research.id}
-                        researchName={research.name}
-                        onDuplicateSuccess={onDuplicateSuccess}
-                        onDeleteSuccess={onDeleteSuccess}
-                      />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleView(research.id)}
+                          title={`Ver investigación: ${research.name}`}
+                        >
+                          Ver
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDuplicate(research.id, research.name)}
+                          title={`Duplicar investigación: ${research.name}`}
+                          disabled
+                        >
+                          Duplicar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(research.id, research.name)}
+                          title={`Eliminar investigación: ${research.name}`}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Eliminar
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
