@@ -30,16 +30,14 @@ export const FormFooter: React.FC<FormFooterProps> = ({
   updateText = "Actualizar",
   savingText = "Guardando...",
   previewText = "Vista previa",
-  statusText,
-  showStatus = false,
   className = "",
 }) => {
   // Determinar el texto del botón de guardar
   const buttonText = isSaving
     ? savingText
     : isUpdate
-    ? updateText
-    : saveText;
+      ? updateText
+      : saveText;
 
   return (
     <div className={`flex justify-end items-center gap-3 pt-4 ${className}`}>
@@ -52,7 +50,7 @@ export const FormFooter: React.FC<FormFooterProps> = ({
           {previewText}
         </Button>
       )}
-            <Button
+      <Button
         onClick={onSave}
         disabled={isDisabled || isSaving}
         loading={isSaving}

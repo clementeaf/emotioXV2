@@ -17,21 +17,10 @@ export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
   onPreview,
   onDelete,
   isSaving = false,
-  isEditing = false,
   cognitiveTaskId = null,
-  researchId
 }) => {
-  // Determinar si estamos editando un formulario existente
   const isExistingForm = !!cognitiveTaskId;
-
-  // Log para depuración
-  React.useEffect(() => {
-    //   isSaving,
-    //   isExistingForm,
-    //   cognitiveTaskId
-    // });
-  }, [isSaving, isExistingForm, cognitiveTaskId]);
-
+  
   return (
     <div className="flex flex-col gap-4">
       <FormFooter

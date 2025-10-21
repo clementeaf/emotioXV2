@@ -7,7 +7,7 @@ import { FormTextarea } from '@/components/common/FormTextarea';
 import { ActionButton } from '@/components/common/ActionButton';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
-import { useWelcomeScreenForm } from './hooks/useWelcomeScreenForm';
+import { useWelcomeScreen } from './hooks/useWelcomeScreen';
 
 interface WelcomeScreenFormProps {
   researchId: string;
@@ -18,22 +18,21 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 }) => {
   const {
     formData,
-    validationErrors,
     isLoading,
     isSaving,
+    isDeleting,
+    existingScreen,
     modalError,
     modalVisible,
+    confirmModalVisible,
     handleChange,
     handleSubmit,
     handlePreview,
     closeModal,
-    existingScreen,
-    isDeleting,
-    confirmModalVisible,
     showConfirmModal,
     closeConfirmModal,
     confirmDelete,
-  } = useWelcomeScreenForm(researchId);
+  } = useWelcomeScreen(researchId);
 
   const isExisting = !!existingScreen?.id && !existingScreen?.metadata?.isDefault;
 
@@ -43,16 +42,16 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   return (
     <>
-      <div>
+      <FormToggle
+        label="Habilitar pantalla de bienvenida"
+        description="La pantalla de bienvenida se mostrará al iniciar la investigación"
+        checked={formData.isEnabled}
+        onChange={(checked) => handleChange('isEnabled', checked)}
+        disabled={isLoading || isSaving}
+      />
+
+      <div className="mt-8">
         <FormCard title="Configuración de Pantalla de Bienvenida">
-          <FormToggle
-            label="Habilitar pantalla de bienvenida"
-            description="La pantalla de bienvenida se mostrará al iniciar la investigación"
-            checked={formData.isEnabled ?? false}
-            onChange={(checked) => handleChange('isEnabled', checked)}
-            disabled={isLoading || isSaving}
-            className='mb-4'
-          />
           <div className="space-y-6">
             <FormInput
               label="Título"
@@ -60,7 +59,6 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
               onChange={(value) => handleChange('title', value)}
               placeholder="Ingresa el título de la pantalla de bienvenida"
               disabled={isLoading || isSaving || !formData.isEnabled}
-              error={validationErrors.title}
             />
 
             <FormTextarea
@@ -70,7 +68,6 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
               placeholder="Ingresa el mensaje de bienvenida"
               rows={4}
               disabled={isLoading || isSaving || !formData.isEnabled}
-              error={validationErrors.message}
             />
 
             <FormInput
@@ -79,44 +76,42 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
               onChange={(value) => handleChange('startButtonText', value)}
               placeholder="Ingresa el texto del botón de inicio"
               disabled={isLoading || isSaving || !formData.isEnabled}
-              error={validationErrors.startButtonText}
             />
           </div>
+          <div className="flex justify-between items-center pt-10 gap-3">
+            {isExisting && (
+              <ActionButton
+                variant="danger"
+                onClick={showConfirmModal}
+                disabled={isDeleting || isSaving || !formData.isEnabled}
+                loading={isDeleting}
+                icon="🗑️"
+              >
+                {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de bienvenida'}
+              </ActionButton>
+            )}
+
+            {/* Botones principales */}
+            <div className="flex gap-3 ml-auto">
+              <ActionButton
+                variant="secondary"
+                onClick={handlePreview}
+                disabled={!formData.isEnabled || isSaving}
+              >
+                Vista previa
+              </ActionButton>
+
+              <ActionButton
+                variant="primary"
+                onClick={handleSubmit}
+                disabled={!formData.isEnabled || isSaving}
+                loading={isSaving}
+              >
+                {isSaving ? 'Guardando...' : (isExisting ? 'Actualizar' : 'Guardar')}
+              </ActionButton>
+            </div>
+          </div>
         </FormCard>
-      </div>
-
-      <div className="flex justify-between items-center pt-4 gap-3">
-        {isExisting && (
-          <ActionButton
-            variant="danger"
-            onClick={showConfirmModal}
-            disabled={isDeleting || isSaving || !formData.isEnabled}
-            loading={isDeleting}
-            icon=""
-          >
-            {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de bienvenida'}
-          </ActionButton>
-        )}
-
-        {/* Botones principales */}
-        <div className="flex gap-3 ml-auto">
-          <ActionButton
-            variant="secondary"
-            onClick={handlePreview}
-            disabled={!formData.isEnabled || isSaving}
-          >
-            Vista previa
-          </ActionButton>
-
-          <ActionButton
-            variant="primary"
-            onClick={handleSubmit}
-            disabled={!formData.isEnabled || isSaving}
-            loading={isSaving}
-          >
-            {isSaving ? 'Guardando...' : (isExisting ? 'Actualizar' : 'Guardar')}
-          </ActionButton>
-        </div>
       </div>
 
       {modalError && (
