@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 
-import { useClients } from '@/hooks/useClients';
+import { useClients } from '@/api/domains/clients';
 import { cn } from '@/lib/utils';
-import type { Client } from '@/types/clients';
+import type { Client } from '@/shared/types/clients.types';
 
 interface ClientSelectorProps {
   className?: string;

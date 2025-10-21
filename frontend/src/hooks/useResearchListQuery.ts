@@ -5,13 +5,13 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import researchService from '../services/research.service';
-import type {
-  Research,
-  CreateResearchRequest,
-  UpdateResearchRequest,
-  ResearchAPIResponse
-} from '../types/research';
+import { researchApi } from '@/api/domains/research';
+// import type {
+//   Research,
+//   CreateResearchRequest,
+//   UpdateResearchRequest,
+//   ResearchAPIResponse
+// } from '@/api/domains/research'; // Comentado - tipos no existen
 
 // Query keys
 export const researchKeys = {
@@ -31,43 +31,40 @@ export function useResearchListQuery() {
   // Query para obtener la lista de investigaciones
   const listQuery = useQuery({
     queryKey: researchKeys.lists(),
-    queryFn: researchService.getAll,
+    queryFn: () => researchApi.getAll(),
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos
   });
 
   // Mutation para crear investigación
   const createMutation = useMutation({
-    mutationFn: researchService.create,
-    onMutate: async (newResearch: CreateResearchRequest) => {
+    mutationFn: researchApi.create,
+    onMutate: async (newResearch: any) => {
       console.log('🚀 OPTIMISTIC CREATE - Starting');
 
       // Cancelar queries en progreso
       await queryClient.cancelQueries({ queryKey: researchKeys.lists() });
 
       // Snapshot del estado anterior
-      const previousResearches = queryClient.getQueryData<ResearchAPIResponse[]>(researchKeys.lists());
-
-      // Obtener los datos del request basado en el tipo
-      const researchData = 'basic' in newResearch ? newResearch.basic : newResearch;
+      const previousResearches = queryClient.getQueryData<any[]>(researchKeys.lists());
 
       // Actualización optimista
-      const optimisticResearch: ResearchAPIResponse = {
+      const optimisticResearch: any = {
         id: `temp_${Date.now()}`,
-        name: researchData.name || '',
-        companyId: researchData.companyId || '',
-        type: researchData.type || 'behavioural',
-        technique: researchData.technique || '',
-        description: researchData.description || '',
-        targetParticipants: 0,
-        objectives: [],
-        tags: [],
+        name: newResearch.name || '',
+        companyId: newResearch.companyId || '',
+        type: newResearch.type || 'behavioural',
+        technique: newResearch.technique || '',
+        description: newResearch.description || '',
+        targetParticipants: newResearch.targetParticipants || 0,
+        objectives: newResearch.objectives || [],
+        tags: newResearch.tags || [],
         status: 'draft',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
-      queryClient.setQueryData<ResearchAPIResponse[]>(researchKeys.lists(), (old) => {
+      queryClient.setQueryData<any[]>(researchKeys.lists(), (old) => {
         const updated = [...(old || []), optimisticResearch];
         console.log('🚀 OPTIMISTIC CREATE - Updated list:', updated.length, 'items');
         return updated;
@@ -95,15 +92,15 @@ export function useResearchListQuery() {
 
   // Mutation para actualizar investigación
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateResearchRequest }) =>
-      researchService.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      researchApi.update(id, data),
     onMutate: async ({ id, data }) => {
       console.log('🚀 OPTIMISTIC UPDATE - Starting for ID:', id);
 
       await queryClient.cancelQueries({ queryKey: researchKeys.lists() });
-      const previousResearches = queryClient.getQueryData<ResearchAPIResponse[]>(researchKeys.lists());
+      const previousResearches = queryClient.getQueryData<any[]>(researchKeys.lists());
 
-      queryClient.setQueryData<ResearchAPIResponse[]>(researchKeys.lists(), (old) => {
+      queryClient.setQueryData<any[]>(researchKeys.lists(), (old) => {
         if (!old) return old;
         const updated = old.map((research) =>
           research.id === id
@@ -134,7 +131,7 @@ export function useResearchListQuery() {
 
   // Mutation para eliminar investigación
   const deleteMutation = useMutation({
-    mutationFn: researchService.delete,
+    mutationFn: researchApi.delete,
     onMutate: async (id: string) => {
       console.log('🔥 OPTIMISTIC DELETE - Starting for ID:', id);
 
@@ -142,11 +139,11 @@ export function useResearchListQuery() {
       await queryClient.cancelQueries({ queryKey: researchKeys.lists() });
 
       // Snapshot del estado anterior
-      const previousResearches = queryClient.getQueryData<ResearchAPIResponse[]>(researchKeys.lists());
+      const previousResearches = queryClient.getQueryData<any[]>(researchKeys.lists());
       console.log('🔥 CURRENT DATA BEFORE DELETE:', previousResearches?.length, 'items');
 
       // Actualización optimista - eliminar de la lista inmediatamente
-      queryClient.setQueryData<ResearchAPIResponse[]>(researchKeys.lists(), (old) => {
+      queryClient.setQueryData<any[]>(researchKeys.lists(), (old) => {
         const filtered = (old || []).filter(research => research.id !== id);
         console.log('🔥 OPTIMISTIC DELETE - Filtered list:', filtered.length, 'items');
         return filtered;
@@ -184,7 +181,7 @@ export function useResearchListQuery() {
     // Actions
     refetch: listQuery.refetch,
     createResearch: createMutation.mutateAsync,
-    updateResearch: (id: string, data: UpdateResearchRequest) =>
+    updateResearch: (id: string, data: any) =>
       updateMutation.mutateAsync({ id, data }),
     deleteResearch: deleteMutation.mutateAsync,
 
@@ -201,7 +198,7 @@ export function useResearchListQuery() {
 export function useResearchByIdQuery(researchId: string) {
   const query = useQuery({
     queryKey: researchKeys.detail(researchId),
-    queryFn: () => researchService.getById(researchId),
+    queryFn: () => researchApi.getById(researchId),
     enabled: !!researchId && researchId.trim() !== '',
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

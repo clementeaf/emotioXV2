@@ -1,6 +1,6 @@
 'use client';
 
-import { useClients } from '@/hooks/useClients';
+import { useClients } from '@/api/domains/clients';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';

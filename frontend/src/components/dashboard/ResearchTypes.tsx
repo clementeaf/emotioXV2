@@ -3,7 +3,7 @@
 import { useResearchList } from '@/api/domains/research';
 import { ResearchTypesProps } from '@/shared/interfaces/research.interface';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-import type { ResearchAPIResponse } from '@/types/research';
+import type { ResearchAPIResponse } from '@/shared/types/research.types';
 
 function ResearchTypesContent() {
   // Usar el hook centralizado para obtener research data

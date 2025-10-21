@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
+import { GroupedResponsesPageContent } from '@/components/research/responses/GroupedResponsesPage';
 
-interface PageProps {
+interface ResearchPageProps {
   params: Promise<{
     id: string;
   }>;
@@ -8,7 +8,7 @@ interface PageProps {
 
 // Para soporte de export estático
 export async function generateStaticParams() {
-  // Generar parámetros estáticos para las rutas conocidas
+  // Generar parámetros estáticos para rutas conocidas
   return [
     { id: 'demo' },
     { id: 'test' },
@@ -16,9 +16,12 @@ export async function generateStaticParams() {
   ];
 }
 
-export default async function ResearchPage({ params }: PageProps) {
-  const { id } = await params;
+/**
+ * Página principal de investigación
+ * Muestra el dashboard con respuestas agrupadas por pregunta
+ */
+export default async function ResearchPage({ params }: ResearchPageProps) {
+  const { id: researchId } = await params;
 
-  // Redirigir a la página de respuestas agrupadas por defecto
-  redirect(`/dashboard/research/${id}/grouped-responses`);
+  return <GroupedResponsesPageContent researchId={researchId} />;
 }

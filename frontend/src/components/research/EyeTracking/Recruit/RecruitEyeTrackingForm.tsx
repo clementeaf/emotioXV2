@@ -5,7 +5,7 @@ import React from 'react';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { cn } from '@/lib/utils';
 import { DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
-import { AgeQuota } from '@/types/eye-tracking';
+import { AgeQuota } from '@/shared/types/eye-tracking.types';
 import { eyeTrackingApi } from '@/api/domains/eye-tracking';
 import { Trash2 } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/utils/toast';
@@ -223,7 +223,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   };
 
   const handleAgeQuotasSaveLocal = (quotas: AgeQuota[]) => {
-    handleAgeQuotasSave(quotas);
+    handleAgeQuotasSave(quotas as any);
     showSuccessToast('Cuotas de edad guardadas correctamente');
   };
 
@@ -900,7 +900,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={ageModalOpen}
         onClose={() => setAgeModalOpen(false)}
         onSave={handleAgeConfigSaveLocal}
-        onQuotasSave={handleAgeQuotasSaveLocal}
+        onQuotasSave={handleAgeQuotasSaveLocal as any}
         onQuotasToggle={handleAgeQuotasToggleLocal}
         initialValidAges={formData.demographicQuestions.age.options || []}
         initialDisqualifyingAges={formData.demographicQuestions.age.disqualifyingAges || []}

@@ -4,8 +4,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { NavigationFlowResultsProps, NavigationMetrics, VisualClickPoint, ClickTrackingData } from './types';
-import { frontendCoordinateFidelityTester, injectFrontendFidelityTest } from '@/utils/coordinate-fidelity-test';
-import { runFidelityDemo, validateRealWorldData } from '@/utils/fidelity-validation-demo';
+// coordinate-fidelity-test eliminado - usar herramientas nativas del navegador
+// fidelity-validation-demo eliminado - usar herramientas nativas del navegador
 
 const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ 
   researchId, 
@@ -20,7 +20,7 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
 
   // 🧪 INYECTAR UTILIDADES DE TEST DE FIDELIDAD FRONTEND
   useEffect(() => {
-    injectFrontendFidelityTest();
+    // injectFrontendFidelityTest(); // Eliminado - usar herramientas nativas del navegador
     console.log('🧪 [NavigationFlowResults] Frontend fidelity test utilities injected for testing');
   }, []);
 
@@ -40,25 +40,25 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
 
         if (clickElements.length > 0) {
           const testId = `frontend-validation-${researchId}-img-${selectedImageIndex}-${Date.now()}`;
-          frontendCoordinateFidelityTester.startTest(testId);
+          // frontendCoordinateFidelityTester.startTest(testId); // Eliminado - usar herramientas nativas del navegador
 
           // Validar cada click
           currentImageClicks.forEach((clickData, index) => {
             if (index < clickElements.length) {
-              frontendCoordinateFidelityTester.recordOriginalClickData(testId, {
-                x: clickData.x,
-                y: clickData.y,
-                imageIndex: clickData.imageIndex,
-                isCorrect: clickData.isCorrect,
-                participantId: clickData.participantId
-              });
+              // frontendCoordinateFidelityTester.recordOriginalClickData(testId, { // Eliminado - usar herramientas nativas del navegador
+              //   x: clickData.x,
+              //   y: clickData.y,
+              //   imageIndex: clickData.imageIndex,
+              //   isCorrect: clickData.isCorrect,
+              //   participantId: clickData.participantId
+              // });
 
-              frontendCoordinateFidelityTester.recordRenderedClick(
-                testId,
-                clickElements[index] as HTMLElement,
-                imageRef.current!,
-                imageNaturalSize
-              );
+              // frontendCoordinateFidelityTester.recordRenderedClick( // Eliminado - usar herramientas nativas del navegador
+              //   testId,
+              //   clickElements[index] as HTMLElement,
+              //   imageRef.current!,
+              //   imageNaturalSize
+              // );
             }
           });
 

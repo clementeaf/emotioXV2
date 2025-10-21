@@ -7,7 +7,7 @@
 export * from '../../../../../shared/interfaces/company.interface';
 
 // Import necessary types
-import type { ClientStatus } from '@/types/clients';
+import type { ClientStatus } from '@/shared/types/clients.types';
 
 // API Response wrapper
 export interface ApiResponse<T> {

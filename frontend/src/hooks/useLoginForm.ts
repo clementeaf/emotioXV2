@@ -1,5 +1,5 @@
 import { useLogin } from '@/api/domains/auth';
-import { validateEmail, validatePassword } from '@/utils/auth-validation';
+// auth-validation eliminado - implementar validación inline
 import { useState } from 'react';
 
 interface LoginFormState {
@@ -50,12 +50,18 @@ export const useLoginForm = () => {
     if (field === 'email') {
       setValidation(prev => ({
         ...prev,
-        email: validateEmail(value as string)
+        email: {
+          isValid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string),
+          message: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string) ? null : 'Email inválido'
+        }
       }));
     } else if (field === 'password') {
       setValidation(prev => ({
         ...prev,
-        password: validatePassword(value as string)
+        password: {
+          isValid: (value as string).length >= 6,
+          message: (value as string).length >= 6 ? null : 'La contraseña debe tener al menos 6 caracteres'
+        }
       }));
     }
   };
@@ -65,8 +71,14 @@ export const useLoginForm = () => {
     setStatus('validating');
 
     // Validate fields
-    const emailValidation = validateEmail(state.email);
-    const passwordValidation = validatePassword(state.password);
+    const emailValidation = {
+      isValid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email),
+      message: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email) ? null : 'Email inválido'
+    };
+    const passwordValidation = {
+      isValid: state.password.length >= 6,
+      message: state.password.length >= 6 ? null : 'La contraseña debe tener al menos 6 caracteres'
+    };
 
     if (!emailValidation.isValid || !passwordValidation.isValid) {
       setValidation({ email: emailValidation, password: passwordValidation });

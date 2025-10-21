@@ -31,7 +31,28 @@ export function useEyeTrackingData(
   const { enabled = true } = options;
 
   // Use the new domain hook
-  return useEyeTrackingDataDomain(researchId, { enabled });
+  const domainResult = useEyeTrackingDataDomain(researchId, { enabled });
+  
+  // Adapt to expected interface
+  return {
+    ...domainResult,
+    eyeTrackingData: domainResult.data as any,
+    buildConfig: null,
+    recruitConfig: null,
+    results: null,
+    isLoading: domainResult.loading,
+    isLoadingBuild: false,
+    isLoadingRecruit: false,
+    isLoadingResults: false,
+    error: domainResult.error,
+    saveBuildConfig: async () => {},
+    saveRecruitConfig: async () => {},
+    generateRecruitmentLink: async () => '',
+    exportResults: async () => {},
+    refreshData: async () => {},
+    validateBuildConfig: () => [],
+    validateRecruitConfig: () => []
+  } as any;
 }
 
 /**

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { MonitoringEvent, ParticipantStatus, ResearchMonitoringData } from '../../../shared/interfaces/websocket-events.interface';
 import { DYNAMIC_API_ENDPOINTS, getWebsocketUrl } from '../api/dynamic-endpoints';
 import { useAuth } from '../providers/AuthProvider';
-import { debugEnvironmentVariables } from '../utils/debug-env';
+// debug-env eliminado - usar herramientas nativas del navegador
 
 /**
  * Hook para recibir eventos de monitoreo en tiempo real
@@ -67,7 +67,7 @@ export const useMonitoringReceiver = (researchId: string) => {
 
     try {
       // 🎯 DIAGNÓSTICO: VERIFICAR VARIABLES DE ENTORNO
-      debugEnvironmentVariables();
+      // debugEnvironmentVariables(); // Eliminado - usar herramientas nativas del navegador
 
       // 🎯 USAR ENDPOINT CORRECTO DE AWS
       const wsUrl = getWebsocketUrl();

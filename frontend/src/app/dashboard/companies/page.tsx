@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { companiesApi } from '@/api/domains/companies';
-import { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types';
+import { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/api/domains/companies';
 import { Button } from '@/components/ui/Button';
 import { Plus, Edit2, Trash2, Building2 } from 'lucide-react';
 import { findSimilarStrings } from '@/utils/stringUtils';

@@ -28,7 +28,9 @@ const RecruitEyeTrackingForm: React.FC<{ researchId: string; className?: string 
         </div>
         <div className="flex justify-center space-x-4">
           <button 
-            onClick={() => router.push(`/research/EyeTrackingFormPage?researchId=${researchId}`)}
+            onClick={() => {
+              alert('La funcionalidad de Eye Tracking está temporalmente deshabilitada. Se está trabajando en una nueva implementación.');
+            }}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             Ir a Eye Tracking

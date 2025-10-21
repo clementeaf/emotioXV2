@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-import { API_BASE_URL } from '../api/config';
+// import { API_BASE_URL } from '../api/config'; // Comentado - ruta no existe
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 import { useAuth } from '@/providers/AuthProvider';
 
 // Estado de la conexión

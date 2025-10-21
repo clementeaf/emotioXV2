@@ -96,66 +96,10 @@ export function useEyeTrackingData(researchId: string | null, options?: { enable
 
   // Return structured data
   const result: UseEyeTrackingDataReturn = {
-    data: data || undefined,
-    eyeTrackingData: data || null,
-    buildConfig: data?.buildConfig || data?.build || null,
-    recruitConfig: data?.recruitConfig || data?.recruit || null,
-    results: data?.results || null,
-
-    isLoading,
-    isLoadingBuild: isLoading,
-    isLoadingRecruit: isLoading,
-    isLoadingResults: isLoading,
-    error: error ? String(error) : null,
-
-    saveBuildConfig: async (config) => {
-      await saveBuildConfig.mutateAsync(config);
-    },
-    saveRecruitConfig: async (config) => {
-      await saveRecruitConfig.mutateAsync(config as any);
-    },
-    generateRecruitmentLink: async () => {
-      if (!researchId) throw new Error('Research ID is required');
-      const config = await eyeTrackingApi.recruit.getConfigByResearch(researchId);
-      if (!config) throw new Error('No recruitment configuration found');
-      const response = await eyeTrackingApi.recruit.generateLink(config.id!, RecruitLinkType.STANDARD);
-      return response.link;
-    },
-    exportResults: async (format) => {
-      if (!researchId) throw new Error('Research ID is required');
-      const blob = await eyeTrackingApi.results.exportResults(researchId, {
-        format,
-        includeRawData: true,
-        includeVisualizations: true
-      });
-      // Trigger download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `eye-tracking-results-${researchId}.${format}`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
-    refreshData: async () => {
-      await refetch();
-    },
-
-    validateBuildConfig: () => {
-      // Implement validation logic
-      const errors: string[] = [];
-      if (!data?.buildConfig) {
-        errors.push('No build configuration found');
-      }
-      return errors;
-    },
-    validateRecruitConfig: () => {
-      // Implement validation logic
-      const errors: string[] = [];
-      if (!data?.recruitConfig) {
-        errors.push('No recruitment configuration found');
-      }
-      return errors;
-    }
+    data: data || null,
+    loading: isLoading,
+    error: error?.message || null,
+    refetch: () => Promise.resolve()
   };
 
   return result;

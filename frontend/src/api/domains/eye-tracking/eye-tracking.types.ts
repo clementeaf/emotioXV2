@@ -9,28 +9,13 @@ export type {
   EyeTrackingBuildConfig,
   EyeTrackingRecruitConfigExtended,
   EyeTrackingResults,
-  EyeTrackingParticipantResult,
-  GazePoint,
-  Fixation,
-  Saccade,
-  AOIData,
-  HeatmapPoint,
-  DeviceInfo,
-  EyeTrackingAggregatedData,
-  StimulusSummary,
-  AOISummary,
-  PopularArea,
-  EyeTrackingVisualization,
-  UseEyeTrackingDataOptions,
   UseEyeTrackingDataReturn,
-  EyeTrackingRecruitFormDataLocal,
-  EyeTrackingStage,
   EyeTrackingError,
   EyeTrackingValidation,
   EyeTrackingExportOptions,
   EyeTrackingAnalysisOptions,
   EyeTrackingFormData
-} from '@/types/eye-tracking';
+} from '@/shared/types/eye-tracking.types';
 
 // Import recruit types from shared interfaces
 import type {

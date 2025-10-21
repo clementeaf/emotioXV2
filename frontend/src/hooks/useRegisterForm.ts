@@ -1,4 +1,4 @@
-import { validateConfirmPassword, validateEmail, validateName, validatePassword } from '@/utils/auth-validation';
+// auth-validation eliminado - implementar validación inline
 import { apiClient } from '@/api/config';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -49,25 +49,40 @@ export const useRegisterForm = () => {
     // Validación en tiempo real
     switch (field) {
       case 'name':
-        setValidation(prev => ({ ...prev, name: validateName(value) }));
+        setValidation(prev => ({ ...prev, name: {
+          isValid: (value as string).length >= 2,
+          message: (value as string).length >= 2 ? null : 'El nombre debe tener al menos 2 caracteres'
+        } }));
         break;
       case 'email':
-        setValidation(prev => ({ ...prev, email: validateEmail(value) }));
+        setValidation(prev => ({ ...prev, email: {
+          isValid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string),
+          message: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string) ? null : 'Email inválido'
+        } }));
         break;
       case 'password':
-        setValidation(prev => ({ ...prev, password: validatePassword(value) }));
+        setValidation(prev => ({ ...prev, password: {
+          isValid: (value as string).length >= 6,
+          message: (value as string).length >= 6 ? null : 'La contraseña debe tener al menos 6 caracteres'
+        } }));
         // Re-validar confirmPassword si ya tiene valor
         if (state.confirmPassword) {
           setValidation(prev => ({
             ...prev,
-            confirmPassword: validateConfirmPassword(value, state.confirmPassword)
+            confirmPassword: {
+              isValid: value === state.confirmPassword,
+              message: value === state.confirmPassword ? null : 'Las contraseñas no coinciden'
+            }
           }));
         }
         break;
       case 'confirmPassword':
         setValidation(prev => ({
           ...prev,
-          confirmPassword: validateConfirmPassword(state.password, value)
+          confirmPassword: {
+            isValid: state.password === value,
+            message: state.password === value ? null : 'Las contraseñas no coinciden'
+          }
         }));
         break;
     }
@@ -79,10 +94,22 @@ export const useRegisterForm = () => {
     setError(null);
 
     // Validaciones finales
-    const nameValidation = validateName(state.name);
-    const emailValidation = validateEmail(state.email);
-    const passwordValidation = validatePassword(state.password);
-    const confirmPasswordValidation = validateConfirmPassword(state.password, state.confirmPassword);
+    const nameValidation = {
+      isValid: state.name.length >= 2,
+      message: state.name.length >= 2 ? null : 'El nombre debe tener al menos 2 caracteres'
+    };
+    const emailValidation = {
+      isValid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email),
+      message: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email) ? null : 'Email inválido'
+    };
+    const passwordValidation = {
+      isValid: state.password.length >= 6,
+      message: state.password.length >= 6 ? null : 'La contraseña debe tener al menos 6 caracteres'
+    };
+    const confirmPasswordValidation = {
+      isValid: state.password === state.confirmPassword,
+      message: state.password === state.confirmPassword ? null : 'Las contraseñas no coinciden'
+    };
 
     if (!nameValidation.isValid || !emailValidation.isValid ||
       !passwordValidation.isValid || !confirmPasswordValidation.isValid) {

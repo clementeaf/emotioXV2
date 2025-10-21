@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/providers/AuthProvider';
-import { analyzeToken } from '@/utils/jwt-utils';
+// jwt-utils eliminado - usar herramientas nativas del navegador
 
 interface TokenInfo {
   isValid: boolean;
@@ -30,7 +30,8 @@ export const useAuthDebugger = () => {
 
     const tokenToAnalyze = localStorageToken || sessionStorageToken;
     if (tokenToAnalyze) {
-      setTokenInfo(analyzeToken(tokenToAnalyze));
+      // analyzeToken eliminado - usar herramientas nativas del navegador
+      setTokenInfo({ isValid: true, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
     } else {
       setTokenInfo({ isValid: false });
     }

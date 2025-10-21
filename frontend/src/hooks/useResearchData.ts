@@ -5,7 +5,7 @@
 
 import { useResearchById, useUpdateResearch, useDeleteResearch } from '@/api/domains/research';
 import { ResearchRecord, ResearchStage } from '../../../shared/interfaces/research.interface';
-import type { ResearchAPIResponse } from '@/types/research';
+import type { ResearchAPIResponse } from '@/shared/types/research.types';
 
 interface UseResearchDataReturn {
   research: ResearchRecord | null;

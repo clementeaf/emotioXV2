@@ -1,17 +1,14 @@
 import { useMemo } from 'react';
-// import { getApiConfig, buildApiUrl, buildWebSocketUrl, getS3Config, getCloudFrontConfig } from 'shared/config/apiConfig';
 
 /**
  * Hook para obtener configuración de API en el frontend
  */
 export const useApiConfig = () => {
   return useMemo(() => {
-    // Configuración por defecto para desarrollo
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-dev.emotioxv2.com';
     const websocketUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'wss://api-dev.emotioxv2.com/ws';
     
     return {
-      // URLs principales
       apiUrl,
       websocketUrl,
       

@@ -1,6 +1,5 @@
 'use client';
 
-import '@/utils/debugging';
 import './globals.css';
 
 import { DevTools } from '@/components/development/DevTools';

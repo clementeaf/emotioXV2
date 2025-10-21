@@ -3,7 +3,7 @@
  * Pure functions for processing client data
  */
 
-import type { Client, ClientResponse, ClientsListResponse, ClientStatus } from '@/types/clients';
+import type { Client, ClientResponse, ClientsListResponse, ClientStatus } from '@/shared/types/clients.types';
 
 /**
  * Process raw client response into client object

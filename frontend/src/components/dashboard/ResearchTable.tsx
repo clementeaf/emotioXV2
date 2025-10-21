@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-import type { ResearchAPIResponse } from '@/types/research';
+import type { ResearchAPIResponse } from '@/shared/types/research.types';
 
 // Tipo local para la tabla que incluye las propiedades necesarias
 type ResearchTableItem = ResearchAPIResponse;

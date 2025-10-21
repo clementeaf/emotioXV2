@@ -11,13 +11,7 @@ export const useAppInitialization = () => {
     const initializeApp = () => {
       const isDevEnv = process.env.NODE_ENV === 'development';
 
-      // Reactivar el debugger de manera más segura
-      if (isDevEnv && typeof window.enableApiDebugger === 'function') {
-        try {
-          window.enableApiDebugger();
-        } catch (error) {
-        }
-      }
+      // Debugging removido - usar herramientas nativas del navegador
 
       initializeApiAuth();
     };

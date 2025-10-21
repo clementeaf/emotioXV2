@@ -11,7 +11,7 @@ import { useGlobalResearchData } from '@/hooks/useGlobalResearchData';
 import { useResearchList, useDeleteResearch } from '@/api/domains/research';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import type { ResearchAPIResponse } from '@/types/research';
+import type { ResearchAPIResponse } from '@/shared/types/research.types';
 
 import { SidebarBase } from './SidebarBase';
 
