@@ -6,7 +6,7 @@ import { memo, useMemo, useCallback } from 'react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { useResearchList, useResearchById } from '@/api/domains/research';
-import { ResearchSidebarProps } from '@/interfaces/research';
+import { ResearchSidebarProps } from '@/shared/interfaces/research.interface';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { BASE_SECTIONS, getBuildStages, getResultsStages, DEFAULT_SECTION } from '@/config/research-stages.config';

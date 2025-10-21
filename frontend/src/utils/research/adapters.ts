@@ -1,4 +1,4 @@
-import { ClientResearch } from '@/interfaces/research';
+import { ClientResearch } from '@/shared/interfaces/research.interface';
 
 /**
  * Mapea estados de investigación al formato requerido por ClientResearch

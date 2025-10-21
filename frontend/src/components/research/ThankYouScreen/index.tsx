@@ -16,7 +16,6 @@ interface ThankYouScreenFormProps {
 }
 
 export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
-  className,
   researchId,
   onSave
 }) => {
@@ -32,8 +31,6 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
     handleSave,
     handlePreview,
     closeModal,
-    // NUEVO: Props para eliminar
-    handleDelete,
     isDeleting,
     showDelete,
     confirmModalVisible,
@@ -80,18 +77,6 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
         onChange={handleEnabledChange}
         disabled={isLoading || isSaving}
       />
-
-      {/* Debug info en desarrollo */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-2 bg-transparent border border-neutral-200 text-[14px] rounded-lg p-4">
-          <p>Estado: {thankYouScreenId ? 'Configuración existente' : 'Nueva configuración'}</p>
-          <p>Habilitado: {formData.isEnabled ? 'Sí' : 'No'}</p>
-          <p>ID Investigación: {researchId}</p>
-          <p>ID Formulario Agradecimiento: {thankYouScreenId || 'No hay ID (nueva)'}</p>
-        </div>
-      )}
-
-      {/* Formulario principal */}
       <FormCard title="Configuración de Pantalla de Agradecimiento">
         <div className="space-y-6">
           <FormInput
@@ -122,43 +107,42 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
             error={validationErrors.redirectUrl}
           />
         </div>
-      </FormCard>
+        {/* Botones de acción */}
+        <div className="flex justify-between items-center pt-4 gap-3">
+          {/* Botón de eliminar */}
+          {showDelete && (
+            <ActionButton
+              variant="danger"
+              onClick={showConfirmModal}
+              disabled={isDeleting || isSaving || !formData.isEnabled}
+              loading={isDeleting}
+              icon="🗑️"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de agradecimiento'}
+            </ActionButton>
+          )}
 
-      {/* Botones de acción */}
-      <div className="flex justify-between items-center pt-4 gap-3">
-        {/* Botón de eliminar */}
-        {showDelete && (
-          <ActionButton
-            variant="danger"
-            onClick={showConfirmModal}
-            disabled={isDeleting || isSaving || !formData.isEnabled}
-            loading={isDeleting}
-            icon="🗑️"
-          >
-            {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de agradecimiento'}
-          </ActionButton>
-        )}
+          {/* Botones principales */}
+          <div className="flex gap-3 ml-auto">
+            <ActionButton
+              variant="secondary"
+              onClick={handlePreview}
+              disabled={!formData.isEnabled || isSaving}
+            >
+              Vista previa
+            </ActionButton>
 
-        {/* Botones principales */}
-        <div className="flex gap-3 ml-auto">
-          <ActionButton
-            variant="secondary"
-            onClick={handlePreview}
-            disabled={!formData.isEnabled || isSaving}
-          >
-            Vista previa
-          </ActionButton>
-          
-          <ActionButton
-            variant="primary"
-            onClick={handleSaveAndNotify}
-            disabled={!formData.isEnabled || isSaving}
-            loading={isSaving}
-          >
-            {isSaving ? 'Guardando...' : (thankYouScreenId ? 'Actualizar' : 'Guardar')}
-          </ActionButton>
+            <ActionButton
+              variant="primary"
+              onClick={handleSaveAndNotify}
+              disabled={!formData.isEnabled || isSaving}
+              loading={isSaving}
+            >
+              {isSaving ? 'Guardando...' : (thankYouScreenId ? 'Actualizar' : 'Guardar')}
+            </ActionButton>
+          </div>
         </div>
-      </div>
+      </FormCard>
 
       {/* Modales */}
       {modalError && (

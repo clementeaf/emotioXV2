@@ -3,7 +3,7 @@
 import { ResearchActions } from '@/components/research-actions';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { ResearchListProps } from '@/interfaces/research';
+import { ResearchListProps } from '@/shared/interfaces/research.interface';
 import { cn } from '@/lib/utils';
 
 interface ClientsResearchListProps extends ResearchListProps {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useResearchList } from '@/api/domains/research';
-import { ResearchTypesProps } from '@/interfaces/research';
+import { ResearchTypesProps } from '@/shared/interfaces/research.interface';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import type { ResearchAPIResponse } from '@/types/research';
 

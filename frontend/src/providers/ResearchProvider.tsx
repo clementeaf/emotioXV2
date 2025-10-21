@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 
-import { ResearchDraft, ResearchContextType } from '@/interfaces/research';
+import { ResearchDraft, ResearchContextType } from '@/shared/interfaces/research.interface';
 import { useResearch as useResearchFromStore } from '@/stores/useResearchStore';
 
 const ResearchContext = createContext<ResearchContextType | undefined>(undefined);

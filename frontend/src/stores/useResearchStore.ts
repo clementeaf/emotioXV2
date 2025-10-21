@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-import { ResearchDraft, ResearchStore } from '@/interfaces/research';
+import { ResearchDraft, ResearchStore } from '@/shared/interfaces/research.interface';
 
 type Research = {
   id: string;

@@ -12,9 +12,7 @@ interface StimuliTabProps {
 export const StimuliTab: React.FC<StimuliTabProps> = ({
   formData,
   onUpdate,
-  researchId
 }) => {
-  // Versión simplificada para que compile sin errores
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium mb-4">Estímulos</h3>
