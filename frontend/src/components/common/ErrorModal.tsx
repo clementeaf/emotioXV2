@@ -1,6 +1,5 @@
 import { AlertTriangle, Info, XCircle } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
+import React from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
@@ -20,13 +19,7 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
   onClose, 
   error 
 }) => {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isOpen || !error || !isClient) {
+  if (!isOpen || !error) {
     return null;
   }
 
@@ -68,7 +61,7 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
   const { Icon, colorClass, bgColorClass } = getModalStyle(error.type);
   const title = getModalTitle();
 
-  const modalContent = (
+  return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className={bgColorClass}>
         <DialogHeader className="flex flex-row items-center space-x-3">
@@ -84,6 +77,4 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
       </DialogContent>
     </Dialog>
   );
-
-  return ReactDOM.createPortal(modalContent, document.body);
 };
