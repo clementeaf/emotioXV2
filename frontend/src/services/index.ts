@@ -15,7 +15,7 @@ export { companyService } from './companyService';
 
 // Servicios de pantallas y formularios
 export { default as smartVOCFormService } from './smartVOCFormService';
-export { default as thankYouScreenService } from './thankYouScreenService';
+// ❌ ELIMINADO: thankYouScreenService - usar /api/domains/thank-you-screen/
 // ❌ ELIMINADO: welcomeScreenService - usar hooks centralizados de useWelcomeScreenData
 
 // Servicios de eye tracking
@@ -33,5 +33,5 @@ export * from './cognitiveTaskService';
 export * from './companyService';
 export * from './eyeTrackingService';
 export * from './smartVOCFormService';
-export * from './thankYouScreenService';
+// ❌ ELIMINADO: thankYouScreenService - usar /api/domains/thank-you-screen/
 // ❌ ELIMINADO: welcomeScreen.service - usar hooks centralizados

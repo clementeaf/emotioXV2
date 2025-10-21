@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useThankYouScreenData } from '@/hooks/useThankYouScreenData';
+import { useThankYouScreenData } from '@/api/domains/thank-you-screen';
 import { ThankYouScreenModel } from '@/shared/interfaces/thank-you-screen.interface';
 import { toastHelpers } from '@/utils/toast';
 
