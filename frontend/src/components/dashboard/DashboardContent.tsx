@@ -1,52 +1,33 @@
 'use client';
 
-import { ResearchStageManager } from '@/components/research/research-management/ResearchStageManager';
-import LoadingSkeleton from '@/components/common/LoadingSkeleton';
-import { useDashboardResearch } from '@/hooks/useDashboardResearch';
-import { useResearchList } from '@/api/domains/research';
 import { memo, useMemo } from 'react';
 import { DashboardMainContent } from './DashboardMainContent';
 import { DashboardStats } from './DashboardStats';
 
+interface DashboardContentProps {
+  researchList: Array<{
+    id: string;
+    name: string;
+    status: string;
+    technique?: string;
+    createdAt?: string;
+  }>;
+}
+
 /**
- * Componente principal del contenido del dashboard
+ * Componente simplificado del contenido del dashboard
+ * Solo maneja renderizado, sin lógica compleja
  */
-export const DashboardContent = memo(() => {
-  const { section, isAimFramework, activeResearch, isLoading } = useDashboardResearch();
-  const { data: researchList = [], isLoading: isLoadingResearch } = useResearchList();
-
-
-  // Calculate dashboard stats from research list
+export const DashboardContent = memo<DashboardContentProps>(({ researchList }) => {
   const dashboardStats = useMemo(() => {
     const totalResearch = researchList.length;
-    const inProgress = researchList.filter(r => r.status === 'in-progress' || r.status === 'active').length;
-    const completed = researchList.filter(r => r.status === 'completed').length;
-    // For participants, we would need additional data - for now use 0
+    const inProgress = researchList.filter(r => r?.status === 'in-progress' || r?.status === 'active').length;
+    const completed = researchList.filter(r => r?.status === 'completed').length;
     const participants = 0;
 
     return { totalResearch, inProgress, completed, participants };
   }, [researchList]);
 
-  // Solo mostrar loading si NO hay datos en cache
-  const hasData = researchList.length > 0;
-  const shouldShowLoading = (isLoading || isLoadingResearch) && !hasData;
-
-  if (shouldShowLoading) {
-    return (
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto px-6 py-8 w-full">
-          <LoadingSkeleton type="dashboard" />
-        </div>
-      </div>
-    );
-  }
-
-  // Si hay una investigación activa con AIM framework o sección específica
-  if (activeResearch && (isAimFramework || section)) {
-    return <ResearchStageManager researchId={activeResearch.id} />;
-  }
-
-  // Dashboard principal
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto px-6 py-8 w-full">

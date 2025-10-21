@@ -1,6 +1,6 @@
 'use client';
 
-import { DashboardContent } from '@/components/dashboard/DashboardContent';
+import { DashboardContainer } from '@/components/dashboard/DashboardContainer';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -24,5 +24,5 @@ export default function DashboardPage() {
     return null;
   }
 
-  return <DashboardContent />;
+  return <DashboardContainer />;
 }

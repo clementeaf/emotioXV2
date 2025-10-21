@@ -18,7 +18,9 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
 
   return (
     <div className="flex flex-col justify-start pt-3">
-      <h1 className="text-2xl font-semibold text-neutral-900">{stageTitle}</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-neutral-900">{stageTitle}</h1>
+      </div>
       <ConfigCard>
         {renderStageContent()}
       </ConfigCard>

@@ -51,7 +51,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
       />
 
       <div className="mt-8">
-        <FormCard title="Configuración de Pantalla de Bienvenida">
+        <FormCard>
           <div className="space-y-6">
             <FormInput
               label="Título"
@@ -78,7 +78,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
               disabled={isLoading || isSaving || !formData.isEnabled}
             />
           </div>
-          <div className="flex justify-between items-center pt-10 gap-3">
+          <div className="flex justify-end items-center pt-8 gap-3">
             {isExisting && (
               <ActionButton
                 variant="danger"
@@ -91,25 +91,22 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
               </ActionButton>
             )}
 
-            {/* Botones principales */}
-            <div className="flex gap-3 ml-auto">
-              <ActionButton
-                variant="secondary"
-                onClick={handlePreview}
-                disabled={!formData.isEnabled || isSaving}
-              >
-                Vista previa
-              </ActionButton>
+            <ActionButton
+              variant="secondary"
+              onClick={handlePreview}
+              disabled={!formData.isEnabled || isSaving}
+            >
+              Vista previa
+            </ActionButton>
 
-              <ActionButton
-                variant="primary"
-                onClick={handleSubmit}
-                disabled={!formData.isEnabled || isSaving}
-                loading={isSaving}
-              >
-                {isSaving ? 'Guardando...' : (isExisting ? 'Actualizar' : 'Guardar')}
-              </ActionButton>
-            </div>
+            <ActionButton
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={!formData.isEnabled || isSaving}
+              loading={isSaving}
+            >
+              {isSaving ? 'Guardando...' : (isExisting ? 'Actualizar' : 'Guardar')}
+            </ActionButton>
           </div>
         </FormCard>
       </div>
