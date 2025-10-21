@@ -11,7 +11,7 @@ import { toastHelpers } from '@/utils/toast';
 
 import {
   logFormDebugInfo
-} from '../../CognitiveTaskFormHelpers';
+} from '../../utils/CognitiveTaskFormHelpers';
 import {
   QUERY_KEYS
 } from '../constants';

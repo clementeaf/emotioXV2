@@ -73,7 +73,6 @@ export function useStageManager(researchId: string): StageManagerResult {
 
     const component = <ComponentToRender {...componentProps} />;
 
-    // Apply container styles if specified
     if (stageConfig.containerStyles) {
       return <div style={stageConfig.containerStyles}>{component}</div>;
     }

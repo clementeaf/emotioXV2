@@ -25,7 +25,7 @@ export const LazyEyeTracking = lazy(() =>
 );
 
 export const LazyCreateResearchForm = lazy(() => 
-  import('@/components/research/CreateResearchFormOptimized').then(module => ({
+  import('@/components/research/research-management/CreateResearchFormOptimized').then(module => ({
     default: module.default || module.CreateResearchFormOptimized
   }))
 );
@@ -43,7 +43,7 @@ export const LazySmartVOCResults = lazy(() =>
 );
 
 export const LazyGroupedResponsesViewer = lazy(() => 
-  import('@/components/research/GroupedResponsesViewer').then(module => ({
+  import('@/components/research/responses/GroupedResponsesViewer').then(module => ({
     default: module.GroupedResponsesViewer
   }))
 );

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
 
-import { QRCodeModal } from './QRCodeModal';
+import { QRCodeModal } from '../shared/QRCodeModal';
 
 interface RecruitConfigurationProps {
   className?: string;

@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { ConfigCard } from '@/components/common/ConfigCard';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { useStageManager } from './hooks/useStageManager';
+import { useStageManager } from '../hooks/useStageManager';
 
 
 interface ResearchStageManagerProps {
@@ -14,12 +14,15 @@ interface ResearchStageManagerProps {
 
 // Componente interno que usa useSearchParams
 function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) {
-  const { renderStageContent } = useStageManager(researchId);
+  const { stageTitle, renderStageContent } = useStageManager(researchId);
 
   return (
-    <ConfigCard>
-      {renderStageContent()}
-    </ConfigCard>
+    <div className="flex flex-col justify-start pt-3">
+      <h1 className="text-2xl font-semibold text-neutral-900">{stageTitle}</h1>
+      <ConfigCard>
+        {renderStageContent()}
+      </ConfigCard>
+    </div>
   );
 }
 
@@ -34,3 +37,4 @@ export function ResearchStageManager(props: ResearchStageManagerProps) {
     </Suspense>
   );
 }
+

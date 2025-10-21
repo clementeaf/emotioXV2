@@ -1,4 +1,4 @@
-import { GroupedResponsesPageContent } from '../../../../../components/research/GroupedResponsesPage';
+import { GroupedResponsesPageContent } from '../../../../../components/research/responses/GroupedResponsesPage';
 
 interface GroupedResponsesPageProps {
   params: Promise<{

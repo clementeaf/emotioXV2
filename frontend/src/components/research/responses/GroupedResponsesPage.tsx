@@ -1,10 +1,11 @@
 "use client";
 
 import React, { createContext, useContext } from 'react';
-import { useGlobalResearchData } from '../../hooks/useGlobalResearchData';
+import { useGlobalResearchData } from '../../../hooks/useGlobalResearchData';
 import { GroupedResponsesTest } from './GroupedResponsesTest';
 import { GroupedResponsesViewer } from './GroupedResponsesViewer';
-import { SmartVOCEndpointTest } from './SmartVOCEndpointTest';
+// ❌ ELIMINADO: SmartVOCEndpointTest - archivo eliminado
+// import { SmartVOCEndpointTest } from './SmartVOCEndpointTest';
 
 // Contexto para compartir datos entre componentes
 const ResearchDataContext = createContext<ReturnType<typeof useGlobalResearchData> | null>(null);
@@ -70,7 +71,8 @@ export const GroupedResponsesPageContent: React.FC<GroupedResponsesPageProps> = 
           {/* Prueba del endpoint SmartVOC */}
           <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">🧪 Prueba del Endpoint SmartVOC</h2>
-            <SmartVOCEndpointTest researchId={researchId} />
+            {/* ❌ ELIMINADO: SmartVOCEndpointTest - archivo eliminado */}
+            {/* <SmartVOCEndpointTest researchId={researchId} /> */}
           </div>
 
           {/* Contenido principal */}

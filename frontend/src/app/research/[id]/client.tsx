@@ -10,7 +10,7 @@ interface ResearchClientProps {
 }
 
 const DynamicResearchStageManager = dynamic(
-  () => import('@/components/modules/CreateResearch').then(mod => ({ default: mod.ResearchStageManager })),
+  () => import('@/components/research/research-management/ResearchStageManager').then(mod => ({ default: mod.ResearchStageManager })),
   {
     ssr: false
   }

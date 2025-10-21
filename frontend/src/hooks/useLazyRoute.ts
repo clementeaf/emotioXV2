@@ -25,7 +25,7 @@ export function useLazyRoute() {
         import('@/components/research/EyeTracking/EyeTrackingForm');
         break;
       case route.includes('/new'):
-        import('@/components/research/CreateResearchFormOptimized');
+        import('@/components/research/research-management/CreateResearchFormOptimized');
         break;
       case route.includes('/results'):
         import('@/components/research/CognitiveTaskResults/OptimizedCognitiveResults');

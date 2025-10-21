@@ -1,7 +1,7 @@
 'use client';
 
-import { ParticipantGenerator } from '@/components/research/ParticipantGenerator';
-import { ParticipantsTable } from '@/components/research/ParticipantsTable';
+import { ParticipantGenerator } from '@/components/research/participants/ParticipantGenerator';
+import { ParticipantsTable } from '@/components/research/participants/ParticipantsTable';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';

@@ -1,13 +1,13 @@
 import React, { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { useCompanies } from '@/hooks/useCompanies';
-import { FormSteps } from './components/FormSteps';
-import { BasicInfoStep } from './components/BasicInfoStep';
-import { ResearchTypeStep } from './components/ResearchTypeStep';
-import { TechniqueStep } from './components/TechniqueStep';
-import { FormActions } from './components/FormActions';
-import { ResearchSummary } from './components/ResearchSummary';
-import useCreateResearchForm from './components/useCreateResearchForm';
+import { FormSteps } from '../CreateResearchForm/FormSteps';
+import { BasicInfoStep } from '../CreateResearchForm/BasicInfoStep';
+import { ResearchTypeStep } from '../CreateResearchForm/ResearchTypeStep';
+import { TechniqueStep } from '../CreateResearchForm/TechniqueStep';
+import { FormActions } from '../CreateResearchForm/FormActions';
+import { ResearchSummary } from '../CreateResearchForm/ResearchSummary';
+import useCreateResearchForm from '../CreateResearchForm/useCreateResearchForm';
 
 interface CreateResearchFormOptimizedProps {
   className?: string;

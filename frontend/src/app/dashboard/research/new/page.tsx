@@ -2,7 +2,7 @@
 
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { NewResearchContent } from '@/components/modules/CreateResearch';
+import { NewResearchContent } from '@/components/research/research-management/NewResearchContent';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { Suspense } from 'react';
 

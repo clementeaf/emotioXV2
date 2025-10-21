@@ -50,7 +50,7 @@ export const LazyProvider: React.FC<LazyProviderProps> = ({ children }) => {
     const criticalModules = [
       {
         name: 'CreateResearchForm',
-        importFn: () => import('@/components/research/CreateResearchFormOptimized')
+        importFn: () => import('@/components/research/research-management/CreateResearchFormOptimized')
       },
       {
         name: 'Dashboard',

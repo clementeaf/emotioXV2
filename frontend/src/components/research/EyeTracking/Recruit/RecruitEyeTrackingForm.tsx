@@ -2,16 +2,10 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
-
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
-
 import { cn } from '@/lib/utils';
 import { DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
 import { AgeQuota } from '@/types/eye-tracking';
-
-// Definir BacklinkKeys localmente ya que no está exportado
-type BacklinkKeys = 'complete' | 'disqualified' | 'overquota';
-
 import { eyeTrackingApi } from '@/api/domains/eye-tracking';
 import { Trash2 } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/utils/toast';
@@ -26,7 +20,9 @@ import { GenderConfigModal } from './components/GenderConfigModal';
 import { HouseholdIncomeConfigModal } from './components/HouseholdIncomeConfigModal';
 import { TechnicalProficiencyConfigModal } from './components/TechnicalProficiencyConfigModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
-import { QRCodeModal } from '@/components/research/QRCodeModal';
+import { QRCodeModal } from '@/components/research/shared/QRCodeModal';
+
+type BacklinkKeys = 'complete' | 'disqualified' | 'overquota';
 
 interface CheckboxProps {
   id?: string;
@@ -37,10 +33,8 @@ interface CheckboxProps {
 
 const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
   ({ className, checked, onCheckedChange, id, ...props }, ref) => {
-    // Asegurarse de que checked tenga un valor predeterminado
     const isChecked = checked || false;
 
-    // Función de manejador de clic mejorada
     const handleClick = () => {
       if (onCheckedChange) {
         onCheckedChange(!isChecked);
@@ -94,7 +88,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     loading,
     saving,
     formData,
-    stats,
     lastSaved,
     demographicQuestionsEnabled,
     setDemographicQuestionsEnabled,
@@ -106,8 +99,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     handleParamOptionChange,
     setLimitParticipants,
     setParticipantLimit,
-    updateAgeOptions,
-    updateDisqualifyingAges,
     updateCountryOptions,
     updateDisqualifyingCountries,
     updatePriorityCountries,
@@ -163,12 +154,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   const [technicalProficiencyModalOpen, setTechnicalProficiencyModalOpen] = React.useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
 
-  // Function to determine the save button text
   const getSaveButtonText = () => {
     if (saving) {
       return 'Guardando...';
     }
-    // Solo mostrar 'Actualizar' si formData.id existe y tiene valor (datos del backend)
     if (formData.id && typeof formData.id === 'string' && formData.id.trim().length > 0) {
       return 'Actualizar';
     }
@@ -189,12 +178,11 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       await eyeTrackingApi.recruit.deleteConfig(researchId);
       showSuccessToast('Datos de reclutamiento eliminados correctamente');
 
-      // Resetear el estado del formulario después de eliminar
       const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
       const generatedUrl = `${publicTestsBaseUrl}/?researchId=${researchId}`;
 
       const defaultConfig = {
-        id: undefined, // Importante: resetear el ID
+        id: undefined,
         researchId: researchId,
         questionKey: 'demographics',
         demographicQuestions: {
@@ -214,12 +202,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         parameterOptions: { saveDeviceInfo: false, saveLocationInfo: false, saveResponseTimes: false, saveUserJourney: false }
       };
 
-      // Actualizar el estado del formulario
       setFormData(defaultConfig);
       setDemographicQuestionsEnabled(false);
       setLinkConfigEnabled(false);
 
-      // Invalidar la query para forzar recarga
       queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', researchId] });
 
     } catch (error: any) {
@@ -230,19 +216,12 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     }
   };
 
-  const handleAgeConfigClick = () => {
-    setAgeModalOpen(true);
-  };
-
   const handleAgeConfigSaveLocal = (options: string[], disqualifyingAges: string[]) => {
     handleAgeConfigSave(options, disqualifyingAges);
-    // Aquí también actualizaríamos las edades descalificantes
-    // Por ahora solo mostramos un toast con ambas informaciones
     showSuccessToast('Configuración de edad guardada correctamente');
     setAgeModalOpen(false);
   };
 
-  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE EDAD
   const handleAgeQuotasSaveLocal = (quotas: AgeQuota[]) => {
     handleAgeQuotasSave(quotas);
     showSuccessToast('Cuotas de edad guardadas correctamente');
@@ -253,7 +232,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     showSuccessToast(enabled ? 'Cuotas de edad habilitadas' : 'Cuotas de edad deshabilitadas');
   };
 
-  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE PAÍS
   const handleCountryQuotasSaveLocal = (quotas: any[]) => {
     handleCountryQuotasSave(quotas);
     showSuccessToast('Cuotas de país guardadas correctamente');
@@ -264,7 +242,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     showSuccessToast(enabled ? 'Cuotas de país habilitadas' : 'Cuotas de país deshabilitadas');
   };
 
-  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE GÉNERO
   const handleGenderQuotasSaveLocal = (quotas: any[]) => {
     handleGenderQuotasSave(quotas);
     showSuccessToast('Cuotas de género guardadas correctamente');
@@ -275,7 +252,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     showSuccessToast(enabled ? 'Cuotas de género habilitadas' : 'Cuotas de género deshabilitadas');
   };
 
-  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE NIVEL DE EDUCACIÓN
   const handleEducationLevelQuotasSaveLocal = (quotas: any[]) => {
     handleEducationLevelQuotasSave(quotas);
     showSuccessToast('Cuotas de nivel educativo guardadas correctamente');
@@ -286,7 +262,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     showSuccessToast(enabled ? 'Cuotas de nivel educativo habilitadas' : 'Cuotas de nivel educativo deshabilitadas');
   };
 
-  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE INGRESOS FAMILIARES
   const handleHouseholdIncomeQuotasSaveLocal = (quotas: any[]) => {
     handleHouseholdIncomeQuotasSave(quotas);
     showSuccessToast('Cuotas de ingresos guardadas correctamente');
@@ -297,7 +272,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     showSuccessToast(enabled ? 'Cuotas de ingresos habilitadas' : 'Cuotas de ingresos deshabilitadas');
   };
 
-  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE SITUACIÓN LABORAL
   const handleEmploymentStatusQuotasSaveLocal = (quotas: any[]) => {
     handleEmploymentStatusQuotasSave(quotas);
     showSuccessToast('Cuotas de situación laboral guardadas correctamente');
@@ -308,7 +282,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     showSuccessToast(enabled ? 'Cuotas de situación laboral habilitadas' : 'Cuotas de situación laboral deshabilitadas');
   };
 
-  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE HORAS DIARIAS EN LÍNEA
   const handleDailyHoursOnlineQuotasSaveLocal = (quotas: any[]) => {
     handleDailyHoursOnlineQuotasSave(quotas);
     showSuccessToast('Cuotas de horas en línea guardadas correctamente');
@@ -319,7 +292,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     showSuccessToast(enabled ? 'Cuotas de horas en línea habilitadas' : 'Cuotas de horas en línea deshabilitadas');
   };
 
-  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE COMPETENCIA TÉCNICA
   const handleTechnicalProficiencyQuotasSaveLocal = (quotas: any[]) => {
     handleTechnicalProficiencyQuotasSave(quotas);
     showSuccessToast('Cuotas de competencia técnica guardadas correctamente');
@@ -399,7 +371,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   return (
     <>
       <div className={cn('max-w-[1600px]', className)}>
-        <div className="rounded-xl overflow-hidden">
+        <div className="overflow-hidden">
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-8">
               <div>
@@ -430,7 +402,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.demographicQuestions.age.enabled}
                           onChange={(e) => {
                             handleDemographicChange('age' as DemographicQuestionKeys, e.target.checked);
-                            // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
                               setAgeModalOpen(true);
                             }
@@ -448,7 +419,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.demographicQuestions.country.enabled}
                           onChange={(e) => {
                             handleDemographicChange('country' as DemographicQuestionKeys, e.target.checked);
-                            // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
                               setCountryModalOpen(true);
                             }
@@ -466,7 +436,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.demographicQuestions.gender.enabled}
                           onChange={(e) => {
                             handleDemographicChange('gender' as DemographicQuestionKeys, e.target.checked);
-                            // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
                               setGenderModalOpen(true);
                             }
@@ -484,7 +453,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.demographicQuestions.educationLevel.enabled}
                           onChange={(e) => {
                             handleDemographicChange('educationLevel' as DemographicQuestionKeys, e.target.checked);
-                            // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
                               setEducationModalOpen(true);
                             }
@@ -502,7 +470,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.demographicQuestions.householdIncome.enabled}
                           onChange={(e) => {
                             handleDemographicChange('householdIncome' as DemographicQuestionKeys, e.target.checked);
-                            // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
                               setHouseholdIncomeModalOpen(true);
                             }
@@ -520,7 +487,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.demographicQuestions.employmentStatus.enabled}
                           onChange={(e) => {
                             handleDemographicChange('employmentStatus' as DemographicQuestionKeys, e.target.checked);
-                            // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
                               setEmploymentStatusModalOpen(true);
                             }
@@ -538,7 +504,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.demographicQuestions.dailyHoursOnline.enabled}
                           onChange={(e) => {
                             handleDemographicChange('dailyHoursOnline' as DemographicQuestionKeys, e.target.checked);
-                            // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
                               setDailyHoursOnlineModalOpen(true);
                             }
@@ -556,7 +521,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.demographicQuestions.technicalProficiency.enabled}
                           onChange={(e) => {
                             handleDemographicChange('technicalProficiency' as DemographicQuestionKeys, e.target.checked);
-                            // Abrir automáticamente el modal cuando se marca el checkbox
                             if (e.target.checked) {
                               setTechnicalProficiencyModalOpen(true);
                             }
