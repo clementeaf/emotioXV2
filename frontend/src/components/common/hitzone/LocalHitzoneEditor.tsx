@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import type { HitzoneArea } from '@/components/research/CognitiveTask/types';
+// Tipo para áreas de hitzone
+export interface HitzoneArea {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label?: string;
+}
 
 interface LocalHitzoneEditorProps {
   imageUrl: string;
