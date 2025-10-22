@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Question } from '@/components/research/CognitiveTask/types';
 
+// Imports optimizados desde research components
 import { ChoiceQuestion } from '@/components/research/CognitiveTask/components/questions/ChoiceQuestion';
 import { FileUploadQuestion } from '@/components/research/CognitiveTask/components/questions/FileUploadQuestion';
 import { ScaleQuestion } from '@/components/research/CognitiveTask/components/questions/ScaleQuestion';

@@ -1,10 +1,12 @@
 import React from 'react';
+import { FieldConfig } from '@/components/research/SmartVOC/config';
+
+// Imports optimizados desde common components
 import { FormInput } from '@/components/common/FormInput';
 import { FormTextarea } from '@/components/common/FormTextarea';
 import { FormSelect } from '@/components/common/FormSelect';
 import { LabeledInput } from '@/components/common/LabeledInput';
 import { ScaleSelector } from '@/components/common/ScaleSelector';
-import { FieldConfig } from '@/components/research/SmartVOC/config';
 
 interface DynamicFieldRendererProps {
   field: FieldConfig;

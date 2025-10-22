@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/Label';
 
 import type { ValidationErrors } from '../types';
 
+// Imports optimizados desde common
 import { QuestionCard } from '@/components/common/forms/QuestionCard';
-
 import { Tooltip } from '@/components/common/ui/Tooltip';
 
 // Modal simple para seleccionar tipo de pregunta
