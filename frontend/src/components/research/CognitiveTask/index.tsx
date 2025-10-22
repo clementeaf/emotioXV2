@@ -1,14 +1,18 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
+import { useEducationalContent } from '@/hooks/useEducationalContent';
+
+// Imports optimizados desde common
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { EducationalSidebar } from '@/components/common/EducationalSidebar';
-import { useEducationalContent } from '@/hooks/useEducationalContent';
-import { cn } from '@/lib/utils';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
-import { CognitiveTaskFooter } from './components';
 import { JsonPreviewModal } from '@/components/common/modals/JsonPreviewModal';
 import { ErrorModal } from '@/components/common/ErrorModal';
+
+// Imports optimizados desde CognitiveTask
+import { CognitiveTaskFooter } from './components';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { useCognitiveTaskForm } from './hooks/useCognitiveTaskForm';
 import { CognitiveTaskFormProps } from './types';

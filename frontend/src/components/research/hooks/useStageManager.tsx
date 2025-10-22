@@ -1,6 +1,12 @@
 import { useSearchParams } from 'next/navigation';
 import { ReactElement } from 'react';
+import { STAGE_TITLES, STAGE_COMPONENTS, DEFAULT_SECTION } from '@/config/research-stages.config';
 
+// Imports optimizados desde common
+import { PlaceholderCard } from '@/components/common/PlaceholderCard';
+import { TestCommonPage } from '@/components/development/TestCommonPage';
+
+// Imports optimizados desde research components
 import { CognitiveTaskForm } from '../CognitiveTask';
 import ResearchInProgressPage from '@/app/dashboard/research-in-progress/page';
 import { CognitiveTaskResults } from '../CognitiveTaskResults';
@@ -13,10 +19,6 @@ import { SmartVOCForm } from '../SmartVOC';
 import { SmartVOCResults } from '../SmartVOCResults/index';
 import { ThankYouScreenForm } from '../ThankYouScreen';
 import { WelcomeScreenForm } from '../WelcomeScreen';
-// ❌ ELIMINADO: ScreenerForm - componente no existe
-import { PlaceholderCard } from '@/components/common/PlaceholderCard';
-import { TestCommonPage } from '@/components/development/TestCommonPage';
-import { STAGE_TITLES, STAGE_COMPONENTS, DEFAULT_SECTION } from '@/config/research-stages.config';
 
 interface StageManagerResult {
   currentSection: string;

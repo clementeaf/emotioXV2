@@ -2,10 +2,10 @@
 
 import React, { createContext, useContext } from 'react';
 import { useGlobalResearchData } from '../../../hooks/useGlobalResearchData';
+
+// Imports optimizados desde responses
 import { GroupedResponsesTest } from './GroupedResponsesTest';
 import { GroupedResponsesViewer } from './GroupedResponsesViewer';
-// ❌ ELIMINADO: SmartVOCEndpointTest - archivo eliminado
-// import { SmartVOCEndpointTest } from './SmartVOCEndpointTest';
 
 // Contexto para compartir datos entre componentes
 const ResearchDataContext = createContext<ReturnType<typeof useGlobalResearchData> | null>(null);
