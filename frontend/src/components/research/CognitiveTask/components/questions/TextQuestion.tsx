@@ -1,13 +1,10 @@
 import React from 'react';
-
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
-
+import { FormField, FormSection, FormCard } from '@/components/common/atomic';
 import { TextQuestionProps } from '../../types';
-// import { UI_TEXTS } from '../../constants'; // Comentado por ahora
 
 /**
- * Componente que maneja la configuración de preguntas de texto corto y largo
+ * Componente refactorizado que usa componentes atómicos
+ * Elimina duplicación de layouts y patrones repetidos
  */
 export const TextQuestion: React.FC<TextQuestionProps> = ({
   question,
@@ -15,102 +12,81 @@ export const TextQuestion: React.FC<TextQuestionProps> = ({
   validationErrors,
   disabled
 }) => {
-  // Buscar errores para esta pregunta
   const titleError = validationErrors ? validationErrors['title'] : null;
 
   return (
-    <div className="space-y-4">
-      {/* CAMPO EDITABLE: Título de la pregunta */}
-      <div className="bg-white p-3 border border-neutral-200 rounded-md">
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Título de la pregunta <span className="text-red-500">*</span>
-          <span className="ml-2 text-xs font-normal text-neutral-500">(Campo editable - escriba aquí su pregunta)</span>
-        </label>
-        <Input
+    <FormCard>
+      <FormSection 
+        title="Configuración de Pregunta de Texto"
+        description="Configure la pregunta de texto corto o largo"
+      >
+        {/* Título de la pregunta */}
+        <FormField
+          type="text"
+          label="Título de la pregunta"
           value={question.title || ''}
-          onChange={(e) => onQuestionChange({ title: e.target.value })}
-          placeholder={'Introduce el título de la pregunta'}
+          onChange={(value) => onQuestionChange({ title: value })}
+          placeholder="Introduce el título de la pregunta"
           disabled={disabled}
           error={!!titleError}
-          helperText={titleError || undefined}
-          className="border-2 border-neutral-300 focus:border-neutral-500 focus:ring-neutral-500"
+          errorMessage={titleError || undefined}
         />
-      </div>
 
-      {/* CAMPO EDITABLE: Descripción */}
-      <div className="bg-white p-3 border border-neutral-200 rounded-md">
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Descripción
-          <span className="ml-2 text-xs font-normal text-neutral-500">(Campo editable - escriba aquí más detalles)</span>
-        </label>
-        <Textarea
+        {/* Descripción */}
+        <FormField
+          type="textarea"
+          label="Descripción"
           value={question.description || ''}
-          onChange={(e) => onQuestionChange({ description: e.target.value })}
-          placeholder={'Introduce una descripción opcional'}
-          rows={3}
+          onChange={(value) => onQuestionChange({ description: value })}
+          placeholder="Introduce una descripción opcional"
           disabled={disabled}
-          className="border-2 border-neutral-300 focus:border-neutral-500 focus:ring-neutral-500"
+          config={{ rows: 3 }}
         />
-      </div>
 
-      {/* CAMPO EDITABLE: Texto de ejemplo para respuesta */}
-      <div className="bg-white p-3 border border-neutral-200 rounded-md">
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Texto de ejemplo para respuesta
-          <span className="ml-2 text-xs font-normal text-neutral-500">(Campo editable - configuración del placeholder)</span>
-        </label>
-        {question.type === 'short_text' ? (
-          <Input
-            value={question.answerPlaceholder || ''}
-            onChange={(e) => onQuestionChange({ answerPlaceholder: e.target.value })}
-            placeholder={'Ej: Escribe tu respuesta aquí'}
-            disabled={disabled}
-            className="border-2 border-neutral-300 focus:border-neutral-500 focus:ring-neutral-500"
-          />
-        ) : (
-          <Textarea
-            value={question.answerPlaceholder || ''}
-            onChange={(e) => onQuestionChange({ answerPlaceholder: e.target.value })}
-            placeholder={'Ej: Escribe tu respuesta detallada aquí'}
-            rows={2}
-            disabled={disabled}
-            className="border-2 border-neutral-300 focus:border-neutral-500 focus:ring-neutral-500"
-          />
-        )}
-      </div>
+        {/* Placeholder de respuesta */}
+        <FormField
+          type="text"
+          label="Placeholder de respuesta"
+          value={question.answerPlaceholder || ''}
+          onChange={(value) => onQuestionChange({ answerPlaceholder: value })}
+          placeholder="Ej: Escribe tu respuesta aquí..."
+          disabled={disabled}
+        />
 
-      {/* VISTA PREVIA: No editable */}
-      <div className="bg-neutral-50 p-3 border border-gray-300 rounded-md">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Vista previa - Así verán esta pregunta los participantes
-          <span className="ml-2 text-xs font-normal text-red-500">(NO EDITABLE)</span>
-        </label>
-        <div className="mt-2 text-sm text-gray-700">{question.title || 'Título de la pregunta'}</div>
-        {question.description && <div className="mt-1 text-xs text-gray-500">{question.description}</div>}
-        <div className="relative mt-3">
-          {question.type === 'short_text' ? (
-            <Input
-              value=""
-              placeholder={question.answerPlaceholder || 'Short text answer'}
-              disabled={true}
-              className="bg-neutral-100 border-gray-300 text-gray-400 cursor-not-allowed"
-            />
-          ) : (
-            <Textarea
-              value=""
-              placeholder={question.answerPlaceholder || 'Long text answer'}
-              rows={3}
-              disabled={true}
-              className="bg-neutral-100 border-gray-300 text-gray-400 cursor-not-allowed"
-            />
-          )}
-          <div className="absolute inset-0 bg-black bg-opacity-5 flex items-center justify-center pointer-events-none">
-            <span className="bg-white px-3 py-1 rounded-full text-xs text-red-500 font-semibold shadow">
-              Campo de respuesta - No editable aquí
-            </span>
+        {/* Vista previa */}
+        <FormCard className="bg-gray-50">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Vista previa - Así verán esta pregunta los participantes
+              <span className="ml-2 text-xs font-normal text-red-500">(NO EDITABLE)</span>
+            </label>
+            <div className="mt-2 text-sm text-gray-700 font-medium">
+              {question.title || 'Título de la pregunta'}
+            </div>
+            {question.description && (
+              <div className="mt-1 text-xs text-gray-500">{question.description}</div>
+            )}
+
+            <div className="mt-4">
+              {question.type === 'short_text' ? (
+                <input
+                  type="text"
+                  disabled
+                  placeholder={question.answerPlaceholder || 'Escribe tu respuesta aquí...'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm cursor-not-allowed bg-gray-100"
+                />
+              ) : (
+                <textarea
+                  disabled
+                  placeholder={question.answerPlaceholder || 'Escribe tu respuesta aquí...'}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm cursor-not-allowed bg-gray-100"
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </FormCard>
+      </FormSection>
+    </FormCard>
   );
-}; 
+};

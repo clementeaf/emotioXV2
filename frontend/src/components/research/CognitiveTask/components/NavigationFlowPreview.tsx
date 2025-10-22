@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
 import { Question } from '../types'; // Usar Question local
 
-import { HitZoneViewer } from './HitZoneViewer';
+import { HitZoneViewer } from '@/components/common/hitzone';
 
 interface NavigationFlowPreviewProps {
   config: CognitiveTaskFormData;

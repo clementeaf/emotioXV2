@@ -1,12 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Switch } from '@/components/ui/Switch';
-import { cn } from '@/lib/utils';
-
+import { FormField, FormSection, FormCard, FormRow } from '@/components/common/atomic';
 import { QRCodeModal } from '../shared/QRCodeModal';
 
 interface RecruitConfigurationProps {
@@ -41,6 +37,10 @@ interface Statistics {
   overquota: number;
 }
 
+/**
+ * Componente refactorizado que usa componentes atómicos
+ * Elimina duplicación de layouts y patrones repetidos
+ */
 export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
   const [demographicEnabled, setDemographicEnabled] = useState(true);
   const [linkConfigEnabled, setLinkConfigEnabled] = useState(true);
@@ -48,9 +48,9 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
   const [allowMobileDevices, setAllowMobileDevices] = useState(true);
   const [trackLocation, setTrackLocation] = useState(true);
   const [participantLimit, setParticipantLimit] = useState(50);
-  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
 
-  const [demographics, setDemographics] = useState<DemographicConfig>({
+  const [demographicConfig, setDemographicConfig] = useState<DemographicConfig>({
     age: true,
     country: true,
     gender: true,
@@ -68,271 +68,203 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
   });
 
   const [researchConfig, setResearchConfig] = useState<ResearchConfig>({
-    researchUrl: '',
+    researchUrl: 'https://research.emotiox.com/demo',
     participantLimit: 50,
   });
 
   const [statistics] = useState<Statistics>({
-    complete: 57,
-    disqualified: 24,
-    overquota: 15,
+    complete: 12,
+    disqualified: 3,
+    overquota: 1,
   });
 
-  const handleDemographicChange = (key: keyof DemographicConfig) => {
-    setDemographics(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  const handleLinkChange = (key: keyof LinkConfig, value: string) => {
-    setLinkConfig(prev => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
-  const handleResearchConfigChange = (key: keyof ResearchConfig, value: string | number) => {
-    setResearchConfig(prev => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
-  const handleGenerateQR = () => {
-    setQrModalOpen(true);
-  };
-
   return (
-    <div className={cn('max-w-3xl mx-auto', className)}>
-      {/* Form Content */}
-      <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
-        <div className="px-8 py-8">
-          <header className="mb-6">
-            <h1 className="text-lg font-semibold text-neutral-900">
-              1.0 - Recruitment Configuration
-            </h1>
-            <p className="text-sm text-gray-600 mb-4">
-              Configura los parámetros de reclutamiento para tu investigación. Estos ajustes afectan cómo se presentará tu estudio a los participantes potenciales.
-            </p>
-          </header>
-
-          <div className="space-y-8">
-            {/* Recruitment link section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h2 className="text-base font-medium mb-4">Recruitment link</h2>
-
-                {/* Demographic questions */}
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-                    <div className="space-y-0.5">
-                      <h3 className="text-sm font-medium text-neutral-900">Demographic questions</h3>
-                      <p className="text-sm text-neutral-500">Collect demographic information from participants.</p>
-                    </div>
-                    <Switch
-                      checked={demographicEnabled}
-                      onCheckedChange={setDemographicEnabled}
-                    />
-                  </div>
-
-                  {demographicEnabled && (
-                    <div className="space-y-3 px-4">
-                      {Object.entries(demographics).map(([key, value]) => (
-                        <div key={key} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={value}
-                            onChange={() => handleDemographicChange(key as keyof DemographicConfig)}
-                            className="rounded border-neutral-300"
-                          />
-                          <span className="text-sm">
-                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Link configuration */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-                      <div className="space-y-0.5">
-                        <h3 className="text-sm font-medium text-neutral-900">Link configuration</h3>
-                        <p className="text-sm text-neutral-500">Configure how participants can access your research.</p>
-                      </div>
-                      <Switch
-                        checked={linkConfigEnabled}
-                        onCheckedChange={setLinkConfigEnabled}
-                      />
-                    </div>
-                    {linkConfigEnabled && (
-                      <div className="space-y-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={allowMobileDevices}
-                            onChange={() => setAllowMobileDevices(!allowMobileDevices)}
-                            className="rounded border-neutral-300"
-                          />
-                          <span className="text-sm">Allow respondents to take survey via mobile devices</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={trackLocation}
-                            onChange={() => setTrackLocation(!trackLocation)}
-                            className="rounded border-neutral-300"
-                          />
-                          <span className="text-sm">Track respondents location</span>
-                        </div>
-                        <div className="text-xs text-neutral-500 pl-6">
-                          It can be taken multiple times within a single session
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Limit participants */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-                      <div className="space-y-0.5">
-                        <h3 className="text-sm font-medium text-neutral-900">Limit number of participants</h3>
-                        <p className="text-sm text-neutral-500">Set a maximum number of participants for this research.</p>
-                      </div>
-                      <Switch
-                        checked={limitParticipantsEnabled}
-                        onCheckedChange={setLimitParticipantsEnabled}
-                      />
-                    </div>
-                    {limitParticipantsEnabled && (
-                      <div className="px-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={participantLimit}
-                            onChange={(e) => setParticipantLimit(Number(e.target.value))}
-                            className="w-20"
-                          />
-                          <span className="text-sm text-neutral-600">
-                            You will receive {participantLimit} responses
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Research configuration */}
-              <div>
-                <h2 className="text-base font-medium mb-4">Research configuration</h2>
-
-                {/* Backlinks */}
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-sm font-medium text-neutral-900 mb-3">A. Backlinks</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm mb-2">Link for complete interviews</label>
-                        <Input
-                          value={linkConfig.completeInterviews}
-                          onChange={(e) => handleLinkChange('completeInterviews', e.target.value)}
-                          placeholder="https://"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm mb-2">Link for disqualified interviews</label>
-                        <Input
-                          value={linkConfig.disqualifiedInterviews}
-                          onChange={(e) => handleLinkChange('disqualifiedInterviews', e.target.value)}
-                          placeholder="https://"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm mb-2">Link for overquota interviews</label>
-                        <Input
-                          value={linkConfig.overquotaInterviews}
-                          onChange={(e) => handleLinkChange('overquotaInterviews', e.target.value)}
-                          placeholder="https://"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Research link */}
-                  <div>
-                    <h3 className="text-sm font-medium text-neutral-900 mb-3">B. Research&apos;s link to share</h3>
-                    <div className="space-y-2">
-                      <p className="text-sm text-neutral-600">
-                        Third-party invitation system should substitute [your respondent id here]
-                      </p>
-                      <div>
-                        <label className="block text-sm mb-2">Research URL</label>
-                        <div className="flex gap-2">
-                          <Input
-                            value={researchConfig.researchUrl}
-                            onChange={(e) => handleResearchConfigChange('researchUrl', e.target.value)}
-                            placeholder="https://"
-                          />
-                          <Button variant="outline">Link Preview</Button>
-                        </div>
-                        <div className="mt-2">
-                          <Button onClick={handleGenerateQR}>Generate QR</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* QR Code Modal */}
-            <QRCodeModal
-              open={qrModalOpen}
-              onOpenChange={setQrModalOpen}
-              researchUrl={researchConfig.researchUrl}
+    <div className={className}>
+      <FormCard>
+        <FormSection 
+          title="Configuración de Reclutamiento"
+          description="Configure los parámetros de reclutamiento de participantes"
+        >
+          {/* Configuración de Demografía */}
+          <FormSection 
+            title="Configuración Demográfica"
+            description="Seleccione qué datos demográficos recopilar"
+            collapsible={true}
+            collapsed={false}
+          >
+            <FormField
+              type="toggle"
+              label="Habilitar recopilación demográfica"
+              value={demographicEnabled}
+              onChange={setDemographicEnabled}
             />
 
-            {/* Current statistics */}
-            <div className="mt-8">
-              <h2 className="text-base font-medium mb-4">Statistics</h2>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 bg-neutral-50 rounded-lg">
-                  <span className="block text-sm mb-1">Complete</span>
-                  <span className="text-xl font-semibold">{statistics.complete}</span>
-                </div>
-                <div className="p-4 bg-neutral-50 rounded-lg">
-                  <span className="block text-sm mb-1">Disqualified</span>
-                  <span className="text-xl font-semibold">{statistics.disqualified}</span>
-                </div>
-                <div className="p-4 bg-neutral-50 rounded-lg">
-                  <span className="block text-sm mb-1">Overquota</span>
-                  <span className="text-xl font-semibold">{statistics.overquota}</span>
-                </div>
+            {demographicEnabled && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  type="toggle"
+                  label="Edad"
+                  value={demographicConfig.age}
+                  onChange={(value) => setDemographicConfig(prev => ({ ...prev, age: value }))}
+                />
+                <FormField
+                  type="toggle"
+                  label="País"
+                  value={demographicConfig.country}
+                  onChange={(value) => setDemographicConfig(prev => ({ ...prev, country: value }))}
+                />
+                <FormField
+                  type="toggle"
+                  label="Género"
+                  value={demographicConfig.gender}
+                  onChange={(value) => setDemographicConfig(prev => ({ ...prev, gender: value }))}
+                />
+                <FormField
+                  type="toggle"
+                  label="Nivel educativo"
+                  value={demographicConfig.educationLevel}
+                  onChange={(value) => setDemographicConfig(prev => ({ ...prev, educationLevel: value }))}
+                />
               </div>
-            </div>
-          </div>
-        </div>
+            )}
+          </FormSection>
 
-        <footer className="flex items-center justify-between px-8 py-4 bg-neutral-50 border-t border-neutral-100">
-          <p className="text-sm text-neutral-500">Changes are saved automatically</p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+          {/* Configuración de Enlaces */}
+          <FormSection 
+            title="Configuración de Enlaces"
+            description="Configure los enlaces de redirección"
+            collapsible={true}
+            collapsed={false}
+          >
+            <FormField
+              type="toggle"
+              label="Habilitar configuración de enlaces"
+              value={linkConfigEnabled}
+              onChange={setLinkConfigEnabled}
+            />
+
+            {linkConfigEnabled && (
+              <div className="space-y-4">
+                <FormField
+                  type="text"
+                  label="Enlace para entrevistas completadas"
+                  value={linkConfig.completeInterviews}
+                  onChange={(value) => setLinkConfig(prev => ({ ...prev, completeInterviews: value }))}
+                  placeholder="https://example.com/complete"
+                />
+                <FormField
+                  type="text"
+                  label="Enlace para entrevistas descalificadas"
+                  value={linkConfig.disqualifiedInterviews}
+                  onChange={(value) => setLinkConfig(prev => ({ ...prev, disqualifiedInterviews: value }))}
+                  placeholder="https://example.com/disqualified"
+                />
+                <FormField
+                  type="text"
+                  label="Enlace para entrevistas sobre cuota"
+                  value={linkConfig.overquotaInterviews}
+                  onChange={(value) => setLinkConfig(prev => ({ ...prev, overquotaInterviews: value }))}
+                  placeholder="https://example.com/overquota"
+                />
+              </div>
+            )}
+          </FormSection>
+
+          {/* Configuración de Límites */}
+          <FormSection 
+            title="Configuración de Límites"
+            description="Configure los límites de participantes"
+            collapsible={true}
+            collapsed={false}
+          >
+            <FormField
+              type="toggle"
+              label="Limitar número de participantes"
+              value={limitParticipantsEnabled}
+              onChange={setLimitParticipantsEnabled}
+            />
+
+            {limitParticipantsEnabled && (
+              <FormField
+                type="number"
+                label="Límite de participantes"
+                value={participantLimit}
+                onChange={(value) => setParticipantLimit(parseInt(value) || 0)}
+                config={{ min: 1, max: 1000 }}
+              />
+            )}
+          </FormSection>
+
+          {/* Configuración de Dispositivos */}
+          <FormSection 
+            title="Configuración de Dispositivos"
+            description="Configure las opciones de dispositivos"
+            collapsible={true}
+            collapsed={false}
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                type="toggle"
+                label="Permitir dispositivos móviles"
+                value={allowMobileDevices}
+                onChange={setAllowMobileDevices}
+              />
+              <FormField
+                type="toggle"
+                label="Rastrear ubicación"
+                value={trackLocation}
+                onChange={setTrackLocation}
+              />
+            </div>
+          </FormSection>
+
+          {/* Estadísticas */}
+          <FormSection 
+            title="Estadísticas"
+            description="Estadísticas actuales de participantes"
+            collapsible={true}
+            collapsed={true}
+          >
+            <div className="grid grid-cols-3 gap-4">
+              <FormCard className="text-center">
+                <div className="text-2xl font-bold text-green-600">{statistics.complete}</div>
+                <div className="text-sm text-gray-600">Completadas</div>
+              </FormCard>
+              <FormCard className="text-center">
+                <div className="text-2xl font-bold text-red-600">{statistics.disqualified}</div>
+                <div className="text-sm text-gray-600">Descalificadas</div>
+              </FormCard>
+              <FormCard className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">{statistics.overquota}</div>
+                <div className="text-sm text-gray-600">Sobre cuota</div>
+              </FormCard>
+            </div>
+          </FormSection>
+
+          {/* Acciones */}
+          <FormRow justified>
+            <Button
+              variant="outline"
+              onClick={() => setShowQRCode(true)}
             >
-              Preview
-            </button>
-            <button
-              type="button"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+              Ver Código QR
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => console.log('Guardar configuración')}
             >
-              Save and Continue
-            </button>
-          </div>
-        </footer>
-      </div>
+              Guardar Configuración
+            </Button>
+          </FormRow>
+        </FormSection>
+      </FormCard>
+
+      {/* Modal de Código QR */}
+      <QRCodeModal
+        open={showQRCode}
+        onOpenChange={setShowQRCode}
+        researchUrl={researchConfig.researchUrl}
+      />
     </div>
   );
 }

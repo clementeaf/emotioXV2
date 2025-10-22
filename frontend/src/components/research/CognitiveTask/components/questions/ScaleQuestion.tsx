@@ -1,29 +1,10 @@
 import React from 'react';
-
-import { Input } from '@/components/ui/Input';
-import { Switch } from '@/components/ui/Switch';
-import { Textarea } from '@/components/ui/Textarea';
-
+import { FormField, FormSection, FormCard, FormRow } from '@/components/common/atomic';
 import { ScaleQuestionProps, ScaleConfig } from '../../types';
 
-const DEFAULT_TEXTS = {
-  QUESTION_TITLE_LABEL: 'Título de la pregunta',
-  QUESTION_TITLE_PLACEHOLDER: 'Introduce el título de la pregunta',
-  DESCRIPTION_LABEL: 'Descripción',
-  DESCRIPTION_PLACEHOLDER: 'Introduce una descripción opcional',
-  SCALE_START_VALUE_LABEL: 'Valor inicial',
-  SCALE_END_VALUE_LABEL: 'Valor final',
-  SCALE_START_LABEL_LABEL: 'Etiqueta valor inicial',
-  SCALE_START_LABEL_PLACEHOLDER: 'Ej: Muy en desacuerdo',
-  SCALE_END_LABEL_LABEL: 'Etiqueta valor final',
-  SCALE_END_LABEL_PLACEHOLDER: 'Ej: Muy de acuerdo',
-  DEVICE_FRAME_LABEL: 'Marco de Dispositivo',
-  WITH_FRAME: 'Con Marco',
-  WITHOUT_FRAME: 'Sin Marco'
-};
-
 /**
- * Componente que maneja la configuración de preguntas de escala
+ * Componente refactorizado que usa componentes atómicos
+ * Elimina duplicación de layouts y patrones repetidos
  */
 export const ScaleQuestion: React.FC<ScaleQuestionProps> = ({
   question,
@@ -47,52 +28,50 @@ export const ScaleQuestion: React.FC<ScaleQuestionProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
-          {DEFAULT_TEXTS.QUESTION_TITLE_LABEL}
-        </label>
-        <Input
+    <FormCard>
+      <FormSection 
+        title="Configuración de Pregunta de Escala"
+        description="Configure los valores y etiquetas de la escala"
+      >
+        {/* Título de la pregunta */}
+        <FormField
+          type="text"
+          label="Título de la pregunta"
           value={question.title || ''}
-          onChange={(e) => onQuestionChange({ title: e.target.value })}
-          placeholder={DEFAULT_TEXTS.QUESTION_TITLE_PLACEHOLDER}
+          onChange={(value) => onQuestionChange({ title: value })}
+          placeholder="Introduce el título de la pregunta"
           disabled={disabled}
           error={!!titleError}
-          helperText={titleError || undefined}
+          errorMessage={titleError || undefined}
         />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
-          {DEFAULT_TEXTS.DESCRIPTION_LABEL}
-        </label>
-        <Textarea
+
+        {/* Descripción */}
+        <FormField
+          type="textarea"
+          label="Descripción"
           value={question.description || ''}
-          onChange={(e) => onQuestionChange({ description: e.target.value })}
-          placeholder={DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER}
-          rows={3}
+          onChange={(value) => onQuestionChange({ description: value })}
+          placeholder="Introduce una descripción opcional"
           disabled={disabled}
           error={!!descriptionError}
+          errorMessage={descriptionError || undefined}
         />
-      </div>
 
-      <div className="space-y-3 pt-2 border-t border-neutral-200">
-        <h4 className="text-sm font-medium text-neutral-800">Configuración de la Escala</h4>
-        
-        {scaleRangeError && typeof scaleRangeError === 'string' && (
-          <p className="text-xs text-red-500">{scaleRangeError}</p>
-        )}
+        {/* Configuración de la escala */}
+        <div className="space-y-3 pt-2 border-t border-gray-200">
+          <h4 className="text-sm font-medium text-gray-800">Configuración de la Escala</h4>
+          
+          {scaleRangeError && typeof scaleRangeError === 'string' && (
+            <p className="text-xs text-red-500">{scaleRangeError}</p>
+          )}
 
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">
-              {DEFAULT_TEXTS.SCALE_START_VALUE_LABEL}
-            </label>
-            <Input
+          <FormRow justified>
+            {/* Valor inicial */}
+            <FormField
               type="number"
+              label="Valor inicial"
               value={scaleConfig.startValue ?? 0}
-              onChange={(e) => {
-                const value = e.target.value;
+              onChange={(value) => {
                 const numValue = parseInt(value, 10);
                 onQuestionChange({ 
                   scaleConfig: { 
@@ -101,21 +80,18 @@ export const ScaleQuestion: React.FC<ScaleQuestionProps> = ({
                   } 
                 });
               }}
-              className="w-full"
               disabled={disabled}
               error={!!startValueError}
-              helperText={startValueError || undefined}
+              errorMessage={startValueError || undefined}
+              config={{ min: 0, max: 100 }}
             />
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">
-              {DEFAULT_TEXTS.SCALE_END_VALUE_LABEL}
-            </label>
-            <Input
+
+            {/* Valor final */}
+            <FormField
               type="number"
+              label="Valor final"
               value={scaleConfig.endValue ?? 0}
-              onChange={(e) => {
-                const value = e.target.value;
+              onChange={(value) => {
                 const numValue = parseInt(value, 10);
                 onQuestionChange({ 
                   scaleConfig: { 
@@ -124,79 +100,86 @@ export const ScaleQuestion: React.FC<ScaleQuestionProps> = ({
                   } 
                 });
               }}
-              className="w-full"
               disabled={disabled}
               error={!!endValueError}
-              helperText={endValueError || undefined}
+              errorMessage={endValueError || undefined}
+              config={{ min: 0, max: 100 }}
             />
-          </div>
-        </div>
-        
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">
-              {DEFAULT_TEXTS.SCALE_START_LABEL_LABEL}
-            </label>
-            <Input
+          </FormRow>
+          
+          <FormRow justified>
+            {/* Etiqueta valor inicial */}
+            <FormField
+              type="text"
+              label="Etiqueta valor inicial"
               value={scaleConfig.startLabel || ''}
-              onChange={(e) => {
-                onQuestionChange({ scaleConfig: { ...scaleConfig, startLabel: e.target.value } });
+              onChange={(value) => {
+                onQuestionChange({ scaleConfig: { ...scaleConfig, startLabel: value } });
               }}
-              placeholder={DEFAULT_TEXTS.SCALE_START_LABEL_PLACEHOLDER}
+              placeholder="Ej: Muy en desacuerdo"
               disabled={disabled}
               error={!!startLabelError}
-              helperText={startLabelError || undefined}
+              errorMessage={startLabelError || undefined}
             />
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">
-              {DEFAULT_TEXTS.SCALE_END_LABEL_LABEL}
-            </label>
-            <Input
+
+            {/* Etiqueta valor final */}
+            <FormField
+              type="text"
+              label="Etiqueta valor final"
               value={scaleConfig.endLabel || ''}
-              onChange={(e) => {
-                onQuestionChange({ scaleConfig: { ...scaleConfig, endLabel: e.target.value } });
+              onChange={(value) => {
+                onQuestionChange({ scaleConfig: { ...scaleConfig, endLabel: value } });
               }}
-              placeholder={DEFAULT_TEXTS.SCALE_END_LABEL_PLACEHOLDER}
+              placeholder="Ej: Muy de acuerdo"
               disabled={disabled}
               error={!!endLabelError}
-              helperText={endLabelError || undefined}
+              errorMessage={endLabelError || undefined}
             />
-          </div>
+          </FormRow>
         </div>
-      </div>
 
-      {/* VISTA PREVIA: No editable */}
-      <div className="bg-neutral-50 p-3 border border-gray-300 rounded-md">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Vista previa - Así verán esta pregunta los participantes
-          <span className="ml-2 text-xs font-normal text-red-500">(NO EDITABLE)</span>
-        </label>
-        <div className="mt-2 text-sm text-gray-700 font-medium">{question.title || 'Título de la pregunta'}</div>
-        {question.description && <div className="mt-1 text-xs text-gray-500">{question.description}</div>}
+        {/* Vista previa */}
+        <FormCard className="bg-gray-50">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Vista previa - Así verán esta pregunta los participantes
+              <span className="ml-2 text-xs font-normal text-red-500">(NO EDITABLE)</span>
+            </label>
+            <div className="mt-2 text-sm text-gray-700 font-medium">
+              {question.title || 'Título de la pregunta'}
+            </div>
+            {question.description && (
+              <div className="mt-1 text-xs text-gray-500">{question.description}</div>
+            )}
 
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs text-gray-600">{scaleConfig.startLabel || DEFAULT_TEXTS.SCALE_START_LABEL_PLACEHOLDER}</span>
-            <span className="text-xs text-gray-600">{scaleConfig.endLabel || DEFAULT_TEXTS.SCALE_END_LABEL_PLACEHOLDER}</span>
-          </div>
-          <div className="flex justify-between items-center gap-2">
-            {Array.from(
-              { length: (scaleConfig.endValue ?? 5) - (scaleConfig.startValue ?? 1) + 1 },
-              (_, i) => (scaleConfig.startValue ?? 1) + i
-            ).map((value) => (
-              <div key={value} className="flex flex-col items-center">
-                <input
-                  type="radio"
-                  disabled
-                  className="w-4 h-4 text-blue-600 cursor-not-allowed mb-1"
-                />
-                <span className="text-xs text-gray-600">{value}</span>
+            <div className="mt-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs text-gray-600">
+                  {scaleConfig.startLabel || 'Muy en desacuerdo'}
+                </span>
+                <span className="text-xs text-gray-600">
+                  {scaleConfig.endLabel || 'Muy de acuerdo'}
+                </span>
               </div>
-            ))}
+              <div className="flex justify-between items-center gap-2">
+                {Array.from(
+                  { length: (scaleConfig.endValue ?? 5) - (scaleConfig.startValue ?? 1) + 1 },
+                  (_, i) => (scaleConfig.startValue ?? 1) + i
+                ).map((value) => (
+                  <div key={value} className="flex flex-col items-center">
+                    <input
+                      type="radio"
+                      disabled
+                      className="w-4 h-4 text-blue-600 cursor-not-allowed mb-1"
+                    />
+                    <span className="text-xs text-gray-600">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </FormCard>
+      </FormSection>
+    </FormCard>
   );
-}; 
+};
