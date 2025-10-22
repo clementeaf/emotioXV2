@@ -4,3 +4,5 @@
  */
 
 export { QRCodeModal } from './QRCodeModal';
+export { AddQuestionModal } from './AddQuestionModal';
+export { JsonPreviewModal } from './JsonPreviewModal';

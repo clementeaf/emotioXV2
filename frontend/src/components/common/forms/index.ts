@@ -5,3 +5,4 @@
 
 export { QuestionCard } from './QuestionCard';
 export { EmotionHierarchySelector } from './EmotionHierarchySelector';
+export { DynamicFieldRenderer } from './DynamicFieldRenderer';

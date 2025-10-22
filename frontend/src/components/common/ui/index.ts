@@ -6,3 +6,4 @@
 export { ProgressBar } from './ProgressBar';
 export { FileUploader } from './FileUploader';
 export { MetricCard } from './MetricCard';
+export { Tooltip } from './Tooltip';
