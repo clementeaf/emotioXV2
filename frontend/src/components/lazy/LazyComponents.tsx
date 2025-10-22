@@ -3,7 +3,6 @@
  * Después de limpieza radical - solo componentes esenciales
  */
 import React, { lazy, Suspense } from 'react';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 // Solo componentes esenciales que no fueron eliminados
