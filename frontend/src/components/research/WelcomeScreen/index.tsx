@@ -1,12 +1,5 @@
 import React from 'react';
-import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { FormToggle } from '@/components/common/FormToggle';
-import { FormCard } from '@/components/common/FormCard';
-import { FormInput } from '@/components/common/FormInput';
-import { FormTextarea } from '@/components/common/FormTextarea';
-import { FormActionButtons } from '@/components/common/FormActionButtons';
-import { ErrorModal } from '@/components/common/ErrorModal';
-import { ConfirmationModal } from '@/components/common/ConfirmationModal';
+import { ScreenForm, ScreenFormData } from '@/components/common/ScreenForm';
 import { useWelcomeScreen } from './hooks/useWelcomeScreen';
 
 interface WelcomeScreenFormProps {
@@ -36,81 +29,43 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   const isExisting = !!existingScreen?.id && !existingScreen?.metadata?.isDefault;
 
-  if (isLoading) {
-    return <LoadingSkeleton type="form" count={4} />;
-  }
+  // Wrapper para handleChange
+  const handleChangeWrapper = (field: string, value: any) => {
+    handleChange(field as any, value);
+  };
+
+  const config = {
+    screenType: 'welcome' as const,
+    toggleLabel: 'Habilitar pantalla de bienvenida',
+    toggleDescription: 'La pantalla de bienvenida se mostrará al iniciar la investigación',
+    titleLabel: 'Título',
+    titlePlaceholder: 'Ingresa el título de la pantalla de bienvenida',
+    messageLabel: 'Mensaje',
+    messagePlaceholder: 'Ingresa el mensaje de bienvenida',
+    thirdFieldLabel: 'Texto del botón',
+    thirdFieldPlaceholder: 'Ingresa el texto del botón de inicio',
+    deleteText: 'Eliminar pantalla de bienvenida',
+    deleteMessage: '¿Estás seguro de que quieres eliminar la pantalla de bienvenida? Esta acción no se puede deshacer.'
+  };
 
   return (
-    <>
-      <div className="mt-8">
-        <FormCard>
-          <FormToggle
-            label="Habilitar pantalla de bienvenida"
-            description="La pantalla de bienvenida se mostrará al iniciar la investigación"
-            checked={formData.isEnabled}
-            onChange={(checked) => handleChange('isEnabled', checked)}
-            disabled={isLoading || isSaving}
-          />
-          <div className="space-y-6 mt-6">
-            <FormInput
-              label="Título"
-              value={formData.title}
-              onChange={(value) => handleChange('title', value)}
-              placeholder="Ingresa el título de la pantalla de bienvenida"
-              disabled={isLoading || isSaving || !formData.isEnabled}
-            />
-
-            <FormTextarea
-              label="Mensaje"
-              value={formData.message}
-              onChange={(value) => handleChange('message', value)}
-              placeholder="Ingresa el mensaje de bienvenida"
-              rows={4}
-              disabled={isLoading || isSaving || !formData.isEnabled}
-            />
-
-            <FormInput
-              label="Texto del botón"
-              value={formData.startButtonText}
-              onChange={(value) => handleChange('startButtonText', value)}
-              placeholder="Ingresa el texto del botón de inicio"
-              disabled={isLoading || isSaving || !formData.isEnabled}
-            />
-          </div>
-          <FormActionButtons
-            isSaving={isSaving}
-            isDeleting={isDeleting}
-            isExisting={isExisting}
-            isEnabled={formData.isEnabled}
-            onSave={handleSubmit}
-            onPreview={handlePreview}
-            onDelete={showConfirmModal}
-            deleteText="Eliminar pantalla de bienvenida"
-            deletingText="Eliminando..."
-            savingText="Guardando..."
-          />
-        </FormCard>
-      </div>
-
-      {modalError && (
-        <ErrorModal
-          isOpen={modalVisible}
-          onClose={closeModal}
-          error={modalError}
-        />
-      )}
-
-      <ConfirmationModal
-        isOpen={confirmModalVisible}
-        title="Confirmar eliminación"
-        message="¿Estás seguro de que quieres eliminar la pantalla de bienvenida? Esta acción no se puede deshacer."
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        onConfirm={confirmDelete}
-        onClose={closeConfirmModal}
-        isLoading={isDeleting}
-        variant="danger"
-      />
-    </>
+    <ScreenForm
+      formData={formData as ScreenFormData}
+      isLoading={isLoading}
+      isSaving={isSaving}
+      isDeleting={isDeleting}
+      isExisting={isExisting}
+      modalError={modalError}
+      modalVisible={modalVisible}
+      confirmModalVisible={confirmModalVisible}
+      handleChange={handleChangeWrapper}
+      handleSave={handleSubmit}
+      handlePreview={handlePreview}
+      closeModal={closeModal}
+      showConfirmModal={showConfirmModal}
+      closeConfirmModal={closeConfirmModal}
+      confirmDelete={confirmDelete}
+      config={config}
+    />
   );
 };
