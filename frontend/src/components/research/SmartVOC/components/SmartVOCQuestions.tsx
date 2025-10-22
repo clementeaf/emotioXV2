@@ -6,7 +6,7 @@ import { ActionButton } from '@/components/common/ActionButton';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from '@/api/domains/smart-voc';
 import { getQuestionTypeConfig } from '../config';
-import { DynamicFieldRenderer } from './DynamicFieldRenderer';
+import { DynamicFieldRenderer } from '@/components/common/forms/DynamicFieldRenderer';
 import { getNestedValue, createFieldChangeHandler } from '../utils';
 
 interface SmartVOCQuestionsProps {

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 import { CognitiveSummary } from '../types';
 
-import { MetricCard } from './MetricCard';
+import { MetricCard } from '@/components/common/ui/MetricCard';
 
 interface SummarySectionProps {
   data: CognitiveSummary;

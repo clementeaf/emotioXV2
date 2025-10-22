@@ -6,10 +6,8 @@ import { EducationalSidebar } from '@/components/common/EducationalSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
 import { cn } from '@/lib/utils';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
-import {
-  CognitiveTaskFooter,
-  JsonPreviewModal
-} from './components';
+import { CognitiveTaskFooter } from './components';
+import { JsonPreviewModal } from '@/components/common/modals/JsonPreviewModal';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { useCognitiveTaskForm } from './hooks/useCognitiveTaskForm';

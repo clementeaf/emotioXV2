@@ -8,35 +8,9 @@ import { Label } from '@/components/ui/Label';
 
 import type { ValidationErrors } from '../types';
 
-import { QuestionCard } from './QuestionCard';
+import { QuestionCard } from '@/components/common/forms/QuestionCard';
 
-// Componente Tooltip personalizado
-interface TooltipProps {
-  content: React.ReactNode;
-  children: React.ReactNode;
-}
-
-const Tooltip = ({ content, children }: TooltipProps) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  return (
-    <div className="relative inline-block">
-      <div
-        onMouseEnter={() => setIsVisible(true)}
-        onMouseLeave={() => setIsVisible(false)}
-        className="inline-flex"
-      >
-        {children}
-      </div>
-      {isVisible && (
-        <div className="absolute z-50 p-2 text-sm bg-white text-gray-800 rounded-md shadow-lg max-w-xs top-0 left-full ml-2">
-          {content}
-          <div className="absolute top-2 -left-1 w-2 h-2 rotate-45 bg-white"></div>
-        </div>
-      )}
-    </div>
-  );
-};
+import { Tooltip } from '@/components/common/ui/Tooltip';
 
 // Modal simple para seleccionar tipo de pregunta
 interface AddQuestionModalProps {
