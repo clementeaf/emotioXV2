@@ -5,14 +5,12 @@
 import React, { lazy, Suspense } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
-// Solo componentes esenciales que no fueron eliminados
 export const LazyCreateResearchForm = lazy(() => 
   import('@/components/research/research-management/CreateResearchFormOptimized').then(module => ({
     default: module.default || module.CreateResearchFormOptimized
   }))
 );
 
-// HOC para manejar loading y error states
 function withLazyLoading<T extends React.ComponentType<any>>(
   Component: React.LazyExoticComponent<T>,
   fallback: React.ReactNode
@@ -28,7 +26,6 @@ function withLazyLoading<T extends React.ComponentType<any>>(
   };
 }
 
-// Componentes envueltos listos para usar
 export const CreateResearchFormLazy = withLazyLoading(
   LazyCreateResearchForm,
   <div className="space-y-6 max-w-4xl mx-auto p-6">
@@ -40,14 +37,12 @@ export const CreateResearchFormLazy = withLazyLoading(
   </div>
 );
 
-// Hook simplificado para precargar componentes
 export function usePreloadComponents() {
   const preloadCreateResearchForm = React.useCallback(() => {
     LazyCreateResearchForm;
   }, []);
 
   const preloadResults = React.useCallback(() => {
-    // Precargar componentes de resultados
     import('@/components/research/CognitiveTaskResults');
     import('@/components/research/SmartVOCResults');
   }, []);
