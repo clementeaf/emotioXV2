@@ -4,7 +4,7 @@ import { FormToggle } from '@/components/common/FormToggle';
 import { FormCard } from '@/components/common/FormCard';
 import { FormInput } from '@/components/common/FormInput';
 import { FormTextarea } from '@/components/common/FormTextarea';
-import { ActionButton } from '@/components/common/ActionButton';
+import { FormActionButtons } from '@/components/common/FormActionButtons';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { useThankYouScreenForm } from './hooks/useThankYouScreenForm';
@@ -107,41 +107,19 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
             error={validationErrors.redirectUrl}
           />
         </div>
-        {/* Botones de acción */}
-        <div className="flex justify-between items-center pt-4 gap-3">
-          {/* Botón de eliminar */}
-          {showDelete && (
-            <ActionButton
-              variant="danger"
-              onClick={showConfirmModal}
-              disabled={isDeleting || isSaving || !formData.isEnabled}
-              loading={isDeleting}
-              icon="🗑️"
-            >
-              {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de agradecimiento'}
-            </ActionButton>
-          )}
-
-          {/* Botones principales */}
-          <div className="flex gap-3 ml-auto">
-            <ActionButton
-              variant="secondary"
-              onClick={handlePreview}
-              disabled={!formData.isEnabled || isSaving}
-            >
-              Vista previa
-            </ActionButton>
-
-            <ActionButton
-              variant="primary"
-              onClick={handleSaveAndNotify}
-              disabled={!formData.isEnabled || isSaving}
-              loading={isSaving}
-            >
-              {isSaving ? 'Guardando...' : (thankYouScreenId ? 'Actualizar' : 'Guardar')}
-            </ActionButton>
-          </div>
-        </div>
+        <FormActionButtons
+          isSaving={isSaving}
+          isDeleting={isDeleting}
+          isExisting={showDelete}
+          isEnabled={formData.isEnabled}
+          onSave={handleSaveAndNotify}
+          onPreview={handlePreview}
+          onDelete={showConfirmModal}
+          deleteText="Eliminar pantalla de agradecimiento"
+          deletingText="Eliminando..."
+          savingText="Guardando..."
+          buttonAlignment="between"
+        />
       </FormCard>
 
       {/* Modales */}

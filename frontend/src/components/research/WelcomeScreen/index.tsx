@@ -4,7 +4,7 @@ import { FormToggle } from '@/components/common/FormToggle';
 import { FormCard } from '@/components/common/FormCard';
 import { FormInput } from '@/components/common/FormInput';
 import { FormTextarea } from '@/components/common/FormTextarea';
-import { ActionButton } from '@/components/common/ActionButton';
+import { FormActionButtons } from '@/components/common/FormActionButtons';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { useWelcomeScreen } from './hooks/useWelcomeScreen';
@@ -42,17 +42,16 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   return (
     <>
-      <FormToggle
-        label="Habilitar pantalla de bienvenida"
-        description="La pantalla de bienvenida se mostrará al iniciar la investigación"
-        checked={formData.isEnabled}
-        onChange={(checked) => handleChange('isEnabled', checked)}
-        disabled={isLoading || isSaving}
-      />
-
       <div className="mt-8">
         <FormCard>
-          <div className="space-y-6">
+          <FormToggle
+            label="Habilitar pantalla de bienvenida"
+            description="La pantalla de bienvenida se mostrará al iniciar la investigación"
+            checked={formData.isEnabled}
+            onChange={(checked) => handleChange('isEnabled', checked)}
+            disabled={isLoading || isSaving}
+          />
+          <div className="space-y-6 mt-6">
             <FormInput
               label="Título"
               value={formData.title}
@@ -78,36 +77,18 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
               disabled={isLoading || isSaving || !formData.isEnabled}
             />
           </div>
-          <div className="flex justify-end items-center pt-8 gap-3">
-            {isExisting && (
-              <ActionButton
-                variant="danger"
-                onClick={showConfirmModal}
-                disabled={isDeleting || isSaving || !formData.isEnabled}
-                loading={isDeleting}
-                icon="🗑️"
-              >
-                {isDeleting ? 'Eliminando...' : 'Eliminar pantalla de bienvenida'}
-              </ActionButton>
-            )}
-
-            <ActionButton
-              variant="secondary"
-              onClick={handlePreview}
-              disabled={!formData.isEnabled || isSaving}
-            >
-              Vista previa
-            </ActionButton>
-
-            <ActionButton
-              variant="primary"
-              onClick={handleSubmit}
-              disabled={!formData.isEnabled || isSaving}
-              loading={isSaving}
-            >
-              {isSaving ? 'Guardando...' : (isExisting ? 'Actualizar' : 'Guardar')}
-            </ActionButton>
-          </div>
+          <FormActionButtons
+            isSaving={isSaving}
+            isDeleting={isDeleting}
+            isExisting={isExisting}
+            isEnabled={formData.isEnabled}
+            onSave={handleSubmit}
+            onPreview={handlePreview}
+            onDelete={showConfirmModal}
+            deleteText="Eliminar pantalla de bienvenida"
+            deletingText="Eliminando..."
+            savingText="Guardando..."
+          />
         </FormCard>
       </div>
 
