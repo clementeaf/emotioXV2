@@ -56,6 +56,10 @@ export function useStageManager(researchId: string): StageManagerResult {
   const renderStageContent = (): ReactElement => {
     const stageConfig = STAGE_COMPONENTS[currentSection] || STAGE_COMPONENTS.default;
     const ComponentToRender = componentMap[stageConfig.component as keyof typeof componentMap];
+    
+    console.log('🔍 useStageManager - Sección:', currentSection);
+    console.log('🔍 useStageManager - Componente:', stageConfig.component);
+    console.log('🔍 useStageManager - Componente encontrado:', ComponentToRender?.name);
 
     if (!ComponentToRender) {
       console.warn(`Component ${stageConfig.component} not found for section ${currentSection}`);

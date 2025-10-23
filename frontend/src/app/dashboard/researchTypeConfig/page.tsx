@@ -250,9 +250,22 @@ export default function ResearchTypeConfigPage() {
               <p className="text-sm text-gray-600">
                 {config.smartVOC.questions.length} preguntas configuradas
               </p>
-              <Button variant="outline" size="sm" className="mt-2">
-                Configurar Preguntas
-              </Button>
+              <div className="flex gap-2 mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open('/dashboard/smart-voc-demo', '_blank')}
+                >
+                  Ver Demo
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open('/dashboard/smart-voc-config', '_blank')}
+                >
+                  Configurar Preguntas
+                </Button>
+              </div>
             </div>
           )}
         </div>

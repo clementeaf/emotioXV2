@@ -23,6 +23,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   researchId,
   onSave
 }) => {
+  console.log('⚠️ SmartVOCForm ANTERIOR cargado - Sistema viejo');
   const {
     formData,
     smartVocId,

@@ -1,0 +1,481 @@
+{
+  "modules": {
+    "smart-voc": {
+      "name": "Smart VOC",
+      "description": "Voice of Customer - Voz del cliente",
+      "questionTypes": {
+        "CSAT": {
+          "id": "CSAT",
+          "name": "CSAT",
+          "description": "Customer Satisfaction - Satisfacción del cliente",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "¿Qué tan satisfecho está con nuestro servicio?",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "instructions",
+              "label": "Instrucciones (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Añada instrucciones o información adicional para los participantes"
+            },
+            {
+              "name": "config.type",
+              "label": "Tipo de visualización",
+              "component": "FormSelect",
+              "placeholder": "Seleccionar tipo",
+              "options": [
+                { "value": "stars", "label": "Estrellas" },
+                { "value": "numbers", "label": "Números" }
+              ]
+            },
+            {
+              "name": "config.companyName",
+              "label": "Nombre de la empresa",
+              "component": "FormInput",
+              "placeholder": "Nombre de la empresa (opcional)"
+            }
+          ],
+          "previewType": "CSAT",
+          "info": "Mide satisfacción general del cliente"
+        },
+        "CES": {
+          "id": "CES",
+          "name": "CES",
+          "description": "Customer Effort Score - Esfuerzo del cliente",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "¿Qué tan fácil fue completar esta tarea?",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "instructions",
+              "label": "Instrucciones (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Añada instrucciones o información adicional para los participantes"
+            },
+            {
+              "name": "config.scaleRange",
+              "label": "Rango de escala",
+              "component": "FormSelect",
+              "placeholder": "Seleccionar rango",
+              "options": [
+                { "value": "1-5", "label": "1-5 (Estándar)" },
+                { "value": "1-7", "label": "1-7" },
+                { "value": "1-10", "label": "1-10" }
+              ]
+            }
+          ],
+          "previewType": "CES",
+          "info": "Mide la facilidad de uso - Escala fija 1-5"
+        },
+        "CV": {
+          "id": "CV",
+          "name": "CV",
+          "description": "Customer Value - Valor del cliente",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "instructions",
+              "label": "Instrucciones (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Añada instrucciones o información adicional para los participantes"
+            }
+          ],
+          "previewType": "CV",
+          "info": "3 escalas principales de valoración en la región"
+        },
+        "NEV": {
+          "id": "NEV",
+          "name": "NEV",
+          "description": "Net Emotional Value - Valor emocional neto",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "instructions",
+              "label": "Instrucciones (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Añada instrucciones o información adicional para los participantes"
+            }
+          ],
+          "previewType": "NEV",
+          "info": "Jerarquía de Valor Emocional"
+        },
+        "NPS": {
+          "id": "NPS",
+          "name": "NPS",
+          "description": "Net Promoter Score - Puntuación de promotor neto",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "¿Qué tan probable es que recomiende nuestro producto?",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "instructions",
+              "label": "Instrucciones (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Añada instrucciones o información adicional para los participantes"
+            },
+            {
+              "name": "config.companyName",
+              "label": "Nombre de la empresa",
+              "component": "FormInput",
+              "placeholder": "Nombre de la empresa (opcional)"
+            }
+          ],
+          "previewType": "NPS",
+          "info": "Escala 0-10 para medir lealtad del cliente"
+        },
+        "VOC": {
+          "id": "VOC",
+          "name": "VOC",
+          "description": "Voice of Customer - Voz del cliente",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "¿Qué opinión tiene sobre nuestro producto?",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "instructions",
+              "label": "Instrucciones (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Añada instrucciones o información adicional para los participantes"
+            },
+            {
+              "name": "config.maxLength",
+              "label": "Límite de caracteres",
+              "component": "FormInput",
+              "placeholder": "500",
+              "type": "number"
+            }
+          ],
+          "previewType": "VOC",
+          "info": "Recolecta comentarios abiertos del cliente"
+        }
+      }
+    },
+    "cognitive-task": {
+      "name": "Cognitive Task",
+      "description": "Tareas Cognitivas",
+      "questionTypes": {
+        "short_text": {
+          "id": "short_text",
+          "name": "Texto Corto",
+          "description": "Respuestas cortas de texto",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "answerPlaceholder",
+              "label": "Placeholder de respuesta",
+              "component": "FormInput",
+              "placeholder": "Texto de ayuda para el participante"
+            }
+          ],
+          "previewType": "SHORT_TEXT"
+        },
+        "long_text": {
+          "id": "long_text",
+          "name": "Texto Largo",
+          "description": "Respuestas largas de texto",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "answerPlaceholder",
+              "label": "Placeholder de respuesta",
+              "component": "FormInput",
+              "placeholder": "Texto de ayuda para el participante"
+            }
+          ],
+          "previewType": "LONG_TEXT"
+        },
+        "single_choice": {
+          "id": "single_choice",
+          "name": "Opción Única",
+          "description": "Seleccionar una opción",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "choices",
+              "label": "Opciones de respuesta",
+              "component": "ChoiceManager",
+              "placeholder": "Agregar opciones de respuesta"
+            }
+          ],
+          "previewType": "SINGLE_CHOICE"
+        },
+        "multiple_choice": {
+          "id": "multiple_choice",
+          "name": "Opción Múltiple",
+          "description": "Seleccionar múltiples opciones",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "choices",
+              "label": "Opciones de respuesta",
+              "component": "ChoiceManager",
+              "placeholder": "Agregar opciones de respuesta"
+            }
+          ],
+          "previewType": "MULTIPLE_CHOICE"
+        },
+        "linear_scale": {
+          "id": "linear_scale",
+          "name": "Escala Lineal",
+          "description": "Escala numérica",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "scaleConfig",
+              "label": "Configuración de escala",
+              "component": "ScaleConfig",
+              "placeholder": "Configurar escala numérica"
+            }
+          ],
+          "previewType": "LINEAR_SCALE"
+        },
+        "ranking": {
+          "id": "ranking",
+          "name": "Ranking",
+          "description": "Ordenar opciones por preferencia",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "choices",
+              "label": "Opciones para ranking",
+              "component": "ChoiceManager",
+              "placeholder": "Agregar opciones para ordenar"
+            }
+          ],
+          "previewType": "RANKING"
+        },
+        "navigation_flow": {
+          "id": "navigation_flow",
+          "name": "Flujo de Navegación",
+          "description": "Prueba de flujo de navegación",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "hitZones",
+              "label": "Zonas de interacción",
+              "component": "HitZoneManager",
+              "placeholder": "Configurar zonas de interacción"
+            }
+          ],
+          "previewType": "NAVIGATION_FLOW"
+        },
+        "preference_test": {
+          "id": "preference_test",
+          "name": "Prueba de Preferencia",
+          "description": "Prueba A/B de preferencia",
+          "fields": [
+            {
+              "name": "title",
+              "label": "Título de la pregunta",
+              "component": "FormInput",
+              "placeholder": "Introduzca el título de la pregunta",
+              "required": true
+            },
+            {
+              "name": "description",
+              "label": "Descripción (opcional)",
+              "component": "FormTextarea",
+              "placeholder": "Introduzca una descripción opcional para la pregunta"
+            },
+            {
+              "name": "files",
+              "label": "Archivos para comparar",
+              "component": "FileUploader",
+              "placeholder": "Subir archivos para comparar"
+            }
+          ],
+          "previewType": "PREFERENCE_TEST"
+        }
+      }
+    },
+    "eye-tracking": {
+      "name": "Eye Tracking",
+      "description": "Seguimiento Ocular",
+      "questionTypes": {
+        "calibration": {
+          "id": "calibration",
+          "name": "Calibración",
+          "description": "Configuración de calibración del eye tracker",
+          "fields": [
+            {
+              "name": "type",
+              "label": "Tipo de calibración",
+              "component": "FormSelect",
+              "placeholder": "Seleccionar tipo",
+              "options": [
+                { "value": "standard", "label": "Estándar" },
+                { "value": "advanced", "label": "Avanzada" }
+              ]
+            },
+            {
+              "name": "pointCount",
+              "label": "Número de puntos",
+              "component": "FormInput",
+              "placeholder": "Número de puntos de calibración"
+            },
+            {
+              "name": "targetSize",
+              "label": "Tamaño del objetivo",
+              "component": "FormSelect",
+              "placeholder": "Seleccionar tamaño",
+              "options": [
+                { "value": "small", "label": "Pequeño" },
+                { "value": "medium", "label": "Mediano" },
+                { "value": "large", "label": "Grande" }
+              ]
+            }
+          ],
+          "previewType": "CALIBRATION"
+        }
+      }
+    }
+  }
+}
