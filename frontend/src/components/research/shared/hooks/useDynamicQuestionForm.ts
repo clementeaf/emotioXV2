@@ -366,7 +366,7 @@ export const useDynamicQuestionForm = (
     }
     
     if (onSave) {
-      onSave(dataToSave);
+      onSave(dataToSave as any);
     }
   }, [formData, validateForm, isExisting, researchId, moduleType, onSave]);
   
