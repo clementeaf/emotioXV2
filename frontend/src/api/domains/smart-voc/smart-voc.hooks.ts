@@ -12,6 +12,23 @@ import type {
   UpdateSmartVOCRequest
 } from './smart-voc.types';
 
+// Función para mapear tipo de pregunta SmartVOC a tipo de input
+const getQuestionType = (smartVocType: string): string => {
+  switch (smartVocType) {
+    case 'smartvoc_csat':
+    case 'smartvoc_ces':
+    case 'smartvoc_cv':
+    case 'smartvoc_nps':
+      return 'scale';
+    case 'smartvoc_nev':
+      return 'multiple_choice';
+    case 'smartvoc_voc':
+      return 'text';
+    default:
+      return 'text';
+  }
+};
+
 /**
  * Query keys for smart VOC
  */
@@ -36,7 +53,18 @@ export function useSmartVOCData(researchId: string | null) {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: (data: CreateSmartVOCRequest) => smartVocApi.create(data),
+    mutationFn: (data: CreateSmartVOCRequest) => {
+      // Agregar questionKey y questionType a cada pregunta
+      const enhancedData = {
+        ...data,
+        questions: data.questions?.map(question => ({
+          ...question,
+          questionKey: question.id, // Usar id como questionKey
+          questionType: getQuestionType(question.type) // Mapear type a questionType
+        }))
+      };
+      return smartVocApi.create(enhancedData);
+    },
     onMutate: async (newSmartVOC) => {
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: smartVocKeys.byResearch(newSmartVOC.researchId) });
@@ -89,8 +117,18 @@ export function useSmartVOCData(researchId: string | null) {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ researchId, data }: { researchId: string; data: UpdateSmartVOCRequest }) =>
-      smartVocApi.update(researchId, data),
+    mutationFn: ({ researchId, data }: { researchId: string; data: UpdateSmartVOCRequest }) => {
+      // Agregar questionKey y questionType a cada pregunta
+      const enhancedData = {
+        ...data,
+        questions: data.questions?.map(question => ({
+          ...question,
+          questionKey: question.id, // Usar id como questionKey
+          questionType: getQuestionType(question.type) // Mapear type a questionType
+        }))
+      };
+      return smartVocApi.update(researchId, enhancedData);
+    },
     onMutate: async ({ researchId, data }) => {
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: smartVocKeys.byResearch(researchId) });

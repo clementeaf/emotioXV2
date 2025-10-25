@@ -205,5 +205,22 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
 };
 
 export const getQuestionTypeConfig = (type: string): QuestionTypeConfig | null => {
-  return QUESTION_TYPE_CONFIGS[type] || null;
+  // Primero intentar con el tipo original
+  if (QUESTION_TYPE_CONFIGS[type]) {
+    return QUESTION_TYPE_CONFIGS[type];
+  }
+  
+  // Mapear tipos reales a configuraciones existentes
+  const typeMapping: Record<string, string> = {
+    'scale': QuestionType.SMARTVOC_CSAT, // CSAT, CES, CV, NPS usan scale
+    'text': QuestionType.SMARTVOC_VOC,   // VOC usa text
+    'multiple_choice': QuestionType.SMARTVOC_NEV // NEV usa multiple_choice
+  };
+  
+  const mappedType = typeMapping[type];
+  if (mappedType && QUESTION_TYPE_CONFIGS[mappedType]) {
+    return QUESTION_TYPE_CONFIGS[mappedType];
+  }
+  
+  return null;
 };

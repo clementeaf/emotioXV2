@@ -30,6 +30,8 @@ export interface ThankYouScreenDynamoItem {
   metadata: string;
   // NUEVO: questionKey para identificación única de preguntas
   questionKey?: string;
+  // NUEVO: type para tipo de input (screen, etc.)
+  type?: string;
   // Fechas
   createdAt: string;
   updatedAt: string;
@@ -79,7 +81,7 @@ export class ThankYouScreenModel {
    * @param researchId ID de la investigación asociada
    * @returns La configuración creada con su ID generado
    */
-  async create(data: ThankYouScreenFormData, researchId: string, questionKey?: string): Promise<SharedThankYouScreenModel> {
+  async create(data: ThankYouScreenFormData, researchId: string, questionKey?: string, type?: string): Promise<SharedThankYouScreenModel> {
     const context = 'create';
     const screenId = uuidv4();
     const now = new Date().toISOString();
@@ -108,6 +110,7 @@ export class ThankYouScreenModel {
       redirectUrl: config.redirectUrl,
       metadata: JSON.stringify(config.metadata),
       questionKey: questionKey, // NUEVO: Guardar questionKey
+      type: type, // NUEVO: Guardar type
       createdAt: now,
       updatedAt: now
     };
@@ -131,6 +134,8 @@ export class ThankYouScreenModel {
         message: config.message,
         redirectUrl: config.redirectUrl,
         metadata: config.metadata, // Devolver objeto
+        questionKey: questionKey, // NUEVO: Incluir questionKey en respuesta
+        type: type, // NUEVO: Incluir type en respuesta
         // Asegurar que createdAt/updatedAt sean string o Date según la interfaz
         createdAt: now,
         updatedAt: now
@@ -341,6 +346,8 @@ export class ThankYouScreenModel {
         message: updatedAttributes.message,
         redirectUrl: updatedAttributes.redirectUrl,
         metadata: JSON.parse(updatedAttributes.metadata || '{}'),
+        questionKey: updatedAttributes.questionKey, // NUEVO: Incluir questionKey en respuesta
+        type: updatedAttributes.type, // NUEVO: Incluir type en respuesta
         createdAt: updatedAttributes.createdAt,
         updatedAt: updatedAttributes.updatedAt
       };

@@ -201,7 +201,7 @@ export class WelcomeScreenService {
    * @param _userId ID del usuario que realiza la operación
    * @returns La pantalla de bienvenida actualizada o creada
    */
-  async updateByResearchId(researchId: string, data: WelcomeScreenFormData, userId: string): Promise<WelcomeScreenRecord> {
+  async updateByResearchId(researchId: string, data: WelcomeScreenFormData, userId: string, questionKey?: string, type?: string): Promise<WelcomeScreenRecord> {
     const context = 'updateByResearchId';
     try {
       if (!researchId) {
@@ -236,7 +236,7 @@ export class WelcomeScreenService {
             lastUpdated: new Date(),
             lastModifiedBy: userId
           }
-        }, researchId);
+        }, researchId, questionKey, type);
         structuredLog('info', `${this.serviceName}.${context}`, 'Creación completada', { researchId, screenId: newScreen.id });
         return newScreen;
       }

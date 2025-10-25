@@ -22,6 +22,7 @@ interface ThankYouScreenFormData {
   message: string;
   redirectUrl: string;
   questionKey: string;
+  type: string;
   metadata: {
     version: string;
     lastUpdated: string;
@@ -56,7 +57,8 @@ const INITIAL_FORM_DATA: ThankYouScreenFormData = {
   title: '',
   message: '',
   redirectUrl: '',
-  questionKey: 'THANK_YOU_SCREEN',
+  questionKey: 'thank_you_screen',
+  type: 'screen',
   metadata: {
     version: '1.0.0',
     lastUpdated: new Date().toISOString(),
@@ -98,7 +100,8 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         title: existingScreen.title ?? '',
         message: existingScreen.message ?? '',
         redirectUrl: existingScreen.redirectUrl ?? '',
-        questionKey: 'THANK_YOU_SCREEN',
+        questionKey: 'thank_you_screen',
+        type: 'screen',
         metadata: {
           version: existingScreen.metadata?.version || '1.0.0',
           lastUpdated: new Date().toISOString(),
@@ -180,7 +183,8 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         title: resultRecord.title ?? '',
         message: resultRecord.message ?? '',
         redirectUrl: resultRecord.redirectUrl ?? '',
-        questionKey: 'THANK_YOU_SCREEN',
+        questionKey: 'thank_you_screen',
+        type: 'screen',
         metadata: {
           version: resultRecord.metadata?.version || '1.0.0',
           lastUpdated: resultRecord.metadata?.lastUpdated || new Date(),

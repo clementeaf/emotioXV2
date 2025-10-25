@@ -44,16 +44,19 @@ const smartVocFormHandler = async (
           return errorResponse('Se requiere cuerpo en la solicitud', 400, event);
         }
 
-        const data: SmartVOCFormData = JSON.parse(body);
-        structuredLog('info', 'SmartVocFormHandler.POST', 'Iniciando guardado (upsert)', { researchId, userId });
+        const requestData = JSON.parse(body);
+        const { questionKey, type, ...formData } = requestData;
+        const data: SmartVOCFormData = formData;
+        
+        structuredLog('info', 'SmartVocFormHandler.POST', 'Iniciando guardado (upsert)', { researchId, userId, questionKey, type });
 
         const existingForm = await smartVocService.getByResearchId(researchId);
         let result;
         if (existingForm) {
-          result = await smartVocService.update(existingForm.id, data, userId);
+          result = await smartVocService.update(existingForm.id, data, userId, questionKey, type);
           structuredLog('info', 'SmartVocFormHandler.POST', 'Actualización exitosa', { researchId, formId: result.id });
         } else {
-          result = await smartVocService.create(data, researchId, userId);
+          result = await smartVocService.create(data, researchId, userId, questionKey, type);
           structuredLog('info', 'SmartVocFormHandler.POST', 'Creación exitosa', { researchId, formId: result.id });
         }
         return createResponse(200, result, event);

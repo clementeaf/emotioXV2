@@ -11,6 +11,8 @@ export interface SmartVOCFormRecord extends Omit<SmartVOCFormData, 'questions'> 
   id: string;
   researchId: string;
   questions: SmartVOCQuestion[];
+  questionKey?: string;
+  type?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +36,8 @@ export interface SmartVOCFormDynamoItem {
   metadata: string;
   // NUEVO: questionKey para identificación única de preguntas
   questionKey?: string;
+  // NUEVO: type para tipo de input (scale, text, multiple_choice, etc.)
+  type?: string;
   // Fechas
   createdAt: string;
   updatedAt: string;
@@ -74,6 +78,8 @@ export class SmartVOCFormModel {
       // Recuperar otros campos de SmartVOCFormData aquí si existen en SmartVOCFormDynamoItem
       // Asegurarse que metadata es un objeto válido tras deserializar
       metadata: typeof item.metadata === 'string' ? JSON.parse(item.metadata) : {},
+      questionKey: item.questionKey, // NUEVO: Incluir questionKey en respuesta
+      type: item.type, // NUEVO: Incluir type en respuesta
       createdAt: item.createdAt,
       updatedAt: item.updatedAt
     };
@@ -87,7 +93,7 @@ export class SmartVOCFormModel {
    * @returns El registro del formulario creado.
    * @throws Error si falla la operación en DynamoDB.
    */
-  async create(formData: SmartVOCFormData, researchId: string, questionKey?: string): Promise<SmartVOCFormRecord> {
+  async create(formData: SmartVOCFormData, researchId: string, questionKey?: string, type?: string): Promise<SmartVOCFormRecord> {
     const now = new Date().toISOString();
     const formId = uuidv4(); // Generar ID único aquí
 
@@ -102,6 +108,7 @@ export class SmartVOCFormModel {
       smartVocRequired: formData.smartVocRequired ?? false,
       metadata: JSON.stringify(formData.metadata || { version: '1.0.0', lastUpdated: now, lastModifiedBy: 'system' }),
       questionKey: questionKey, // NUEVO: Guardar questionKey
+      type: type, // NUEVO: Guardar type
       createdAt: now,
       updatedAt: now
     };
@@ -214,7 +221,7 @@ export class SmartVOCFormModel {
    * @returns El registro del formulario actualizado.
    * @throws Error si el formulario no se encuentra o falla la operación en DynamoDB.
    */
-  async update(id: string, formData: Partial<SmartVOCFormData>): Promise<SmartVOCFormRecord> {
+  async update(id: string, formData: Partial<SmartVOCFormData>, questionKey?: string, type?: string): Promise<SmartVOCFormRecord> {
     const now = new Date().toISOString();
 
     // Nota: La verificación de existencia se hace implícitamente con ConditionExpression abajo
@@ -239,6 +246,16 @@ export class SmartVOCFormModel {
             }
         }
     });
+
+    // Agregar questionKey y type si se proporcionan
+    if (questionKey !== undefined) {
+      updateExpression += ', questionKey = :questionKey';
+      expressionAttributeValues[':questionKey'] = questionKey;
+    }
+    if (type !== undefined) {
+      updateExpression += ', type = :type';
+      expressionAttributeValues[':type'] = type;
+    }
 
     const command = new UpdateCommand({
       TableName: this.tableName,

@@ -45,9 +45,12 @@ const thankYouScreenHandler = async (
           return errorResponse('Se requiere cuerpo en la solicitud para crear/actualizar', 400, event);
         }
 
-        const data: ThankYouScreenFormData = JSON.parse(body);
-        structuredLog('info', 'ThankYouScreenHandler.POST', 'Iniciando creación/actualización', { researchId, userId });
-        const result = await thankYouScreenService.updateByResearchId(researchId, data, userId);
+        const requestData = JSON.parse(body);
+        const { questionKey, type, ...formData } = requestData;
+        const data: ThankYouScreenFormData = formData;
+        
+        structuredLog('info', 'ThankYouScreenHandler.POST', 'Iniciando creación/actualización', { researchId, userId, questionKey, type });
+        const result = await thankYouScreenService.updateByResearchId(researchId, data, userId, questionKey, type);
         structuredLog('info', 'ThankYouScreenHandler.POST', 'Creación/actualización exitosa', { researchId, screenId: result.id });
         return createResponse(200, result, event);
 

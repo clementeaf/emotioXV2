@@ -97,7 +97,7 @@ export class ThankYouScreenService {
    * @param _userId ID del usuario que realiza la operación
    * @returns La pantalla de agradecimiento creada
    */
-  async create(data: ThankYouScreenFormData, researchId: string, _userId: string): Promise<SharedThankYouScreenModel> {
+  async create(data: ThankYouScreenFormData, researchId: string, _userId: string, questionKey?: string, type?: string): Promise<SharedThankYouScreenModel> {
     const context = 'create'; // Contexto para logging
     try {
       // Validar que existe researchId
@@ -120,11 +120,8 @@ export class ThankYouScreenService {
         redirectUrl: data.redirectUrl || DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl
       };
 
-      // Extraer questionKey del frontend si existe
-      const questionKey = (data as unknown as Record<string, unknown>).questionKey as string | undefined;
-
       // Crear en el modelo
-      const thankYouScreen = await thankYouScreenModel.create(screenData, researchId, questionKey);
+      const thankYouScreen = await thankYouScreenModel.create(screenData, researchId, questionKey, type);
       return thankYouScreen;
     } catch (error) {
       // Usar handleDbError para consistencia, pasando {} explícitamente como 4to arg
@@ -229,7 +226,7 @@ export class ThankYouScreenService {
    * @param _userId ID del usuario que realiza la operación
    * @returns La pantalla de agradecimiento actualizada o creada
    */
-  async updateByResearchId(researchId: string, data: ThankYouScreenFormData, _userId: string): Promise<SharedThankYouScreenModel> {
+  async updateByResearchId(researchId: string, data: ThankYouScreenFormData, _userId: string, questionKey?: string, type?: string): Promise<SharedThankYouScreenModel> {
     const context = 'updateByResearchId'; // Contexto para logging
     try {
       if (!researchId) {
@@ -247,7 +244,7 @@ export class ThankYouScreenService {
         return await this.update(existing.id, data, _userId);
       } else {
         structuredLog('info', `${this.serviceName}.${context}`, 'Creando nueva pantalla porque no existe', { researchId });
-        return await this.create(data, researchId, _userId);
+        return await this.create(data, researchId, _userId, questionKey, type);
       }
     } catch (error) {
       // Usar handleDbError, pasando {} explícitamente como 4to arg

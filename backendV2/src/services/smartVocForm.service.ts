@@ -187,7 +187,7 @@ export class SmartVOCFormService {
    * @param userId ID del usuario que crea el formulario
    * @returns El formulario creado
    */
-  async create(formData: SmartVOCFormData, researchId: string, _userId: string): Promise<SmartVOCFormRecord> {
+  async create(formData: SmartVOCFormData, researchId: string, _userId: string, questionKey?: string, type?: string): Promise<SmartVOCFormRecord> {
     const context = 'create';
 
     try {
@@ -197,11 +197,8 @@ export class SmartVOCFormService {
         throw new ApiError(`SMART_VOC_FORM_EXISTS: Ya existe un formulario SmartVOC para la investigación ${researchId}`, 409);
       }
 
-      // Extraer questionKey del frontend si existe en las preguntas
-      const questionKey = formData.questions?.[0]?.questionKey || undefined;
-
-      // Guardar el formulario preservando el questionKey del frontend
-      const result = await this.model.create(formData, researchId, questionKey);
+      // Guardar el formulario preservando el questionKey y type del frontend
+      const result = await this.model.create(formData, researchId, questionKey, type);
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario SmartVOC creado exitosamente', {
         formId: result.id,
@@ -228,7 +225,7 @@ export class SmartVOCFormService {
    * @returns El formulario actualizado
    * @throws ApiError si no se encuentra, datos inválidos o error de DB
    */
-  async update(id: string, formData: Partial<SmartVOCFormData>, _userId?: string): Promise<SmartVOCFormRecord> {
+  async update(id: string, formData: Partial<SmartVOCFormData>, _userId?: string, questionKey?: string, type?: string): Promise<SmartVOCFormRecord> {
     const context = 'update';
     structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando formulario', { id });
 
@@ -238,7 +235,7 @@ export class SmartVOCFormService {
     try {
       // La verificación de existencia ahora debería hacerse en el modelo antes de actualizar
       // El modelo debería lanzar un error si el ID no existe, que se captura aquí
-      return await this.model.update(id, formData);
+      return await this.model.update(id, formData, questionKey, type);
     } catch (error: unknown) {
       const appError = toApplicationError(error);
       // Capturar el error específico de NOT_FOUND si el modelo lo lanza

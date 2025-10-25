@@ -45,9 +45,12 @@ const welcomeScreenHandler = async (
           return errorResponse('Se requiere cuerpo en la solicitud para crear/actualizar', 400, event);
         }
 
-        const data: WelcomeScreenFormData = JSON.parse(body);
-        structuredLog('info', 'WelcomeScreenHandler.POST', 'Iniciando creación/actualización', { researchId, userId });
-        const result = await welcomeScreenService.updateByResearchId(researchId, data, userId);
+        const requestData = JSON.parse(body);
+        const { questionKey, type, ...formData } = requestData;
+        const data: WelcomeScreenFormData = formData;
+        
+        structuredLog('info', 'WelcomeScreenHandler.POST', 'Iniciando creación/actualización', { researchId, userId, questionKey, type });
+        const result = await welcomeScreenService.updateByResearchId(researchId, data, userId, questionKey, type);
         structuredLog('info', 'WelcomeScreenHandler.POST', 'Creación/actualización exitosa', { researchId, screenId: result.id });
         return createResponse(200, result, event);
 

@@ -29,6 +29,8 @@ export interface WelcomeScreenDynamoItem {
   metadata: string;
   // NUEVO: questionKey para identificación única de preguntas
   questionKey?: string;
+  // NUEVO: type para tipo de input (screen, etc.)
+  type?: string;
   // Fechas
   createdAt: string;
   updatedAt: string;
@@ -61,7 +63,7 @@ export class WelcomeScreenModel {
    * @param researchId ID de la investigación asociada
    * @returns La configuración creada con su ID generado
    */
-  async create(data: WelcomeScreenFormData, researchId: string, questionKey?: string): Promise<WelcomeScreenRecord> {
+  async create(data: WelcomeScreenFormData, researchId: string, questionKey?: string, type?: string): Promise<WelcomeScreenRecord> {
     const context = 'create';
     const screenId = uuidv4(); // Generar UUID único
     const skValue = 'WELCOME_SCREEN'; // SK constante
@@ -91,6 +93,7 @@ export class WelcomeScreenModel {
       startButtonText: config.startButtonText,
       metadata: JSON.stringify(config.metadata),
       questionKey: questionKey, // NUEVO: Guardar questionKey
+      type: type, // NUEVO: Guardar type
       createdAt: now,
       updatedAt: now
     };
@@ -116,6 +119,8 @@ export class WelcomeScreenModel {
         message: config.message,
         startButtonText: config.startButtonText,
         metadata: config.metadata,
+        questionKey: questionKey, // NUEVO: Incluir questionKey en respuesta
+        type: type, // NUEVO: Incluir type en respuesta
         createdAt: new Date(now),
         updatedAt: new Date(now)
       };
@@ -324,6 +329,8 @@ export class WelcomeScreenModel {
         message: updatedAttributes.message,
         startButtonText: updatedAttributes.startButtonText,
         metadata: JSON.parse(updatedAttributes.metadata || '{}'),
+        questionKey: updatedAttributes.questionKey, // NUEVO: Incluir questionKey en respuesta
+        type: updatedAttributes.type, // NUEVO: Incluir type en respuesta
         createdAt: new Date(updatedAttributes.createdAt),
         updatedAt: new Date(updatedAttributes.updatedAt)
       };

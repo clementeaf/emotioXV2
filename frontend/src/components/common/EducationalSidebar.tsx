@@ -26,11 +26,9 @@ export const EducationalSidebar: React.FC<EducationalSidebarProps> = ({
   error,
   title = "Configuración Avanzada",
   additionalContent,
-  className = '',
-  maxHeight = 'calc(100vh-200px)'
 }) => {
   return (
-    <div className={`w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4 overflow-y-auto ${className}`} style={{ maxHeight }}>
+    <div className={`w-full bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto min-w-[400px] max-h-[800px]`}>
       <div className="space-y-4">
         <h3 className="font-semibold text-gray-900 text-lg border-b pb-2">
           {title}
