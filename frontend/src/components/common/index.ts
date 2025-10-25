@@ -21,5 +21,8 @@ export * from './atomic';
 // Hitzone Components
 export * from './hitzone';
 
+// Form Components
+export { ChoiceManager } from './ChoiceManager';
+
 // Imports centralizados
 export * from './imports';

@@ -57,7 +57,6 @@ export const FieldMapper: React.FC<FieldMapperProps> = ({
             field={field}
             value={getValue(field.key)}
             onChange={handleChange}
-            question={question}
           />
         );
       })}

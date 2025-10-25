@@ -36,7 +36,7 @@ export const FormFooter: React.FC<FormFooterProps> = ({
   className = ''
 }) => {
   return (
-    <div className={`flex flex-col items-center gap-4 ${className}`}>
+    <div className={`flex items-center justify-center gap-4 ${className}`}>
       <UIFormFooter
         onSave={onSave}
         onPreview={onPreview}
@@ -51,7 +51,7 @@ export const FormFooter: React.FC<FormFooterProps> = ({
 
       {/* Botón de eliminar datos */}
       {onDelete && isExisting && (
-        <div className="w-full pt-4 mt-4 border-t border-gray-200 flex justify-center">
+        <div className="w-full flex justify-center">
           <button
             onClick={onDelete}
             disabled={isSaving || isLoading}

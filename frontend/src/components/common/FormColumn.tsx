@@ -14,7 +14,7 @@ export const FormColumn: React.FC<FormColumnProps> = ({
   children,
 }) => {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 max-h-[800px] min-w-[600px]">
+    <div className="rounded-lg border border-gray-200 p-6 h-[580px] min-w-[600px]">
       <div className="space-y-6">
         <div className="border-b border-gray-200 pb-4">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>

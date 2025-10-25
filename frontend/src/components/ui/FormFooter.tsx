@@ -40,7 +40,7 @@ export const FormFooter: React.FC<FormFooterProps> = ({
       : saveText;
 
   return (
-    <div className={`flex justify-end items-center gap-3 pt-4 ${className}`}>
+    <div className={`flex items-center gap-3 ${className} h-[50px]`}>
       {onPreview && (
         <Button
           variant="outline"

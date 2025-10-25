@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavigationItem, AddItemButton, NavigationHeader, NavigationContainer } from './atomic';
 
 export interface NavigationItem {
   id: string;
@@ -27,38 +28,29 @@ export const NavigationColumn: React.FC<NavigationColumnProps> = ({
   getItemName,
 }) => {
   return (
-    <div className={`min-w-[250px] max-h-[500px]`}>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
-          <div className="space-y-2 max-h-[500px] overflow-y-auto">
+    <div className={`min-w-[350px]`}>
+        <div className="rounded-lg border border-gray-200 p-4 h-[580px]">
+          <NavigationHeader title={title} />
+          <NavigationContainer height="h-[500px]">
             {items.map((item, index) => (
-              <button
+              <NavigationItem
                 key={item.id}
+                id={item.id}
+                title={item.title}
+                subtitle={item.subtitle}
+                isActive={activeIndex === index}
                 onClick={() => onItemClick(index)}
-                className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                  activeIndex === index
-                    ? 'bg-blue-50 border-blue-200 text-blue-900'
-                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <div className="font-medium">
-                  {getItemName ? getItemName(item.id) : item.title}
-                </div>
-                <div className="text-sm text-gray-500 truncate">
-                  {item.subtitle || 'Sin título'}
-                </div>
-              </button>
+                getItemName={getItemName}
+              />
             ))}
             
             {onAddClick && (
-              <button
+              <AddItemButton
                 onClick={onAddClick}
-                className="w-full p-3 rounded-lg border-2 border-dashed border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors"
-              >
-                {addButtonText}
-              </button>
+                text={addButtonText}
+              />
             )}
-          </div>
+          </NavigationContainer>
         </div>
     </div>
   );

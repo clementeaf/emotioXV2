@@ -33,27 +33,6 @@ export const COGNITIVE_TASK_QUESTIONS: Record<string, CognitiveTaskQuestionSchem
         }
       },
       {
-        key: 'required',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Pregunta obligatoria'
-        }
-      },
-      {
-        key: 'showConditionally',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar condicionalmente'
-        }
-      },
-      {
-        key: 'deviceFrame',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar marco de dispositivo'
-        }
-      },
-      {
         key: 'answerPlaceholder',
         component: 'FormInput',
         props: {
@@ -84,27 +63,6 @@ export const COGNITIVE_TASK_QUESTIONS: Record<string, CognitiveTaskQuestionSchem
           label: 'Descripción',
           placeholder: 'Ingresa la descripción de la pregunta',
           rows: 3
-        }
-      },
-      {
-        key: 'required',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Pregunta obligatoria'
-        }
-      },
-      {
-        key: 'showConditionally',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar condicionalmente'
-        }
-      },
-      {
-        key: 'deviceFrame',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar marco de dispositivo'
         }
       },
       {
@@ -149,27 +107,6 @@ export const COGNITIVE_TASK_QUESTIONS: Record<string, CognitiveTaskQuestionSchem
           maxChoices: 10
         }
       },
-      {
-        key: 'required',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Pregunta obligatoria'
-        }
-      },
-      {
-        key: 'showConditionally',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar condicionalmente'
-        }
-      },
-      {
-        key: 'deviceFrame',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar marco de dispositivo'
-        }
-      }
     ]
   },
   '3.4': {
@@ -204,27 +141,6 @@ export const COGNITIVE_TASK_QUESTIONS: Record<string, CognitiveTaskQuestionSchem
           maxChoices: 10
         }
       },
-      {
-        key: 'required',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Pregunta obligatoria'
-        }
-      },
-      {
-        key: 'showConditionally',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar condicionalmente'
-        }
-      },
-      {
-        key: 'deviceFrame',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar marco de dispositivo'
-        }
-      }
     ]
   },
   '3.5': {
@@ -284,27 +200,6 @@ export const COGNITIVE_TASK_QUESTIONS: Record<string, CognitiveTaskQuestionSchem
           placeholder: 'Muy bueno'
         }
       },
-      {
-        key: 'required',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Pregunta obligatoria'
-        }
-      },
-      {
-        key: 'showConditionally',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar condicionalmente'
-        }
-      },
-      {
-        key: 'deviceFrame',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar marco de dispositivo'
-        }
-      }
     ]
   },
   '3.6': {
@@ -380,27 +275,6 @@ export const COGNITIVE_TASK_QUESTIONS: Record<string, CognitiveTaskQuestionSchem
           acceptedTypes: ['image/*', 'video/*', 'application/pdf']
         }
       },
-      {
-        key: 'required',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Pregunta obligatoria'
-        }
-      },
-      {
-        key: 'showConditionally',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar condicionalmente'
-        }
-      },
-      {
-        key: 'deviceFrame',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar marco de dispositivo'
-        }
-      }
     ]
   },
   '3.8': {
@@ -435,27 +309,6 @@ export const COGNITIVE_TASK_QUESTIONS: Record<string, CognitiveTaskQuestionSchem
           acceptedTypes: ['image/*']
         }
       },
-      {
-        key: 'required',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Pregunta obligatoria'
-        }
-      },
-      {
-        key: 'showConditionally',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar condicionalmente'
-        }
-      },
-      {
-        key: 'deviceFrame',
-        component: 'FormCheckbox',
-        props: {
-          label: 'Mostrar marco de dispositivo'
-        }
-      }
     ]
   }
 };

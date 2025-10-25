@@ -114,7 +114,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
   return (
     <div className="flex">
-      <div className='flex flex-col gap-4'>
+      <div className='flex flex-col justify-between h-[650px]'>
         <div className='flex gap-4'>
           {/* Columna izquierda - Navegación */}
           <NavigationColumn
