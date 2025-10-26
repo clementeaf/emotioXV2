@@ -43,6 +43,10 @@
     "../shared/interfaces/**/*.ts",
     "src/types/**/*.d.ts"
   ],
+  "typeRoots": [
+    "./node_modules/@types",
+    "./external-modules.d.ts"
+  ],
   "exclude": [
     "node_modules"
   ]
