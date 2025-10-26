@@ -18,7 +18,9 @@ let TrackingState: any = null;
 // Cargar Seeso.io dinámicamente
 const loadSeeso = async () => {
   if (!EasySeeSo) {
+    // @ts-ignore - Módulo externo sin tipos
     const seeso = await import('seeso/easy-seeso');
+    // @ts-ignore - Módulo externo sin tipos
     const trackingState = await import('seeso');
     EasySeeSo = seeso.default;
     TrackingState = trackingState.TrackingState;

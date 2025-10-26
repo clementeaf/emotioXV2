@@ -66,6 +66,7 @@ export class WebGazerEyeTrackingSDK {
       console.log('[WebGazerEyeTrackingSDK] Inicializando WebGazer...');
       
       // Importar WebGazer dinámicamente
+      // @ts-ignore - Módulo externo sin tipos
       const webgazer = await import('webgazer');
       
       // Configurar WebGazer
