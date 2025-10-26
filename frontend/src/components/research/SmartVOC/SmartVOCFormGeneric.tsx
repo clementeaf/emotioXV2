@@ -1,5 +1,5 @@
 import React from 'react';
-import { DynamicQuestionForm } from '../shared';
+// import { DynamicQuestionForm } from '../shared'; // Módulo eliminado
 
 interface SmartVOCFormGenericProps {
   researchId: string;
@@ -19,12 +19,8 @@ export const SmartVOCFormGeneric: React.FC<SmartVOCFormGenericProps> = ({
   console.log('🚀 SmartVOCFormGeneric cargado - Sistema genérico activo');
   
   return (
-    <DynamicQuestionForm
-      moduleType="smart-voc"
-      researchId={researchId}
-      className={className}
-      onSave={onSave}
-      educationalContentKey="smartVocContent"
-    />
+    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <p className="text-yellow-800">SmartVOCFormGeneric - DynamicQuestionForm eliminado, usar SmartVOCForm con DynamicForm</p>
+    </div>
   );
 };

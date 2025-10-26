@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SmartVOCFormGeneric } from '@/components/research/SmartVOC/SmartVOCFormGeneric';
-import { DynamicQuestionForm } from '@/components/research/shared';
+// import { DynamicQuestionForm } from '@/components/research/shared'; // Módulo eliminado
 import { ComparisonDemo } from '@/components/research/SmartVOC/ComparisonDemo';
 import { BarChart3, Code, Settings, Eye, GitCompare } from 'lucide-react';
 
@@ -105,11 +105,9 @@ export default function SmartVOCDemoPage() {
                     onSave={handleSave}
                   />
                 ) : (
-                  <DynamicQuestionForm
-                    moduleType="smart-voc"
-                    researchId="demo-research-123"
-                    onSave={handleSave}
-                  />
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800">DynamicQuestionForm eliminado - usar SmartVOCFormGeneric</p>
+                  </div>
                 )}
               </Card>
             </div>
@@ -197,8 +195,8 @@ export default function SmartVOCDemoPage() {
   onSave={handleSave} 
 />
 
-// Direct Generic Form
-<DynamicQuestionForm
+// Direct Generic Form - DynamicQuestionForm eliminado
+{/* <DynamicQuestionForm
   moduleType="smart-voc"
   researchId={researchId}
   onSave={handleSave}

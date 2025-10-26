@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SmartVOCFormGeneric } from './SmartVOCFormGeneric';
-import { DynamicQuestionForm } from '../shared';
+// import { DynamicQuestionForm } from '../shared'; // Módulo eliminado
 import { 
   Clock, 
   Code, 
