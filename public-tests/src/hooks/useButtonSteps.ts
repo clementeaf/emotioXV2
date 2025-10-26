@@ -214,11 +214,11 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
   const isDisabled = isSaving || isNavigating;
 
   // 🎯 SIMPLIFICADO: Timing y tracking básico
-  const startTiming = () => startResponseTiming(currentQuestionKey);
-  const endTiming = () => endResponseTiming(currentQuestionKey);
-  const getTimingData = () => ({ startTime: Date.now(), endTime: Date.now(), duration: 0 });
-  const trackStepVisit = () => {};
-  const getJourneyData = () => ({ 
+  const startTiming = React.useCallback(() => startResponseTiming(currentQuestionKey), [currentQuestionKey, startResponseTiming]);
+  const endTiming = React.useCallback(() => endResponseTiming(currentQuestionKey), [currentQuestionKey, endResponseTiming]);
+  const getTimingData = React.useCallback(() => ({ startTime: Date.now(), endTime: Date.now(), duration: 0 }), []);
+  const trackStepVisit = React.useCallback(() => {}, []);
+  const getJourneyData = React.useCallback(() => ({ 
     navigationPath: [], 
     totalSteps: 0, 
     totalTime: 0, 
@@ -226,7 +226,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     skippedSteps: [], 
     currentStep: '', 
     sessionStartTime: Date.now() 
-  });
+  }), []);
 
   const handleClick = useCallback(async () => {
     if (isSaving || isNavigating) {
