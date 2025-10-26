@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { useFormLoadingState } from '../../hooks/useFormLoadingState';
+// import { useFormLoadingState } from '../../hooks/useFormLoadingState'; // Removed
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion, LinearScaleSlider } from './QuestionesComponents';
-import { useAutoAdvance } from '../../hooks/useAutoAdvance';
+// import { useAutoAdvance } from '../../hooks/useAutoAdvance'; // Removed
 import { useQuestionHandlers } from '../../hooks/useQuestionHandlers';
 import { useQuestionInitialization, Question, FormData } from '../../hooks/useQuestionInitialization';
 import { EmotionGrid } from './emotions';

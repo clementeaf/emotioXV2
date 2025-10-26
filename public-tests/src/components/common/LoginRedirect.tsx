@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTestStore } from '../../stores/useTestStore';
 import { useParticipantStore } from '../../stores/useParticipantStore';
-import { usePreviewModeStore } from '../../stores/usePreviewModeStore';
+// import { usePreviewModeStore } from '../../stores/usePreviewModeStore'; // Removed
 
 const LoginRedirect: React.FC = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const LoginRedirect: React.FC = () => {
     isProcessingRef.current = true;
     
     const { setParticipantId } = useParticipantStore.getState();
-    const { setPreviewMode } = usePreviewModeStore.getState();
+    // const { setPreviewMode } = usePreviewModeStore.getState(); // Removed
 
     if (!researchId) {
       isProcessingRef.current = false;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTestStore } from '../../../stores/useTestStore';
 import { ThankYouScreenProps } from './ThankYouScreenTypes';
-import { useThankYouScreen } from './useThankYouScreen';
+// import { useThankYouScreen } from './useThankYouScreen'; // Removed
 import { DisqualifiedScreen } from './DisqualifiedScreen';
 import { OverQuotaScreen } from './OverQuotaScreen';
 import { SuccessScreen } from './SuccessScreen';

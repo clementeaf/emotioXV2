@@ -1,10 +1,10 @@
 import React from 'react';
-import { useDisqualificationRedirect } from '../../../hooks/useDisqualificationRedirect';
-import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
-import { useOptimizedMonitoringWebSocket } from '../../../hooks/useOptimizedMonitoringWebSocket';
-import { useDemographicValidation } from '../../../hooks/useDemographicValidation';
-import { useDemographicSave } from '../../../hooks/useDemographicSave';
-import { useDemographicData } from '../../../hooks/useDemographicData';
+// import { useDisqualificationRedirect } from '../../../hooks/useDisqualificationRedirect'; // Removed
+// import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery'; // Removed
+// import { useOptimizedMonitoringWebSocket } from '../../../hooks/useOptimizedMonitoringWebSocket'; // Removed
+// import { useDemographicValidation } from '../../../hooks/useDemographicValidation'; // Removed
+// import { useDemographicSave } from '../../../hooks/useDemographicSave'; // Removed
+// import { useDemographicData } from '../../../hooks/useDemographicData'; // Removed
 import { useTestStore } from '../../../stores/useTestStore';
 import { useParticipantStore } from '../../../stores/useParticipantStore';
 import { DemographicFormUI } from './DemographicFormUI';

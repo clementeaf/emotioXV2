@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
+// import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery'; // Removed
 import { useTestStore } from '../../../stores/useTestStore';
 
 interface ProgressDisplayProps {

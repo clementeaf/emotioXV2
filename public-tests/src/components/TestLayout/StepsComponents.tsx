@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
-import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
-import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
+// import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery'; // Removed
+// import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking'; // Removed
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';

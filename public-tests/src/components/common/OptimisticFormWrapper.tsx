@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useFormLoadingState } from '../../hooks/useFormLoadingState';
+// import { useFormLoadingState } from '../../hooks/useFormLoadingState'; // Removed
 import LoadingSkeleton from './LoadingSkeleton';
 
 interface OptimisticFormWrapperProps {
@@ -32,10 +32,15 @@ export const OptimisticFormWrapper: React.FC<OptimisticFormWrapperProps> = ({
     setFormValues,
     handleInputChange,
     saveToStore
-  } = useFormLoadingState({
-    questionKey,
-    onDataLoaded
-  });
+  } = {
+    isLoading: false, // Placeholder
+    error: null, // Placeholder
+    hasLoadedData: false, // Placeholder
+    formValues: {}, // Placeholder
+    setFormValues: () => {}, // Placeholder
+    handleInputChange: () => {}, // Placeholder
+    saveToStore: () => {} // Placeholder
+  };
 
   useEffect(() => {
     if (!isLoading && hasLoadedData) {

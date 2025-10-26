@@ -1,6 +1,6 @@
 import React from 'react';
 import { StepItemPropsWithState } from './StepItemTypes';
-import { useStepItem } from './useStepItem';
+// import { useStepItem } from './useStepItem'; // Removed
 import { StepIcon } from './StepIcon';
 
 const StepItem: React.FC<StepItemPropsWithState> = ({

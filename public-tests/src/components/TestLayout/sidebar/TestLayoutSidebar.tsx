@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDeleteAllResponsesMutation } from '../../../hooks/useApiQueries';
-import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
-import { useSidebarLogic } from '../../../hooks/useSidebarLogic';
+// import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery'; // Removed
+// import { useSidebarLogic } from '../../../hooks/useSidebarLogic'; // Removed
 import { useFormDataStore } from '../../../stores/useFormDataStore';
 import { useStepStore } from '../../../stores/useStepStore';
 import { useTestStore } from '../../../stores/useTestStore';

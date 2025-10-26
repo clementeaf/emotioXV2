@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RankingListProps } from './RankingListTypes';
-import { useRankingData } from './useRankingData';
-import { useRankingActions } from './useRankingActions';
+// import { useRankingData } from './useRankingData'; // Removed
+// import { useRankingActions } from './useRankingActions'; // Removed
 import { RankingListUI } from './RankingListUI';
 
 export const RankingList: React.FC<RankingListProps> = ({
