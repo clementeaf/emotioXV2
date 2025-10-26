@@ -214,27 +214,20 @@ export const ComparisonDemo: React.FC = () => {
           </h3>
           <div className="bg-red-50 p-4 rounded-lg">
             <pre className="text-xs text-red-800 overflow-auto max-h-40">
-{`// useSmartVOCForm.ts - 314 líneas
-export const useSmartVOCForm = (researchId: string) => {
-  const [formData, setFormData] = useState<SmartVOCFormData>(INITIAL_FORM_DATA);
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [isSaving, setIsSaving] = useState(false);
-  const [modalError, setModalError] = useState<ErrorModalData | null>(null);
-  // ... 300+ líneas más
-};
+{`// Sistema anterior eliminado - hooks específicos obsoletos
+// useSmartVOCForm.ts - 314 líneas (ELIMINADO)
+// SmartVOCQuestions.tsx - 127 líneas (ELIMINADO)
+// AddQuestionModal.tsx - 118 líneas (ELIMINADO)
 
-// SmartVOCQuestions.tsx - 127 líneas
-export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
-  questions, onUpdateQuestion, onAddQuestion, onRemoveQuestion, disabled
+// Ahora usa useFormManager + DynamicForm
+export const SmartVOCFormGeneric: React.FC<SmartVOCFormGenericProps> = ({
+  researchId, onSave
 }) => {
   // ... 120+ líneas más
 };
 
-// AddQuestionModal.tsx - 118 líneas
-// config.ts - 210 líneas
-// templates.ts - 103 líneas
-// utils.ts - 41 líneas
-// Total: 500+ líneas, 8+ archivos`}
+// Total: 500+ líneas, 8+ archivos (ELIMINADOS)
+// Ahora: 1 archivo, 20 líneas con useFormManager`}
             </pre>
           </div>
         </Card>

@@ -186,12 +186,8 @@ export default function SmartVOCConfigPage() {
 />
 
 // vs 500+ líneas anteriores
-// useSmartVOCForm.ts - 314 líneas
-// SmartVOCQuestions.tsx - 127 líneas  
-// AddQuestionModal.tsx - 118 líneas
-// config.ts - 210 líneas
-// templates.ts - 103 líneas
-// utils.ts - 41 líneas`}</pre>
+// Sistema anterior con hooks específicos eliminado
+// Ahora usa useFormManager + DynamicForm`}</pre>
               </div>
             </Card>
 
