@@ -5,7 +5,7 @@ import { SmartVOCFieldConfig } from './schema';
 interface FieldMapperProps {
   fields: SmartVOCFieldConfig[];
   question: any;
-  updateQuestion: (id: string, data: any) => void;
+  updateQuestion: (questionId: string, data: any) => void;
 }
 
 export const FieldMapper: React.FC<FieldMapperProps> = ({

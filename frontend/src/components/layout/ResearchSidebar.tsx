@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { memo, useMemo, useCallback } from 'react';
+import { ArrowLeft, LogOut } from 'lucide-react';
 
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { useResearchList, useResearchById } from '@/api/domains/research';
@@ -68,12 +69,13 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     }, [logout]);
 
     return (
-      <div className="flex items-center gap-3 px-2">
+      <div className="flex items-center gap-3">
         <button
           onClick={handleLogout}
-          className="flex-1 flex items-center justify-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200 hover:border-red-300"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200 hover:border-red-300"
           title="Cerrar sesión"
         >
+          <LogOut className="h-4 w-4" />
           <span className="font-medium">Cerrar sesión</span>
         </button>
       </div>
@@ -134,23 +136,23 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
       <div>
         <button
           onClick={handleBackToDashboard}
-          className="flex items-center gap-1.5 py-1.5 text-xs text-neutral-700 font-medium transition-colors hover:text-neutral-900 mt-3"
+          className="flex items-center gap-2 py-2 px-3 text-sm text-gray-600 font-medium transition-colors hover:text-gray-900 hover:bg-gray-50 rounded-lg mt-2"
           aria-label="Volver al dashboard"
         >
-          <span>←</span>
+          <ArrowLeft className="h-4 w-4" />
           <span>Volver al dashboard</span>
         </button>
       </div>
       <div className="space-y-1.5 py-2">
-        <h2 className="text-base font-bold text-neutral-900 truncate" title={typeof researchName === 'string' ? researchName : ''}>
+        <h2 className="text-lg font-bold text-gray-900 truncate" title={typeof researchName === 'string' ? researchName : ''}>
           {isLoadingName ? (
-            <div className="animate-pulse bg-gray-200 rounded h-5 w-28"></div>
+            <div className="animate-pulse bg-gray-200 rounded h-6 w-32"></div>
           ) : (
             researchName
           )}
         </h2>
         {researchTechnique && !isLoadingName && (
-          <p className="text-[13px] leading-4 text-neutral-500 truncate" title={researchTechnique}>
+          <p className="text-sm leading-4 text-gray-500 truncate" title={researchTechnique}>
             {researchTechnique}
           </p>
         )}
@@ -163,11 +165,11 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
   );
 
   const MenuBlock = useMemo(() => (
-    <nav className="space-y-4 pl-2">
+    <nav className="space-y-6">
       {sections.map((section) => (
-        <div key={section.id} className="space-y-1">
+        <div key={section.id} className="space-y-2">
           <div>
-            <h3 className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               {section.title}
             </h3>
           </div>
@@ -176,10 +178,10 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
               key={stage.id}
               href={`/dashboard?research=${researchId}&aim=true&section=${stage.id}`}
               className={cn(
-                'flex items-center gap-2 px-2.5 py-1.5 text-[13px] rounded-md transition-colors duration-200',
+                'flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-all duration-200',
                 currentSection === stage.id
-                  ? 'bg-blue-100 text-blue-700 font-medium border border-blue-200'
-                  : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
+                  ? 'bg-blue-50 text-blue-700 font-medium border border-blue-200 shadow-sm'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50 font-medium'
               )}
             >
               <span className="flex-1 leading-5">{stage.title}</span>

@@ -16,6 +16,7 @@ import { useEyeTrackingData } from '@/api/domains/eye-tracking';
 const API_HOOK_MAP: Record<string, (researchId: string | null) => any> = {
   'welcome_screen': (researchId: string | null) => useScreenFormsData(researchId, 'welcome'),
   'thank_you_screen': (researchId: string | null) => useScreenFormsData(researchId, 'thankyou'),
+  'thankyou_screen': (researchId: string | null) => useScreenFormsData(researchId, 'thankyou'),
   'smartvoc': useSmartVOCData,
   'cognitive_task': useCognitiveTaskData,
   'eye_tracking': useEyeTrackingData,

@@ -22,6 +22,7 @@ export interface UseFormManagerResult {
   isDeleteModalOpen: boolean;
   confirmDelete: () => Promise<void>;
   closeDeleteModal: () => void;
+  updateQuestion: (questionId: string, data: any) => void;
 }
 
 export interface ApiHookResult {

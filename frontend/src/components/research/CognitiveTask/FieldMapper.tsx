@@ -10,7 +10,7 @@ import { CognitiveTaskFieldConfig } from './schema.types';
 interface FieldMapperProps {
   fields: CognitiveTaskFieldConfig[];
   question: any;
-  updateQuestion: (field: string, value: any) => void;
+  updateQuestion: (questionId: string, data: any) => void;
 }
 
 /**
@@ -21,6 +21,20 @@ export const FieldMapper: React.FC<FieldMapperProps> = ({
   question,
   updateQuestion
 }) => {
+  // Si tenemos una pregunta completa, renderizar el componente específico una sola vez
+  if (question && updateQuestion) {
+    return (
+      <DynamicFieldRenderer
+        field={fields[0]} // Usar el primer field como referencia
+        value={question}
+        onChange={() => {}} // No se usa en modo completo
+        question={question}
+        updateQuestion={updateQuestion}
+      />
+    );
+  }
+
+  // Fallback: renderizar campos individuales (no debería llegar aquí)
   return (
     <div className="space-y-4">
       {fields.map((field) => {
@@ -38,15 +52,17 @@ export const FieldMapper: React.FC<FieldMapperProps> = ({
           // Handle nested keys like 'scaleConfig.startValue'
           const keys = field.key.split('.');
           if (keys.length === 1) {
-            updateQuestion(field.key, value);
+            updateQuestion(question.id, { [field.key]: value });
           } else {
             // For nested keys, we need to update the parent object
             const parentKey = keys[0];
             const childKey = keys[1];
             const parentValue = question[parentKey] || {};
-            updateQuestion(parentKey, {
-              ...parentValue,
-              [childKey]: value
+            updateQuestion(question.id, {
+              [parentKey]: {
+                ...parentValue,
+                [childKey]: value
+              }
             });
           }
         };
@@ -57,6 +73,8 @@ export const FieldMapper: React.FC<FieldMapperProps> = ({
             field={field}
             value={getValue(field.key)}
             onChange={handleChange}
+            question={question}
+            updateQuestion={updateQuestion}
           />
         );
       })}

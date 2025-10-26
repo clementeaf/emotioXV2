@@ -31,6 +31,10 @@ export interface ThankYouScreenModel extends ThankYouScreenConfig {
   // Research ID this thank you screen belongs to
   researchId: string;
   
+  // Question identification
+  questionKey?: string;
+  type?: string;
+  
   // Creation and update timestamps
   createdAt: string;
   updatedAt: string;

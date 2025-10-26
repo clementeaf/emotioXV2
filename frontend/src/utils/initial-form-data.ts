@@ -264,6 +264,7 @@ export const INITIAL_EYE_TRACKING_DATA = {
 const INITIAL_DATA_MAP: Record<string, any> = {
   'welcome_screen': INITIAL_WELCOME_SCREEN_DATA,
   'thank_you_screen': INITIAL_THANK_YOU_SCREEN_DATA,
+  'thankyou_screen': INITIAL_THANK_YOU_SCREEN_DATA,
   'smartvoc': INITIAL_SMARTVOC_DATA,
   'smartvoc_csat': INITIAL_SMARTVOC_DATA,
   'smartvoc_ces': INITIAL_SMARTVOC_DATA,

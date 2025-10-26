@@ -28,3 +28,4 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { AlertBox } from './AlertBox';
 export { InfoCard } from './InfoCard';
 export { SidebarContainer } from './SidebarContainer';
+export { InfoTooltip } from './InfoTooltip';

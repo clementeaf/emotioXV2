@@ -3,7 +3,7 @@
  * Maneja de forma agnóstica todos los formularios del sistema
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toastHelpers } from '@/utils/toast';
 import { getInitialDataByQuestionKey } from '@/utils/initial-form-data';
 import type { ErrorModalData, UseFormManagerResult } from './useFormManager.types';
@@ -40,9 +40,18 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
   const [modalVisible, setModalVisible] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // Usar datos existentes o datos iniciales
-  const formData: Record<string, unknown> = existingData || { ...getInitialDataByQuestionKey(questionKey), researchId: actualResearchId };
+  // Estado local para el formulario
+  const [formData, setFormData] = useState<Record<string, unknown>>(
+    existingData || { ...getInitialDataByQuestionKey(questionKey), researchId: actualResearchId }
+  );
   const isSaving = isCreating || isUpdating;
+
+  // Sincronizar con datos existentes cuando cambien
+  useEffect(() => {
+    if (existingData) {
+      setFormData(existingData);
+    }
+  }, [existingData]);
 
   /**
    * Validación genérica basada en questionKey
@@ -175,6 +184,24 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
     setIsDeleteModalOpen(false);
   }, []);
 
+  // Función para actualizar una pregunta específica
+  const updateQuestion = useCallback((questionId: string, data: any) => {
+    const questions = (formData.questions as any[]) || [];
+    if (!questions) return;
+    
+    const updatedQuestions = questions.map((question: any) => {
+      if (question.id === questionId) {
+        return { ...question, ...data };
+      }
+      return question;
+    });
+    
+    setFormData({
+      ...formData,
+      questions: updatedQuestions
+    });
+  }, [formData]);
+
   return {
     formData,
     isLoading,
@@ -189,6 +216,7 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
     isDeleteModalOpen,
     confirmDelete,
     closeDeleteModal,
+    updateQuestion,
   };
 };
 

@@ -109,7 +109,17 @@ export interface SmartVOCQuestion {
   /**
    * Type of question using the global QuestionType enum
    */
-  type: QuestionType;
+  type: QuestionType | string;
+
+  /**
+   * Input type for backend processing (scale, text, multiple_choice, etc.)
+   */
+  inputType?: string;
+
+  /**
+   * Unique key for question identification
+   */
+  questionKey?: string;
 
   /**
    * Title of the question
@@ -145,11 +155,6 @@ export interface SmartVOCQuestion {
    * Optional module response ID
    */
   moduleResponseId?: string;
-
-  /**
-   * Question key for identification
-   */
-  questionKey?: string;
 }
 
 /**

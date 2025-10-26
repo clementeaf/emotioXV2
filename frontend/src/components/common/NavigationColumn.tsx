@@ -8,7 +8,7 @@ export interface NavigationItem {
 }
 
 interface NavigationColumnProps {
-  title: string;
+  title: string | React.ReactNode;
   items: NavigationItem[];
   activeIndex: number;
   onItemClick: (index: number) => void;
@@ -29,9 +29,9 @@ export const NavigationColumn: React.FC<NavigationColumnProps> = ({
 }) => {
   return (
     <div className={`min-w-[350px]`}>
-        <div className="rounded-lg border border-gray-200 p-4 h-[580px]">
+        <div className="rounded-lg border border-gray-200 p-6 h-[850px] bg-white shadow-sm">
           <NavigationHeader title={title} />
-          <NavigationContainer height="h-[500px]">
+          <NavigationContainer height="h-[750px]">
             {items.map((item, index) => (
               <NavigationItem
                 key={item.id}

@@ -118,6 +118,12 @@ export interface WelcomeScreenRecord extends WelcomeScreenConfig {
   id: string;
 
   /**
+   * Question identification
+   */
+  questionKey?: string;
+  type?: string;
+
+  /**
    * Timestamp when the record was created
    */
   createdAt: Date;

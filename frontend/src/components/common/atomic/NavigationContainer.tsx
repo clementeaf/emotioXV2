@@ -12,7 +12,7 @@ export const NavigationContainer: React.FC<NavigationContainerProps> = ({
   className = ''
 }) => {
   return (
-    <div className={`space-y-2 ${height} overflow-y-auto ${className}`}>
+    <div className={`space-y-3 ${height} overflow-y-auto ${className}`}>
       {children}
     </div>
   );

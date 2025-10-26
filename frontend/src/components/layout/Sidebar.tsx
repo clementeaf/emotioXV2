@@ -1,6 +1,16 @@
 'use client';
 
-import { ExternalLink } from 'lucide-react';
+import { 
+  ExternalLink,
+  LayoutDashboard, 
+  Plus, 
+  Settings, 
+  Building2, 
+  FileText,
+  Clock,
+  Trash2,
+  ArrowLeft
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
@@ -21,11 +31,11 @@ interface SidebarProps {
 
 
 const mainNavItems = [
-  { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
-  { id: 'new-research', label: 'Nueva Investigación', href: '/dashboard/research/new' },
-  { id: 'research-config', label: 'Configuración Investigación', href: '/dashboard/researchTypeConfig' },
-  { id: 'companies', label: 'Gestión de Empresas', href: '/dashboard/companies' },
-  { id: 'settings', label: 'Configuraciones', href: '/dashboard/settings' },
+  { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { id: 'new-research', label: 'Nueva Investigación', href: '/dashboard/research/new', icon: Plus },
+  { id: 'research-config', label: 'Configuración Investigación', href: '/dashboard/researchTypeConfig', icon: FileText },
+  { id: 'companies', label: 'Gestión de Empresas', href: '/dashboard/companies', icon: Building2 },
+  { id: 'settings', label: 'Configuraciones', href: '/dashboard/settings', icon: Settings },
 ];
 
 // Añadir la interfaz para el modal de confirmación
@@ -239,17 +249,19 @@ function SidebarContent({ className }: SidebarProps) {
             isActive = normalizedPathname === item.href || normalizedPathname.startsWith(item.href + '/');
           }
 
+          const IconComponent = item.icon;
           return (
             <Link
               key={item.id}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-4 py-2 text-[15px] rounded-lg transition-colors',
+                'flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-all duration-200',
                 isActive
-                  ? 'bg-blue-100 text-blue-700 font-semibold border border-blue-200'
-                  : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 font-medium'
+                  ? 'bg-blue-50 text-blue-700 font-medium border border-blue-200 shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium'
               )}
             >
+              <IconComponent className="h-4 w-4" />
               {item.label}
             </Link>
           );
@@ -305,8 +317,11 @@ function SidebarContent({ className }: SidebarProps) {
     // Mostrar siempre, pero resaltar la investigación actual si existe
 
     return (
-      <div className="border-t border-neutral-200 pt-4 mt-4">
-        <h3 className="text-sm font-semibold text-neutral-900 mb-3">Investigaciones Recientes</h3>
+      <div className="border-t border-gray-100 pt-6 mt-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Clock className="h-4 w-4" />
+          Investigaciones Recientes
+        </h3>
 
         {isLoadingResearch ? (
           <div className="space-y-2">
@@ -318,21 +333,21 @@ function SidebarContent({ className }: SidebarProps) {
             ))}
           </div>
         ) : showNoResearchMessage ? (
-          <p className="text-sm text-neutral-500 italic">No hay investigaciones recientes</p>
+          <p className="text-sm text-gray-500 italic">No hay investigaciones recientes</p>
         ) : (
           <div className="space-y-2">
             {recentResearch.map((item) => (
               <div key={item.id} className="group">
                 <Link
                   href={`/dashboard?research=${item.id}&section=welcome-screen`}
-                  className="block p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+                  className="block p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-900 truncate" title={item.name}>
+                      <p className="text-sm font-medium text-gray-900 truncate" title={item.name}>
                         {item.name}
                       </p>
-                      <p className="text-xs text-neutral-500 truncate">{item.technique}</p>
+                      <p className="text-xs text-gray-500 truncate">{item.technique}</p>
                     </div>
                     <button
                       onClick={(e) => {
@@ -341,12 +356,10 @@ function SidebarContent({ className }: SidebarProps) {
                         setResearchToDelete({ id: item.id, name: item.name });
                         setShowDeleteModal(true);
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
                       title="Eliminar investigación"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </Link>
