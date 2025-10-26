@@ -133,13 +133,7 @@ export const filterValidQuestions = (formData: CognitiveTaskFormData): Cognitive
   };
 };
 
-/**
- * Filtra las preguntas que tienen título (funcionalidad original - mantenida para compatibilidad)
- * @deprecated Use filterValidQuestions instead
- */
-export const filterQuestionsWithTitle = (formData: CognitiveTaskFormData): CognitiveTaskFormData => {
-  return filterValidQuestions(formData);
-};
+// Función deprecated eliminada - usar filterValidQuestions directamente
 
 /**
  * Valida que el formulario tenga al menos una pregunta válida

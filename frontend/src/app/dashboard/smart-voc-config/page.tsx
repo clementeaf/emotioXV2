@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { SmartVOCFormGeneric } from '@/components/research/SmartVOC/SmartVOCFormGeneric';
+// import { SmartVOCFormGeneric } from '@/components/research/SmartVOC/SmartVOCFormGeneric'; // Componente eliminado
 import { ArrowLeft, Save, Eye, Trash2 } from 'lucide-react';
 
 /**
@@ -112,10 +112,9 @@ export default function SmartVOCConfigPage() {
                 </div>
               </div>
 
-              <SmartVOCFormGeneric
-                researchId="current"
-                onSave={handleSave}
-              />
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800">SmartVOCFormGeneric eliminado - usar SmartVOCForm con DynamicForm</p>
+              </div>
             </Card>
           </div>
 
@@ -179,8 +178,8 @@ export default function SmartVOCConfigPage() {
                 Implementación
               </h3>
               <div className="bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-auto">
-                <pre>{`// Solo 20 líneas de código
-<SmartVOCFormGeneric 
+                <pre>{`// SmartVOCFormGeneric eliminado - usar SmartVOCForm con DynamicForm
+<SmartVOCForm 
   researchId={researchId}
   onSave={handleSave} 
 />

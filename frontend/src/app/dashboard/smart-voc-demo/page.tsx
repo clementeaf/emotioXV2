@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { SmartVOCFormGeneric } from '@/components/research/SmartVOC/SmartVOCFormGeneric';
+// import { SmartVOCFormGeneric } from '@/components/research/SmartVOC/SmartVOCFormGeneric'; // Componente eliminado
 // import { DynamicQuestionForm } from '@/components/research/shared'; // Módulo eliminado
-import { ComparisonDemo } from '@/components/research/SmartVOC/ComparisonDemo';
+// import { ComparisonDemo } from '@/components/research/SmartVOC/ComparisonDemo'; // Componente eliminado
 import { BarChart3, Code, Settings, Eye, GitCompare } from 'lucide-react';
 
 /**
@@ -86,7 +86,9 @@ export default function SmartVOCDemoPage() {
 
         {/* Demo Content */}
         {activeDemo === 'comparison' ? (
-          <ComparisonDemo />
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800">ComparisonDemo eliminado - usar SmartVOCForm con DynamicForm</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Demo Area */}
@@ -100,13 +102,12 @@ export default function SmartVOCDemoPage() {
                 </div>
 
                 {activeDemo === 'smart-voc' ? (
-                  <SmartVOCFormGeneric
-                    researchId="demo-research-123"
-                    onSave={handleSave}
-                  />
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800">SmartVOCFormGeneric eliminado - usar SmartVOCForm con DynamicForm</p>
+                  </div>
                 ) : (
                   <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-yellow-800">DynamicQuestionForm eliminado - usar SmartVOCFormGeneric</p>
+                    <p className="text-yellow-800">DynamicQuestionForm eliminado - usar SmartVOCForm con DynamicForm</p>
                   </div>
                 )}
               </Card>
@@ -189,8 +190,8 @@ export default function SmartVOCDemoPage() {
                   Uso del Código
                 </h3>
                 <div className="bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-auto">
-                  <pre>{`// Smart VOC Wrapper
-<SmartVOCFormGeneric 
+                  <pre>{`// Smart VOC Wrapper - SmartVOCFormGeneric eliminado
+<SmartVOCForm 
   researchId={researchId}
   onSave={handleSave} 
 />

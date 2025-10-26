@@ -120,8 +120,8 @@ export const QuickAccess: React.FC = () => {
               <pre>{`// Sistema anterior: 500+ líneas
 // 8+ archivos, código duplicado
 
-// Sistema genérico: 20 líneas
-<SmartVOCFormGeneric 
+// Sistema genérico: 20 líneas - SmartVOCFormGeneric eliminado
+<SmartVOCForm 
   researchId={researchId}
   onSave={handleSave} 
 />

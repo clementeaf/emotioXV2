@@ -1,2 +1,2 @@
 // Utilidades
-export * from './CognitiveTaskFormHelpers';
+// export * from './CognitiveTaskFormHelpers'; // Archivo eliminado

@@ -7,7 +7,20 @@ import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from '@/api/domains/smart-voc';
 import { getQuestionTypeConfig } from '../config';
 import { DynamicFieldRenderer } from '@/components/common/forms/DynamicFieldRenderer';
-import { getNestedValue, createFieldChangeHandler } from '../utils';
+// Funciones utilitarias (antes en utils.ts eliminado)
+const getNestedValue = (obj: any, path: string): any => {
+  return path.split('.').reduce((current, key) => current?.[key], obj);
+};
+
+const createFieldChangeHandler = (
+  questionId: string,
+  fieldPath: string,
+  onUpdateQuestion: (id: string, updates: any) => void
+) => {
+  return (value: any) => {
+    onUpdateQuestion(questionId, { [fieldPath]: value });
+  };
+};
 
 interface SmartVOCQuestionsProps {
   questions: SmartVOCQuestion[];
