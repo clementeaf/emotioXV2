@@ -11,6 +11,19 @@ import { FormCheckbox, FileUploadPlaceholder, ErrorDisplay } from '@/components/
 import { CognitiveTaskFieldConfig } from './schema.types';
 import { ScaleQuestion, ChoiceQuestion, FileUploadQuestion, TextQuestion } from './components/questions';
 
+// Object mapping para renderers de preguntas - más escalable que switch case
+const QUESTION_RENDERERS = {
+  short_text: TextQuestion,
+  long_text: TextQuestion,
+  single_choice: ChoiceQuestion,
+  multiple_choice: ChoiceQuestion,
+  linear_scale: ScaleQuestion,
+  file_upload: FileUploadQuestion,
+  // Agregar nuevos tipos aquí sin modificar el switch
+} as const;
+
+type QuestionType = keyof typeof QUESTION_RENDERERS;
+
 interface DynamicFieldRendererProps {
   field: CognitiveTaskFieldConfig;
   value: any;
@@ -77,45 +90,29 @@ export const DynamicFieldRenderer: React.FC<DynamicFieldRendererProps> = ({
       }
     };
 
-    switch (question.type) {
-      case 'short_text':
-      case 'long_text':
-        return <TextQuestion {...questionProps} />;
-      
-      case 'single_choice':
-      case 'multiple_choice':
-        return <ChoiceQuestion {...questionProps} />;
-      
-      case 'linear_scale':
-        return <ScaleQuestion {...questionProps} />;
-      
-      case 'file_upload':
-        return <FileUploadQuestion {...questionProps} />;
-      
-      case 'ranking':
+    // Usar object mapping en lugar de switch case - más escalable
+    const QuestionRenderer = QUESTION_RENDERERS[question.type as QuestionType];
+    
+    if (!QuestionRenderer) {
+      // Manejar tipos no soportados
+      if (['ranking', 'preference_test'].includes(question.type)) {
         return (
           <ErrorDisplay
-            message="Ranking component not implemented yet"
-            component="Ranking"
+            message={`${question.type === 'ranking' ? 'Ranking' : 'Preference Test'} component not implemented yet`}
+            component={question.type === 'ranking' ? 'Ranking' : 'PreferenceTest'}
           />
         );
+      }
       
-      case 'preference_test':
-        return (
-          <ErrorDisplay
-            message="Preference Test component not implemented yet"
-            component="PreferenceTest"
-          />
-        );
-      
-      default:
-        return (
-          <ErrorDisplay
-            message={`Unknown question type: ${question.type}`}
-            component="QuestionType"
-          />
-        );
+      return (
+        <ErrorDisplay
+          message={`Unknown question type: ${question.type}`}
+          component="QuestionType"
+        />
+      );
     }
+    
+    return <QuestionRenderer {...questionProps} />;
   }
 
   // Fallback a componentes básicos para campos individuales

@@ -87,146 +87,137 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
   const infoContent = getInfoContent();
 
+  // Object mapping para renderers de vista previa - más escalable que switch case
+  const PREVIEW_RENDERERS = {
+    short_text: (question: any) => (
+      <div>
+        <input
+          type="text"
+          placeholder={question.answerPlaceholder || 'Escribe tu respuesta aquí...'}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled
+        />
+      </div>
+    ),
+    long_text: (question: any) => (
+      <div>
+        <textarea
+          placeholder={question.answerPlaceholder || 'Escribe tu respuesta aquí...'}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          rows={3}
+          disabled
+        />
+      </div>
+    ),
+    single_choice: (question: any) => (
+      <div className="space-y-2">
+        {(question.choices || []).map((choice: any, index: number) => (
+          <label key={index} className="flex items-center space-x-2">
+            <input
+              type="radio"
+              name={`preview-${question.id}`}
+              className="text-blue-600 focus:ring-blue-500"
+              disabled
+            />
+            <span className="text-sm text-gray-700">{choice.text || `Opción ${index + 1}`}</span>
+          </label>
+        ))}
+      </div>
+    ),
+    multiple_choice: (question: any) => (
+      <div className="space-y-2">
+        {(question.choices || []).map((choice: any, index: number) => (
+          <label key={index} className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              className="text-blue-600 focus:ring-blue-500 rounded"
+              disabled
+            />
+            <span className="text-sm text-gray-700">{choice.text || `Opción ${index + 1}`}</span>
+          </label>
+        ))}
+      </div>
+    ),
+    linear_scale: (question: any) => (
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>{question.minLabel || 'Mínimo'}</span>
+          <span>{question.maxLabel || 'Máximo'}</span>
+        </div>
+        <input
+          type="range"
+          min={question.minValue || 1}
+          max={question.maxValue || 5}
+          className="w-full"
+          disabled
+        />
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>{question.minValue || 1}</span>
+          <span>{question.maxValue || 5}</span>
+        </div>
+      </div>
+    ),
+    file_upload: (question: any) => (
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+        <div className="space-y-2">
+          <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p className="text-sm text-gray-600">Arrastra archivos aquí o haz clic para seleccionar</p>
+          <p className="text-xs text-gray-500">{question.acceptedTypes || 'Todos los tipos'}</p>
+        </div>
+      </div>
+    ),
+    ranking: (question: any) => (
+      <div className="space-y-2">
+        {(question.choices || []).map((choice: any, index: number) => (
+          <div key={index} className="flex items-center space-x-2 p-2 border border-gray-200 rounded">
+            <span className="text-sm font-medium text-gray-500">{index + 1}</span>
+            <span className="text-sm text-gray-700">{choice.text || `Opción ${index + 1}`}</span>
+          </div>
+        ))}
+      </div>
+    ),
+    preference_test: (question: any) => (
+      <div className="grid grid-cols-2 gap-4">
+        <div className="text-center">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+            <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p className="mt-1 text-xs">Imagen A</p>
+          </div>
+        </div>
+        <div className="text-center">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+            <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p className="mt-1 text-xs">Imagen B</p>
+          </div>
+        </div>
+      </div>
+    )
+  } as const;
+
+  type PreviewType = keyof typeof PREVIEW_RENDERERS;
+
   // Función para renderizar vista previa según el tipo de pregunta
   const renderPreviewByType = (question: any) => {
-    switch (question.type) {
-      case 'short_text':
-        return (
-          <div>
-            <input
-              type="text"
-              placeholder={question.answerPlaceholder || 'Escribe tu respuesta aquí...'}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled
-            />
-          </div>
-        );
-
-      case 'long_text':
-        return (
-          <div>
-            <textarea
-              placeholder={question.answerPlaceholder || 'Escribe tu respuesta aquí...'}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={4}
-              disabled
-            />
-          </div>
-        );
-
-      case 'single_choice':
-        return (
-          <div className="space-y-2">
-            {(question.choices || []).map((choice: any, index: number) => (
-              <label key={choice.id || index} className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  name={`preview-${question.id}`}
-                  className="text-blue-600"
-                  disabled
-                />
-                <span className="text-sm">{choice.text || `Opción ${index + 1}`}</span>
-              </label>
-            ))}
-          </div>
-        );
-
-      case 'multiple_choice':
-        return (
-          <div className="space-y-2">
-            {(question.choices || []).map((choice: any, index: number) => (
-              <label key={choice.id || index} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  className="text-blue-600"
-                  disabled
-                />
-                <span className="text-sm">{choice.text || `Opción ${index + 1}`}</span>
-              </label>
-            ))}
-          </div>
-        );
-
-      case 'linear_scale':
-        const scaleConfig = question.scaleConfig || { startValue: 1, endValue: 5, startLabel: '', endLabel: '' };
-        return (
-          <div className="space-y-2">
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">{scaleConfig.startLabel || scaleConfig.startValue}</span>
-              <div className="flex space-x-2">
-                {Array.from({ length: scaleConfig.endValue - scaleConfig.startValue + 1 }, (_, i) => (
-                  <label key={i} className="flex items-center space-x-1">
-                    <input
-                      type="radio"
-                      name={`preview-scale-${question.id}`}
-                      value={scaleConfig.startValue + i}
-                      className="text-blue-600"
-                      disabled
-                    />
-                    <span className="text-sm">{scaleConfig.startValue + i}</span>
-                  </label>
-                ))}
-              </div>
-              <span className="text-sm text-gray-600">{scaleConfig.endLabel || scaleConfig.endValue}</span>
-            </div>
-          </div>
-        );
-
-      case 'ranking':
-        return (
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">Ordena las opciones por preferencia:</p>
-            {(question.choices || []).map((choice: any, index: number) => (
-              <div key={choice.id || index} className="flex items-center space-x-2 p-2 bg-gray-100 rounded">
-                <span className="text-sm font-medium">{index + 1}.</span>
-                <span className="text-sm">{choice.text || `Opción ${index + 1}`}</span>
-              </div>
-            ))}
-          </div>
-        );
-
-      case 'file_upload':
-        return (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <div className="text-gray-500">
-              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <p className="mt-2 text-sm">Arrastra archivos aquí o haz clic para seleccionar</p>
-            </div>
-          </div>
-        );
-
-      case 'preference_test':
-        return (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-              <div className="text-gray-500">
-                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p className="mt-1 text-xs">Imagen A</p>
-              </div>
-            </div>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-              <div className="text-gray-500">
-                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p className="mt-1 text-xs">Imagen B</p>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return (
-          <div className="text-gray-500 text-sm">
-            Vista previa no disponible para este tipo de pregunta
-          </div>
-        );
+    const PreviewRenderer = PREVIEW_RENDERERS[question.type as PreviewType];
+    
+    if (!PreviewRenderer) {
+      return (
+        <div className="text-gray-500 text-sm">
+          Vista previa no disponible para este tipo de pregunta
+        </div>
+      );
     }
+    
+    return PreviewRenderer(question);
   };
+
+  // Función legacy eliminada - ahora usamos object mapping
 
   // Callback para guardar y notificar al componente padre si es necesario
   const handleSaveAndNotify = useCallback(() => {
@@ -337,6 +328,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
                         onSave={saveQuestion}
                         isModified={isModified}
                         isSaving={isSaving}
+                        hasExistingData={isExisting}
                         className="px-4 py-2"
                       />
                     </div>

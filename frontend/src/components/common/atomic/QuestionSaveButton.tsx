@@ -5,6 +5,7 @@ interface QuestionSaveButtonProps {
   onSave: (questionId: string) => Promise<void>;
   isModified: boolean;
   isSaving?: boolean;
+  hasExistingData?: boolean;
   className?: string;
 }
 
@@ -16,6 +17,7 @@ export const QuestionSaveButton: React.FC<QuestionSaveButtonProps> = ({
   onSave,
   isModified,
   isSaving = false,
+  hasExistingData = false,
   className = ''
 }) => {
   const handleSave = async () => {
@@ -39,9 +41,9 @@ export const QuestionSaveButton: React.FC<QuestionSaveButtonProps> = ({
         ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
       `}
-      title={isModified ? 'Guardar cambios de esta pregunta' : 'No hay cambios para guardar'}
+      title={isModified ? `${hasExistingData ? 'Actualizar' : 'Guardar'} cambios de esta pregunta` : 'No hay cambios para guardar'}
     >
-      {isSaving ? 'Guardando...' : 'Guardar'}
+      {isSaving ? (hasExistingData ? 'Actualizando...' : 'Guardando...') : (hasExistingData ? 'Actualizar' : 'Guardar')}
     </button>
   );
 };
