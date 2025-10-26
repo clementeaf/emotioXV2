@@ -758,6 +758,93 @@ export class CognitiveTaskService {
   }
 
   /**
+   * Actualiza un módulo específico (pregunta individual) dentro de Cognitive Task
+   * @param researchId ID de la investigación
+   * @param moduleId ID del módulo/pregunta a actualizar
+   * @param moduleData Datos del módulo específico
+   * @param userId ID del usuario que realiza la operación
+   * @returns La configuración completa actualizada
+   * @throws ApiError si hay error de validación o base de datos
+   */
+  async updateModule(researchId: string, moduleId: string, moduleData: any, userId: string): Promise<CognitiveTaskRecord> {
+    const context = 'updateModule';
+    try {
+      if (!researchId) {
+        throw new ApiError(
+          `${CognitiveTaskError.RESEARCH_REQUIRED}: Se requiere ID de investigación para actualizar módulo`,
+          400
+        );
+      }
+
+      if (!moduleId) {
+        throw new ApiError(
+          `${CognitiveTaskError.INVALID_DATA}: Se requiere ID del módulo para actualizar`,
+          400
+        );
+      }
+
+      structuredLog('info', `${this.serviceName}.${context}`, 'Iniciando actualización de módulo', { 
+        researchId, 
+        moduleId, 
+        userId 
+      });
+
+      // 1. Obtener configuración actual
+      const existingForm = await this.model.getByResearchId(researchId);
+      
+      if (!existingForm) {
+        throw new ApiError(
+          `${CognitiveTaskError.NOT_FOUND}: Cognitive Task no encontrado para esta investigación`,
+          404
+        );
+      }
+
+      // 2. Validar que el módulo existe
+      const moduleExists = existingForm.questions.some(question => question.id === moduleId);
+      if (!moduleExists) {
+        throw new ApiError(
+          `${CognitiveTaskError.NOT_FOUND}: Módulo con ID ${moduleId} no encontrado`,
+          404
+        );
+      }
+
+      // 3. Actualizar solo el módulo específico en el array de questions
+      const updatedQuestions = existingForm.questions.map(question => 
+        question.id === moduleId 
+          ? { ...question, ...moduleData, id: moduleId } // Mantener el ID original
+          : question
+      );
+
+      // 4. Validar las questions actualizadas
+      this._validateQuestionsArray(updatedQuestions);
+      updatedQuestions.forEach((question, index) => {
+        this._validateSingleQuestion(question, index);
+      });
+
+      // 5. Actualizar con las questions modificadas
+      const updatedForm = await this.model.update(researchId, {
+        ...existingForm,
+        questions: updatedQuestions,
+        metadata: {
+          ...existingForm.metadata,
+          lastUpdated: new Date().toISOString(),
+          lastModifiedBy: userId
+        }
+      });
+
+      structuredLog('info', `${this.serviceName}.${context}`, 'Actualización de módulo completada', { 
+        researchId, 
+        moduleId, 
+        formId: updatedForm.id 
+      });
+
+      return updatedForm;
+    } catch (error: unknown) {
+      throw handleDbError(toApplicationError(error), context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+    }
+  }
+
+  /**
    * Elimina un formulario CognitiveTask por el ID de investigación
    * @param researchId ID de la investigación
    * @returns true si se eliminó exitosamente, false si no se encontró

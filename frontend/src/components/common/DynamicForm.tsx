@@ -7,7 +7,7 @@ import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { FormFooter } from '@/components/common/FormFooter';
 import { useFormManager } from '@/hooks/useFormManager';
-import { InfoTooltip } from '@/components/common/atomic';
+import { InfoTooltip, QuestionSaveButton, FormNavigation, GlobalActionButtons } from '@/components/common/atomic';
 import { SMARTVOC_INFO, COGNITIVE_TASK_INFO } from '@/utils/info-content';
 
 interface DynamicFormProps {
@@ -58,10 +58,25 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     isDeleteModalOpen,
     confirmDelete,
     closeDeleteModal,
-    updateQuestion
+    updateQuestion,
+    saveQuestion,
+    modifiedQuestions
   } = useFormManager(questionKey, researchId);
 
   const questions = formData.questions || [];
+
+  // Funciones de navegación
+  const handlePrevious = useCallback(() => {
+    if (activeQuestionIndex > 0) {
+      setActiveQuestionIndex(activeQuestionIndex - 1);
+    }
+  }, [activeQuestionIndex]);
+
+  const handleNext = useCallback(() => {
+    if (activeQuestionIndex < questions.length - 1) {
+      setActiveQuestionIndex(activeQuestionIndex + 1);
+    }
+  }, [activeQuestionIndex, questions.length]);
 
   // Seleccionar contenido informativo basado en questionKey
   const getInfoContent = () => {
@@ -290,6 +305,14 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
                 return schema?.displayName || questions[activeQuestionIndex].id;
               })()}
               subtitle={questions[activeQuestionIndex].title || 'Sin título'}
+              navigation={
+                <FormNavigation
+                  currentIndex={activeQuestionIndex}
+                  totalItems={questions.length}
+                  onPrevious={handlePrevious}
+                  onNext={handleNext}
+                />
+              }
             >
               {(() => {
                 const question = questions[activeQuestionIndex];
@@ -297,12 +320,27 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
                 if (!schema) return null;
 
+                const isModified = modifiedQuestions.includes(question.id);
+
                 return (
-                  <FieldMapper
-                    fields={schema.fields}
-                    question={question}
-                    updateQuestion={updateQuestion}
-                  />
+                  <div className="space-y-4">
+                    <FieldMapper
+                      fields={schema.fields}
+                      question={question}
+                      updateQuestion={updateQuestion}
+                    />
+                    
+                    {/* Botón granular para esta pregunta */}
+                    <div className="flex justify-end pt-4 border-t border-gray-200">
+                      <QuestionSaveButton
+                        questionId={question.id}
+                        onSave={saveQuestion}
+                        isModified={isModified}
+                        isSaving={isSaving}
+                        className="px-4 py-2"
+                      />
+                    </div>
+                  </div>
                 );
               })()}
             </FormColumn>
@@ -355,14 +393,15 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
           )}
 
         </div>
-        <FormFooter
+        <GlobalActionButtons
           isSaving={isSaving}
           isLoading={isLoading}
           onSave={handleSaveAndNotify}
           onPreview={handlePreview}
           onDelete={handleDelete}
           isExisting={isExisting}
-          deleteText={`Eliminar datos ${title}`}
+          deleteText={`Eliminar todo ${title}`}
+          className="mt-6"
         />
       </div>
 

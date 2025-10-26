@@ -13,7 +13,6 @@ import {
   UpdateModuleResponseDto,
 } from '../lib/types';
 import { useFormDataStore } from '../stores/useFormDataStore';
-import { usePreviewModeStore } from '../stores/usePreviewModeStore';
 
 export function useAvailableFormsQuery(researchId: string, options?: UseQueryOptions<AvailableFormsResponse, Error>) {
   return useQuery<AvailableFormsResponse, Error>({
@@ -61,43 +60,19 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Parti
   const queryClient = useQueryClient();
   return useMutation<ParticipantResponsesDocument, Error, CreateModuleResponseDto>({
     mutationFn: async (data) => {
-      // 🎯 MODO PREVIEW: NO GUARDAR RESPUESTAS
-      const { isPreviewMode } = usePreviewModeStore.getState();
-
-      if (isPreviewMode) {
-        // Preview mode logging removido
-
-        // Retornar un mock response para que el flujo continúe
-        return {
-          id: 'preview-mock-id',
-          researchId: data.researchId,
-          participantId: data.participantId,
-          questionKey: data.questionKey,
-          responses: data.responses,
-          quotaResult: undefined, // No hay validación de cuotas en preview
-          metadata: data.metadata || {},
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          isCompleted: false,
-        } as ParticipantResponsesDocument;
-      }
-
-      // Modo producción: guardar normalmente
-      // Production mode logging removido
+      // 🎯 SIMPLIFICADO: Siempre guardar respuestas
       return saveModuleResponse(data);
     },
     onSuccess: (data, variables) => {
-      const { isPreviewMode } = usePreviewModeStore.getState();
+      // 🎯 SIMPLIFICADO: Sin modo preview
 
-      // Solo invalidar queries si NO es modo preview
-      if (!isPreviewMode) {
-        queryClient.invalidateQueries({
-          queryKey: ['moduleResponses', variables.researchId, variables.participantId],
-        });
-      }
+      // 🎯 SIMPLIFICADO: Siempre invalidar queries
+      queryClient.invalidateQueries({
+        queryKey: ['moduleResponses', variables.researchId, variables.participantId],
+      });
 
-      // 🎯 GUARDAR RESULTADO DE CUOTA EN EL STORE SI EXISTE (solo en producción)
-      if (!isPreviewMode && data.quotaResult && variables.questionKey === 'thank_you_screen') {
+      // 🎯 GUARDAR RESULTADO DE CUOTA EN EL STORE SI EXISTE
+      if (data.quotaResult && variables.questionKey === 'thank_you_screen') {
         const { setQuotaResult } = useFormDataStore.getState();
         setQuotaResult(data.quotaResult);
         // Quota verification logging removido

@@ -131,26 +131,26 @@ const cognitiveTaskHandler = async (
         return createResponse(200, result, event);
 
       case 'PUT':
-        // Extract taskId from path if present: /research/{researchId}/cognitive-task/{taskId}
-        const putTaskMatch = path.match(/^\/research\/([^\/]+)\/cognitive-task\/([^\/]+)/);
-        const taskId = putTaskMatch?.[2];
+        // Extract moduleId from path if present: /research/{researchId}/cognitive-task/{moduleId}
+        const putModuleMatch = path.match(/^\/research\/([^\/]+)\/cognitive-task\/([^\/]+)/);
+        const moduleId = putModuleMatch?.[2];
         if (!body) {
           return errorResponse('Se requiere cuerpo en la solicitud para actualizar', 400, event);
         }
 
-        const updateData: Partial<CognitiveTaskFormData> = JSON.parse(body);
+        const updateData = JSON.parse(body);
 
-        if (taskId) {
-          // Actualizar por taskId específico
-          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por ID', { researchId, taskId, userId });
-          const updatedResult = await cognitiveTaskService.update(taskId, updateData);
-          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización por ID exitosa', { researchId, taskId });
+        if (moduleId) {
+          // Actualizar módulo específico (GRANULAR)
+          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización granular de módulo', { researchId, moduleId, userId });
+          const updatedResult = await cognitiveTaskService.updateModule(researchId, moduleId, updateData, userId);
+          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización granular exitosa', { researchId, moduleId, formId: updatedResult.id });
           return createResponse(200, updatedResult, event);
         } else {
-          // Actualizar por researchId (upsert)
-          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización por researchId (upsert)', { researchId, userId });
+          // Actualizar por researchId (COMPLETO - mantener compatibilidad)
+          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Iniciando actualización completa por researchId', { researchId, userId });
           const result = await cognitiveTaskService.updateByResearchId(researchId, updateData as CognitiveTaskFormData, userId);
-          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización por researchId exitosa', { researchId, taskId: result.id });
+          structuredLog('info', 'CognitiveTaskHandler.PUT', 'Actualización completa exitosa', { researchId, taskId: result.id });
           return createResponse(200, result, event);
         }
 

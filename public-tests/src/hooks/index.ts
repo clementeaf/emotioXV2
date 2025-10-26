@@ -1,27 +1,23 @@
 /**
  * 🧪 HOOKS SIMPLIFICADOS PARA TEST DE PARTICIPANTE
  *
- * Este archivo exporta solo los hooks necesarios para el test,
- * sin lógica de backend.
+ * Este archivo exporta solo los hooks esenciales para el test.
  */
 
-export { useDeleteState } from './useDeleteState';
-export { useSidebarLogic } from './useSidebarLogic';
+// 🎯 HOOKS ESENCIALES
 export { useStepStoreWithBackend } from './useStepStoreWithBackend';
+export { useParticipantInfo } from './useParticipantInfo';
 
-// Mobile device detection
-export { useEyeTrackingConfigQuery } from './useEyeTrackingConfigQuery';
-export { useMobileDeviceCheck } from './useMobileDeviceCheck';
-export { useMobileStepVerification } from './useMobileStepVerification';
+// 🎯 HOOKS DE API
+export * from './useApiQueries';
 
-// Location tracking
-export { useLocationTracking } from './useLocationTracking';
+// 🎯 HOOKS DE PREGUNTAS
+export { useQuestionInitialization } from './useQuestionInitialization';
+export { useQuestionHandlers } from './useQuestionHandlers';
 
-// Quota verification
-export { useQuotaVerification } from './useQuotaVerification';
+// 🎯 HOOKS DE NAVEGACIÓN
+export { useButtonSteps } from './useButtonSteps';
 
-// Tipos y utilidades
+// 🎯 TIPOS Y UTILIDADES
 export * from './types';
-export { useResponseTiming } from './useResponseTiming';
-export { useUserJourneyTracking } from './useUserJourneyTracking';
 export * from './utils';

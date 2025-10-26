@@ -26,7 +26,7 @@ export interface CompanyDynamoItem {
   userId: string;
   // Datos básicos
   name: string;
-  status: string;
+  status: 'active' | 'inactive';
   // Fechas
   createdAt: string;
   updatedAt: string;
@@ -140,7 +140,7 @@ export class CompanyModel {
       return {
         id: item.id,
         name: item.name,
-        status: item.status as 'active' | 'inactive',
+        status: item.status,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       };
@@ -192,7 +192,7 @@ export class CompanyModel {
       structuredLog('info', contextString, `Query completado. Encontrados: ${Items?.length ?? 0} elementos.`);
       structuredLog('info', contextString, 'Raw items from DynamoDB:', { items: Items });
 
-      const companies = Items?.map(item => this.mapToEntity(item as Record<string, unknown>)) || [];
+      const companies = Items?.map(item => this.mapToEntity(item as CompanyDynamoItem)) || [];
 
       structuredLog('info', contextString, 'Items mapeados justo antes de retornar:', { companies });
 
@@ -239,7 +239,7 @@ export class CompanyModel {
       
       // Preparar expresiones para actualización
       let updateExpression = 'set updatedAt = :updatedAt';
-      const expressionAttributeValues: Record<string, unknown> = {
+      const expressionAttributeValues: Record<string, string | number | boolean> = {
         ':updatedAt': now
       };
       
@@ -339,13 +339,13 @@ export class CompanyModel {
     }
   }
 
-  private mapToEntity(item: Record<string, unknown>): Company {
+  private mapToEntity(item: CompanyDynamoItem): Company {
     return {
-      id: item.id as string,
-      name: item.name as string,
-      status: item.status as 'active' | 'inactive',
-      createdAt: item.createdAt as string,
-      updatedAt: item.updatedAt as string
+      id: item.id,
+      name: item.name,
+      status: item.status,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
     };
   }
 }

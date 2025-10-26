@@ -229,7 +229,7 @@ export class SmartVOCFormModel {
     // se podría llamar a this.getById(id) primero, pero aumenta el coste.
 
     let updateExpression = 'SET updatedAt = :updatedAt';
-    const expressionAttributeValues: Record<string, string | number | boolean | null> = { ':updatedAt': now };
+    const expressionAttributeValues: Record<string, unknown> = { ':updatedAt': now };
     // const expressionAttributeNames: Record<string, string> = {}; // Para atributos con nombres reservados
 
     // Construir la expresión de actualización dinámicamente
@@ -242,7 +242,7 @@ export class SmartVOCFormModel {
             if (key === 'questions' || key === 'metadata') {
                 expressionAttributeValues[attributeKey] = JSON.stringify(value);
             } else {
-                expressionAttributeValues[attributeKey] = value as string | number | boolean | null;
+                expressionAttributeValues[attributeKey] = value;
             }
         }
     });

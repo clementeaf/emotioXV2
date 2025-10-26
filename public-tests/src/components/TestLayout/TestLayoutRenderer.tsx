@@ -3,11 +3,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useStepStoreWithBackend } from '../../hooks/useStepStoreWithBackend';
-import { useDebugSteps } from '../../hooks/useDebugSteps';
-import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
-import { useMobileStepVerification } from '../../hooks/useMobileStepVerification';
-import { useOptimizedMonitoringWebSocket } from '../../hooks/useOptimizedMonitoringWebSocket';
-import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
+import { useParticipantInfo } from '../../hooks/useParticipantInfo';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
@@ -35,40 +31,21 @@ const TestLayoutRenderer: React.FC = () => {
     participantId || ''
   );
 
-  const { sendParticipantLogin, isConnected, participantState } = useOptimizedMonitoringWebSocket();
 
   useStepStoreWithBackend();
-  useDebugSteps();
 
-  const {
-    deviceType,
-    isLoading: isLoadingMobileCheck,
-    error: mobileCheckError,
-    shouldShowBlockScreen
-  } = useMobileStepVerification(researchId);
-
-  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
-  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
-
-  const { trackStepVisit } = useUserJourneyTracking({
-    enabled: shouldTrackUserJourney,
-    researchId
+  // 🎯 SIMPLIFICADO: Solo tracking básico
+  const { participantInfo } = useParticipantInfo({
+    researchId: researchId || '',
+    trackLocation: false,
+    trackDevice: true,
+    trackResponseTimes: false,
+    trackNavigation: false,
+    currentQuestionKey,
+    totalQuestions: formsData?.steps?.length || 0
   });
 
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
-
-  useEffect(() => {
-    if (researchId && participantId && isConnected && !participantState.hasLoggedIn) {
-      const email = participantEmail || `${participantId.slice(-8)}@participant.study`;
-      sendParticipantLogin(participantId, email);
-    }
-  }, [researchId, participantId, participantEmail, isConnected, participantState.hasLoggedIn, sendParticipantLogin]);
-
-  useEffect(() => {
-    if (currentQuestionKey && shouldTrackUserJourney) {
-      trackStepVisit(currentQuestionKey, 'visit');
-    }
-  }, [currentQuestionKey, shouldTrackUserJourney, trackStepVisit]);
 
   useEffect(() => {
     if (formsData?.steps && formsData.steps.length > 0) {
@@ -104,46 +81,6 @@ const TestLayoutRenderer: React.FC = () => {
     return <div>Redirigiendo...</div>;
   }
 
-  if (shouldShowBlockScreen && (deviceType === 'mobile' || deviceType === 'tablet')) {
-    return (
-      <MobileStepBlockedScreen
-        deviceType={deviceType as 'mobile' | 'tablet'}
-        researchId={researchId}
-        currentStep={currentQuestionKey}
-      />
-    );
-  }
-
-  if (isLoadingMobileCheck) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-gray-600">Verificando configuración...</p>
-      </div>
-    );
-  }
-
-  if (mobileCheckError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error de Verificación</h2>
-          <p className="text-gray-600 mb-4">No se pudo verificar la configuración del dispositivo.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
-  }
 
 
   if (isLoading) return (
@@ -183,7 +120,7 @@ const TestLayoutRenderer: React.FC = () => {
   }
 
   const { contentConfiguration } = currentStepData;
-  const questionType = getQuestionType(currentQuestionKey);
+  const questionType = getQuestionType(currentQuestionKey, contentConfiguration);
 
   const hasConfiguredQuestions = questionType === 'demographics' ?
     Object.values(contentConfiguration?.demographicQuestions || {}).some((q: { enabled?: boolean }) => q?.enabled) :
@@ -197,7 +134,7 @@ const TestLayoutRenderer: React.FC = () => {
   const formData = backendResponse?.response || getFormData(currentQuestionKey) || {};
 
   const renderedForm =
-    RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig, formData }) ||
+    RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey, quotaResult, formData }) ||
     <UnknownStepComponent
       data={{
         questionKey: currentQuestionKey,

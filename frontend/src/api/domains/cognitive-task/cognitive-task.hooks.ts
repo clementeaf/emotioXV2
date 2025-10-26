@@ -59,6 +59,19 @@ export function useCognitiveTaskData(researchId: string | null) {
     }
   });
 
+  // Granular update mutation
+  const updateModuleMutation = useMutation({
+    mutationFn: ({ researchId, moduleId, moduleData }: { researchId: string; moduleId: string; moduleData: any }) =>
+      cognitiveTaskApi.updateModule(researchId, moduleId, moduleData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cognitiveTaskKeys.byResearch(researchId!) });
+      toast.success('Module updated successfully');
+    },
+    onError: (error: unknown) => {
+      toast.error((error as {response?: {data?: {message?: string}}})?.response?.data?.message || 'Failed to update module');
+    }
+  });
+
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (researchId: string) => cognitiveTaskApi.delete(researchId),
@@ -127,10 +140,12 @@ export function useCognitiveTaskData(researchId: string | null) {
     refetch,
     createCognitiveTask,
     updateCognitiveTask,
+    updateModule: updateModuleMutation.mutateAsync,
     deleteCognitiveTask,
     saveCognitiveTask, // Adding save method for backward compatibility
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
+    isUpdatingModule: updateModuleMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };
 }

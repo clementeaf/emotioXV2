@@ -379,6 +379,8 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       };
       
       if (cognitiveTaskId) {
+        // TODO: Implementar detección de cambios granulares
+        // Por ahora, usar actualización completa
         await updateMutation.mutateAsync({ researchId: researchId || '', data: domainData });
         toastHelpers.updateSuccess('CognitiveTask');
       } else {

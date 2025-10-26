@@ -270,7 +270,7 @@ export class WelcomeScreenModel {
     const now = new Date().toISOString();
 
     let updateExpression = 'SET updatedAt = :updatedAt';
-    const expressionAttributeValues: Record<string, string | number | boolean | null> = {
+    const expressionAttributeValues: Record<string, unknown> = {
       ':updatedAt': now
     };
 
@@ -278,7 +278,7 @@ export class WelcomeScreenModel {
        if (data[field] !== undefined) {
          const placeholder = `:${alias}`;
          updateExpression += `, ${field} = ${placeholder}`;
-         expressionAttributeValues[placeholder] = data[field] as string | number | boolean | null;
+         expressionAttributeValues[placeholder] = data[field];
        }
     };
 

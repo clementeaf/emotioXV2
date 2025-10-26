@@ -83,13 +83,12 @@ export const useStepStore = create<StepStore>()(
           }
         }
 
-        if (activeStepIndex === 0 && validResponses.length === stepOrder.length) {
-          activeStepIndex = stepOrder.length - 1;
+        // 🎯 FIX: Si todas las respuestas existen, empezar desde el principio
+        if (activeStepIndex === stepOrder.length) {
+          activeStepIndex = 0;
         }
-
+        
         const stepToActivate = stepOrder[activeStepIndex] || '';
-
-        // 🎯 SOLO ACTUALIZAR currentQuestionKey SI NO HAY UNO ESTABLECIDO O SI EL ACTUAL NO ES VÁLIDO
         const currentKey = state.currentQuestionKey;
         const shouldUpdateCurrentStep = !currentKey || !stepOrder.includes(currentKey);
 

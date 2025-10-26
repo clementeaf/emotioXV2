@@ -37,8 +37,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Eye Tracking (Base)
   { pathPattern: /^\/research\/[^\/]+\/eye-tracking/, controllerType: 'eye-tracking' },
 
-  // Smart VOC Form
-  { pathPattern: /^\/research\/[^\/]+\/smart-voc/, controllerType: 'smart-voc' },
+  // Smart VOC Form (Modificado para capturar ID opcional)
+  { pathPattern: /^\/research\/[^\/]+\/smart-voc(\/[^\/]+)?$/, controllerType: 'smart-voc' },
 
   // Cognitive Task (Modificado para capturar ID opcional)
   { pathPattern: /^\/research\/[^\/]+\/cognitive-task(\/[^\/]+)?$/, controllerType: 'cognitive-task' },

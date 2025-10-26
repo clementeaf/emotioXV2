@@ -54,6 +54,17 @@ export const cognitiveTaskApi = {
   },
 
   /**
+   * Update specific module/question in cognitive task (granular update)
+   */
+  updateModule: async (researchId: string, moduleId: string, moduleData: any): Promise<CognitiveTaskFormData> => {
+    const response = await apiClient.put<ApiResponse<CognitiveTaskFormData>>(
+      `/research/${researchId}/cognitive-task/${moduleId}`,
+      moduleData
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
    * Delete cognitive task
    */
   delete: async (researchId: string): Promise<void> => {

@@ -249,7 +249,7 @@ export class CognitiveTaskModel {
 
       const now = new Date().toISOString();
       let updateExpression = 'SET updatedAt = :updatedAt';
-      const expressionAttributeValues: Record<string, unknown> = { ':updatedAt': now };
+      const expressionAttributeValues: Record<string, string | number | boolean> = { ':updatedAt': now };
 
       if (data.questions) {
         try {

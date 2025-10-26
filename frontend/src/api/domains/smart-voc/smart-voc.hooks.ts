@@ -181,6 +181,26 @@ export function useSmartVOCData(researchId: string | null) {
     }
   });
 
+  // Granular update mutation
+  const updateModuleMutation = useMutation({
+    mutationFn: ({ researchId, moduleId, moduleData }: { researchId: string; moduleId: string; moduleData: any }) => {
+      // Agregar questionKey y questionType al módulo
+      const enhancedModuleData = {
+        ...moduleData,
+        questionKey: moduleData.id || moduleId,
+        questionType: getQuestionType(moduleData.type)
+      };
+      return smartVocApi.updateModule(researchId, moduleId, enhancedModuleData);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: smartVocKeys.byResearch(variables.researchId) });
+      toast.success('Módulo SmartVOC actualizado exitosamente');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Error al actualizar módulo SmartVOC');
+    },
+  });
+
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (researchId: string) => smartVocApi.delete(researchId),
@@ -259,9 +279,11 @@ export function useSmartVOCData(researchId: string | null) {
     refetch,
     createSmartVOC,
     updateSmartVOC,
+    updateModule: updateModuleMutation.mutateAsync,
     deleteSmartVOC,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
+    isUpdatingModule: updateModuleMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };
 }

@@ -61,6 +61,35 @@ const smartVocFormHandler = async (
         }
         return createResponse(200, result, event);
 
+      case 'PUT':
+        // Extract moduleId from path if present: /research/{researchId}/smart-voc/{moduleId}
+        const putModuleMatch = path.match(/^\/research\/([^\/]+)\/smart-voc\/([^\/]+)/);
+        const moduleId = putModuleMatch?.[2];
+        if (!body) {
+          return errorResponse('Se requiere cuerpo en la solicitud para actualizar', 400, event);
+        }
+
+        const updateData = JSON.parse(body);
+
+        if (moduleId) {
+          // Actualizar módulo específico (GRANULAR)
+          structuredLog('info', 'SmartVocFormHandler.PUT', 'Iniciando actualización granular de módulo SmartVOC', { researchId, moduleId, userId });
+          const updatedResult = await smartVocService.updateModule(researchId, moduleId, updateData, userId);
+          structuredLog('info', 'SmartVocFormHandler.PUT', 'Actualización granular SmartVOC exitosa', { researchId, moduleId, formId: updatedResult.id });
+          return createResponse(200, updatedResult, event);
+        } else {
+          // Actualizar por researchId (COMPLETO - mantener compatibilidad)
+          structuredLog('info', 'SmartVocFormHandler.PUT', 'Iniciando actualización completa SmartVOC por researchId', { researchId, userId });
+          const existingForm = await smartVocService.getByResearchId(researchId);
+          if (existingForm) {
+            const result = await smartVocService.update(existingForm.id, updateData as SmartVOCFormData, userId);
+            structuredLog('info', 'SmartVocFormHandler.PUT', 'Actualización completa SmartVOC exitosa', { researchId, formId: result.id });
+            return createResponse(200, result, event);
+          } else {
+            return errorResponse('SmartVOC no encontrado para esta investigación', 404, event);
+          }
+        }
+
       case 'DELETE':
         structuredLog('info', 'SmartVocFormHandler.DELETE', 'Iniciando eliminación por researchId', { researchId });
         await smartVocService.deleteByResearchId(researchId, userId);

@@ -25,31 +25,42 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
   const apiHook = getApiHookByQuestionKey(questionKey);
   
   // Usar el hook de API dinámicamente
+  const apiResult = apiHook(actualResearchId);
+  
+  // Extraer propiedades con valores por defecto para compatibilidad
   const {
     data: existingData,
     isLoading,
-    updateData,
-    createData,
-    deleteData,
-    isCreating,
-    isUpdating
-  } = apiHook(actualResearchId);
+    // Mapear diferentes nombres de funciones a nombres estándar
+    updateData = apiResult?.updateScreenForm || apiResult?.updateSmartVOC || apiResult?.updateCognitiveTask || null,
+    createData = apiResult?.createScreenForm || apiResult?.createSmartVOC || apiResult?.createCognitiveTask || null,
+    deleteData = apiResult?.deleteScreenForm || apiResult?.deleteSmartVOC || apiResult?.deleteCognitiveTask || null,
+    updateModule = apiResult?.updateModule || null,
+    isCreating = apiResult?.isCreating || false,
+    isUpdating = apiResult?.isUpdating || false,
+    isUpdatingModule = apiResult?.isUpdatingModule || false
+  } = apiResult || {};
 
   // Estado local para UI (modales, etc.)
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
+  // Estado para rastrear cambios granulares
+  const [modifiedQuestions, setModifiedQuestions] = useState<Set<string>>(new Set());
 
   // Estado local para el formulario
   const [formData, setFormData] = useState<Record<string, unknown>>(
     existingData || { ...getInitialDataByQuestionKey(questionKey), researchId: actualResearchId }
   );
-  const isSaving = isCreating || isUpdating;
+  const isSaving = isCreating || isUpdating || isUpdatingModule;
 
   // Sincronizar con datos existentes cuando cambien
   useEffect(() => {
     if (existingData) {
       setFormData(existingData);
+      // Limpiar modificaciones cuando se cargan datos frescos
+      setModifiedQuestions(new Set());
     }
   }, [existingData]);
 
@@ -98,14 +109,47 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
         researchId: actualResearchId
       };
 
-      if (existingData && actualResearchId) {
-        // Actualizar existente
-        await updateData(dataToSubmit);
-      } else if (actualResearchId) {
+      if (existingData && actualResearchId && updateData) {
+        // Verificar si solo se modificó una pregunta y usar granular
+        if (modifiedQuestions.size === 1 && updateModule && (questionKey === 'cognitive_task' || questionKey === 'smartvoc')) {
+          const questionId = Array.from(modifiedQuestions)[0];
+          const questions = (formData.questions as any[]) || [];
+          const questionData = questions.find((q: any) => q.id === questionId);
+          
+          if (questionData) {
+            console.log('🔄 Usando actualización granular para pregunta:', questionId);
+            await updateModule({
+              researchId: actualResearchId,
+              moduleId: questionId,
+              moduleData: questionData
+            });
+            // Limpiar modificaciones después del guardado exitoso
+            setModifiedQuestions(new Set());
+          } else {
+            // Fallback a actualización completa
+            console.log('⚠️ Pregunta no encontrada, usando actualización completa');
+            if (questionKey.includes('screen')) {
+              await updateData(actualResearchId, dataToSubmit);
+            } else {
+              await updateData(dataToSubmit);
+            }
+          }
+        } else {
+          // Actualización completa
+          console.log('📦 Usando actualización completa');
+          if (questionKey.includes('screen')) {
+            // Para screen forms, pasar researchId como primer parámetro
+            await updateData(actualResearchId, dataToSubmit);
+          } else {
+            // Para otros forms, pasar data directamente
+            await updateData(dataToSubmit);
+          }
+        }
+      } else if (actualResearchId && createData) {
         // Crear nuevo
         await createData(dataToSubmit);
       } else {
-        throw new Error('No hay researchId válido para guardar.');
+        throw new Error('No hay funciones de guardado disponibles o researchId válido.');
       }
 
       // Toast genérico basado en questionKey
@@ -151,10 +195,16 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
    * Confirmar eliminación de forma agnóstica
    */
   const confirmDelete = useCallback(async () => {
-    if (!existingData || !actualResearchId) return;
+    if (!existingData || !actualResearchId || !deleteData) return;
     
     try {
-      await deleteData();
+      if (questionKey.includes('screen')) {
+        // Para screen forms, pasar researchId como parámetro
+        await deleteData(actualResearchId);
+      } else {
+        // Para otros forms, llamar sin parámetros
+        await deleteData();
+      }
       const formName = getFormNameByQuestionKey(questionKey);
       toastHelpers.deleteSuccess(formName);
     } catch (error: unknown) {
@@ -184,11 +234,15 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
     setIsDeleteModalOpen(false);
   }, []);
 
-  // Función para actualizar una pregunta específica
+  // Función para actualizar una pregunta específica (solo local)
   const updateQuestion = useCallback((questionId: string, data: any) => {
     const questions = (formData.questions as any[]) || [];
     if (!questions) return;
     
+    // Marcar pregunta como modificada
+    setModifiedQuestions(prev => new Set(prev).add(questionId));
+    
+    // Actualizar estado local inmediatamente (sin enviar al backend)
     const updatedQuestions = questions.map((question: any) => {
       if (question.id === questionId) {
         return { ...question, ...data };
@@ -201,6 +255,47 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
       questions: updatedQuestions
     });
   }, [formData]);
+
+  // Función para guardar una pregunta específica (granular inmediato)
+  const saveQuestion = useCallback(async (questionId: string) => {
+    if (!updateModule || !actualResearchId || !existingData) {
+      throw new Error('No hay funciones de guardado granular disponibles');
+    }
+
+    const questions = (formData.questions as any[]) || [];
+    const questionData = questions.find((q: any) => q.id === questionId);
+    
+    if (!questionData) {
+      throw new Error(`Pregunta con ID ${questionId} no encontrada`);
+    }
+
+    try {
+      console.log('🔄 Guardando pregunta individual:', questionId);
+      await updateModule({
+        researchId: actualResearchId,
+        moduleId: questionId,
+        moduleData: questionData
+      });
+      
+      // Limpiar modificación después del guardado exitoso
+      setModifiedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionId);
+        return newSet;
+      });
+
+      const formName = getFormNameByQuestionKey(questionKey);
+      toastHelpers.saveSuccess(`${formName} - Pregunta ${questionId}`);
+    } catch (error) {
+      console.error('Error guardando pregunta individual:', error);
+      setModalError({
+        title: 'Error al Guardar Pregunta',
+        message: `No se pudo guardar la pregunta: ${buildErrorMessage(error)}`,
+        type: 'error'
+      });
+      setModalVisible(true);
+    }
+  }, [updateModule, actualResearchId, existingData, formData, questionKey]);
 
   return {
     formData,
@@ -217,6 +312,8 @@ export const useFormManager = (questionKey: string, researchId: string): UseForm
     confirmDelete,
     closeDeleteModal,
     updateQuestion,
+    saveQuestion,
+    modifiedQuestions: Array.from(modifiedQuestions),
   };
 };
 

@@ -1,11 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from './useApiQueries';
 // import { useDemographicValidation, type DemographicQuestions } from './useDemographicValidation';
-import { useDisqualificationRedirect } from './useDisqualificationRedirect';
-import { useEyeTrackingConfigQuery } from './useEyeTrackingConfigQuery';
-import { useOptimizedMonitoringWebSocket } from './useOptimizedMonitoringWebSocket';
-import { useResponseTiming } from './useResponseTiming';
-import { useUserJourneyTracking } from './useUserJourneyTracking';
+import { useParticipantInfo } from './useParticipantInfo';
 import { CreateModuleResponseDto, UpdateModuleResponseDto, StepConfiguration } from '../lib/types';
 import { useFormDataStore } from '../stores/useFormDataStore';
 import { useStepStore } from '../stores/useStepStore';
@@ -30,13 +26,15 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
   const getCurrentFormData = useCallback(() => getFormData(currentQuestionKey) || {}, [getFormData, currentQuestionKey]);
 
   // const { validateDemographics } = useDemographicValidation();
-  const { redirectToDisqualification } = useDisqualificationRedirect();
 
-  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
-  const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
-  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
-
-  const { sendParticipantStep, sendParticipantResponseSaved } = useOptimizedMonitoringWebSocket();
+  // 🎯 SIMPLIFICADO: Solo tracking básico
+  const { participantInfo, startResponseTiming, endResponseTiming } = useParticipantInfo({
+    researchId: researchId || '',
+    trackLocation: false,
+    trackDevice: true,
+    trackResponseTimes: false,
+    trackNavigation: false
+  });
 
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',
@@ -125,19 +123,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       
       updateBackendResponses(updatedResponses);
       
-      if (participantId) {
-        const currentStepIndex = steps.findIndex((step: { questionKey: string }) => step.questionKey === currentQuestionKey);
-        const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
-
-        sendParticipantResponseSaved(
-          participantId,
-          currentQuestionKey,
-          getFinalFormData(),
-          currentStepIndex + 1,
-          steps.length,
-          progress
-        );
-      }
+      // 🎯 SIMPLIFICADO: Sin WebSocket tracking
 
       setIsSaving(false);
       
@@ -162,19 +148,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
 
   const updateMutation = useUpdateModuleResponseMutation({
     onSuccess: () => {
-      if (participantId) {
-        const currentStepIndex = steps.findIndex((step: { questionKey: string }) => step.questionKey === currentQuestionKey);
-        const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
-
-        sendParticipantResponseSaved(
-          participantId,
-          currentQuestionKey,
-          getFinalFormData(),
-          currentStepIndex + 1,
-          steps.length,
-          progress
-        );
-      }
+      // 🎯 SIMPLIFICADO: Sin WebSocket tracking
 
       setIsSaving(false);
       setIsNavigating(true);
@@ -239,14 +213,19 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
 
   const isDisabled = isSaving || isNavigating;
 
-  const { startTiming, endTiming, getTimingData } = useResponseTiming({
-    questionKey: currentQuestionKey,
-    enabled: shouldTrackTiming
-  });
-
-  const { trackStepVisit, getJourneyData } = useUserJourneyTracking({
-    enabled: shouldTrackUserJourney,
-    researchId
+  // 🎯 SIMPLIFICADO: Timing y tracking básico
+  const startTiming = () => startResponseTiming(currentQuestionKey);
+  const endTiming = () => endResponseTiming(currentQuestionKey);
+  const getTimingData = () => ({ startTime: Date.now(), endTime: Date.now(), duration: 0 });
+  const trackStepVisit = () => {};
+  const getJourneyData = () => ({ 
+    navigationPath: [], 
+    totalSteps: 0, 
+    totalTime: 0, 
+    hasBackNavigation: false, 
+    skippedSteps: [], 
+    currentStep: '', 
+    sessionStartTime: Date.now() 
   });
 
   const handleClick = useCallback(async () => {
@@ -288,7 +267,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     const finalFormData = hasLocalChanges ? (currentFormData || {}) : backendData;
     
     
-    if (currentQuestionKey === 'demographics' && finalFormData && Object.keys(finalFormData).length > 0 && eyeTrackingConfig?.demographicQuestions) {
+    if (currentQuestionKey === 'demographics' && finalFormData && Object.keys(finalFormData).length > 0) {
       const formValuesString = Object.fromEntries(
         Object.entries(finalFormData).map(([key, value]) => [key, String(value || '')])
       ) as Record<string, string>;
@@ -331,7 +310,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
           // Error saving demographics data - continue with flow
         }
 
-        // redirectToDisqualification(eyeTrackingConfig, 'Demographics validation failed');
+        // 🎯 SIMPLIFICADO: Sin redirección de descalificación
         // return;
       // }
     }
@@ -377,12 +356,12 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
         // Error saving quota disqualification data - continue with redirection
       }
 
-      redirectToDisqualification(eyeTrackingConfig || undefined, quotaResult.reason || 'Cuota alcanzada');
+      // 🎯 SIMPLIFICADO: Sin redirección de descalificación
       return;
     }
 
     startTiming();
-    trackStepVisit(currentQuestionKey, 'complete');
+    trackStepVisit();
 
     setIsSaving(true);
 
@@ -492,20 +471,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
         await saveMutation.mutateAsync(createData);
       }
 
-      if (participantId) {
-        const stepNumber = steps.findIndex((step: { questionKey: string }) => step.questionKey === currentQuestionKey) + 1;
-        const totalSteps = steps.length;
-        const progress = Math.round((stepNumber / totalSteps) * 100);
-
-        sendParticipantStep(
-          participantId,
-          currentQuestionKey,
-          stepNumber,
-          totalSteps,
-          progress,
-          timingData?.duration
-        );
-      }
+      // 🎯 SIMPLIFICADO: Sin WebSocket tracking
 
       endTiming();
 
@@ -526,9 +492,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     getCurrentFormData,
     moduleResponses,
     formsData?.stepsConfiguration,
-    eyeTrackingConfig,
-    // validateDemographics,
-    redirectToDisqualification,
+    // 🎯 SIMPLIFICADO: Sin validaciones complejas
     startTiming,
     trackStepVisit,
     getTimingData,
@@ -540,7 +504,6 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     hasExistingResponse,
     documentId,
     steps,
-    sendParticipantStep,
     endTiming
   ]);
 

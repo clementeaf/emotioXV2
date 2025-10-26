@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useFormDataStore } from '../../../stores/useFormDataStore';
 import { useStepStore } from '../../../stores/useStepStore';
+import { useButtonSteps } from '../../../hooks/useButtonSteps';
 import NavigationFlowDebugger from '../../debug/NavigationFlowDebugger';
 import { coordinateFidelityTester, injectFidelityTest } from '../../../utils/coordinate-fidelity-test';
 
@@ -129,9 +130,18 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   const [imageSelections, setImageSelections] = useState<Record<string, { hitzoneId: string, click: ClickPosition }>>({});
   const [allClicksTracking, setAllClicksTracking] = useState<ClickTrackingData[]>([]);
   const [visualClickPoints, setVisualClickPoints] = useState<Record<number, VisualClickPoint[]>>({});
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const images: ImageFile[] = imageFiles;
+
+  // 🎯 HOOKS PARA AUTO-AVANCE
+  const { goToNextStep } = useStepStore();
+  const { handleClick: saveToBackend } = useButtonSteps({
+    currentQuestionKey: currentQuestionKey || '',
+    isWelcomeScreen: false
+  });
 
   useEffect(() => {
     if (currentQuestionKey) {
@@ -191,6 +201,47 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     injectFidelityTest();
   }, []);
 
+  // 🎯 FUNCIÓN DE AUTO-AVANCE
+  const triggerAutoAdvance = useCallback(async () => {
+    if (isAdvancing) return;
+    if (!currentQuestionKey) return;
+
+    setIsAdvancing(true);
+    console.log('🎯 [NavigationFlowTask] Auto-avance activado para última imagen');
+
+    try {
+      // 🎯 GUARDAR EN BACKEND ANTES DE NAVEGAR
+      console.log('💾 [NavigationFlowTask] Guardando datos en backend antes del auto-avance');
+      await saveToBackend();
+      console.log('✅ [NavigationFlowTask] Datos guardados exitosamente en backend');
+      
+      // 🎯 NO EJECUTAR goToNextStep() AQUÍ - useButtonSteps ya lo hace
+      // Solo esperar un momento para UX y resetear estado
+      timeoutRef.current = setTimeout(() => {
+        console.log('🎯 [NavigationFlowTask] Auto-avance completado - useButtonSteps manejará la navegación');
+        setIsAdvancing(false);
+        timeoutRef.current = null;
+      }, 100);
+      
+    } catch (saveError) {
+      console.error('❌ [NavigationFlowTask] Error guardando en backend durante auto-avance:', saveError);
+      setIsAdvancing(false);
+      timeoutRef.current = null;
+    }
+  }, [isAdvancing, currentQuestionKey, saveToBackend]);
+
+  // 🎯 CLEANUP DE TIMEOUT
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        console.warn('⚠️ [NavigationFlowTask] Cancelando auto-avance pendiente por cambio de step');
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+        setIsAdvancing(false);
+      }
+    };
+  }, [currentQuestionKey]);
+
   const persistVisualClickPoints = () => {
     if (currentQuestionKey) {
       const { setFormData } = useFormDataStore.getState();
@@ -237,7 +288,11 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
           setLocalSelectedImageIndex(localSelectedImageIndex + 1);
           setLocalSelectedHitzone(null);
         }, 500);
-      }
+    } else if (localSelectedImageIndex === images.length - 1) {
+      // 🎯 DESACTIVADO: Auto-avance temporalmente deshabilitado
+      console.log('🎯 [NavigationFlowTask] Click en hitzone de última imagen - auto-avance deshabilitado');
+      // triggerAutoAdvance();
+    }
     }
   };
 

@@ -285,7 +285,7 @@ export class NewResearchModel {
       
       // Preparar expresiones para actualización
       let updateExpression = 'set updatedAt = :updatedAt';
-      const expressionAttributeValues: Record<string, unknown> = {
+      const expressionAttributeValues: Record<string, string | number | boolean> = {
         ':updatedAt': now
       };
       
@@ -573,11 +573,11 @@ export class NewResearchModel {
 
       // Filtrar solo los items que son de tipo RESEARCH
       const researchItems = Items?.filter(item => {
-        const dynamoItem = item as Record<string, unknown>;
+        const dynamoItem = item as NewResearchDynamoItem;
         return dynamoItem.EntityType === 'RESEARCH';
       }) || [];
 
-      const researches = researchItems.map(item => this.mapToEntity(item as unknown as NewResearch));
+      const researches = researchItems.map(item => this.mapToEntity(item));
 
       structuredLog('info', contextString, 'Items filtrados y mapeados:', { researches });
 

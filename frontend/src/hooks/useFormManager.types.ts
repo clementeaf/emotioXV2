@@ -23,6 +23,8 @@ export interface UseFormManagerResult {
   confirmDelete: () => Promise<void>;
   closeDeleteModal: () => void;
   updateQuestion: (questionId: string, data: any) => void;
+  saveQuestion: (questionId: string) => Promise<void>;
+  modifiedQuestions: string[];
 }
 
 export interface ApiHookResult {
