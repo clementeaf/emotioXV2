@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import { cn, useCompanies } from '../imports';
+import { cn } from '@/lib/utils';
+import { useCompanies } from '@/hooks/useCompanies';
 import useCreateResearchForm from '../CreateResearchForm/useCreateResearchForm';
 
 // Imports optimizados desde CreateResearchForm
