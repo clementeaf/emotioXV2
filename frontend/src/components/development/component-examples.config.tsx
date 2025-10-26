@@ -11,7 +11,7 @@ import { ConfigCard } from '@/components/common/ConfigCard';
 import { ProgressiveLoader } from '@/components/common/ProgressiveLoader';
 import { SimulatedDataBanner } from '@/components/common/SimulatedDataBanner';
 import { PlaceholderCard } from '@/components/common/PlaceholderCard';
-import { EducationalSidebar } from '@/components/common/EducationalSidebar';
+// import { EducationalSidebar } from '@/components/common/EducationalSidebar'; // Componente eliminado
 import { ReorderableGrid } from '@/components/common/ReorderableGrid';
 import { ConditionalSection } from '@/components/common/ConditionalSection';
 import { FormSelect } from '@/components/common/FormSelect';
@@ -296,36 +296,36 @@ export const COMPONENT_EXAMPLES: Record<string, ComponentExampleConfig> = {
       </div>
     )
   },
-  EducationalSidebar: {
-    title: "EducationalSidebar - Sidebar Educativo",
-    props: {},
-    children: () => (
-      <div className="space-y-4">
-        <EducationalSidebar
-          content={{
-            title: "Técnica de Investigación",
-            generalDescription: "Esta técnica te permite recopilar datos de manera efectiva.",
-            typeExplanation: "Detalles específicos sobre cómo funciona esta técnica y qué beneficios aporta."
-          }}
-          loading={false}
-          error={null}
-          title="Guía de Configuración"
-        />
-        <EducationalSidebar
-          content={null}
-          loading={true}
-          error={null}
-          title="Cargando Contenido"
-        />
-        <EducationalSidebar
-          content={null}
-          loading={false}
-          error="Error al cargar el contenido educativo"
-          title="Estado de Error"
-        />
-      </div>
-    )
-  },
+  // EducationalSidebar: {
+  //   title: "EducationalSidebar - Sidebar Educativo",
+  //   props: {},
+  //   children: () => (
+  //     <div className="space-y-4">
+  //       <EducationalSidebar
+  //         content={{
+  //           title: "Técnica de Investigación",
+  //           generalDescription: "Esta técnica te permite recopilar datos de manera efectiva.",
+  //           typeExplanation: "Detalles específicos sobre cómo funciona esta técnica y qué beneficios aporta."
+  //         }}
+  //         loading={false}
+  //         error={null}
+  //         title="Guía de Configuración"
+  //       />
+  //       <EducationalSidebar
+  //         content={null}
+  //         loading={true}
+  //         error={null}
+  //         title="Cargando Contenido"
+  //       />
+  //       <EducationalSidebar
+  //         content={null}
+  //         loading={false}
+  //         error="Error al cargar el contenido educativo"
+  //         title="Estado de Error"
+  //       />
+  //     </div>
+  //   )
+  // }, // Componente eliminado
   ReorderableGrid: {
     title: "ReorderableGrid - Grid Reordenable",
     props: {},

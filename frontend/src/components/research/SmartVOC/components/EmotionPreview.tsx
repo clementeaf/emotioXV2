@@ -13,7 +13,7 @@ const EMOTION_SELECTOR_CONFIGS = {
     ]
   }
 };
-import { EmotionHierarchySelector } from './EmotionHierarchySelector';
+import { EmotionHierarchySelector } from '@/components/common/forms/EmotionHierarchySelector';
 // 🎯 DetailedEmotionSelector eliminado - usar componente consolidado en public-tests
 
 interface EmotionPreviewProps {

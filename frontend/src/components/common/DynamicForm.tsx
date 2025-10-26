@@ -5,7 +5,7 @@ import { FormColumn } from '@/components/common/FormColumn';
 import { PreviewColumn } from '@/components/common/PreviewColumn';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { ErrorModal } from '@/components/common/ErrorModal';
-import { FormFooter } from '@/components/common/FormFooter';
+// import { FormFooter } from '@/components/common/FormFooter'; // Reemplazado por GlobalActionButtons
 import { useFormManager } from '@/hooks/useFormManager';
 import { InfoTooltip, QuestionSaveButton, FormNavigation, GlobalActionButtons } from '@/components/common/atomic';
 import { SMARTVOC_INFO, COGNITIVE_TASK_INFO } from '@/utils/info-content';

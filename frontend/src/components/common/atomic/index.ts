@@ -3,7 +3,7 @@
 
 export { FormField } from './FormField';
 export { FormSection } from './FormSection';
-export { FormCard } from './FormCard';
+// export { FormCard } from './FormCard'; // Eliminado - usar el de la raíz
 export { FormRow } from './FormRow';
 
 // Choice Management Atoms

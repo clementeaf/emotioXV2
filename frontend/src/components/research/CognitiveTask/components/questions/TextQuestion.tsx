@@ -1,5 +1,6 @@
 import React from 'react';
-import { FormField, FormSection, FormCard } from '@/components/common/atomic';
+import { FormField, FormSection } from '@/components/common/atomic';
+import { FormCard } from '@/components/common/FormCard';
 import { TextQuestionProps } from '../../types';
 
 /**

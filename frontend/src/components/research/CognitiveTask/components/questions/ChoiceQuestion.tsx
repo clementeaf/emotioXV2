@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
-import { FormField, FormSection, FormCard, FormRow } from '@/components/common/atomic';
+import { FormField, FormSection, FormRow } from '@/components/common/atomic';
+import { FormCard } from '@/components/common/FormCard';
 import { TrashIcon } from '@/components/common/icons';
 import { ChoiceQuestionProps } from '../../types';
 

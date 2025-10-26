@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { FormField, FormSection, FormCard, FormRow } from '@/components/common/atomic';
+import { FormField, FormSection, FormRow } from '@/components/common/atomic';
+import { FormCard } from '@/components/common/FormCard';
 import { QRCodeModal } from '@/components/common/modals/QRCodeModal';
 
 interface RecruitConfigurationProps {

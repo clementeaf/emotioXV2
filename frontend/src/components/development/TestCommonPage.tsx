@@ -12,8 +12,8 @@ import { ConfigCard } from '@/components/common/ConfigCard';
 import { ProgressiveLoader } from '@/components/common/ProgressiveLoader';
 import { SimulatedDataBanner } from '@/components/common/SimulatedDataBanner';
 import { PlaceholderCard } from '@/components/common/PlaceholderCard';
-import { QRCodeModal } from '@/components/common/QRCodeModal';
-import { EducationalSidebar } from '@/components/common/EducationalSidebar';
+import { QRCodeModal } from '@/components/common/modals/QRCodeModal';
+// import { EducationalSidebar } from '@/components/common/EducationalSidebar'; // Componente eliminado
 import { ReorderableGrid } from '@/components/common/ReorderableGrid';
 import { LoadingTransition } from '@/components/common/LoadingTransition';
 import { ConflictResolutionModal } from '@/components/common/ConflictResolutionModal';
@@ -39,7 +39,7 @@ const COMPONENT_MAP = {
   SimulatedDataBanner,
   PlaceholderCard,
   QRCodeModal,
-  EducationalSidebar,
+  // EducationalSidebar, // Componente eliminado
   ReorderableGrid,
   LoadingTransition,
   ConflictResolutionModal,
