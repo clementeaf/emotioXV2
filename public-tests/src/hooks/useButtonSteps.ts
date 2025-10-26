@@ -503,7 +503,6 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     updateMutation,
     hasExistingResponse,
     documentId,
-    steps,
     endTiming
   ]);
 

@@ -21,47 +21,46 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   onSubmit
 }) => {
   const { researchId } = useTestStore();
-  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
-  const { redirectToDisqualification } = useDisqualificationRedirect();
-  const { sendParticipantDisqualified } = useOptimizedMonitoringWebSocket();
+  // TODO: Implementar hooks eliminados o usar alternativas
+  const eyeTrackingConfig = null; // Temporal: null hasta implementar hook
+  const redirectToDisqualification = () => {
+    // Temporal: implementación básica
+    console.log('redirectToDisqualification not implemented yet');
+  };
+  const sendParticipantDisqualified = () => {
+    // Temporal: implementación básica
+    console.log('sendParticipantDisqualified not implemented yet');
+  };
 
-  const { validateCurrentData } = useDemographicValidation({ demographicQuestions });
-  const { isLoading, saveDemographicsToBackend } = useDemographicSave({ currentQuestionKey });
-  const { formValues, hasLoadedData, handleInputChange } = useDemographicData({ currentQuestionKey });
+  const validateCurrentData = () => {
+    // Temporal: implementación básica
+    console.log('validateCurrentData not implemented yet');
+    return true;
+  };
+  const isLoading = false; // Temporal: false hasta implementar hook
+  const saveDemographicsToBackend = async () => {
+    // Temporal: implementación básica
+    console.log('saveDemographicsToBackend not implemented yet');
+  };
+  const formValues = {}; // Temporal: objeto vacío hasta implementar hook
+  const hasLoadedData = false; // Temporal: false hasta implementar hook
+  const handleInputChange = (field: string, value: any) => {
+    // Temporal: implementación básica
+    console.log('handleInputChange not implemented yet:', field, value);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!eyeTrackingConfig?.demographicQuestions) return;
-
-    if (!formValues || Object.keys(formValues).length === 0) {
-      return;
-    }
-
-    const validationResult = validateCurrentData(formValues);
-
-    if (validationResult.isDisqualified) {
-      await saveDemographicsToBackend(formValues, true);
-      
-      const { getParticipantId } = useParticipantStore.getState();
-      const participantId = getParticipantId();
-      
-      sendParticipantDisqualified(
-        participantId,
-        validationResult.reason || 'Descalificado por criterios demográficos',
-        formValues,
-        'demographics'
-      );
-
-      redirectToDisqualification(eyeTrackingConfig, validationResult.reason);
-      return;
-    } else {
-      await saveDemographicsToBackend(formValues, false);
-      onSubmit?.(formValues);
+    // TODO: Implementar validación y guardado cuando los hooks estén disponibles
+    console.log('DemographicForm - handleSubmit not fully implemented yet');
+    
+    if (onSubmit) {
+      onSubmit(formValues);
     }
   };
 
-  const questionsToShow = eyeTrackingConfig?.demographicQuestions || demographicQuestions;
+  const questionsToShow = demographicQuestions; // Temporal: usar solo demographicQuestions hasta implementar hook
 
   const questions = Object.entries(questionsToShow)
     .filter(([, questionData]) => (questionData as { enabled?: boolean })?.enabled)

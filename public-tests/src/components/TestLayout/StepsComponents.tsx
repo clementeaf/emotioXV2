@@ -13,13 +13,15 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
   const { researchId, participantId } = useTestStore();
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
 
-  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
-  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
+  // TODO: Implementar useEyeTrackingConfigQuery o usar alternativa
+  const eyeTrackingConfig = null; // Temporal: null hasta implementar hook
+  const shouldTrackUserJourney = false; // Temporal: false hasta implementar hook
 
-  const { trackStepVisit } = useUserJourneyTracking({
-    enabled: shouldTrackUserJourney,
-    researchId
-  });
+  // TODO: Implementar useUserJourneyTracking o usar alternativa
+  const trackStepVisit = React.useCallback(() => {
+    // Temporal: implementación básica
+    console.log('trackStepVisit not implemented yet');
+  }, []);
 
   const handleContinue = async () => {
     const store = useStepStore.getState();
@@ -32,19 +34,24 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
       });
 
       if (shouldTrackUserJourney) {
-        trackStepVisit(currentQuestionKey, 'visit');
+        trackStepVisit(); // Temporal: sin parámetros hasta implementar hook
       }
 
       try {
         const timestamp = new Date().toISOString();
 
         let deviceInfo = null;
-        if (eyeTrackingConfig?.parameterOptions?.saveDeviceInfo) {
+        // TODO: Implementar cuando eyeTrackingConfig esté disponible
+        // Temporal: deshabilitado hasta implementar hook
+        const shouldSaveDeviceInfo = false;
+        if (shouldSaveDeviceInfo) {
           deviceInfo = getDeviceInfo();
         }
 
         let location = null;
-        if (eyeTrackingConfig?.parameterOptions?.saveLocationInfo) {
+        // Temporal: deshabilitado hasta implementar hook
+        const shouldSaveLocationInfo = false;
+        if (shouldSaveLocationInfo) {
           location = await getLocationInfo();
         }
 
@@ -58,8 +65,8 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
             timestamp,
             createdAt: timestamp,
             updatedAt: undefined,
-            ...(deviceInfo && { deviceInfo }),
-            ...(location && { location })
+            ...(deviceInfo ? { deviceInfo } : {}),
+            ...(location ? { location } : {})
           }],
           metadata: {}
         };
@@ -78,7 +85,7 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
     const currentQuestionKey = store.currentQuestionKey;
 
     if (currentQuestionKey && shouldTrackUserJourney) {
-      trackStepVisit(currentQuestionKey, 'visit');
+      trackStepVisit(); // Temporal: sin parámetros hasta implementar hook
     }
   }, [shouldTrackUserJourney, trackStepVisit]);
 

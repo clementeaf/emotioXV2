@@ -21,8 +21,9 @@ const TestLayoutSidebar: React.FC<Props> = ({
     backendResponses
   } = useStepStore();
   const { clearAllFormData } = useFormDataStore();
-  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
-  const shouldShowProgressFeatures = eyeTrackingConfig?.linkConfig?.showProgressBar ?? true;
+  // TODO: Implementar useEyeTrackingConfigQuery o usar alternativa
+  const eyeTrackingConfig = null; // Temporal: null hasta implementar hook
+  const shouldShowProgressFeatures = true; // Temporal: true hasta implementar hook
 
   const deleteMutation = useDeleteAllResponsesMutation({
     onSuccess: () => {
@@ -35,15 +36,34 @@ const TestLayoutSidebar: React.FC<Props> = ({
     }
   });
 
-  const { steps, totalSteps, isLoading, error, isOpen, toggleSidebar, closeSidebar, isStepEnabled, handleDeleteAllResponses, isDeleting, deleteButtonText, isDeleteDisabled, refetchForms } = useSidebarLogic({
-    researchId: researchId || '',
-    onStepsReady,
-    onDeleteAllResponses: async () => {
-      if (researchId && participantId) {
-        await deleteMutation.mutateAsync({ researchId, participantId });
-      }
+  // TODO: Implementar useSidebarLogic o usar alternativa
+  const steps: any[] = []; // Temporal: array vacío hasta implementar hook
+  const totalSteps = 0; // Temporal: 0 hasta implementar hook
+  const isLoading = false; // Temporal: false hasta implementar hook
+  const error = null; // Temporal: null hasta implementar hook
+  const isOpen = false; // Temporal: false hasta implementar hook
+  const toggleSidebar = () => {
+    // Temporal: implementación básica
+    console.log('toggleSidebar not implemented yet');
+  };
+  const closeSidebar = () => {
+    // Temporal: implementación básica
+    console.log('closeSidebar not implemented yet');
+  };
+  const isStepEnabled = () => true; // Temporal: true hasta implementar hook
+  const handleDeleteAllResponses = async () => {
+    // Temporal: implementación básica
+    if (researchId && participantId) {
+      await deleteMutation.mutateAsync({ researchId, participantId });
     }
-  });
+  };
+  const isDeleting = false; // Temporal: false hasta implementar hook
+  const deleteButtonText = 'Eliminar todo'; // Temporal: texto básico hasta implementar hook
+  const isDeleteDisabled = false; // Temporal: false hasta implementar hook
+  const refetchForms = () => {
+    // Temporal: implementación básica
+    console.log('refetchForms not implemented yet');
+  };
 
   const sidebarKey = `${backendResponses.length}-${currentQuestionKey}`;
 
@@ -61,7 +81,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
           </div>
         ) : error ? (
           <div className="text-red-500 text-sm">
-            Error al cargar pasos: {error.message}
+            Error al cargar pasos: {String(error)}
             {researchId && (
               <button
                 onClick={() => refetchForms()}

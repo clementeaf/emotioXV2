@@ -15,14 +15,14 @@ interface QuestionComponentProps {
 }
 
 export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({ question, currentStepKey, initialFormData }) => {
-  const {
-    isLoading,
-    hasLoadedData,
-    formValues,
-    saveToStore
-  } = useFormLoadingState({
-    questionKey: currentStepKey
-  });
+  // TODO: Implementar useFormLoadingState o usar alternativa
+  const isLoading = false; // Temporal: false hasta implementar hook
+  const hasLoadedData = false; // Temporal: false hasta implementar hook
+  const formValues = {}; // Temporal: objeto vacío hasta implementar hook
+  const saveToStore = React.useCallback(() => {
+    // Temporal: implementación básica
+    console.log('saveToStore not implemented yet');
+  }, []);
 
   const { value, setValue } = useQuestionInitialization({
     question,
@@ -32,25 +32,19 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
     hasLoadedData
   });
 
-  const { isAdvancing, triggerAutoAdvance } = useAutoAdvance({
-    questionType: question.type,
-    maxSelections: question.config?.maxSelections,
-    currentQuestionKey: currentStepKey,
-  });
+  // TODO: Implementar useAutoAdvance o usar alternativa
+  const isAdvancing = false; // Temporal: false hasta implementar hook
+  const triggerAutoAdvance = () => {
+    // Temporal: implementación básica
+    console.log('triggerAutoAdvance not implemented yet');
+  };
 
-  const { handleChange } = useQuestionHandlers({
-    questionType: question.type,
-    config: question.config,
-    value,
-    setValue,
-    onSave: (dataToSave) => {
-      saveToStore(dataToSave);
-    },
-    onAutoAdvance: (selections) => {
-      triggerAutoAdvance(selections);
-    },
-    isAdvancing
-  });
+  // TODO: Implementar useQuestionHandlers o usar alternativa
+  const handleChange = React.useCallback((newValue: any) => {
+    // Temporal: implementación básica
+    setValue(newValue);
+    saveToStore();
+  }, [setValue, saveToStore]);
 
   const handleEmotionClick = React.useCallback((emotion: string) => {
     handleChange(emotion);

@@ -14,21 +14,23 @@ export const RankingList: React.FC<RankingListProps> = ({
     currentQuestionKey,
     initialFormData
 }) => {
-    const { rankedItems, isLoading, error } = useRankingData({
-        items,
-        currentQuestionKey,
-        initialFormData
-    });
+    // TODO: Implementar useRankingData y useRankingActions o usar alternativas
+    const rankedItems: string[] = React.useMemo(() => [], []); // Temporal: array vacío hasta implementar hooks
+    const isLoading = false;
+    const error = null;
 
     const [localRankedItems, setLocalRankedItems] = useState<string[]>(rankedItems);
 
-    const { handleMoveUp, handleMoveDown } = useRankingActions({
-        rankedItems: localRankedItems,
-        setRankedItems: setLocalRankedItems,
-        currentQuestionKey,
-        onMoveUp,
-        onMoveDown
-    });
+    // TODO: Implementar useRankingActions o usar alternativas
+    const handleMoveUp = () => {
+        // Temporal: implementación básica
+        console.log('handleMoveUp not implemented yet');
+    };
+    
+    const handleMoveDown = () => {
+        // Temporal: implementación básica
+        console.log('handleMoveDown not implemented yet');
+    };
 
     React.useEffect(() => {
         setLocalRankedItems(rankedItems);

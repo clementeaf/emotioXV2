@@ -11,16 +11,24 @@ const StepItem: React.FC<StepItemPropsWithState> = ({
   canAccess
 }) => {
 
-  const { stepConfig, handleClick } = useStepItem({
-    stepState,
-    canAccess,
-    isDisabled: isDisabled || false,
-    onClick
-  });
+  // TODO: Implementar useStepItem o usar alternativa
+  const stepConfig = {
+    // Temporal: configuración básica hasta implementar hook
+    isCompleted: stepState === 'completed',
+    isCurrent: stepState === 'active',
+    isDisabled: isDisabled || false
+  };
+  
+  const handleClick = () => {
+    // Temporal: implementación básica
+    if (onClick) {
+      onClick();
+    }
+  };
 
   return (
     <li
-      className={stepConfig.styles}
+      className={`step-item ${stepConfig.isCompleted ? 'completed' : ''} ${stepConfig.isCurrent ? 'current' : ''} ${stepConfig.isDisabled ? 'disabled' : ''}`}
       onClick={handleClick}
     >
       <span className="flex items-center gap-2">

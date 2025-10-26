@@ -13,10 +13,15 @@ import { useEyeTrackingData } from '@/api/domains/eye-tracking';
  * TODO: Los hooks actuales no implementan la interfaz ApiHookResult completa
  * Se necesita refactorizar los hooks para que tengan updateData, createData, deleteData
  */
+// Función helper para evitar errores de ESLint con hooks en objetos
+const createScreenFormHook = (type: 'welcome' | 'thankyou') => {
+  return (researchId: string | null) => useScreenFormsData(researchId, type);
+};
+
 const API_HOOK_MAP: Record<string, (researchId: string | null) => any> = {
-  'welcome_screen': (researchId: string | null) => useScreenFormsData(researchId, 'welcome'),
-  'thank_you_screen': (researchId: string | null) => useScreenFormsData(researchId, 'thankyou'),
-  'thankyou_screen': (researchId: string | null) => useScreenFormsData(researchId, 'thankyou'),
+  'welcome_screen': createScreenFormHook('welcome'),
+  'thank_you_screen': createScreenFormHook('thankyou'),
+  'thankyou_screen': createScreenFormHook('thankyou'),
   'smartvoc': useSmartVOCData,
   'cognitive_task': useCognitiveTaskData,
   'eye_tracking': useEyeTrackingData,

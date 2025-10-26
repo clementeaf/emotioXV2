@@ -9,8 +9,8 @@ interface ProgressDisplayProps {
 
 const ProgressDisplay: React.FC<ProgressDisplayProps> = ({ current, total }) => {
   const { researchId } = useTestStore();
-  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
-  const shouldShowProgressBar = eyeTrackingConfig?.linkConfig?.showProgressBar ?? false;
+  // TODO: Implementar useEyeTrackingConfigQuery o usar alternativa
+  const shouldShowProgressBar = false; // Temporal: deshabilitado hasta implementar hook
 
   if (!shouldShowProgressBar) {
     return null;

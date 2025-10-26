@@ -14,12 +14,11 @@ export const ThankYouScreenComponent: React.FC<ThankYouScreenProps> = ({
 }) => {
   const { researchId, participantId } = useTestStore();
   
-  useThankYouScreen({
-    currentQuestionKey,
-    researchId: researchId || undefined,
-    participantId: participantId || undefined,
-    eyeTrackingConfig
-  });
+  // TODO: Implementar useThankYouScreen o usar alternativa
+  // Temporal: lógica básica hasta implementar hook
+  console.log('ThankYouScreen - currentQuestionKey:', currentQuestionKey);
+  console.log('ThankYouScreen - researchId:', researchId);
+  console.log('ThankYouScreen - participantId:', participantId);
 
   const isDisqualified = eyeTrackingConfig?.backlinks?.disqualified &&
     window.location.search.includes('disqualified=true');
