@@ -34,13 +34,14 @@ export const OptimisticFormWrapper: React.FC<OptimisticFormWrapperProps> = ({
     saveToStore
   } = {
     isLoading: false, // Placeholder
-    error: null, // Placeholder
     hasLoadedData: false, // Placeholder
     formValues: {}, // Placeholder
     setFormValues: () => {}, // Placeholder
     handleInputChange: () => {}, // Placeholder
     saveToStore: () => {} // Placeholder
   };
+  
+  const error = null; // Placeholder
 
   useEffect(() => {
     if (!isLoading && hasLoadedData) {

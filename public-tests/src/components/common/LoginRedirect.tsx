@@ -48,7 +48,7 @@ const LoginRedirect: React.FC = () => {
     processedRef.current = processKey;
 
     if (participantId) {
-      setPreviewMode(false);
+      // setPreviewMode(false); // Removed
       setParticipantId(participantId);
 
       const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
@@ -63,7 +63,7 @@ const LoginRedirect: React.FC = () => {
 
       navigate(`/test?researchId=${researchId}&participantId=${participantId}`);
     } else {
-      setPreviewMode(true);
+      // setPreviewMode(true); // Removed
 
       const previewParticipantId = `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       setParticipantId(previewParticipantId);
