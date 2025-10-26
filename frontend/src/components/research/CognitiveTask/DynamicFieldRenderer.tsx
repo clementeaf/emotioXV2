@@ -17,8 +17,10 @@ const QUESTION_RENDERERS = {
   long_text: TextQuestion,
   single_choice: ChoiceQuestion,
   multiple_choice: ChoiceQuestion,
+  ranking: ChoiceQuestion,
   linear_scale: ScaleQuestion,
   file_upload: FileUploadQuestion,
+  preference_test: FileUploadQuestion,
   // Agregar nuevos tipos aquí sin modificar el switch
 } as const;
 
@@ -95,15 +97,6 @@ export const DynamicFieldRenderer: React.FC<DynamicFieldRendererProps> = ({
     
     if (!QuestionRenderer) {
       // Manejar tipos no soportados
-      if (['ranking', 'preference_test'].includes(question.type)) {
-        return (
-          <ErrorDisplay
-            message={`${question.type === 'ranking' ? 'Ranking' : 'Preference Test'} component not implemented yet`}
-            component={question.type === 'ranking' ? 'Ranking' : 'PreferenceTest'}
-          />
-        );
-      }
-      
       return (
         <ErrorDisplay
           message={`Unknown question type: ${question.type}`}

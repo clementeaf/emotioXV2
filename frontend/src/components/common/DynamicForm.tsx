@@ -110,7 +110,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       </div>
     ),
     single_choice: (question: any) => (
-      <div className="space-y-2">
+      <div className="space-y-1">
         {(question.choices || []).map((choice: any, index: number) => (
           <label key={index} className="flex items-center space-x-2">
             <input
@@ -125,7 +125,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       </div>
     ),
     multiple_choice: (question: any) => (
-      <div className="space-y-2">
+      <div className="space-y-1">
         {(question.choices || []).map((choice: any, index: number) => (
           <label key={index} className="flex items-center space-x-2">
             <input

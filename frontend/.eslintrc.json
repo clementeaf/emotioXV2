@@ -3,7 +3,6 @@
     "next/core-web-vitals"
   ],
   "rules": {
-    // Desactivar todas las reglas problemáticas
     "no-console": "off",
     "quotes": "off",
     "semi": "off",

@@ -142,10 +142,10 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
         </label>
         <div className="mt-2 text-sm text-gray-700 font-medium">{question.title || 'Título de la pregunta'}</div>
         {question.description && <div className="mt-1 text-xs text-gray-500">{question.description}</div>}
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-1">
           {question.choices && question.choices.length > 0 ? (
             question.choices.map((choice, index) => (
-              <div key={choice.id} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+              <div key={choice.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded border border-gray-200">
                 {question.type === 'single_choice' ? (
                   <input
                     type="radio"

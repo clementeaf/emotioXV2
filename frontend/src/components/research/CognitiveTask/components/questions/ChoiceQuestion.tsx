@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { FormField, FormSection, FormRow } from '@/components/common/atomic';
 import { FormCard } from '@/components/common/FormCard';
 import { TrashIcon } from '@/components/common/icons';
@@ -65,7 +66,7 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
         />
 
         {/* Opciones */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <FormRow justified>
             <h4 className="text-sm font-medium text-gray-700">
               {DEFAULT_TEXTS.OPTIONS_LABEL}
@@ -87,33 +88,32 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
             const choiceTextError = validationErrors ? validationErrors[choiceTextErrorKey] : null;
 
             return (
-              <FormCard key={choice.id} className="p-3">
-                <FormRow justified>
-                  <FormField
+              <div key={choice.id} className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Input
                     type="text"
-                    label=""
                     value={choice.text || ''}
-                    onChange={(value) => {
+                    onChange={(e) => {
                       const newChoices = [...(question.choices || [])];
-                      newChoices[index] = { ...choice, text: value };
+                      newChoices[index] = { ...choice, text: e.target.value };
                       onQuestionChange({ choices: newChoices });
                     }}
                     placeholder={`${DEFAULT_TEXTS.OPTION_PLACEHOLDER} ${index + 1}`}
                     disabled={disabled}
                     error={!!choiceTextError}
-                    errorMessage={choiceTextError || undefined}
+                    helperText={choiceTextError || undefined}
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onRemoveChoice(choice.id)}
-                    disabled={disabled || (question.choices?.length || 0) <= 1}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <TrashIcon />
-                  </Button>
-                </FormRow>
-              </FormCard>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRemoveChoice(choice.id)}
+                  disabled={disabled || (question.choices?.length || 0) <= 1}
+                  className="text-red-600 hover:text-red-700 flex-shrink-0"
+                >
+                  <TrashIcon />
+                </Button>
+              </div>
             );
           })}
         </div>
