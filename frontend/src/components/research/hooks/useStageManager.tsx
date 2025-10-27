@@ -12,7 +12,7 @@ import ResearchInProgressPage from '@/app/dashboard/research-in-progress/page';
 import { CognitiveTaskResults } from '../CognitiveTaskResults';
 import { ImplicitAssociationForm } from '../ImplicitAssociation';
 import { ImplicitAssociationResults } from '../ImplicitAssociationResults';
-// import { RecruitEyeTrackingForm } from '../EyeTracking/Recruit/RecruitEyeTrackingForm'; // Componente eliminado
+import { RecruitEyeTrackingForm } from '../EyeTracking/Recruit/RecruitEyeTrackingForm';
 import { SimpleEyeTrackingForm } from '../EyeTracking/SimpleEyeTrackingForm';
 import { ResumeForm } from '../Resume';
 import { SmartVOCForm } from '../SmartVOC';
@@ -42,7 +42,7 @@ export function useStageManager(researchId: string): StageManagerResult {
     SmartVOCForm,
     CognitiveTaskForm,
     SimpleEyeTrackingForm,
-    // RecruitEyeTrackingForm, // Componente eliminado
+    RecruitEyeTrackingForm,
     ThankYouScreenForm,
     ResumeForm,
     ImplicitAssociationResults,
