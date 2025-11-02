@@ -8,8 +8,6 @@ import { Suspense } from 'react';
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const researchId = searchParams ? searchParams.get('research') : '';
-  const hasSection = searchParams ? Boolean(searchParams.get('section')) : false;
-
 
   return (
     <div className="flex h-screen p-6 gap-6" style={{ backgroundColor: '#f1f5f9' }}>
@@ -20,7 +18,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <Sidebar />
         )}
       </div>
-      <div className={hasSection ? 'flex-1 bg-white rounded-lg border border-neutral-200' : 'flex-1 bg-white rounded-lg shadow-lg'}>
+      <div className='flex-1 bg-white rounded-xl'>
         <main className="h-full p-6">
           {children}
         </main>

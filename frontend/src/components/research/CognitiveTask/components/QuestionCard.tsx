@@ -2,7 +2,7 @@ import React from 'react';
 import type { Question } from '../types';
 
 import { ChoiceQuestion } from './questions/ChoiceQuestion';
-import { FileUploadQuestion } from './questions/FileUploadQuestion';
+import { FileUploadQuestion } from './questions/FileUploadQuestionOriginal';
 import { ScaleQuestion } from './questions/ScaleQuestion';
 import { TextQuestion } from './questions/TextQuestion';
 
@@ -41,9 +41,15 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
     };
 
     // Normalizar type para los componentes hijos
-    const normalizedType = typeof question.type === 'string' && question.type.startsWith('cognitive_')
+    let normalizedType = typeof question.type === 'string' && question.type.startsWith('cognitive_')
       ? question.type.replace('cognitive_', '')
       : question.type;
+    
+    // Normalizar file_upload a navigation_flow para compatibilidad
+    if (normalizedType === 'file_upload') {
+      normalizedType = 'navigation_flow';
+    }
+    
     const questionForChild = { ...question, type: normalizedType };
 
     switch (normalizedType) {
@@ -81,6 +87,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
       case 'navigation_flow':
       case 'preference_test':
+      case 'file_upload':
         return (
           <FileUploadQuestion
             question={questionForChild}
@@ -113,6 +120,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       case 'ranking': return 'Ranking';
       case 'navigation_flow': return 'Flujo de Navegación';
       case 'preference_test': return 'Prueba de Preferencia';
+      case 'file_upload': return 'Flujo de Navegación';
       default: return 'Tipo Desconocido';
     }
   };

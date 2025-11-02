@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 interface SidebarBaseProps {
   userInfo: React.ReactNode;
   topBlock?: React.ReactNode;
-  children: React.ReactNode; // menú/secciones
+  children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
 }

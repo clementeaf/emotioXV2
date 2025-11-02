@@ -7,11 +7,13 @@ import { ErrorModal } from '@/components/common/ErrorModal';
 import { FormFooter } from '@/components/common/FormFooter';
 import { useSmartVOCForm } from './hooks/useSmartVOCForm';
 import { SmartVOCQuestions } from './components/SmartVOCQuestions';
+import type { SmartVOCFormData } from '@/api/domains/smart-voc';
+import { JsonPreviewModal } from '@/components/research/CognitiveTask/components';
 
 interface SmartVOCFormProps {
   className?: string;
   researchId: string;
-  onSave?: (data: any) => void;
+  onSave?: (data: SmartVOCFormData) => void;
 }
 
 /**
@@ -25,7 +27,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
 }) => {
   const {
     formData,
-    smartVocId,
     validationErrors,
     isLoading,
     isSaving,
@@ -36,7 +37,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     addQuestion,
     removeQuestion,
     handleSave,
-    handlePreview,
     handleDelete,
     closeModal,
     isExisting,
@@ -44,6 +44,8 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     confirmDelete,
     closeDeleteModal
   } = useSmartVOCForm(researchId);
+
+  const [showJsonPreview, setShowJsonPreview] = React.useState(false);
 
   // Hook para el contenido educativo
   const {
@@ -56,21 +58,21 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   const handleSaveAndNotify = () => {
     handleSave();
     if (onSave) {
-      const metadataToSend = {
+      const metadataToSend: SmartVOCFormData['metadata'] = {
         createdAt: new Date().toISOString(),
         estimatedCompletionTime: '5-10',
-        ...(formData.metadata || {}),
+        ...(formData.metadata || {})
       };
 
-      onSave({
-        ...formData,
+      const payload: SmartVOCFormData = {
+        researchId: formData.researchId,
         questions,
-        metadata: metadataToSend as { 
-          createdAt: string; 
-          updatedAt?: string; 
-          estimatedCompletionTime: string; 
-        },
-      });
+        randomizeQuestions: formData.randomizeQuestions,
+        smartVocRequired: formData.smartVocRequired,
+        metadata: metadataToSend
+      };
+
+      onSave(payload);
     }
   };
 
@@ -101,7 +103,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           isSaving={isSaving}
           isLoading={isLoading}
           onSave={handleSaveAndNotify}
-          onPreview={handlePreview}
+          onPreview={() => setShowJsonPreview(true)}
           onDelete={handleDelete}
           isExisting={isExisting}
           deleteText="Eliminar datos SmartVOC"
@@ -139,6 +141,18 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         onConfirm={confirmDelete}
         title="Confirmar Eliminación"
         message="¿Estás seguro de que quieres eliminar TODOS los datos SmartVOC de esta investigación? Esta acción no se puede deshacer."
+      />
+
+      <JsonPreviewModal
+        isOpen={showJsonPreview}
+        onClose={() => setShowJsonPreview(false)}
+        onContinue={() => setShowJsonPreview(false)}
+        jsonData={JSON.stringify({
+          ...formData,
+          questions
+        })}
+        pendingAction={'preview'}
+        hasValidationErrors={Boolean(validationErrors && Object.keys(validationErrors).length > 0)}
       />
     </div>
   );

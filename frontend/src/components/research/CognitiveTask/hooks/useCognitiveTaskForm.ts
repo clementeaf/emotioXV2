@@ -17,7 +17,7 @@ import {
 } from '../constants';
 import type { ErrorModalData, Question, UICognitiveTaskFormData } from '../types';
 import { ValidationErrors } from '../types';
-import { debugQuestionsToSendLocal, filterValidQuestionsLocal } from '../utils';
+import { debugQuestionsToSendLocal, filterValidQuestionsLocal, ensureCognitiveTaskQuestionKeys } from '../utils';
 
 import { QuestionType as GlobalQuestionType } from 'shared/interfaces/question-types.enum';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
@@ -237,7 +237,17 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
   // Cargar datos existentes
   useEffect(() => {
     if (existingData) {
-      setFormData(existingData);
+      // Normalizar tipos de preguntas antiguos (file_upload -> navigation_flow)
+      const normalizedData = {
+        ...existingData,
+        questions: existingData.questions.map((q: Question) => {
+          if (q.type === 'file_upload') {
+            return { ...q, type: 'navigation_flow' };
+          }
+          return q;
+        })
+      };
+      setFormData(normalizedData);
       setCognitiveTaskId('existing');
     } else {
       setFormData(prev => ({ ...prev, researchId: researchId || '' }));
@@ -369,21 +379,25 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     try {
       const dataToSave = filterValidQuestionsLocal(formData);
       
-      // Convertir a los tipos del domain
+      // Asegurar que todas las preguntas tengan questionKey antes de enviar
+      const questionsWithKeys = ensureCognitiveTaskQuestionKeys(dataToSave.questions);
+      
+      // Convertir a los tipos del domain y normalizar tipos antiguos
       const domainData: CognitiveTaskFormData = {
         ...dataToSave,
-        questions: dataToSave.questions.map(q => ({
+        questions: questionsWithKeys.map(q => ({
           ...q,
-          type: q.type as any // Convertir string a QuestionType
+          // Normalizar file_upload a navigation_flow para compatibilidad
+          type: (q.type === 'file_upload' ? 'navigation_flow' : q.type) as any,
+          // Preservar questionKey explícitamente
+          questionKey: q.questionKey
         }))
       };
       
       if (cognitiveTaskId) {
         await updateMutation.mutateAsync({ researchId: researchId || '', data: domainData });
-        toastHelpers.updateSuccess('CognitiveTask');
       } else {
         await createMutation.mutateAsync({ ...domainData, researchId: researchId || '' });
-        toastHelpers.saveSuccess('CognitiveTask');
       }
     } catch (error) {
       showErrorModal({
@@ -475,6 +489,11 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     // Nuevas propiedades para el modal JSON
     showJsonPreview,
     closeJsonModal,
-    isEmpty: formData.questions.length === 0
+    isEmpty: formData.questions.length === 0,
+
+    // Modal de confirmación para eliminar datos
+    isDeleteModalOpen,
+    openDeleteModal,
+    closeDeleteModal
   };
 };

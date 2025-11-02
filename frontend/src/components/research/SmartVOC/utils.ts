@@ -38,3 +38,34 @@ export const validateRequiredField = (value: any): boolean => {
   }
   return value != null && value !== undefined;
 };
+
+/**
+ * Genera un questionKey único para una pregunta de SmartVOC
+ * Formato: smartvoc:{type}:{id}
+ * @param question - Pregunta a la que se le generará el questionKey
+ * @returns questionKey generado
+ */
+export const generateSmartVOCQuestionKey = (question: { questionKey?: string; type?: string; id?: string }): string => {
+  if (question.questionKey) {
+    return question.questionKey;
+  }
+  
+  const type = question.type || 'unknown';
+  const id = question.id || `q_${Date.now()}`;
+  
+  return `smartvoc:${type}:${id}`;
+};
+
+/**
+ * Asegura que todas las preguntas de SmartVOC tengan questionKey
+ * @param questions - Array de preguntas
+ * @returns Array de preguntas con questionKey generado si no existe
+ */
+export const ensureSmartVOCQuestionKeys = <T extends { questionKey?: string; type?: string; id?: string }>(
+  questions: T[]
+): T[] => {
+  return questions.map(question => ({
+    ...question,
+    questionKey: generateSmartVOCQuestionKey(question)
+  }));
+};

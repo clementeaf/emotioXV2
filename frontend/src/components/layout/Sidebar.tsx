@@ -101,8 +101,6 @@ function SidebarContent({ className }: SidebarProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [researchToDelete, setResearchToDelete] = useState<{ id: string, name: string } | null>(null);
   const [currentResearchName, setCurrentResearchName] = useState<string>('');
-
-  // Detectar si estamos en modo investigación
   const researchId = searchParams ? searchParams.get('research') : '';
 
   const closeDeleteModal = () => {
@@ -154,10 +152,8 @@ function SidebarContent({ className }: SidebarProps) {
     setIsLoadingResearch(isLoadingResearchData);
   }, [allResearch, isLoadingResearchData]);
 
-  // Usar el hook centralizado para obtener el nombre de la investigación actual
   const { researchData: currentResearchData } = useGlobalResearchData(researchId || '');
 
-  // Actualizar el nombre de la investigación actual
   useEffect(() => {
     if (currentResearchData?.name) {
       setCurrentResearchName(currentResearchData.name);
@@ -166,7 +162,6 @@ function SidebarContent({ className }: SidebarProps) {
     }
   }, [currentResearchData]);
 
-  // Bloque de usuario/avatar
   function UserInfo() {
     if (!user) {
       return (

@@ -244,3 +244,32 @@ export const debugQuestionsToSendLocal = (formData: UICognitiveTaskFormData): vo
 
   }
 };
+
+/**
+ * Genera un questionKey único para una pregunta de CognitiveTask
+ * Formato: cognitive_task:{type}:{id}
+ * @param question - Pregunta a la que se le generará el questionKey
+ * @returns questionKey generado
+ */
+export const generateCognitiveTaskQuestionKey = (question: Question): string => {
+  if (question.questionKey) {
+    return question.questionKey;
+  }
+  
+  const type = question.type || 'unknown';
+  const id = question.id || `q_${Date.now()}`;
+  
+  return `cognitive_task:${type}:${id}`;
+};
+
+/**
+ * Asegura que todas las preguntas de CognitiveTask tengan questionKey
+ * @param questions - Array de preguntas
+ * @returns Array de preguntas con questionKey generado si no existe
+ */
+export const ensureCognitiveTaskQuestionKeys = (questions: Question[]): Question[] => {
+  return questions.map(question => ({
+    ...question,
+    questionKey: generateCognitiveTaskQuestionKey(question)
+  }));
+};

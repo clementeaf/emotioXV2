@@ -3,6 +3,7 @@ import { useSmartVOCData } from '@/api/domains/smart-voc';
 import { SmartVOCFormData, SmartVOCQuestion } from '@/api/domains/smart-voc';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { toastHelpers } from '@/utils/toast';
+import { ensureSmartVOCQuestionKeys } from '../utils';
 
 // Tipos locales del hook
 interface ErrorModalData {
@@ -211,9 +212,13 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
 
     setIsSaving(true);
     try {
+      // Asegurar que todas las preguntas tengan questionKey antes de enviar
+      const questionsWithKeys = ensureSmartVOCQuestionKeys(questions);
+      
       const dataToSubmit = {
         ...formData,
-        researchId: actualResearchId
+        researchId: actualResearchId,
+        questions: questionsWithKeys
       };
 
       if (existingData && actualResearchId) {

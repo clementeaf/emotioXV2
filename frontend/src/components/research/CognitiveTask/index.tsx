@@ -33,6 +33,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     isSaving,
     modalError,
     modalVisible,
+    isAddQuestionModalOpen,
     handleQuestionChange,
     handleAddChoice,
     handleRemoveChoice,
@@ -47,7 +48,10 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     isUploading,
     uploadProgress,
     showJsonPreview,
-    closeJsonModal
+    closeJsonModal,
+    isDeleteModalOpen,
+    openDeleteModal,
+    closeDeleteModal
   } = useCognitiveTaskForm(researchId);
 
   // Hook para el contenido educativo
@@ -57,19 +61,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     error: educationalError
   } = useEducationalContent();
 
-  // 🆕 Estado temporal para el modal de confirmación (hasta que se implemente en el hook)
-  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
-
-  // 🆕 Función para manejar la eliminación con modal
-  const handleDeleteWithModal = () => {
-    setShowDeleteModal(true);
-  };
-
-  // 🆕 Función para confirmar la eliminación
-  const handleConfirmDelete = () => {
-    setShowDeleteModal(false);
-    handleDelete();
-  };
+  // El modal de confirmación se gestiona desde el hook; no hay estado local aquí
 
   // Registrar información importante para debugging
   React.useEffect(() => {
@@ -135,7 +127,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           <CognitiveTaskFooter
             onSave={saveForm}
             onPreview={handlePreview}
-            onDelete={handleDeleteWithModal}
+            onDelete={openDeleteModal}
             isSaving={isSaving}
             cognitiveTaskId={cognitiveTaskId}
             researchId={researchId}
@@ -174,9 +166,9 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
       />
 
       <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleConfirmDelete}
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleDelete}
         title="Confirmar Eliminación"
         message="¿Estás seguro de que quieres eliminar TODOS los datos Cognitive Tasks de esta investigación? Esta acción no se puede deshacer."
       />

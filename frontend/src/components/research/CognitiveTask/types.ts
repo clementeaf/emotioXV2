@@ -1,4 +1,4 @@
-import type { HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+import type { HitZone, UploadedFile, CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
 
 export interface Choice {
   id: string;
@@ -64,7 +64,7 @@ export interface ErrorModalData {
 export interface CognitiveTaskFormProps {
   className?: string;
   researchId?: string;
-  onSave?: (data: any) => void;
+  onSave?: (data: CognitiveTaskFormData) => void;
 }
 
 export interface CognitiveTaskFieldsProps {
@@ -140,6 +140,12 @@ export interface UseCognitiveTaskFormResult {
   handleSave: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
+  showJsonPreview: boolean;
+  closeJsonModal: () => void;
+  isEmpty: boolean;
+  isDeleteModalOpen: boolean;
+  openDeleteModal: () => void;
+  closeDeleteModal: () => void;
 }
 
 // Props para los tipos específicos de preguntas
