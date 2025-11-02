@@ -234,7 +234,13 @@ function extractSmartVOCConfig(item: DynamoDBItem): StepConfiguration[] {
 
   if (Array.isArray(questions)) {
     questions.forEach((question: Question) => {
-      if (question.questionKey) {
+      // Generar questionKey si no existe: smartvoc:{type}:{id}
+      const questionKey = question.questionKey || 
+        (question.id && question.type 
+          ? `smartvoc:${question.type}:${question.id}`
+          : null);
+      
+      if (questionKey) {
         const config = {
           title: question.title || '',
           description: question.description || '',
@@ -248,7 +254,7 @@ function extractSmartVOCConfig(item: DynamoDBItem): StepConfiguration[] {
         };
 
         configurations.push({
-          questionKey: question.questionKey,
+          questionKey: questionKey,
           contentConfiguration: config
         });
       }
@@ -335,7 +341,13 @@ function extractCognitiveTaskConfig(item: DynamoDBItem): StepConfiguration[] {
 
   if (Array.isArray(questions)) {
     questions.forEach((question: Question) => {
-      if (question.questionKey) {
+      // Generar questionKey si no existe: cognitive_task:{type}:{id}
+      const questionKey = question.questionKey || 
+        (question.id && question.type 
+          ? `cognitive_task:${question.type}:${question.id}`
+          : null);
+      
+      if (questionKey) {
         const config = {
           title: question.title || '',
           description: question.description || '',
@@ -349,7 +361,7 @@ function extractCognitiveTaskConfig(item: DynamoDBItem): StepConfiguration[] {
         };
 
         configurations.push({
-          questionKey: question.questionKey,
+          questionKey: questionKey,
           contentConfiguration: config
         });
       }
@@ -463,8 +475,13 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
           const parsedCognitiveQuestions = parseJsonField(item.questions);
           if (parsedCognitiveQuestions && Array.isArray(parsedCognitiveQuestions)) {
             parsedCognitiveQuestions.forEach((question: Question) => {
-              if (question.questionKey) {
-                availableTypes.push(question.questionKey);
+              // Generar questionKey si no existe
+              const questionKey = question.questionKey || 
+                (question.id && question.type 
+                  ? `cognitive_task:${question.type}:${question.id}`
+                  : null);
+              if (questionKey) {
+                availableTypes.push(questionKey);
               }
             });
             const cognitiveConfigs = extractCognitiveTaskConfig(item);
@@ -478,8 +495,13 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
 
           if (parsedQuestions && Array.isArray(parsedQuestions)) {
             parsedQuestions.forEach((question: Question) => {
-              if (question.questionKey) {
-                availableTypes.push(question.questionKey);
+              // Generar questionKey si no existe
+              const questionKey = question.questionKey || 
+                (question.id && question.type 
+                  ? `smartvoc:${question.type}:${question.id}`
+                  : null);
+              if (questionKey) {
+                availableTypes.push(questionKey);
               }
             });
             const smartVOCConfigs = extractSmartVOCConfig(item);
