@@ -235,9 +235,15 @@ function extractSmartVOCConfig(item: DynamoDBItem): StepConfiguration[] {
   if (Array.isArray(questions)) {
     questions.forEach((question: Question) => {
       // Generar questionKey si no existe: smartvoc:{type}:{id}
+      // Normalizar type removiendo el prefijo 'smartvoc_' si existe
+      let normalizedType = question.type || 'unknown';
+      if (normalizedType.startsWith('smartvoc_')) {
+        normalizedType = normalizedType.replace(/^smartvoc_/, '');
+      }
+      
       const questionKey = question.questionKey || 
-        (question.id && question.type 
-          ? `smartvoc:${question.type}:${question.id}`
+        (question.id && normalizedType 
+          ? `smartvoc:${normalizedType}:${question.id}`
           : null);
       
       if (questionKey) {
@@ -496,9 +502,15 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
           if (parsedQuestions && Array.isArray(parsedQuestions)) {
             parsedQuestions.forEach((question: Question) => {
               // Generar questionKey si no existe
+              // Normalizar type removiendo el prefijo 'smartvoc_' si existe
+              let normalizedType = question.type || 'unknown';
+              if (normalizedType && normalizedType.startsWith('smartvoc_')) {
+                normalizedType = normalizedType.replace(/^smartvoc_/, '');
+              }
+              
               const questionKey = question.questionKey || 
-                (question.id && question.type 
-                  ? `smartvoc:${question.type}:${question.id}`
+                (question.id && normalizedType 
+                  ? `smartvoc:${normalizedType}:${question.id}`
                   : null);
               if (questionKey) {
                 availableTypes.push(questionKey);

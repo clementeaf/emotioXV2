@@ -50,7 +50,12 @@ export const generateSmartVOCQuestionKey = (question: { questionKey?: string; ty
     return question.questionKey;
   }
   
-  const type = question.type || 'unknown';
+  // Normalizar type removiendo el prefijo 'smartvoc_' si existe
+  let type = question.type || 'unknown';
+  if (type.startsWith('smartvoc_')) {
+    type = type.replace(/^smartvoc_/, '');
+  }
+  
   const id = question.id || `q_${Date.now()}`;
   
   return `smartvoc:${type}:${id}`;
