@@ -213,7 +213,7 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
     setIsSaving(true);
     try {
       // Asegurar que todas las preguntas tengan questionKey antes de enviar
-      const questionsWithKeys = ensureSmartVOCQuestionKeys(questions);
+      const questionsWithKeys = ensureSmartVOCQuestionKeys(formData.questions);
       
       const dataToSubmit = {
         ...formData,
