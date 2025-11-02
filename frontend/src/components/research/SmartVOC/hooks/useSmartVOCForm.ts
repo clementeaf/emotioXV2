@@ -154,7 +154,11 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
     }
 
     if (existingData) {
-      setFormData(existingData);
+      // Asegurar que existingData tenga questions definido
+      setFormData({
+        ...existingData,
+        questions: existingData.questions || []
+      });
       setHasBeenSaved(true);
     } else if (!hasBeenSaved) {
       setFormData({ ...INITIAL_FORM_DATA });
@@ -212,6 +216,11 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
 
     setIsSaving(true);
     try {
+      // Validar que questions exista
+      if (!formData.questions || !Array.isArray(formData.questions)) {
+        throw new Error('questions is not defined or is not an array');
+      }
+      
       // Asegurar que todas las preguntas tengan questionKey antes de enviar
       const questionsWithKeys = ensureSmartVOCQuestionKeys(formData.questions);
       
@@ -232,7 +241,7 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
       }
 
       setHasBeenSaved(true);
-      toastHelpers.saveSuccess('SmartVOC');
+      // El toast se muestra en los hooks de la API (createSmartVOC/updateSmartVOC)
 
     } catch (error) {
       setModalError({

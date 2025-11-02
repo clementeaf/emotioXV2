@@ -58,12 +58,16 @@ export const generateSmartVOCQuestionKey = (question: { questionKey?: string; ty
 
 /**
  * Asegura que todas las preguntas de SmartVOC tengan questionKey
- * @param questions - Array de preguntas
- * @returns Array de preguntas con questionKey generado si no existe
+ * @param questions - Array de preguntas (puede ser undefined o null)
+ * @returns Array de preguntas con questionKey generado si no existe, o array vacío si questions es undefined/null
  */
 export const ensureSmartVOCQuestionKeys = <T extends { questionKey?: string; type?: string; id?: string }>(
-  questions: T[]
+  questions: T[] | undefined | null
 ): T[] => {
+  if (!questions || !Array.isArray(questions)) {
+    return [];
+  }
+  
   return questions.map(question => ({
     ...question,
     questionKey: generateSmartVOCQuestionKey(question)

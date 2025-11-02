@@ -15,7 +15,7 @@ import {
 import {
   QUERY_KEYS
 } from '../constants';
-import type { ErrorModalData, Question, UICognitiveTaskFormData } from '../types';
+import type { ErrorModalData, Question, UICognitiveTaskFormData, UseCognitiveTaskFormResult } from '../types';
 import { ValidationErrors } from '../types';
 import { debugQuestionsToSendLocal, filterValidQuestionsLocal, ensureCognitiveTaskQuestionKeys } from '../utils';
 
@@ -41,46 +41,7 @@ interface ExtendedUploadedFile extends UploadedFile {
   status?: 'uploaded' | 'uploading' | 'error' | 'pending-delete';
 }
 
-interface UseCognitiveTaskFormResult {
-  formData: UICognitiveTaskFormData;
-  cognitiveTaskId: string | null;
-  isLoading: boolean;
-  isSaving: boolean;
-  modalError: ErrorModalData | null;
-  modalVisible: boolean;
-  isAddQuestionModalOpen: boolean;
-  isUploading: boolean;
-  uploadProgress: number;
-  currentFileIndex: number;
-  totalFiles: number;
-  questionTypes: any[];
-  validationErrors: ValidationErrors | null;
-
-  // Métodos de gestión
-  handleQuestionChange: (questionId: string, updates: Partial<Question>) => void;
-  handleAddChoice: (questionId: string) => void;
-  handleRemoveChoice: (questionId: string, choiceId: string) => void;
-  handleFileUpload: (questionId: string, files: FileList) => void;
-  handleMultipleFilesUpload: (questionId: string, files: FileList) => void;
-  handleFileDelete: (questionId: string, fileId: string) => void;
-  handleAddQuestion: (type: string) => void;
-  handleRandomizeChange: (checked: boolean) => void;
-  openAddQuestionModal: () => void;
-  closeAddQuestionModal: () => void;
-
-  // Métodos de acción
-  handleSave: () => void;
-  handlePreview: () => void;
-  handleDelete: () => void;
-  validateForm: () => boolean;
-  closeModal: () => void;
-  initializeDefaultQuestions: (defaultQuestions: Question[]) => void;
-
-  // Nuevas propiedades para el modal JSON
-  showJsonPreview: boolean;
-  closeJsonModal: () => void;
-  isEmpty: boolean;
-}
+// Usar la interfaz exportada de types.ts en lugar de definir una local duplicada
 
 // Constante para el estado inicial por defecto con las 8 preguntas originales (3.1-3.8)
 const DEFAULT_STATE: UICognitiveTaskFormData = {
