@@ -6,7 +6,7 @@ import { defineConfig } from 'vite';
 const buildHash = Date.now().toString(36)
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     {
@@ -18,6 +18,7 @@ export default defineConfig({
   ],
   define: {
     'import.meta.env.VITE_BUILD_HASH': JSON.stringify(buildHash),
+    'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
   },
   resolve: {
     alias: {
@@ -96,4 +97,4 @@ export default defineConfig({
     ],
     exclude: ['../shared']
   }
-})
+}))
