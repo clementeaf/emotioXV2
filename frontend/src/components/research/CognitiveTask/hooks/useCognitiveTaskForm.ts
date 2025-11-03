@@ -382,15 +382,17 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       await deleteMutation.mutateAsync(researchId || '');
       setFormData(DEFAULT_STATE);
       setCognitiveTaskId(null);
-      toastHelpers.deleteSuccess('CognitiveTask');
+      closeDeleteModal(); // Cerrar el modal después de eliminar exitosamente
+      // El toast se muestra en el hook de la API (useDeleteCognitiveTask)
     } catch (error) {
       showErrorModal({
         title: 'Error al eliminar',
         message: 'No se pudo eliminar la configuración',
         type: 'error'
       });
+      closeDeleteModal(); // Cerrar el modal incluso si hay error
     }
-  }, [cognitiveTaskId, researchId, deleteMutation, showErrorModal]);
+  }, [cognitiveTaskId, researchId, deleteMutation, showErrorModal, closeDeleteModal]);
 
   // Función para inicializar preguntas por defecto
   const initializeDefaultQuestions = useCallback((defaultQuestions: Question[]) => {

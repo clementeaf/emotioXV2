@@ -41,24 +41,43 @@ export const validateRequiredField = (value: any): boolean => {
 
 /**
  * Genera un questionKey único para una pregunta de SmartVOC
- * Formato: smartvoc:{type}:{id}
+ * Formato: {type} (ej: "smartvoc_csat")
  * @param question - Pregunta a la que se le generará el questionKey
- * @returns questionKey generado
+ * @returns questionKey generado (solo el tipo, sin formato module:type:id)
  */
 export const generateSmartVOCQuestionKey = (question: { questionKey?: string; type?: string; id?: string }): string => {
+  // Si questionKey existe, validarlo
   if (question.questionKey) {
-    return question.questionKey;
+    // Si tiene formato "smartvoc:type:id", extraer solo el type
+    if (question.questionKey.includes(':')) {
+      const parts = question.questionKey.split(':');
+      if (parts.length === 3 && parts[0] === 'smartvoc') {
+        // El type puede estar en parts[1] o parts[2] puede ser el id con el type
+        // Normalmente el type está en parts[1], pero si tiene smartvoc_ prefijo, usarlo
+        const typePart = parts[1];
+        if (typePart.startsWith('smartvoc_')) {
+          return typePart; // Retornar el type con prefijo
+        }
+        // Si no tiene prefijo, agregarlo
+        return `smartvoc_${typePart}`;
+      }
+    }
+    // Si el questionKey es simplemente el type (ej: "smartvoc_csat"), retornarlo
+    if (question.questionKey.startsWith('smartvoc_')) {
+      return question.questionKey;
+    }
   }
   
-  // Normalizar type removiendo el prefijo 'smartvoc_' si existe
-  let type = question.type || 'unknown';
-  if (type.startsWith('smartvoc_')) {
-    type = type.replace(/^smartvoc_/, '');
+  // Si no hay questionKey, usar el type directamente
+  // El type siempre debe tener el prefijo smartvoc_
+  if (question.type) {
+    if (question.type.startsWith('smartvoc_')) {
+      return question.type;
+    }
+    return `smartvoc_${question.type}`;
   }
   
-  const id = question.id || `q_${Date.now()}`;
-  
-  return `smartvoc:${type}:${id}`;
+  return 'smartvoc_unknown';
 };
 
 /**

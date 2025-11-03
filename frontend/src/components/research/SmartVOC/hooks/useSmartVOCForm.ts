@@ -281,7 +281,7 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
       await deleteSmartVOC();
       setFormData({ ...INITIAL_FORM_DATA });
       setHasBeenSaved(false);
-      toastHelpers.deleteSuccess('SmartVOC');
+      // El toast se muestra en el hook de la API (deleteMutation)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'No se pudo eliminar SmartVOC.';
       setModalError({

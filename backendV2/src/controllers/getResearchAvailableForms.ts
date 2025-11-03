@@ -347,11 +347,22 @@ function extractCognitiveTaskConfig(item: DynamoDBItem): StepConfiguration[] {
 
   if (Array.isArray(questions)) {
     questions.forEach((question: Question) => {
-      // Generar questionKey si no existe: cognitive_task:{type}:{id}
-      const questionKey = question.questionKey || 
-        (question.id && question.type 
-          ? `cognitive_task:${question.type}:${question.id}`
-          : null);
+      // Normalizar questionKey si existe con formato "cognitive_task:type:id" a "cognitive_type"
+      let questionKey = question.questionKey;
+      if (questionKey && questionKey.includes(':')) {
+        const parts = questionKey.split(':');
+        if (parts.length === 3 && parts[0] === 'cognitive_task') {
+          // Extraer solo el type y agregar prefijo cognitive_
+          const typePart = parts[1];
+          questionKey = typePart.startsWith('cognitive_') ? typePart : `cognitive_${typePart}`;
+        }
+      }
+      
+      // Si no hay questionKey válido, generar uno con formato "cognitive_type"
+      if (!questionKey || !questionKey.startsWith('cognitive_')) {
+        const type = question.type || 'unknown';
+        questionKey = type.startsWith('cognitive_') ? type : `cognitive_${type}`;
+      }
       
       if (questionKey) {
         const config = {
@@ -481,11 +492,22 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
           const parsedCognitiveQuestions = parseJsonField(item.questions);
           if (parsedCognitiveQuestions && Array.isArray(parsedCognitiveQuestions)) {
             parsedCognitiveQuestions.forEach((question: Question) => {
-              // Generar questionKey si no existe
-              const questionKey = question.questionKey || 
-                (question.id && question.type 
-                  ? `cognitive_task:${question.type}:${question.id}`
-                  : null);
+              // Normalizar questionKey si existe con formato "cognitive_task:type:id" a "cognitive_type"
+              let questionKey = question.questionKey;
+              if (questionKey && questionKey.includes(':')) {
+                const parts = questionKey.split(':');
+                if (parts.length === 3 && parts[0] === 'cognitive_task') {
+                  const typePart = parts[1];
+                  questionKey = typePart.startsWith('cognitive_') ? typePart : `cognitive_${typePart}`;
+                }
+              }
+              
+              // Si no hay questionKey válido, generar uno con formato "cognitive_type"
+              if (!questionKey || !questionKey.startsWith('cognitive_')) {
+                const type = question.type || 'unknown';
+                questionKey = type.startsWith('cognitive_') ? type : `cognitive_${type}`;
+              }
+              
               if (questionKey) {
                 availableTypes.push(questionKey);
               }

@@ -247,19 +247,38 @@ export const debugQuestionsToSendLocal = (formData: UICognitiveTaskFormData): vo
 
 /**
  * Genera un questionKey único para una pregunta de CognitiveTask
- * Formato: cognitive_task:{type}:{id}
+ * Formato: cognitive_{type} (ej: "cognitive_short_text")
  * @param question - Pregunta a la que se le generará el questionKey
- * @returns questionKey generado
+ * @returns questionKey generado (solo el tipo con prefijo cognitive_, sin formato module:type:id)
  */
 export const generateCognitiveTaskQuestionKey = (question: Question): string => {
+  // Si questionKey existe, validarlo
   if (question.questionKey) {
-    return question.questionKey;
+    // Si tiene formato "cognitive_task:type:id", extraer solo el type y agregar prefijo cognitive_
+    if (question.questionKey.includes(':')) {
+      const parts = question.questionKey.split(':');
+      if (parts.length === 3 && parts[0] === 'cognitive_task') {
+        // El type está en parts[1] (ej: "short_text")
+        const typePart = parts[1];
+        // Retornar con prefijo cognitive_ si no lo tiene
+        if (typePart.startsWith('cognitive_')) {
+          return typePart;
+        }
+        return `cognitive_${typePart}`;
+      }
+    }
+    // Si el questionKey es simplemente el type con prefijo cognitive_ (ej: "cognitive_short_text"), retornarlo
+    if (question.questionKey.startsWith('cognitive_')) {
+      return question.questionKey;
+    }
   }
   
+  // Si no hay questionKey, usar el type directamente y agregar prefijo cognitive_
   const type = question.type || 'unknown';
-  const id = question.id || `q_${Date.now()}`;
-  
-  return `cognitive_task:${type}:${id}`;
+  if (type.startsWith('cognitive_')) {
+    return type;
+  }
+  return `cognitive_${type}`;
 };
 
 /**
