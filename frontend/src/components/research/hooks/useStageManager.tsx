@@ -2,7 +2,8 @@ import { useSearchParams } from 'next/navigation';
 import { ReactElement } from 'react';
 
 import { CognitiveTaskForm } from '../CognitiveTask';
-import ResearchInProgressPage from '@/app/dashboard/research-in-progress/page';
+import { Suspense } from 'react';
+import { ResearchInProgressContent } from '@/components/research/ResearchInProgress/ResearchInProgressContent';
 import { CognitiveTaskResults } from '../CognitiveTaskResults';
 import { ImplicitAssociationForm } from '../ImplicitAssociation';
 import { ImplicitAssociationResults } from '../ImplicitAssociationResults';
@@ -46,7 +47,7 @@ export function useStageManager(researchId: string): StageManagerResult {
     ImplicitAssociationResults,
     SmartVOCResults,
     CognitiveTaskResults,
-    ResearchInProgressPage,
+    ResearchInProgressPage: ResearchInProgressContent,
     PlaceholderCard,
     TestCommonPage
   } as const;
@@ -71,6 +72,7 @@ export function useStageManager(researchId: string): StageManagerResult {
       ...stageConfig.props
     } as any;
 
+    // ResearchInProgressPage ya tiene Suspense interno, no necesitamos envolverlo
     const component = <ComponentToRender {...componentProps} />;
 
     if (stageConfig.containerStyles) {
