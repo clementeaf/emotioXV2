@@ -89,8 +89,9 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Parti
     onSuccess: (data, variables) => {
       const { isPreviewMode } = usePreviewModeStore.getState();
 
-      // Solo invalidar queries si NO es modo preview
-      if (!isPreviewMode) {
+      // 🔒 DESHABILITAR REFETCH AUTOMÁTICO PARA PREVENIR LOOPS
+      // Solo invalidar queries si NO es modo preview Y NO es thank_you_screen
+      if (!isPreviewMode && variables.questionKey !== 'thank_you_screen') {
         queryClient.invalidateQueries({
           queryKey: ['moduleResponses', variables.researchId, variables.participantId],
         });

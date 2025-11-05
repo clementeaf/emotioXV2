@@ -145,14 +145,13 @@ const TestLayoutRenderer: React.FC = () => {
     );
   }
 
-
   if (isLoading) return (
     <div className='flex flex-col items-center justify-center h-full'>
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
       <p className="text-gray-600">Cargando formularios...</p>
     </div>
   );
-  
+
   if (error) return (
     <div className='flex flex-col items-center justify-center h-full'>
       <div className="text-center">
@@ -188,12 +187,12 @@ const TestLayoutRenderer: React.FC = () => {
   const hasConfiguredQuestions = questionType === 'demographics' ?
     Object.values(contentConfiguration?.demographicQuestions || {}).some((q: { enabled?: boolean }) => q?.enabled) :
     true;
-  
+
   const isConfigurationPending = questionType === 'demographics' && !hasConfiguredQuestions;
   const backendResponse = moduleResponses?.responses?.find(
     (response) => response.questionKey === currentQuestionKey
   );
-  
+
   const formData = backendResponse?.response || getFormData(currentQuestionKey) || {};
 
   const renderedForm =
@@ -210,25 +209,23 @@ const TestLayoutRenderer: React.FC = () => {
 
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
-  
+
   const shouldHideButton = (() => {
     if (questionType !== 'smartvoc_nev') return false;
-    
+
     const instructions = String(contentConfiguration?.instructions || '');
     const hasMaxSelectionPattern = /hasta\s+(\d+)|máximo\s+(\d+)|máx\s+(\d+)|max\s+(\d+)|selecciona\s+hasta\s+(\d+)|selecciona\s+máximo\s+(\d+)|selecciona\s+(\d+)\s+emociones|(\d+)\s+emociones/i.test(instructions);
-    
+
     if (hasMaxSelectionPattern) {
       return true;
     }
-    
+
     return false;
   })();
 
   return (
     <div className="flex flex-col">
-      <div className="flex-1">
-        {renderedForm}
-      </div>
+      {renderedForm}
       {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && !shouldHideButton && (
         <ButtonSteps
           currentQuestionKey={currentQuestionKey}

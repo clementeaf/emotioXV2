@@ -26,7 +26,6 @@ const queryClient = new QueryClient({
 function App() {
   const { researchId, setParticipant } = useTestStore();
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [isStoreInitialized, setIsStoreInitialized] = useState(false);
 
   useEffect(() => {
     const initializeStoreFromURL = () => {
@@ -40,12 +39,6 @@ function App() {
           '',
           urlResearchId
         );
-        
-        setIsStoreInitialized(true);
-      } else if (researchId) {
-        setIsStoreInitialized(true);
-      } else {
-        setIsStoreInitialized(true);
       }
     };
 

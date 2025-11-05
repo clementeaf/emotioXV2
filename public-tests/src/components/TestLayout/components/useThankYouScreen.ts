@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSaveModuleResponseMutation } from '../../../hooks/useApiQueries';
 import { getDeviceInfo, getLocationInfo } from '../../../utils/deviceUtils';
 import { UseThankYouScreenProps } from './ThankYouScreenTypes';
@@ -13,9 +13,13 @@ export const useThankYouScreen = ({
   eyeTrackingConfig
 }: UseThankYouScreenProps) => {
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
+  const hasSentRef = useRef(false);
 
   useEffect(() => {
-    if (currentQuestionKey === 'thank_you_screen' && researchId && participantId) {
+    // Solo ejecutar una vez cuando se llega a thank_you_screen
+    if (currentQuestionKey === 'thank_you_screen' && researchId && participantId && !hasSentRef.current) {
+      hasSentRef.current = true;
+      
       const sendToAPI = async () => {
         try {
           const timestamp = new Date().toISOString();
@@ -41,7 +45,6 @@ export const useThankYouScreen = ({
               response: { visited: true },
               timestamp,
               createdAt: timestamp,
-              updatedAt: undefined,
               ...(deviceInfo && { deviceInfo }),
               ...(location && { location })
             }],
@@ -51,18 +54,23 @@ export const useThankYouScreen = ({
           await saveModuleResponseMutation.mutateAsync(createData);
         } catch (error) {
           // Error saving device info - fail silently
+          console.error('[ThankYouScreen] Error al enviar datos:', error);
         }
       };
 
       sendToAPI();
+    }
+    
+    // Reset el ref si se sale de thank_you_screen
+    if (currentQuestionKey !== 'thank_you_screen') {
+      hasSentRef.current = false;
     }
   }, [
     currentQuestionKey, 
     researchId, 
     participantId, 
     eyeTrackingConfig?.parameterOptions?.saveDeviceInfo, 
-    eyeTrackingConfig?.parameterOptions?.saveLocationInfo, 
-    saveModuleResponseMutation
+    eyeTrackingConfig?.parameterOptions?.saveLocationInfo
   ]);
 
   return {

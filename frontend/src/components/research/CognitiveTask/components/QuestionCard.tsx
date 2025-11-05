@@ -139,8 +139,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         )}
       </div>
       {question.type === 'preference_test' && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded">
-          <strong>Advertencia:</strong> Para guardar esta pregunta, debes subir <b>exactamente 2 archivos válidos</b> (imágenes). Si no lo haces, la pregunta será descartada al guardar.
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-300 text-blue-800 rounded">
+          <strong>Información:</strong> Para usar esta pregunta en un test, necesitarás subir <b>al menos 2 archivos válidos</b> (imágenes). La pregunta se puede guardar sin archivos.
+        </div>
+      )}
+      {question.type === 'navigation_flow' && (!question.files || question.files.length === 0) && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-300 text-blue-800 rounded">
+          <strong>Información:</strong> Para usar esta pregunta en un test, necesitarás subir <b>al menos un archivo</b> (imagen). La pregunta se puede guardar sin archivos.
         </div>
       )}
       {renderQuestionInput()}
