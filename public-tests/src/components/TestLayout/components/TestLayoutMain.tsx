@@ -40,7 +40,7 @@ const TestLayoutMain: React.FC = () => {
               onNavigateToStep={() => { }}
             />
           )}
-          <div className={`bg-white shadow-sm rounded-xl p-6 justify-center w-full`}>
+          <div className={`bg-white shadow-sm rounded-xl p-6 justify-center w-full h-full`}>
             <TestLayoutRenderer />
           </div>
         </div>

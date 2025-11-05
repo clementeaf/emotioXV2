@@ -94,7 +94,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <div className="App">
+        <div className="w-screen h-screen">
           {/* Modal de consentimiento de ubicación */}
           <LocationConsentModal
             isOpen={showLocationModal}

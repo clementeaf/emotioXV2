@@ -61,7 +61,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
   }
 
   return (
-    <div key={`question-${currentStepKey}-${question.type}`} className="flex flex-col items-center justify-center h-full gap-6 p-8">
+    <div key={`question-${currentStepKey}-${question.type}`} className="flex flex-col items-center justify-center h-full w-full gap-6 p-8">
       {question.title && question.title.trim() !== '' && (
         <p className="text-gray-600 text-center max-w-2xl">
           {question.title}

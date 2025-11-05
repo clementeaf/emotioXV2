@@ -224,7 +224,7 @@ const TestLayoutRenderer: React.FC = () => {
   })();
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full w-full">
       {renderedForm}
       {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && !shouldHideButton && (
         <ButtonSteps
