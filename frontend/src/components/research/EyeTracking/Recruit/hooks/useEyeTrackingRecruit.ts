@@ -1678,7 +1678,11 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // Función auxiliar para crear una configuración predeterminada
   const createDefaultConfig = (researchId: string) => {
-    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+    // 🎯 DETECTAR ENTORNO AUTOMÁTICAMENTE
+    const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    const publicTestsBaseUrl = isDevelopment 
+      ? 'http://localhost:5173'  // 🏠 DESARROLLO LOCAL
+      : (process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'); // 🌐 PRODUCCIÓN
     const generatedUrl = `${publicTestsBaseUrl}/?researchId=${researchId}`;
 
     const defaultConfig = {

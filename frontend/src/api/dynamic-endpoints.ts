@@ -57,7 +57,16 @@ export function getWebsocketUrl(): string {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl(): string {
-  return LOCAL_URLS.publicTests;
+  // 🎯 DETECTAR ENTORNO AUTOMÁTICAMENTE
+  const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  
+  // Si estamos en localhost → usar localhost de public-tests
+  if (isDevelopment) {
+    return LOCAL_URLS.publicTests; // http://localhost:5173
+  }
+  
+  // Si estamos desplegados en S3/CloudFront → usar S3/CloudFront de public-tests
+  return process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
 }
 
 // Función para navegar a public-tests con researchID
