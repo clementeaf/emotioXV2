@@ -24,13 +24,32 @@ if (!fs.existsSync(webgazerTargetDir)) {
 // Copiar archivos de declaración
 const seesoSource = path.join(sourceTypesDir, 'seeso.d.ts');
 const seesoTarget = path.join(seesoTargetDir, 'index.d.ts');
+const seesoEasySeesoTarget = path.join(seesoTargetDir, 'easy-seeso.d.ts');
 
 const webgazerSource = path.join(sourceTypesDir, 'webgazer.d.ts');
 const webgazerTarget = path.join(webgazerTargetDir, 'index.d.ts');
 
 if (fs.existsSync(seesoSource)) {
+  // Copiar archivo principal
   fs.copyFileSync(seesoSource, seesoTarget);
   console.log('✅ Copiado seeso.d.ts a node_modules/@types/seeso/index.d.ts');
+  
+  // Crear archivo específico para seeso/easy-seeso
+  const easySeesoContent = `declare module 'seeso/easy-seeso' {
+  interface EasySeeSo {
+    init(licenseKey: string, onSuccess: () => void, onError: (error: any) => void): void;
+    setGazeListener(listener: (gazeInfo: any) => void): void;
+    startTracking(): void;
+    stopTracking(): void;
+    deinit(): void;
+  }
+  
+  const EasySeeSo: EasySeeSo;
+  export default EasySeeSo;
+}
+`;
+  fs.writeFileSync(seesoEasySeesoTarget, easySeesoContent);
+  console.log('✅ Creado node_modules/@types/seeso/easy-seeso.d.ts');
 }
 
 if (fs.existsSync(webgazerSource)) {
