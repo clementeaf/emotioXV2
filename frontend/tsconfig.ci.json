@@ -6,11 +6,9 @@
     "typeRoots": ["./node_modules/@types", "./types", "./src/types"],
     "types": []
   },
-  "files": [
-    "external-modules.d.ts"
-  ],
   "include": [
     "next-env.d.ts",
+    "external-modules.d.ts",
     "types/**/*.d.ts",
     "src/types/**/*.d.ts",
     "**/*.ts",
