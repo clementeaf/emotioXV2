@@ -1,7 +1,16 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "moduleResolution": "node"
-  }
+    "moduleResolution": "node",
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+  },
+  "include": [
+    "next-env.d.ts",
+    "external-modules.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "../shared/interfaces/**/*.ts",
+    "src/types/**/*.d.ts"
+  ]
 }
-
