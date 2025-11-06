@@ -17,7 +17,8 @@
     "test": "echo \"No tests specified\" && exit 0",
     "test:ci": "npm run test",
     "verify:api": "node scripts/verify-api-config.js",
-    "verify:all": "npm run verify:api && npm run lint:check"
+    "verify:all": "npm run verify:api && npm run lint:check",
+    "postinstall": "node scripts/setup-types.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.767.0",
