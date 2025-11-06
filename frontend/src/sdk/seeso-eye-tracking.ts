@@ -26,7 +26,7 @@ const loadSeeso = async () => {
   return { EasySeeSo, TrackingState };
 };
 
-/**
+/*
  * SDK de Eye Tracking Real con Seeso.io
  * Utiliza machine learning profesional para detectar la mirada real
  */
