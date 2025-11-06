@@ -28,7 +28,12 @@ jobs:
       run: cd ${{ matrix.project }} && npm install --ignore-scripts
     
     - name: TypeScript compilation check
-      run: cd ${{ matrix.project }} && npx tsc --noEmit
+      run: |
+        if [ "${{ matrix.project }}" == "frontend" ]; then
+          cd ${{ matrix.project }} && npx tsc --noEmit --project tsconfig.ci.json
+        else
+          cd ${{ matrix.project }} && npx tsc --noEmit
+        fi
     
     - name: Lint check
       run: cd ${{ matrix.project }} && npm run lint
