@@ -29,6 +29,9 @@ const seesoEasySeesoTarget = path.join(seesoTargetDir, 'easy-seeso.d.ts');
 const webgazerSource = path.join(sourceTypesDir, 'webgazer.d.ts');
 const webgazerTarget = path.join(webgazerTargetDir, 'index.d.ts');
 
+console.log('📄 Checking seesoSource:', seesoSource);
+console.log('📄 Seeso source exists:', fs.existsSync(seesoSource));
+
 if (fs.existsSync(seesoSource)) {
   // Copiar archivo principal
   fs.copyFileSync(seesoSource, seesoTarget);
@@ -50,11 +53,18 @@ if (fs.existsSync(seesoSource)) {
 `;
   fs.writeFileSync(seesoEasySeesoTarget, easySeesoContent);
   console.log('✅ Creado node_modules/@types/seeso/easy-seeso.d.ts');
+} else {
+  console.error('❌ Seeso source file not found:', seesoSource);
 }
+
+console.log('📄 Checking webgazerSource:', webgazerSource);
+console.log('📄 Webgazer source exists:', fs.existsSync(webgazerSource));
 
 if (fs.existsSync(webgazerSource)) {
   fs.copyFileSync(webgazerSource, webgazerTarget);
   console.log('✅ Copiado webgazer.d.ts a node_modules/@types/webgazer/index.d.ts');
+} else {
+  console.error('❌ Webgazer source file not found:', webgazerSource);
 }
 
 console.log('✅ Setup de tipos completado');
