@@ -71,8 +71,10 @@ export const createScaleConfig = (
 
 /**
  * Extrae el número máximo de selecciones de las instrucciones
+ * @param instructions - Texto de instrucciones a analizar
+ * @returns Número máximo de selecciones encontrado, o undefined si no se encuentra
  */
-export const extractMaxSelections = (instructions: string): number => {
+export const extractMaxSelections = (instructions: string): number | undefined => {
   const patterns = [
     /selecciona\s+maximo\s+(\d+)\s+emociones/i,
     /hasta\s+(\d+)/i,
@@ -95,7 +97,10 @@ export const extractMaxSelections = (instructions: string): number => {
     }
   }
   
-  return 4; // Fallback por defecto
+  // No se encontró número en las instrucciones
+  // El usuario deberá presionar "Guardar y continuar" manualmente
+  console.warn('[extractMaxSelections] No se identificó número máximo de selecciones en las instrucciones:', instructions);
+  return undefined;
 };
 
 /**

@@ -1,6 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useFormDataStore } from '../../../stores/useFormDataStore';
 import { useStepStore } from '../../../stores/useStepStore';
+import { useTestStore } from '../../../stores/useTestStore';
+import { useSaveModuleResponseMutation, useModuleResponsesQuery, useAvailableFormsQuery } from '../../../hooks/useApiQueries';
+import { useResponseTiming } from '../../../hooks/useResponseTiming';
+import { useUserJourneyTracking } from '../../../hooks/useUserJourneyTracking';
+import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
+import { useOptimizedMonitoringWebSocket } from '../../../hooks/useOptimizedMonitoringWebSocket';
+import { buildTimingMetadata } from '../../../utils/timingMetadata';
+import { buildUserJourneyMetadata } from '../../../utils/userJourneyMetadata';
+import { formatResponseData, optimizeFormData } from '../../../utils/responseFormatter';
+import { CreateModuleResponseDto } from '../../../lib/types';
 import NavigationFlowDebugger from '../../debug/NavigationFlowDebugger';
 import { coordinateFidelityTester, injectFidelityTest } from '../../../utils/coordinate-fidelity-test';
 
@@ -129,9 +139,86 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   const [imageSelections, setImageSelections] = useState<Record<string, { hitzoneId: string, click: ClickPosition }>>({});
   const [allClicksTracking, setAllClicksTracking] = useState<ClickTrackingData[]>([]);
   const [visualClickPoints, setVisualClickPoints] = useState<Record<number, VisualClickPoint[]>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
   const images: ImageFile[] = imageFiles;
+
+  const { researchId, participantId } = useTestStore();
+  const { goToNextStep } = useStepStore();
+  const { getFormData } = useFormDataStore();
+
+  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+  const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
+  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
+
+  const { data: moduleResponses } = useModuleResponsesQuery(
+    researchId || '',
+    participantId || ''
+  );
+
+  const { data: formsData } = useAvailableFormsQuery(researchId || '');
+
+  const { sendParticipantResponseSaved } = useOptimizedMonitoringWebSocket();
+
+  const { endTiming, getTimingData } = useResponseTiming({
+    questionKey: currentQuestionKey || '',
+    enabled: shouldTrackTiming
+  });
+
+  const { trackStepVisit, getJourneyData } = useUserJourneyTracking({
+    enabled: shouldTrackUserJourney,
+    researchId
+  });
+
+  const saveMutation = useSaveModuleResponseMutation({
+    onSuccess: () => {
+      const { updateBackendResponses } = useStepStore.getState();
+      const currentBackendResponses = useStepStore.getState().backendResponses;
+      
+      const formData = getFormData(currentQuestionKey || '') || {};
+      const newResponse = {
+        questionKey: currentQuestionKey || '',
+        response: formData
+      };
+      
+      const updatedResponses = [
+        ...currentBackendResponses.filter((r: unknown) => (r as { questionKey?: string }).questionKey !== currentQuestionKey),
+        newResponse
+      ];
+      
+      updateBackendResponses(updatedResponses);
+      
+      if (participantId && currentQuestionKey && formsData?.steps) {
+        const steps = formsData.steps;
+        const currentStepIndex = steps.findIndex((step: string) => step === currentQuestionKey);
+        const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
+
+        sendParticipantResponseSaved(
+          participantId,
+          currentQuestionKey,
+          formData,
+          currentStepIndex + 1,
+          steps.length,
+          progress
+        );
+      }
+
+      setIsSaving(false);
+      
+      setTimeout(() => {
+        const store = useStepStore.getState();
+        const currentStep = store.currentQuestionKey;
+    
+        if (currentStep === currentQuestionKey) {
+          goToNextStep();
+        }
+      }, 300);
+    },
+    onError: () => {
+      setIsSaving(false);
+    }
+  });
 
   useEffect(() => {
     if (currentQuestionKey) {
@@ -211,6 +298,64 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     }
   };
 
+  /**
+   * Guarda automáticamente en el backend cuando se hace click en un hitzone de la última imagen
+   */
+  const saveToBackend = useCallback(async () => {
+    if (!currentQuestionKey || isSaving) return;
+
+    setIsSaving(true);
+    endTiming();
+    trackStepVisit(currentQuestionKey, 'complete');
+
+    try {
+      const formData = getFormData(currentQuestionKey) || {};
+      const timestamp = new Date().toISOString();
+      const now = new Date().toISOString();
+      const timingData = getTimingData();
+      const enhancedMetadata = buildTimingMetadata(currentQuestionKey, timingData, {});
+      const journeyData = getJourneyData();
+      const finalMetadata = buildUserJourneyMetadata(journeyData, enhancedMetadata);
+
+      const safeMetadata = Object.keys(finalMetadata).length > 0 ? finalMetadata : {
+        deviceInfo: {
+          deviceType: 'desktop' as const,
+          userAgent: navigator.userAgent,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          platform: navigator.platform,
+          language: navigator.language
+        },
+        timingInfo: {
+          startTime: Date.now(),
+          endTime: Date.now(),
+          duration: 0
+        }
+      };
+
+      const formattedResponse = formatResponseData(formData, currentQuestionKey, undefined);
+      const optimizedResponse = optimizeFormData(formattedResponse as Record<string, unknown>);
+
+      const createData: CreateModuleResponseDto = {
+        researchId: researchId || '',
+        participantId: participantId || '',
+        questionKey: currentQuestionKey,
+        responses: [{
+          questionKey: currentQuestionKey,
+          response: optimizedResponse,
+          timestamp,
+          createdAt: now
+        }],
+        metadata: safeMetadata
+      };
+
+      await saveMutation.mutateAsync(createData);
+    } catch (error) {
+      console.error('[NavigationFlowTask] Error guardando en backend:', error);
+      setIsSaving(false);
+    }
+  }, [currentQuestionKey, isSaving, endTiming, trackStepVisit, getFormData, getTimingData, getJourneyData, researchId, participantId, saveMutation]);
+
   const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition): void => {
     if (clickPos && typeof clickPos.hitzoneWidth === 'number' && typeof clickPos.hitzoneHeight === 'number') {
       setImageSelections(prev => ({
@@ -232,7 +377,13 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         });
       }
 
-      if (localSelectedImageIndex < images.length - 1) {
+      const isLastImage = localSelectedImageIndex === images.length - 1;
+
+      if (isLastImage) {
+        // Si es la última imagen, guardar automáticamente y avanzar al siguiente step
+        saveToBackend();
+      } else {
+        // Si no es la última imagen, avanzar a la siguiente imagen
         setTimeout(() => {
           setLocalSelectedImageIndex(localSelectedImageIndex + 1);
           setLocalSelectedHitzone(null);

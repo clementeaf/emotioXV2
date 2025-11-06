@@ -146,7 +146,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
             <DetailedEmotionSelector
               selectedEmotions={Array.isArray(value) ? value : []}
               onEmotionSelect={handleEmotionClick}
-              maxSelections={question.config?.maxSelections || 3}
+              maxSelections={question.config?.maxSelections}
             />
           ) : (
             <EmotionGrid

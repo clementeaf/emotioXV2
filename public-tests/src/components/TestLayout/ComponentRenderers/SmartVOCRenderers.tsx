@@ -174,16 +174,23 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
     const instructions = String(contentConfiguration?.instructions || '');
     const maxSelections = extractMaxSelections(instructions);
 
+    // Si no se encontró número en las instrucciones, no se pasa maxSelections
+    // Esto permite que el usuario presione "Guardar y continuar" manualmente
+    const config: Record<string, unknown> = {
+      instructions: contentConfiguration?.instructions as string
+    };
+    
+    if (maxSelections !== undefined) {
+      config.maxSelections = maxSelections;
+    }
+
     return (
       <QuestionComponent
         question={createQuestionConfig(
           contentConfiguration || {},
           currentQuestionKey,
           'detailed',
-          {
-            maxSelections,
-            instructions: contentConfiguration?.instructions as string
-          }
+          config
         )}
         currentStepKey={currentQuestionKey}
         initialFormData={formData}

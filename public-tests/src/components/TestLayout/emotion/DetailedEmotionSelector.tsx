@@ -41,7 +41,7 @@ interface DetailedEmotionSelectorProps {
 export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = ({
   selectedEmotions = [],
   onEmotionSelect,
-  maxSelections = 5,
+  maxSelections,
   className = ''
 }) => {
   const getEmotionBackgroundColor = (clusterId: string) => {
@@ -62,7 +62,7 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
   const handleEmotionClick = (emotionId: string) => {
     if (selectedEmotions.includes(emotionId)) {
       onEmotionSelect(emotionId);
-    } else if (selectedEmotions.length < maxSelections) {
+    } else if (maxSelections === undefined || selectedEmotions.length < maxSelections) {
       onEmotionSelect(emotionId);
     }
   };
@@ -77,7 +77,7 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
             return accents[match] || match;
           });
           const isSelected = selectedEmotions.includes(emotionId);
-          const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
+          const isDisabled = maxSelections !== undefined && !isSelected && selectedEmotions.length >= maxSelections;
 
           return (
             <button
@@ -112,7 +112,7 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
             return accents[match] || match;
           });
           const isSelected = selectedEmotions.includes(emotionId);
-          const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
+          const isDisabled = maxSelections !== undefined && !isSelected && selectedEmotions.length >= maxSelections;
 
           return (
             <button
@@ -147,7 +147,7 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
             return accents[match] || match;
           });
           const isSelected = selectedEmotions.includes(emotionId);
-          const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
+          const isDisabled = maxSelections !== undefined && !isSelected && selectedEmotions.length >= maxSelections;
 
           return (
             <button
@@ -182,7 +182,7 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
             return accents[match] || match;
           });
           const isSelected = selectedEmotions.includes(emotionId);
-          const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
+          const isDisabled = maxSelections !== undefined && !isSelected && selectedEmotions.length >= maxSelections;
 
           return (
             <button
@@ -217,7 +217,7 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
             return accents[match] || match;
           });
           const isSelected = selectedEmotions.includes(emotionId);
-          const isDisabled = !isSelected && selectedEmotions.length >= maxSelections;
+          const isDisabled = maxSelections !== undefined && !isSelected && selectedEmotions.length >= maxSelections;
 
           return (
             <button
