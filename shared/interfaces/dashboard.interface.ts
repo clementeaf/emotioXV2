@@ -2,8 +2,6 @@
  * Interfaces para el módulo de dashboard
  */
 
-import React from 'react';
-
 /**
  * Datos de investigación para el dashboard
  */
@@ -45,9 +43,10 @@ export interface DashboardStatsProps {
 
 /**
  * Props para el shell del dashboard
+ * Usa un tipo genérico para evitar dependencia de React en shared
  */
 export interface DashboardShellProps {
-  children: React.ReactNode;
+  children: unknown;
 }
 
 /**
