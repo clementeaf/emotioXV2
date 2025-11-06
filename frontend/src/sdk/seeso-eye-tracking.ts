@@ -1,5 +1,3 @@
-/// <reference path="../../external-modules.d.ts" />
-
 /**
  * Seeso.io Eye Tracking SDK para EmotioXV2
  * Implementa eye tracking real con Seeso.io (Eyedid SDK)
