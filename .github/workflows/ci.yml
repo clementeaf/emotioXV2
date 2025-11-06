@@ -27,6 +27,10 @@ jobs:
     - name: Install dependencies
       run: cd ${{ matrix.project }} && npm install --ignore-scripts
     
+    - name: Setup type declarations (frontend only)
+      if: matrix.project == 'frontend'
+      run: cd ${{ matrix.project }} && node scripts/setup-types.js
+    
     - name: TypeScript compilation check
       run: |
         if [ "${{ matrix.project }}" == "frontend" ]; then
