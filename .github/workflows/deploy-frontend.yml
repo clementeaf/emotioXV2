@@ -54,20 +54,69 @@ jobs:
         run: |
           aws s3 website s3://emotioxv2-frontend-041238861016 --index-document index.html --error-document error.html
 
+      - name: Invalidate CloudFront cache
+        run: |
+          echo "🔄 Invalidating CloudFront cache..."
+          if [ -n "${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id ${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }} \
+              --paths "/*" && echo "✅ CloudFront cache invalidated" || echo "⚠️  CloudFront invalidation failed"
+          else
+            echo "⚠️  FRONTEND_CLOUDFRONT_DISTRIBUTION_ID not set - skipping CloudFront invalidation"
+          fi
+
       - name: Verify deployment
         run: |
-          echo "🔍 Testing website endpoint..."
-          sleep 10  # Wait for DNS propagation
+          echo "🔍 Verifying deployment..."
+          sleep 30  # Wait for CloudFront to update
           
-          # Test website endpoint
+          # Test S3 website endpoint
           if curl -f -s "http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com" > /dev/null; then
-            echo "✅ Website endpoint is accessible"
+            echo "✅ S3 website endpoint is accessible"
           else
-            echo "⚠️  Website endpoint not yet accessible (DNS propagation may take time)"
+            echo "⚠️  S3 website endpoint not yet accessible (DNS propagation may take time)"
+          fi
+          
+          # Test CloudFront if configured
+          if [ -n "${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
+              --id ${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }} \
+              --query 'Distribution.DomainName' \
+              --output text)
+            
+            echo "🌐 CloudFront URL: https://$CLOUDFRONT_DOMAIN"
+            
+            # Verify CloudFront is accessible
+            for i in {1..5}; do
+              if curl -f -s "https://$CLOUDFRONT_DOMAIN" > /dev/null; then
+                echo "✅ CloudFront is accessible"
+                break
+              else
+                echo "⏳ Attempt $i: Waiting for CloudFront to update..."
+                sleep 10
+              fi
+            done
           fi
 
       - name: Deployment complete
         run: |
-          echo "✅ Frontend deployed successfully to S3"
-          echo "🌐 Website URL: http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com"
-          echo "🔗 Direct S3 URL: https://emotioxv2-frontend-041238861016.s3.us-east-1.amazonaws.com/index.html"
+          echo "✅ Frontend deployed successfully"
+          echo ""
+          echo "📊 Deployment summary:"
+          echo "  - S3 Bucket: emotioxv2-frontend-041238861016"
+          if [ -n "${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
+              --id ${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }} \
+              --query 'Distribution.DomainName' \
+              --output text)
+            echo "  - CloudFront Distribution: ${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}"
+            echo ""
+            echo "🌐 URLs:"
+            echo "  - S3: http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com"
+            echo "  - CloudFront: https://$CLOUDFRONT_DOMAIN"
+          else
+            echo ""
+            echo "🌐 URLs:"
+            echo "  - S3: http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com"
+            echo "  - Direct S3: https://emotioxv2-frontend-041238861016.s3.us-east-1.amazonaws.com/index.html"
+          fi
