@@ -183,7 +183,11 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       const publicTestsBaseUrl = isDevelopment 
         ? 'http://localhost:5173'  // 🏠 DESARROLLO LOCAL
         : (process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'); // 🌐 PRODUCCIÓN
-      const generatedUrl = `${publicTestsBaseUrl}/?researchId=${researchId}`;
+      
+      // 🎯 GENERAR PARTICIPANT ID ÚNICO PARA QUE LOS DATOS SE GUARDEN
+      // Si no hay participantId, se activa modo preview y los datos no se guardan
+      const participantId = `participant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const generatedUrl = `${publicTestsBaseUrl}/?researchId=${researchId}&participantId=${participantId}`;
 
       const defaultConfig = {
         id: undefined,
