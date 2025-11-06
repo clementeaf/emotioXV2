@@ -1,3 +1,5 @@
+/// <reference path="../../external-modules.d.ts" />
+
 /**
  * WebGazer Eye Tracking SDK LOCAL para EmotioXV2
  * Implementa eye tracking real con WebGazer.js SIN BACKEND
