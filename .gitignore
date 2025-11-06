@@ -28,6 +28,10 @@ dist/
 *.js.map
 next-env.d.ts
 
+# Excepciones: archivos de declaración de tipos necesarios para CI/CD
+!frontend/types/*.d.ts
+!frontend/src/types/*.d.ts
+
 # archivos JavaScript compilados desde TypeScript en shared
 shared/**/*.js
 shared/src/**/*.js
