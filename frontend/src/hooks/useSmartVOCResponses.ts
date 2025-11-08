@@ -46,9 +46,38 @@ interface SmartVOCResults {
   cvNeutral: number;
 }
 
-// Función para procesar datos SmartVOC desde la nueva estructura agrupada por pregunta
-const processSmartVOCData = (groupedResponses: any[]): SmartVOCResults => {
-  if (!groupedResponses || groupedResponses.length === 0) {
+// Función para procesar datos SmartVOC desde la estructura agrupada por questionKey
+// groupedResponses: Record<string, Array<{participantId, value, responseTime, timestamp, metadata}>>
+const processSmartVOCData = (groupedResponses: Record<string, Array<{
+  participantId: string;
+  value: unknown;
+  responseTime?: string;
+  timestamp: string;
+  metadata?: unknown;
+}>> | any[]): SmartVOCResults => {
+  // Si es un array (formato antiguo), convertir a Record
+  let responsesByQuestionKey: Record<string, Array<{
+    participantId: string;
+    value: unknown;
+    responseTime?: string;
+    timestamp: string;
+    metadata?: unknown;
+  }>>;
+  
+  if (Array.isArray(groupedResponses)) {
+    // Formato antiguo: Array<{questionKey, responses}>
+    responsesByQuestionKey = {};
+    groupedResponses.forEach((item: any) => {
+      if (item.questionKey && Array.isArray(item.responses)) {
+        responsesByQuestionKey[item.questionKey] = item.responses;
+      }
+    });
+  } else {
+    // Formato nuevo: Record<string, Array<...>>
+    responsesByQuestionKey = groupedResponses || {};
+  }
+
+  if (!responsesByQuestionKey || Object.keys(responsesByQuestionKey).length === 0) {
     return {
       totalResponses: 0,
       uniqueParticipants: 0,
@@ -111,74 +140,74 @@ const processSmartVOCData = (groupedResponses: any[]): SmartVOCResults => {
     return String(response);
   };
 
-  // Procesar cada pregunta agrupada
-  groupedResponses.forEach(questionGroup => {
-    if (questionGroup.questionKey && questionGroup.questionKey.toLowerCase().includes('smartvoc')) {
-      // Procesar cada respuesta de esta pregunta
-      questionGroup.responses.forEach((response: any) => {
-        const smartVOCResponse = {
-          questionKey: questionGroup.questionKey,
-          response: response.value,
+  // Procesar cada pregunta agrupada por questionKey
+  Object.entries(responsesByQuestionKey).forEach(([questionKey, responses]) => {
+    if (!questionKey.toLowerCase().includes('smartvoc')) return;
+
+    // Procesar cada respuesta de esta pregunta
+    responses.forEach((response) => {
+      const smartVOCResponse = {
+        questionKey,
+        response: response.value,
+        participantId: response.participantId,
+        participantName: 'Participante',
+        timestamp: response.timestamp || new Date().toISOString()
+      };
+
+      allSmartVOCResponses.push(smartVOCResponse);
+
+      const responseValue = parseResponseValue(response.value);
+
+      // Categorizar por tipo de pregunta
+      if (questionKey.toLowerCase().includes('nps')) {
+        if (responseValue > 0) {
+          npsScores.push(responseValue);
+        }
+      } else if (questionKey.toLowerCase().includes('csat')) {
+        if (responseValue > 0) {
+          csatScores.push(responseValue);
+        }
+      } else if (questionKey.toLowerCase().includes('ces')) {
+        if (responseValue > 0) {
+          cesScores.push(responseValue);
+        }
+      } else if (questionKey.toLowerCase().includes('nev')) {
+        // NEV ahora devuelve string de emociones, no array
+        if (response.value) {
+          let emotions: string[] = [];
+          
+          if (typeof response.value === 'string') {
+            emotions = response.value.split(',').map((e: string) => e.trim());
+          } else if (Array.isArray(response.value)) {
+            emotions = response.value;
+          }
+          
+          const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
+          const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
+          
+          const positiveCount = emotions.filter((emotion: string) => positiveEmotions.includes(emotion)).length;
+          const negativeCount = emotions.filter((emotion: string) => negativeEmotions.includes(emotion)).length;
+
+          // Calcular score NEV: (positivas - negativas) / total * 100
+          const totalEmotions = emotions.length;
+          if (totalEmotions > 0) {
+            const nevScore = Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
+            nevScores.push(nevScore);
+          }
+        }
+      } else if (questionKey.toLowerCase().includes('cv')) {
+        if (responseValue > 0) {
+          cvScores.push(responseValue);
+        }
+      } else if (questionKey.toLowerCase().includes('voc')) {
+        vocResponses.push({
+          text: parseResponseText(response.value),
           participantId: response.participantId,
           participantName: 'Participante',
-          timestamp: response.timestamp || new Date().toISOString()
-        };
-
-        allSmartVOCResponses.push(smartVOCResponse);
-
-        const responseValue = parseResponseValue(response.value);
-
-        // Categorizar por tipo de pregunta
-        if (questionGroup.questionKey.toLowerCase().includes('nps')) {
-          if (responseValue > 0) {
-            npsScores.push(responseValue);
-          }
-        } else if (questionGroup.questionKey.toLowerCase().includes('csat')) {
-          if (responseValue > 0) {
-            csatScores.push(responseValue);
-          }
-        } else if (questionGroup.questionKey.toLowerCase().includes('ces')) {
-          if (responseValue > 0) {
-            cesScores.push(responseValue);
-          }
-        } else if (questionGroup.questionKey.toLowerCase().includes('nev')) {
-          // 🎯 NEV ahora devuelve string de emociones, no array
-          if (response.value) {
-            let emotions: string[] = [];
-            
-            if (typeof response.value === 'string') {
-              emotions = response.value.split(',').map((e: string) => e.trim());
-            } else if (Array.isArray(response.value)) {
-              emotions = response.value;
-            }
-            
-            const positiveEmotions = ['Feliz', 'Satisfecho', 'Confiado', 'Valorado', 'Cuidado', 'Seguro', 'Enfocado', 'Indulgente', 'Estimulado', 'Exploratorio', 'Interesado', 'Enérgico'];
-            const negativeEmotions = ['Descontento', 'Frustrado', 'Irritado', 'Decepción', 'Estresado', 'Infeliz', 'Desatendido', 'Apresurado'];
-            
-            const positiveCount = emotions.filter((emotion: string) => positiveEmotions.includes(emotion)).length;
-            const negativeCount = emotions.filter((emotion: string) => negativeEmotions.includes(emotion)).length;
-
-            // Calcular score NEV: (positivas - negativas) / total * 100
-            const totalEmotions = emotions.length;
-            if (totalEmotions > 0) {
-              const nevScore = Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
-              nevScores.push(nevScore);
-            }
-          }
-        } else if (questionGroup.questionKey.toLowerCase().includes('cv')) {
-          if (responseValue > 0) {
-            cvScores.push(responseValue);
-          }
-        } else if (questionGroup.questionKey.toLowerCase().includes('voc')) {
-          vocResponses.push({
-            text: parseResponseText(response.value),
-            participantId: response.participantId,
-            participantName: 'Participante',
-            timestamp: response.timestamp
-          });
-        }
-      });
-    }
+          timestamp: response.timestamp
+        });
+      }
+    });
   });
 
   // Calcular métricas
@@ -336,15 +365,24 @@ export const useSmartVOCResponses = (researchId: string) => {
         throw new Error('Research ID es requerido');
       }
 
-      // Usar el nuevo endpoint agrupado por pregunta (más eficiente)
-      const response = await moduleResponsesAPI.getResponsesGroupedByQuestion(researchId);
+      // Usar el mismo endpoint que CognitiveTask: /module-responses/research/{researchId}
+      const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
 
       if (!response) {
         throw new Error('No se recibieron datos del servidor');
       }
 
-      // Procesar datos SmartVOC desde las respuestas
-      return processSmartVOCData(response.data || response);
+      // La respuesta tiene estructura: { data: { questionKey: [...] } }
+      const groupedResponses = (response.data || response) as Record<string, Array<{
+        participantId: string;
+        value: unknown;
+        responseTime?: string;
+        timestamp: string;
+        metadata?: unknown;
+      }>>;
+
+      // Procesar datos SmartVOC desde las respuestas agrupadas por questionKey
+      return processSmartVOCData(groupedResponses);
     },
     enabled: !!researchId,
     staleTime: 5 * 60 * 1000, // 5 minutos - cache por 5 minutos

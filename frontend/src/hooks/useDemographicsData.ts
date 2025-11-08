@@ -73,49 +73,79 @@ export const useDemographicsData = (researchId: string) => {
     const educationCounts: Record<string, number> = {};
     const userIdCounts: Record<string, number> = {};
     const participantCounts: Record<string, number> = {};
+    const processedParticipants = new Set<string>();
 
-    // Procesar datos demográficos de la nueva estructura
-    const demographicsResponses = groupedResponses['demographics'] || [];
+    // Procesar TODAS las respuestas que contengan "demographics" en el questionKey
+    // Esto permite manejar múltiples respuestas de demographics por participante
+    const demographicsQuestionKeys = Object.keys(groupedResponses).filter(key => 
+      key.toLowerCase().includes('demographic')
+    );
     
-    demographicsResponses.forEach((response) => {
-      const participantId = response.participantId;
-      const demographicValue = response.value;
+    console.log('[useDemographicsData] QuestionKeys de demographics encontrados:', demographicsQuestionKeys);
 
-      // Contar participantes únicos
-      const participantKey = `${participantId || 'unknown'}`;
-      participantCounts[participantKey] = (participantCounts[participantKey] || 0) + 1;
+    // Procesar todas las respuestas de demographics
+    demographicsQuestionKeys.forEach(questionKey => {
+      const demographicsResponses = groupedResponses[questionKey] || [];
+      
+      demographicsResponses.forEach((response) => {
+        const participantId = response.participantId;
+        const demographicValue = response.value;
 
-      // Contar userIds únicos
-      if (participantId) {
-        userIdCounts[participantId] = (userIdCounts[participantId] || 0) + 1;
-      }
+        // Contar participantes únicos (solo una vez por participante)
+        if (participantId && !processedParticipants.has(participantId)) {
+          processedParticipants.add(participantId);
+          const participantKey = participantId;
+          participantCounts[participantKey] = (participantCounts[participantKey] || 0) + 1;
 
-      // Procesar datos demográficos
-      if (demographicValue) {
-        // Procesar país
-        if (demographicValue.country) {
-          const country = String(demographicValue.country);
-          countryCounts[country] = (countryCounts[country] || 0) + 1;
+          // Contar userIds únicos
+          userIdCounts[participantId] = (userIdCounts[participantId] || 0) + 1;
         }
 
-        // Procesar edad
-        if (demographicValue.age) {
-          const age = String(demographicValue.age);
-          ageCounts[age] = (ageCounts[age] || 0) + 1;
+        // Procesar datos demográficos
+        // El valor puede ser un objeto o un string/array
+        let processedValue: Record<string, unknown> = {};
+        
+        if (typeof demographicValue === 'object' && demographicValue !== null) {
+          processedValue = demographicValue as Record<string, unknown>;
+        } else if (typeof demographicValue === 'string') {
+          // Intentar parsear si es un JSON string
+          try {
+            processedValue = JSON.parse(demographicValue) as Record<string, unknown>;
+          } catch {
+            // Si no es JSON, tratar como valor directo
+            processedValue = { value: demographicValue };
+          }
         }
 
-        // Procesar género
-        if (demographicValue.gender) {
-          const gender = String(demographicValue.gender);
-          genderCounts[gender] = (genderCounts[gender] || 0) + 1;
+        // Procesar país (puede venir como 'country', 'pais', 'location', etc.)
+        const location = processedValue.location as Record<string, unknown> | undefined;
+        const country = processedValue.country || processedValue.pais || location?.country || processedValue.countryCode;
+        if (country) {
+          const countryStr = String(country);
+          countryCounts[countryStr] = (countryCounts[countryStr] || 0) + 1;
         }
 
-        // Procesar educación (si existe)
-        if (demographicValue.education) {
-          const education = String(demographicValue.education);
-          educationCounts[education] = (educationCounts[education] || 0) + 1;
+        // Procesar edad (puede venir como 'age', 'edad', 'ageRange', 'age_range', etc.)
+        const age = processedValue.age || processedValue.edad || processedValue.ageRange || processedValue.age_range;
+        if (age) {
+          const ageStr = String(age);
+          ageCounts[ageStr] = (ageCounts[ageStr] || 0) + 1;
         }
-      }
+
+        // Procesar género (puede venir como 'gender', 'genero', 'sex', etc.)
+        const gender = processedValue.gender || processedValue.genero || processedValue.sex;
+        if (gender) {
+          const genderStr = String(gender);
+          genderCounts[genderStr] = (genderCounts[genderStr] || 0) + 1;
+        }
+
+        // Procesar educación (puede venir como 'education', 'educacion', 'educationLevel', 'education_level', etc.)
+        const education = processedValue.education || processedValue.educacion || processedValue.educationLevel || processedValue.education_level;
+        if (education) {
+          const educationStr = String(education);
+          educationCounts[educationStr] = (educationCounts[educationStr] || 0) + 1;
+        }
+      });
     });
 
     // Convertir contadores a arrays con formato y ordenar por count

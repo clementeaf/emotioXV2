@@ -86,9 +86,13 @@ export const createQuestionFromTemplate = (type: QuestionType, instructions?: st
     throw new Error(`Template not found for type: ${type}`);
   }
   
+  // Generar ID único basado en tipo y timestamp para permitir duplicados del mismo tipo
+  const typePrefix = type.replace('smartvoc_', '').toLowerCase();
+  const uniqueId = `${typePrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  
   return {
     ...template,
-    id: Math.random().toString(36).substring(2, 15),
+    id: uniqueId,
     instructions: instructions || template.instructions
   };
 };

@@ -117,8 +117,16 @@ export function useResearchForm<TData, TFormData extends Record<string, unknown>
     }
 
     const mappedFormData = mapDataToForm(existingData);
-    setFormData(mappedFormData);
-  }, [existingData, isLoading, initialFormData, mapDataToForm]);
+    
+    // Solo actualizar si los datos realmente cambiaron (evitar loop infinito)
+    setFormData(prev => {
+      // Comparación simple: si el objeto es el mismo, no actualizar
+      if (JSON.stringify(prev) === JSON.stringify(mappedFormData)) {
+        return prev;
+      }
+      return mappedFormData;
+    });
+  }, [existingData, isLoading, initialFormData]); // Remover mapDataToForm de dependencias
 
   const handleChange = useCallback((field: keyof TFormData, value: unknown) => {
     setFormData(prev => ({

@@ -1,9 +1,8 @@
 'use client';
 
-// ❌ ELIMINADO: useCognitiveTaskResults - usar domain hooks directamente
-// import { useCognitiveTaskResults } from '@/hooks/useCognitiveTaskResults';
 import { useParams } from 'next/navigation';
 import React from 'react';
+import { useCognitiveTaskResponses } from '@/hooks/useCognitiveTaskResponses';
 import { Filters } from '../../research/SmartVOCResults/Filters';
 import {
   CognitiveTaskHeader,
@@ -17,41 +16,42 @@ interface CognitiveTaskResultsProps {
 
 export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ researchId: propResearchId }) => {
   const params = useParams();
-  const researchId = propResearchId || params?.research as string || params?.id as string;
+  // Normalizar researchId para evitar cambios que causen re-renders
+  const researchId = React.useMemo(() => {
+    return propResearchId || params?.research as string || params?.id as string || null;
+  }, [propResearchId, params?.research, params?.id]);
 
+  // Hook para obtener respuestas y configuración de CognitiveTask
   const {
-    loadingState,
-    error,
-    participantResponses,
-    processedData,
     researchConfig,
-    refetch,
+    processedData,
     isLoading,
     isError,
-    isSuccess,
-    hasData
-  } = {
-    // ❌ ELIMINADO: useCognitiveTaskResults - usar domain hooks directamente
-    loadingState: 'idle' as const,
-    error: null,
-    participantResponses: [],
-    processedData: [],
-    researchConfig: null,
-    refetch: () => {},
-    isLoading: false,
-    isError: false,
-    isSuccess: false,
-    hasData: false
-  };
+    error,
+    refetch
+  } = useCognitiveTaskResponses(researchId);
 
 
 
-  // Mostrar error
-  if (isError && error) {
+  // Mostrar loading
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <CognitiveTaskHeader title="2.0.- Cognitive task" />
-        <ErrorState error={error} onRetry={refetch} />
+        <div className="flex items-center justify-center p-8">
+          <div className="text-neutral-500">Cargando resultados...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error
+  if (isError && error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return (
+      <div className="space-y-6">
+        <CognitiveTaskHeader title="2.0.- Cognitive task" />
+        <ErrorState error={errorMessage} onRetry={refetch} />
       </div>
     );
   }
@@ -302,25 +302,49 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     // Siempre usar preguntas de configuración cuando estén disponibles
     finalQuestions = (researchConfig as any).questions.map((question: any) => {
       // Mapear tipos de pregunta cognitiva a tipos de visualización
+      // El questionType puede venir con o sin prefijo 'cognitive_' (ej: 'short_text' o 'cognitive_short_text')
       const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
-        switch (questionType) {
-          case 'cognitive_short_text':
-          case 'cognitive_long_text':
+        // Normalizar el tipo de pregunta (remover prefijo si existe)
+        const normalizedType = questionType.replace(/^cognitive_/, '').toLowerCase();
+        
+        switch (normalizedType) {
+          case 'short_text':
+          case 'long_text':
             return 'sentiment';
-          case 'cognitive_single_choice':
-          case 'cognitive_multiple_choice':
+          case 'single_choice':
+          case 'multiple_choice':
             return 'choice';
-          case 'cognitive_ranking':
+          case 'ranking':
             return 'ranking';
-          case 'cognitive_linear_scale':
+          case 'linear_scale':
             return 'linear_scale';
-          case 'cognitive_preference_test':
+          case 'preference_test':
             return 'preference';
-          case 'cognitive_image_selection':
+          case 'image_selection':
             return 'image_selection';
-          case 'cognitive_navigation_flow':
+          case 'navigation_flow':
             return 'navigation_flow';
           default:
+            // Fallback: intentar detectar por el tipo original
+            const lowerType = questionType.toLowerCase();
+            if (lowerType.includes('short_text') || lowerType.includes('long_text')) {
+              return 'sentiment';
+            }
+            if (lowerType.includes('choice')) {
+              return 'choice';
+            }
+            if (lowerType.includes('linear_scale')) {
+              return 'linear_scale';
+            }
+            if (lowerType.includes('ranking')) {
+              return 'ranking';
+            }
+            if (lowerType.includes('navigation_flow')) {
+              return 'navigation_flow';
+            }
+            if (lowerType.includes('preference')) {
+              return 'preference';
+            }
             return 'sentiment';
         }
       };
@@ -352,9 +376,322 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       };
 
       // Buscar datos procesados correspondientes a esta pregunta
-      const processedDataForQuestion = processedData.find((data: any) => data.questionId === question.id);
+      // El questionKey del endpoint tiene formato: "cognitive_short_text", "cognitive_long_text", etc.
+      // El question.id de la configuración puede ser: "3.1", "3.2", etc.
+      // El question.type puede ser: "short_text", "long_text", etc. (sin prefijo cognitive_)
+      const questionType = (question.type as string) || '';
+      const normalizedType = questionType.replace(/^cognitive_/, ''); // Remover prefijo si existe
+      const expectedQuestionKey = `cognitive_${normalizedType}`;
+      
+      // DEBUG: Log para depuración
+      if (processedData.length > 0) {
+        console.log(`[CognitiveTaskResults] Buscando datos para pregunta:`, {
+          questionId: question.id,
+          questionType,
+          normalizedType,
+          expectedQuestionKey,
+          processedDataKeys: processedData.map((d: any) => ({ questionId: d.questionId, questionKey: d.questionKey }))
+        });
+      }
+      
+      const processedDataForQuestion = processedData.find((data: any) => {
+        // 1. Comparar por questionId directo
+        if (data.questionId === question.id) {
+          console.log(`[CognitiveTaskResults] ✅ Match por questionId: ${question.id}`);
+          return true;
+        }
+        
+        // 2. Comparar questionKey del endpoint con el esperado desde question.type
+        if (data.questionKey === expectedQuestionKey) {
+          console.log(`[CognitiveTaskResults] ✅ Match por questionKey: ${expectedQuestionKey}`);
+          return true;
+        }
+        
+        // 3. Comparar questionKey con question.id (por si el questionKey es el mismo que el id)
+        if (data.questionKey === question.id) {
+          console.log(`[CognitiveTaskResults] ✅ Match por questionKey === question.id: ${question.id}`);
+          return true;
+        }
+        
+        // 4. Comparar si el questionKey contiene el tipo de pregunta (más flexible)
+        if (data.questionKey && normalizedType && data.questionKey.toLowerCase().includes(normalizedType.toLowerCase())) {
+          console.log(`[CognitiveTaskResults] ✅ Match por questionKey.includes: ${data.questionKey} incluye ${normalizedType}`);
+          return true;
+        }
+        
+        return false;
+      });
+      
+      // DEBUG: Log resultado del mapeo
+      if (processedDataForQuestion) {
+        console.log(`[CognitiveTaskResults] ✅ Datos encontrados para pregunta ${question.id}:`, {
+          questionId: processedDataForQuestion.questionId,
+          questionKey: processedDataForQuestion.questionKey,
+          hasSentimentData: !!processedDataForQuestion.sentimentData,
+          hasChoiceData: !!processedDataForQuestion.choiceData,
+          totalResponses: (processedDataForQuestion as any).totalResponses
+        });
+      } else {
+        console.log(`[CognitiveTaskResults] ❌ No se encontraron datos para pregunta ${question.id} (type: ${questionType})`);
+      }
 
-      return {
+      // Transformar sentimentData al formato que espera MainContent (CognitiveTaskQuestion)
+      let transformedSentimentData: any = undefined;
+      if (processedDataForQuestion?.sentimentData) {
+        const sentimentDataRaw = processedDataForQuestion.sentimentData as { responses: Array<{ text: string; participantId: string; timestamp: string }>; totalResponses: number };
+        
+        // DEBUG: Log de transformación
+        console.log(`[CognitiveTaskResults] Transformando sentimentData para pregunta ${question.id}:`, {
+          responsesCount: sentimentDataRaw.responses.length,
+          responses: sentimentDataRaw.responses
+        });
+        
+        transformedSentimentData = {
+          id: question.id,
+          questionNumber: question.id,
+          questionText: question.title || question.description || `Pregunta ${question.id}`,
+          questionType: getQuestionType(question.type) as 'short_text' | 'long_text',
+          required: question.required || false,
+          conditionalityDisabled: question.showConditionally || false,
+          sentimentResults: sentimentDataRaw.responses.map((r, index) => ({
+            id: `${question.id}-${index}`,
+            text: r.text || String(r.text || ''), // Asegurar que siempre sea string
+            sentiment: 'neutral' as const,
+            selected: false,
+            type: 'comment' as const
+          })),
+          sentimentAnalysis: {
+            text: `Análisis de ${sentimentDataRaw.totalResponses} respuesta(s)`
+          },
+          themes: [],
+          keywords: []
+        };
+        
+        // DEBUG: Log resultado de transformación
+        console.log(`[CognitiveTaskResults] ✅ SentimentData transformado para pregunta ${question.id}:`, {
+          sentimentResultsCount: transformedSentimentData.sentimentResults.length,
+          hasSentimentAnalysis: !!transformedSentimentData.sentimentAnalysis
+        });
+      } else {
+        console.log(`[CognitiveTaskResults] ⚠️ No hay sentimentData para pregunta ${question.id}`);
+      }
+
+      // Transformar choiceData al formato que espera ChoiceResults
+      let transformedChoiceData: any = undefined;
+      if (processedDataForQuestion?.choiceData) {
+        const choiceDataRaw = processedDataForQuestion.choiceData as { choices: Array<{ label: string; count: number; percentage: number }>; totalResponses: number };
+        transformedChoiceData = {
+          question: question.title || question.description || `Pregunta ${question.id}`,
+          description: question.description,
+          options: choiceDataRaw.choices.map((choice, index) => ({
+            id: `${question.id}-choice-${index}`,
+            text: choice.label,
+            count: choice.count,
+            percentage: choice.percentage
+          })),
+          totalResponses: choiceDataRaw.totalResponses,
+          responseDuration: undefined
+        };
+      }
+
+      // Transformar linearScaleData al formato que espera LinearScaleResults
+      let transformedLinearScaleData: any = undefined;
+      if (processedDataForQuestion?.linearScaleData) {
+        const linearScaleDataRaw = processedDataForQuestion.linearScaleData as { values: number[]; average: number; totalResponses: number };
+        transformedLinearScaleData = {
+          question: question.title || question.description || `Pregunta ${question.id}`,
+          description: question.description,
+          scaleRange: question.scaleConfig || { startValue: 1, endValue: 5 },
+          values: linearScaleDataRaw.values,
+          average: linearScaleDataRaw.average,
+          totalResponses: linearScaleDataRaw.totalResponses
+        };
+      }
+
+      // Transformar rankingData al formato que espera RankingResults
+      let transformedRankingData: any = undefined;
+      if (processedDataForQuestion?.rankingData) {
+        const rankingDataRaw = processedDataForQuestion.rankingData as { responses: Array<{ participantId: string; ranking: unknown; timestamp: string }>; totalResponses: number };
+        
+        // Procesar responses para construir options
+        // Agrupar rankings por opción y calcular mean, distribution
+        const rankingMap: Record<string, { ranks: number[]; text: string }> = {};
+        
+        rankingDataRaw.responses.forEach(response => {
+          const ranking = response.ranking;
+          if (Array.isArray(ranking)) {
+            ranking.forEach((rank, index) => {
+              const optionId = `option-${index + 1}`;
+              const optionText = question.choices?.[index]?.text || `Opción ${index + 1}`;
+              
+              if (!rankingMap[optionId]) {
+                rankingMap[optionId] = { ranks: [], text: optionText };
+              }
+              rankingMap[optionId].ranks.push(rank);
+            });
+          } else if (typeof ranking === 'object' && ranking !== null) {
+            Object.entries(ranking as Record<string, number>).forEach(([key, rank]) => {
+              const optionId = key;
+              const optionText = question.choices?.find((c: { id: string; text: string }) => c.id === key)?.text || key;
+              
+              if (!rankingMap[optionId]) {
+                rankingMap[optionId] = { ranks: [], text: optionText };
+              }
+              rankingMap[optionId].ranks.push(rank);
+            });
+          }
+        });
+        
+        // Construir options con mean y distribution
+        const options = Object.entries(rankingMap).map(([id, data]) => {
+          const mean = data.ranks.length > 0 
+            ? data.ranks.reduce((sum, rank) => sum + rank, 0) / data.ranks.length 
+            : 0;
+          
+          // Construir distribution (1-6)
+          const distribution: { 1: number; 2: number; 3: number; 4: number; 5: number; 6: number } = {
+            1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0
+          };
+          
+          data.ranks.forEach(rank => {
+            const rankKey = Math.min(Math.max(Math.round(rank), 1), 6) as 1 | 2 | 3 | 4 | 5 | 6;
+            distribution[rankKey] = (distribution[rankKey] || 0) + 1;
+          });
+          
+          return {
+            id,
+            text: data.text,
+            mean,
+            distribution,
+            responseTime: '0s'
+          };
+        });
+        
+        transformedRankingData = {
+          question: question.title || question.description || `Pregunta ${question.id}`,
+          options,
+          responses: rankingDataRaw.responses,
+          totalResponses: rankingDataRaw.totalResponses
+        };
+      }
+
+      // Transformar preferenceTestData al formato que espera PreferenceTestResults
+      let transformedPreferenceTestData: any = undefined;
+      if (processedDataForQuestion?.preferenceTestData) {
+        const preferenceTestDataRaw = processedDataForQuestion.preferenceTestData as { preferences: Array<{ option: string; count: number; percentage: number }>; totalResponses: number };
+        
+        // Transformar preferences a options con la estructura esperada
+        const options = preferenceTestDataRaw.preferences.map((pref, index) => ({
+          id: `option-${index + 1}`,
+          name: pref.option,
+          image: undefined, // Se puede agregar si hay imágenes en la pregunta
+          selected: pref.count,
+          percentage: pref.percentage,
+          color: undefined // Se puede agregar si hay colores definidos
+        }));
+        
+        transformedPreferenceTestData = {
+          question: question.title || question.description || `Pregunta ${question.id}`,
+          description: question.description,
+          options,
+          totalSelections: preferenceTestDataRaw.totalResponses,
+          totalParticipants: preferenceTestDataRaw.totalResponses
+        };
+      }
+
+      // Transformar navigationFlowData al formato que espera NavigationFlowResults
+      let transformedNavigationFlowData: any = undefined;
+      if (processedDataForQuestion?.navigationFlowData) {
+        const navigationFlowDataRaw = processedDataForQuestion.navigationFlowData as { responses: Array<{ participantId: string; data: unknown; timestamp: string }>; totalResponses: number };
+        
+        // Procesar responses para construir allClicksTracking y visualClickPoints
+        const allClicksTracking: Array<{
+          x: number;
+          y: number;
+          timestamp: number;
+          hitzoneId?: string;
+          imageIndex: number;
+          isCorrectHitzone: boolean;
+          participantId?: string;
+        }> = [];
+        
+        const visualClickPoints: Array<{
+          x: number;
+          y: number;
+          timestamp: number;
+          isCorrect: boolean;
+          imageIndex: number;
+          participantId?: string;
+        }> = [];
+        
+        const imageSelections: Record<string, {
+          hitzoneId: string;
+          click: {
+            x: number;
+            y: number;
+            hitzoneWidth: number;
+            hitzoneHeight: number;
+          };
+        }> = {};
+        
+        navigationFlowDataRaw.responses.forEach((response, index) => {
+          const data = response.data as any;
+          
+          // Extraer información del click
+          const x = data?.x || data?.clickX || 0;
+          const y = data?.y || data?.clickY || 0;
+          const imageIndex = data?.imageIndex ?? 0;
+          const hitzoneId = data?.hitzoneId || data?.hitzone?.id || `hitzone-${index}`;
+          const isCorrect = data?.isCorrect !== false; // Default a true si no se especifica
+          const timestamp = new Date(response.timestamp).getTime() || Date.now();
+          
+          // Agregar a allClicksTracking
+          allClicksTracking.push({
+            x,
+            y,
+            timestamp,
+            hitzoneId,
+            imageIndex,
+            isCorrectHitzone: isCorrect,
+            participantId: response.participantId
+          });
+          
+          // Agregar a visualClickPoints
+          visualClickPoints.push({
+            x,
+            y,
+            timestamp,
+            isCorrect,
+            imageIndex,
+            participantId: response.participantId
+          });
+          
+          // Agregar a imageSelections
+          const selectionKey = `${response.participantId}-${imageIndex}-${index}`;
+          imageSelections[selectionKey] = {
+            hitzoneId,
+            click: {
+              x,
+              y,
+              hitzoneWidth: data?.hitzoneWidth || data?.hitzone?.width || 50,
+              hitzoneHeight: data?.hitzoneHeight || data?.hitzone?.height || 50
+            }
+          };
+        });
+        
+        transformedNavigationFlowData = {
+          question: question.title || question.description || `Pregunta ${question.id}`,
+          totalParticipants: navigationFlowDataRaw.totalResponses,
+          totalSelections: navigationFlowDataRaw.totalResponses,
+          researchId: researchId || '',
+          imageSelections,
+          visualClickPoints,
+          allClicksTracking,
+          files: question.files || []
+        };
+      }
+
+      const questionData = {
         key: `question-${question.id}`,
         questionId: question.id,
         questionType: getQuestionType(question.type),
@@ -363,17 +700,31 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         conditionalityDisabled: question.showConditionally || false,
         hasNewData: processedDataForQuestion ? (processedDataForQuestion as any).totalResponses > 0 : false,
         viewType: getViewType(question.type),
-        sentimentData: (processedDataForQuestion as any)?.sentimentData,
-        choiceData: (processedDataForQuestion as any)?.choiceData,
-        rankingData: (processedDataForQuestion as any)?.rankingData,
-        linearScaleData: (processedDataForQuestion as any)?.linearScaleData,
+        sentimentData: transformedSentimentData,
+        choiceData: transformedChoiceData,
+        rankingData: transformedRankingData,
+        linearScaleData: transformedLinearScaleData,
         ratingData: (processedDataForQuestion as any)?.ratingData,
-        preferenceTestData: (processedDataForQuestion as any)?.preferenceTestData,
+        preferenceTestData: transformedPreferenceTestData,
         imageSelectionData: (processedDataForQuestion as any)?.imageSelectionData,
-        navigationFlowData: (processedDataForQuestion as any)?.navigationFlowData,
+        navigationFlowData: transformedNavigationFlowData,
         initialActiveTab: 'sentiment' as const,
         themeImageSrc: '',
       };
+      
+      // DEBUG: Log datos que se pasan a QuestionContainer
+      console.log(`[CognitiveTaskResults] Datos para pregunta ${question.id}:`, {
+        viewType: questionData.viewType,
+        hasSentimentData: !!questionData.sentimentData,
+        hasChoiceData: !!questionData.choiceData,
+        hasRankingData: !!questionData.rankingData,
+        hasLinearScaleData: !!questionData.linearScaleData,
+        hasPreferenceTestData: !!questionData.preferenceTestData,
+        hasNavigationFlowData: !!questionData.navigationFlowData,
+        hasNewData: questionData.hasNewData
+      });
+      
+      return questionData;
     });
   } else {
     // Fallback con preguntas temporales

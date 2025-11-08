@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { CognitiveTaskQuestion } from '../types';
 
@@ -18,7 +18,23 @@ export function MainContent({
   themeImageSrc
 }: MainContentProps) {
   const [activeTab, setActiveTab] = useState<AnalysisTabType>(initialActiveTab);
-  const [selectedItems, setSelectedItems] = useState<string[]>(['5']); // Iniciar con "Camera lens" seleccionado
+  
+  // Inicializar selectedItems con los IDs de los sentimentResults disponibles
+  const [selectedItems, setSelectedItems] = useState<string[]>(() => {
+    if (data.sentimentResults && data.sentimentResults.length > 0) {
+      return data.sentimentResults.map(item => item.id);
+    }
+    return [];
+  });
+  
+  // Actualizar selectedItems cuando cambien los sentimentResults
+  useEffect(() => {
+    if (data.sentimentResults && data.sentimentResults.length > 0) {
+      setSelectedItems(data.sentimentResults.map(item => item.id));
+    } else {
+      setSelectedItems([]);
+    }
+  }, [data.sentimentResults]);
 
   const toggleItemSelection = (id: string) => {
     if (selectedItems.includes(id)) {
@@ -38,10 +54,19 @@ export function MainContent({
     }
   };
 
+  // DEBUG: Log de datos recibidos
+  console.log('[MainContent] Datos recibidos:', {
+    hasSentimentResults: !!data.sentimentResults,
+    sentimentResultsCount: data.sentimentResults?.length || 0,
+    sentimentResults: data.sentimentResults,
+    questionId: data.id,
+    questionNumber: data.questionNumber
+  });
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
       {/* Panel izquierdo: Lista de comentarios */}
-      {data.sentimentResults && (
+      {data.sentimentResults && data.sentimentResults.length > 0 ? (
         <CommentsList
           comments={data.sentimentResults}
           selectedItems={selectedItems}
@@ -52,13 +77,11 @@ export function MainContent({
           required={data.required}
           conditionalityDisabled={data.conditionalityDisabled}
         />
-      )}
-
-      {/* Debug: Mostrar si no hay sentimentResults */}
-      {!data.sentimentResults && (
+      ) : (
         <div className="p-4 text-center text-gray-500">
           <p>No hay datos de sentimiento disponibles</p>
-          <p className="text-sm">data.sentimentResults: {JSON.stringify(data.sentimentResults)}</p>
+          <p className="text-sm">data.sentimentResults: {data.sentimentResults ? `Array(${data.sentimentResults.length})` : 'undefined'}</p>
+          <p className="text-xs mt-2">data completo: {JSON.stringify(data, null, 2)}</p>
         </div>
       )}
 

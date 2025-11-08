@@ -20,6 +20,50 @@ interface LinearScaleResultsProps {
  * Implementa la visualización horizontal con barras de colores como en la imagen de referencia
  */
 export function LinearScaleResults({ data }: LinearScaleResultsProps) {
+  // DEBUG: Log datos recibidos
+  console.log('[LinearScaleResults] Datos recibidos:', {
+    hasData: !!data,
+    hasScaleRange: !!data?.scaleRange,
+    hasResponses: !!data?.responses,
+    hasValues: !!(data as any)?.values,
+    responsesCount: data?.responses?.length || 0,
+    valuesCount: (data as any)?.values?.length || 0,
+    data: data
+  });
+
+  // Si hay values pero no responses, construir responses desde values
+  const values = (data as any)?.values;
+  if (values && Array.isArray(values) && values.length > 0 && (!data.responses || data.responses.length === 0)) {
+    // Construir distribution desde los valores
+    const distribution: Record<number, number> = {};
+    values.forEach((value: number) => {
+      distribution[value] = (distribution[value] || 0) + 1;
+    });
+
+    // Construir responses desde distribution
+    const responses = Object.entries(distribution).map(([value, count]) => ({
+      value: parseInt(value),
+      count
+    }));
+
+    // Construir scaleRange desde los datos si no existe
+    const scaleRange = data.scaleRange || { start: Math.min(...values), end: Math.max(...values) };
+    
+    // Actualizar data con responses construidas
+    (data as any).responses = responses;
+    (data as any).scaleRange = scaleRange;
+  }
+
+  if (!data || (!data.responses || data.responses.length === 0)) {
+    console.log('[LinearScaleResults] ⚠️ No hay datos o respuestas disponibles');
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-500">No hay datos de escala lineal disponibles.</p>
+        <p className="text-xs mt-2">data: {JSON.stringify(data)}</p>
+      </div>
+    );
+  }
+
   const { question, description, scaleRange, responses, average, totalResponses, distribution, responseTime } = data;
 
   // Generar todas las opciones de la escala (desde startValue hasta endValue)

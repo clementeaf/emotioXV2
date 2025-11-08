@@ -70,6 +70,18 @@ export function QuestionContainer({
   themeImageSrc,
   choiceImageSrc
 }: QuestionContainerProps) {
+  // DEBUG: Log datos recibidos
+  console.log(`[QuestionContainer] Renderizando pregunta ${questionId}:`, {
+    viewType,
+    hasSentimentData: !!sentimentData,
+    hasChoiceData: !!choiceData,
+    hasRankingData: !!rankingData,
+    hasLinearScaleData: !!linearScaleData,
+    hasPreferenceTestData: !!preferenceTestData,
+    hasNavigationFlowData: !!navigationFlowData,
+    hasNewData
+  });
+  
   return (
     <div className="w-full bg-white rounded-lg border border-neutral-200 mb-6">
       {/* Sección de pregunta y estado */}

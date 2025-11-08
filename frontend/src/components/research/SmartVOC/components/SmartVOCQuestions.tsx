@@ -28,7 +28,14 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const existingQuestionTypes = questions
     .map(q => q.type)
-    .filter((t): t is QuestionType => ['CSAT', 'CES', 'CV', 'NEV', 'NPS', 'VOC'].includes(t));
+    .filter((t): t is QuestionType => [
+      QuestionType.SMARTVOC_CSAT,
+      QuestionType.SMARTVOC_CES,
+      QuestionType.SMARTVOC_CV,
+      QuestionType.SMARTVOC_NEV,
+      QuestionType.SMARTVOC_NPS,
+      QuestionType.SMARTVOC_VOC
+    ].includes(t as QuestionType));
 
   const questionsForUI = questions.map(q => ({
     ...q,

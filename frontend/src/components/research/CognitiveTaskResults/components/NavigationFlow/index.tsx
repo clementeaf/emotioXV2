@@ -11,6 +11,18 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
   researchId, 
   data 
 }) => {
+  // DEBUG: Log datos recibidos
+  console.log('[NavigationFlowResults] Datos recibidos:', {
+    hasData: !!data,
+    hasAllClicksTracking: !!data?.allClicksTracking,
+    hasVisualClickPoints: !!data?.visualClickPoints,
+    hasFiles: !!data?.files,
+    allClicksTrackingCount: data?.allClicksTracking?.length || 0,
+    visualClickPointsCount: data?.visualClickPoints?.length || 0,
+    filesCount: data?.files?.length || 0,
+    data: data
+  });
+
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showParticipantFilter, setShowParticipantFilter] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<string>('all');

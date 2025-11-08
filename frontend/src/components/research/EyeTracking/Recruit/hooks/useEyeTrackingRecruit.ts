@@ -693,15 +693,18 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   useEffect(() => {
     if (!loading) {
       const generatedLink = generateRecruitmentLink();
-      // Solo actualizar si la URL es diferente o está vacía
-      if (!formData.researchUrl || formData.researchUrl !== generatedLink) {
-        setFormData(prev => ({
-          ...prev,
-          researchUrl: generatedLink
-        }));
-      }
+      // Solo actualizar si la URL es diferente o está vacía (evitar loop infinito)
+      setFormData(prev => {
+        if (!prev.researchUrl || prev.researchUrl !== generatedLink) {
+          return {
+            ...prev,
+            researchUrl: generatedLink
+          };
+        }
+        return prev; // No actualizar si ya es la misma URL
+      });
     }
-  }, [loading, formData.researchUrl, generateRecruitmentLink]);
+  }, [loading, generateRecruitmentLink]); // Remover formData.researchUrl de dependencias
 
   // 🎯 DETECTAR CAMBIOS NO GUARDADOS PARA FEEDBACK VISUAL
   useEffect(() => {
