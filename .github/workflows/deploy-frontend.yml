@@ -55,12 +55,16 @@ jobs:
           aws s3 website s3://emotioxv2-frontend-041238861016 --index-document index.html --error-document error.html
 
       - name: Invalidate CloudFront cache
+        continue-on-error: true
         run: |
           echo "🔄 Invalidating CloudFront cache..."
-          if [ -n "${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+          if [ -n "${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}" ] && [ "${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}" != "none" ]; then
             aws cloudfront create-invalidation \
               --distribution-id ${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }} \
-              --paths "/*" && echo "✅ CloudFront cache invalidated" || echo "⚠️  CloudFront invalidation failed"
+              --paths "/*" && echo "✅ CloudFront cache invalidated" || {
+              echo "⚠️  CloudFront invalidation failed, but deployment continues"
+              exit 0
+            }
           else
             echo "⚠️  FRONTEND_CLOUDFRONT_DISTRIBUTION_ID not set - skipping CloudFront invalidation"
           fi

@@ -3,11 +3,11 @@
 # 🚀 Script de deploy limpio para public-tests (Vite React)
 # Limpia el bucket S3, borra dist/, build, sube y luego invalida CloudFront
 
-set -e
+set -euo pipefail
 
 # Configuración - usar variables de entorno o valores por defecto
 BUCKET="${BUCKET:-emotioxv2-public-tests-041238861016}"
-DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ID:-E1J2YXOVM8QFOG}"
+DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ID:-none}"
 REGION="${REGION:-us-east-1}"
 BUILD_DIR="dist"
 
@@ -22,9 +22,9 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-log_info "Limpiando bucket S3: $BUCKET ..."
-aws s3 rm s3://$BUCKET --recursive --region $REGION || { log_error "Error al limpiar el bucket S3"; exit 1; }
-log_success "Bucket S3 limpio."
+# No limpiar el bucket antes - usar sync con --delete para evitar downtime
+# El sync con --delete solo elimina archivos que no están en el nuevo build
+log_info "Preparando deploy a S3: $BUCKET ..."
 
 # 🆕 SINCRONIZAR ENDPOINTS DINÁMICOS ANTES DEL BUILD
 log_info "🔄 Verificando endpoints dinámicos..."
@@ -60,14 +60,19 @@ else
 fi
 
 log_info "Invalidando CloudFront..."
-if aws cloudfront get-distribution --id $DISTRIBUTION_ID --region $REGION >/dev/null 2>&1; then
-    aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*" --region $REGION || { 
-        log_warning "Error al invalidar CloudFront, pero continuando deployment"; 
-    }
-    log_success "CloudFront invalidado."
+if [ "$DISTRIBUTION_ID" != "none" ] && [ -n "$DISTRIBUTION_ID" ]; then
+    if aws cloudfront get-distribution --id "$DISTRIBUTION_ID" --region "$REGION" >/dev/null 2>&1; then
+        if aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*" --region "$REGION" >/dev/null 2>&1; then
+            log_success "CloudFront invalidado."
+        else
+            log_warning "Error al invalidar CloudFront, pero continuando deployment"
+        fi
+    else
+        log_warning "⚠️ Distribución CloudFront no encontrada ($DISTRIBUTION_ID), saltando invalidación"
+        log_info "🔄 El contenido será accesible directamente desde S3"
+    fi
 else
-    log_warning "⚠️ Distribución CloudFront no encontrada ($DISTRIBUTION_ID), saltando invalidación"
-    log_info "🔄 El contenido será accesible directamente desde S3"
+    log_info "⚠️ CloudFront Distribution ID no configurado - usando solo S3"
 fi
 
 log_info "Verificando deployment..."

@@ -49,10 +49,20 @@ jobs:
           STAGE="${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}"
           echo "STAGE=${STAGE}" >> $GITHUB_ENV
           echo "S3_BUCKET=emotioxv2-research-links-${STAGE}" >> $GITHUB_ENV
-          echo "CLOUDFRONT_DISTRIBUTION_ID=${{ secrets.RESEARCH_LINKS_CLOUDFRONT_DISTRIBUTION_ID_DEV }}" >> $GITHUB_ENV
           
+          # Set CloudFront Distribution ID based on stage
           if [ "$STAGE" = "prod" ]; then
-            echo "CLOUDFRONT_DISTRIBUTION_ID=${{ secrets.RESEARCH_LINKS_CLOUDFRONT_DISTRIBUTION_ID_PROD }}" >> $GITHUB_ENV
+            CLOUDFRONT_ID="${{ secrets.RESEARCH_LINKS_CLOUDFRONT_DISTRIBUTION_ID_PROD }}"
+          else
+            CLOUDFRONT_ID="${{ secrets.RESEARCH_LINKS_CLOUDFRONT_DISTRIBUTION_ID_DEV }}"
+          fi
+          
+          # Validate CloudFront Distribution ID
+          if [ -z "$CLOUDFRONT_ID" ] || [ "$CLOUDFRONT_ID" = "none" ]; then
+            echo "⚠️  Warning: CloudFront Distribution ID not set for stage $STAGE"
+            echo "CLOUDFRONT_DISTRIBUTION_ID=none" >> $GITHUB_ENV
+          else
+            echo "CLOUDFRONT_DISTRIBUTION_ID=${CLOUDFRONT_ID}" >> $GITHUB_ENV
           fi
       
       - name: Configure environment file
@@ -112,11 +122,19 @@ jobs:
           done
       
       - name: Invalidate CloudFront cache
+        continue-on-error: true
         run: |
           echo "Invalidating CloudFront distribution: ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}"
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
+          if [ -z "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ] || [ "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" = "none" ]; then
+            echo "⚠️  CloudFront Distribution ID not set - skipping CloudFront invalidation"
+          else
+            aws cloudfront create-invalidation \
+              --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+              --paths "/*" && echo "✅ CloudFront cache invalidated" || {
+              echo "⚠️  CloudFront invalidation failed, but deployment continues"
+              exit 0
+            }
+          fi
       
       - name: Verify deployment
         run: |
@@ -136,6 +154,7 @@ jobs:
       
       - name: Generate deployment URL
         id: deployment-url
+        continue-on-error: true
         run: |
           if [ "${{ env.STAGE }}" = "prod" ]; then
             echo "DEPLOYMENT_URL=${{ secrets.PROD_RESEARCH_LINKS_URL }}" >> $GITHUB_ENV
@@ -143,13 +162,16 @@ jobs:
             echo "DEPLOYMENT_URL=${{ secrets.DEV_RESEARCH_LINKS_URL }}" >> $GITHUB_ENV
           fi
           
-          # Get CloudFront domain
-          CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
-            --id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --query 'Distribution.DomainName' \
-            --output text)
-          
-          echo "CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN}" >> $GITHUB_ENV
+          # Get CloudFront domain if configured
+          if [ "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" != "none" ] && [ -n "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
+              --id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+              --query 'Distribution.DomainName' \
+              --output text 2>/dev/null || echo "N/A")
+            echo "CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN}" >> $GITHUB_ENV
+          else
+            echo "CLOUDFRONT_DOMAIN=N/A" >> $GITHUB_ENV
+          fi
       
       - name: Deployment summary
         run: |
@@ -157,13 +179,22 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ env.STAGE }}" >> $GITHUB_STEP_SUMMARY
           echo "**S3 Bucket:** ${{ env.S3_BUCKET }}" >> $GITHUB_STEP_SUMMARY
-          echo "**CloudFront Distribution ID:** ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" >> $GITHUB_STEP_SUMMARY
+          CLOUDFRONT_ID_DISPLAY="${{ env.CLOUDFRONT_DISTRIBUTION_ID }}"
+          if [ -z "$CLOUDFRONT_ID_DISPLAY" ]; then
+            CLOUDFRONT_ID_DISPLAY="none"
+          fi
+          echo "**CloudFront Distribution ID:** $CLOUDFRONT_ID_DISPLAY" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### URLs:" >> $GITHUB_STEP_SUMMARY
-          echo "- **CloudFront:** https://${{ env.CLOUDFRONT_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ env.CLOUDFRONT_DOMAIN }}" != "N/A" ] && [ -n "${{ env.CLOUDFRONT_DOMAIN }}" ]; then
+            echo "- **CloudFront:** https://${{ env.CLOUDFRONT_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **CloudFront:** No configurado" >> $GITHUB_STEP_SUMMARY
+          fi
           if [ ! -z "${{ env.DEPLOYMENT_URL }}" ]; then
             echo "- **Custom Domain:** ${{ env.DEPLOYMENT_URL }}" >> $GITHUB_STEP_SUMMARY
           fi
+          echo "- **S3:** https://${{ env.S3_BUCKET }}.s3.us-east-1.amazonaws.com" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment Details:" >> $GITHUB_STEP_SUMMARY
           echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

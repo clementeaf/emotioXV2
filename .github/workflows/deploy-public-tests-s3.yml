@@ -21,7 +21,6 @@ env:
   NODE_VERSION: '20'
   BUCKET: emotioxv2-public-tests-041238861016
   REGION: us-east-1
-  CLOUDFRONT_DISTRIBUTION_ID: E3KFNJVCTHRPO9
 
 jobs:
   deploy:
@@ -51,16 +50,19 @@ jobs:
           echo "🔍 Verificando variables de entorno..."
           echo "BUCKET: ${{ env.BUCKET }}"
           echo "REGION: ${{ env.REGION }}"
-          echo "CLOUDFRONT_DISTRIBUTION_ID: ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}"
+          
+          # Set CloudFront Distribution ID from secret
+          CLOUDFRONT_ID="${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }}"
+          echo "CLOUDFRONT_DISTRIBUTION_ID=${CLOUDFRONT_ID:-none}" >> $GITHUB_ENV
+          echo "CLOUDFRONT_DISTRIBUTION_ID: ${CLOUDFRONT_ID:-none}"
 
           if [ -z "${{ env.BUCKET }}" ]; then
             echo "❌ Error: BUCKET no está definido"
             exit 1
           fi
 
-          if [ -z "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
-            echo "❌ Error: CLOUDFRONT_DISTRIBUTION_ID no está definido"
-            exit 1
+          if [ -z "$CLOUDFRONT_ID" ] || [ "$CLOUDFRONT_ID" = "none" ]; then
+            echo "⚠️  Warning: PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID not set - deployment will use S3 only"
           fi
 
       - name: 🏗️ Build application
@@ -120,16 +122,28 @@ jobs:
           echo "✅ Despliegue verificado correctamente"
 
       - name: 🌐 Test CloudFront accessibility
-        if: env.CLOUDFRONT_DISTRIBUTION_ID != 'none'
+        if: env.CLOUDFRONT_DISTRIBUTION_ID != 'none' && env.CLOUDFRONT_DISTRIBUTION_ID != ''
+        continue-on-error: true
         run: |
           echo "🌐 Probando accesibilidad de CloudFront..."
+
+          # Validar que CloudFront ID está configurado
+          if [ -z "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ] || [ "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" = "none" ]; then
+            echo "⚠️ CloudFront Distribution ID no configurado - saltando test"
+            exit 0
+          fi
 
           # Obtener dominio de CloudFront
           CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
             --id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
             --region ${{ env.REGION }} \
             --query 'Distribution.DomainName' \
-            --output text)
+            --output text 2>/dev/null || echo "")
+
+          if [ -z "$CLOUDFRONT_DOMAIN" ]; then
+            echo "⚠️ No se pudo obtener el dominio de CloudFront"
+            exit 0
+          fi
 
           echo "CloudFront Domain: $CLOUDFRONT_DOMAIN"
 
@@ -153,17 +167,39 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Bucket S3:** ${{ env.BUCKET }}" >> $GITHUB_STEP_SUMMARY
           echo "**Región:** ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**CloudFront Distribution ID:** ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" >> $GITHUB_STEP_SUMMARY
+          CLOUDFRONT_ID_DISPLAY="${{ env.CLOUDFRONT_DISTRIBUTION_ID }}"
+          if [ -z "$CLOUDFRONT_ID_DISPLAY" ]; then
+            CLOUDFRONT_ID_DISPLAY="none"
+          fi
+          echo "**CloudFront Distribution ID:** $CLOUDFRONT_ID_DISPLAY" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📋 Checklist:" >> $GITHUB_STEP_SUMMARY
           echo "- [x] Build completado" >> $GITHUB_STEP_SUMMARY
           echo "- [x] Archivos subidos a S3" >> $GITHUB_STEP_SUMMARY
           echo "- [x] Endpoints dinámicos copiados" >> $GITHUB_STEP_SUMMARY
-          echo "- [x] Caché de CloudFront invalidado" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" != "none" ] && [ -n "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            echo "- [x] Caché de CloudFront invalidado" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- [ ] Caché de CloudFront (no configurado)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 URLs:" >> $GITHUB_STEP_SUMMARY
           echo "- **S3:** https://${{ env.BUCKET }}.s3.${{ env.REGION }}.amazonaws.com" >> $GITHUB_STEP_SUMMARY
-          echo "- **CloudFront:** https://$CLOUDFRONT_DOMAIN" >> $GITHUB_STEP_SUMMARY
+          CLOUDFRONT_ID_CHECK="${{ env.CLOUDFRONT_DISTRIBUTION_ID }}"
+          if [ -n "$CLOUDFRONT_ID_CHECK" ] && [ "$CLOUDFRONT_ID_CHECK" != "none" ]; then
+            CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
+              --id "$CLOUDFRONT_ID_CHECK" \
+              --region ${{ env.REGION }} \
+              --query 'Distribution.DomainName' \
+              --output text 2>/dev/null || echo "N/A")
+            if [ "$CLOUDFRONT_DOMAIN" != "N/A" ] && [ -n "$CLOUDFRONT_DOMAIN" ]; then
+              echo "- **CloudFront:** https://$CLOUDFRONT_DOMAIN" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- **CloudFront:** ID configurado pero dominio no disponible" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "- **CloudFront:** No configurado" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: 🎉 Success notification
         if: success()
