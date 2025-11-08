@@ -180,6 +180,51 @@ class EmotioXV2MCPServer {
             properties: {},
           },
         },
+        {
+          name: 'check_deployment_sync',
+          description: 'Verificar si los deployments de S3/CloudFront están sincronizados con los últimos cambios en git',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              service: {
+                type: 'string',
+                description: 'Servicio específico a verificar (frontend, public-tests) o "all" para todos',
+                enum: ['frontend', 'public-tests', 'all'],
+                default: 'all',
+              },
+            },
+          },
+        },
+        {
+          name: 'verify_s3_cloudfront_status',
+          description: 'Verificar el estado de S3/CloudFront y comparar con los últimos commits',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              service: {
+                type: 'string',
+                description: 'Servicio específico a verificar (frontend, public-tests)',
+                enum: ['frontend', 'public-tests'],
+                required: true,
+              },
+            },
+          },
+        },
+        {
+          name: 'compare_commits_with_deployments',
+          description: 'Comparar los últimos commits con los últimos deployments para verificar si están actualizados',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              service: {
+                type: 'string',
+                description: 'Servicio específico a verificar (frontend, public-tests) o "all" para todos',
+                enum: ['frontend', 'public-tests', 'all'],
+                default: 'all',
+              },
+            },
+          },
+        },
       ],
     }));
 
@@ -208,6 +253,12 @@ class EmotioXV2MCPServer {
             return await this.deploymentStatus(args as { service?: string });
           case 'deployment_summary':
             return await this.deploymentSummary();
+          case 'check_deployment_sync':
+            return await this.checkDeploymentSync(args as { service?: string });
+          case 'verify_s3_cloudfront_status':
+            return await this.verifyS3CloudFrontStatus(args as { service: string });
+          case 'compare_commits_with_deployments':
+            return await this.compareCommitsWithDeployments(args as { service?: string });
           default:
             throw new McpError(
               ErrorCode.MethodNotFound,
@@ -460,6 +511,259 @@ class EmotioXV2MCPServer {
             `=== Workflows ===\n${workflows.content[0].text}\n\n` +
             `=== Deployments ===\n${deployments.content[0].text}\n\n` +
             `=== Últimos Runs ===\n${recentRuns.content[0].text}`,
+        },
+      ],
+    };
+  }
+
+  private async checkDeploymentSync(args: { service?: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const service = args.service || 'all';
+    const services = service === 'all' ? ['frontend', 'public-tests'] : [service];
+    
+    const results: string[] = [];
+    
+    for (const svc of services) {
+      try {
+        // Obtener último commit
+        const lastCommit = await this.executeCommand('git', ['log', '-1', '--format=%H|%s|%cd', '--date=iso']);
+        const [commitHash, commitMessage, commitDate] = lastCommit.trim().split('|');
+        
+        // Obtener último run del workflow de deploy
+        const workflowMap: Record<string, string> = {
+          'frontend': 'deploy-frontend.yml',
+          'public-tests': 'deploy-public-tests-s3.yml',
+        };
+        
+        const workflow = workflowMap[svc];
+        if (!workflow) continue;
+        
+        const runOutput = await this.executeCommand('gh', [
+          'run', 'list',
+          '--workflow', workflow,
+          '--limit', '1',
+          '--json', 'status,conclusion,displayTitle,createdAt,headSha,headBranch'
+        ]);
+        
+        const runs = JSON.parse(runOutput);
+        
+        if (runs.length === 0) {
+          results.push(`📦 ${svc}\n   ⚠️ No hay runs de deployment disponibles\n`);
+          continue;
+        }
+        
+        const lastRun = runs[0];
+        const runCommitHash = lastRun.headSha;
+        const runDate = new Date(lastRun.createdAt);
+        const commitDateObj = new Date(commitDate);
+        
+        // Comparar commits
+        const isUpToDate = runCommitHash === commitHash;
+        const timeDiff = commitDateObj.getTime() - runDate.getTime();
+        const hoursDiff = Math.abs(timeDiff) / (1000 * 60 * 60);
+        
+        let status = '';
+        if (isUpToDate) {
+          status = '✅ Actualizado';
+        } else if (commitDateObj > runDate) {
+          status = `⚠️ Desactualizado (${hoursDiff.toFixed(1)} horas de diferencia)`;
+        } else {
+          status = '✅ Deployment más reciente que el commit';
+        }
+        
+        results.push(
+          `📦 ${svc}\n` +
+          `   Último commit: ${commitHash.substring(0, 7)} - ${commitMessage}\n` +
+          `   Fecha commit: ${commitDateObj.toLocaleString()}\n` +
+          `   Último deployment: ${runCommitHash.substring(0, 7)}\n` +
+          `   Fecha deployment: ${runDate.toLocaleString()}\n` +
+          `   Estado: ${status}\n` +
+          `   Run: ${lastRun.status} - ${lastRun.conclusion || 'in_progress'}\n`
+        );
+      } catch (error) {
+        results.push(`📦 ${svc}\n   ❌ Error: ${error instanceof Error ? error.message : String(error)}\n`);
+      }
+    }
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `🔄 Sincronización de Deployments\n\n${results.join('\n')}`,
+        },
+      ],
+    };
+  }
+
+  private async verifyS3CloudFrontStatus(args: { service: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { service } = args;
+    
+    const config: Record<string, { bucket: string; workflow: string; secretKey: string }> = {
+      'frontend': {
+        bucket: 'emotioxv2-frontend-041238861016',
+        workflow: 'deploy-frontend.yml',
+        secretKey: 'FRONTEND_CLOUDFRONT_DISTRIBUTION_ID',
+      },
+      'public-tests': {
+        bucket: 'emotioxv2-public-tests-041238861016',
+        workflow: 'deploy-public-tests-s3.yml',
+        secretKey: 'PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID',
+      },
+    };
+    
+    const svcConfig = config[service];
+    if (!svcConfig) {
+      throw new McpError(ErrorCode.InvalidParams, `Servicio desconocido: ${service}`);
+    }
+    
+    const results: string[] = [];
+    
+    try {
+      // Verificar último run
+      const runOutput = await this.executeCommand('gh', [
+        'run', 'list',
+        '--workflow', svcConfig.workflow,
+        '--limit', '1',
+        '--json', 'status,conclusion,displayTitle,createdAt,headSha'
+      ]);
+      
+      const runs = JSON.parse(runOutput);
+      const lastRun = runs.length > 0 ? runs[0] : null;
+      
+      if (lastRun) {
+        results.push(
+          `📋 Último Run de Deployment\n` +
+          `   Estado: ${lastRun.status} - ${lastRun.conclusion || 'in_progress'}\n` +
+          `   Título: ${lastRun.displayTitle}\n` +
+          `   Commit: ${lastRun.headSha.substring(0, 7)}\n` +
+          `   Fecha: ${new Date(lastRun.createdAt).toLocaleString()}\n`
+        );
+      } else {
+        results.push(`⚠️ No hay runs de deployment disponibles\n`);
+      }
+      
+      // Verificar S3 (requiere AWS CLI)
+      try {
+        const s3Check = await this.executeCommand('aws', [
+          's3', 'ls',
+          `s3://${svcConfig.bucket}/index.html`,
+          '--region', 'us-east-1'
+        ]);
+        
+        results.push(`✅ S3: Archivo index.html encontrado en bucket ${svcConfig.bucket}\n`);
+      } catch (error) {
+        results.push(`⚠️ S3: No se pudo verificar (AWS CLI puede no estar configurado)\n`);
+      }
+      
+      // Verificar CloudFront (requiere AWS CLI y secret)
+      try {
+        const secretOutput = await this.executeCommand('gh', [
+          'secret', 'list',
+          '--json', 'name'
+        ]);
+        
+        const secrets = JSON.parse(secretOutput);
+        const hasCloudFrontSecret = secrets.some((s: { name: string }) => s.name === svcConfig.secretKey);
+        
+        if (hasCloudFrontSecret) {
+          results.push(`✅ CloudFront: Secret configurado (${svcConfig.secretKey})\n`);
+        } else {
+          results.push(`⚠️ CloudFront: Secret no configurado (${svcConfig.secretKey})\n`);
+        }
+      } catch (error) {
+        results.push(`⚠️ CloudFront: No se pudo verificar secret\n`);
+      }
+      
+    } catch (error) {
+      results.push(`❌ Error: ${error instanceof Error ? error.message : String(error)}\n`);
+    }
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `🔍 Verificación de S3/CloudFront - ${service}\n\n${results.join('\n')}`,
+        },
+      ],
+    };
+  }
+
+  private async compareCommitsWithDeployments(args: { service?: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const service = args.service || 'all';
+    const services = service === 'all' ? ['frontend', 'public-tests'] : [service];
+    
+    const results: string[] = [];
+    
+    // Obtener últimos 5 commits
+    const commitsOutput = await this.executeCommand('git', [
+      'log', '-5', '--format=%H|%s|%cd|%an',
+      '--date=iso',
+      '--pretty=format:%H|%s|%cd|%an'
+    ]);
+    
+    const commits = commitsOutput.trim().split('\n').map(line => {
+      const [hash, message, date, author] = line.split('|');
+      return { hash, message, date, author };
+    });
+    
+    for (const svc of services) {
+      const workflowMap: Record<string, string> = {
+        'frontend': 'deploy-frontend.yml',
+        'public-tests': 'deploy-public-tests-s3.yml',
+      };
+      
+      const workflow = workflowMap[svc];
+      if (!workflow) continue;
+      
+      try {
+        // Obtener últimos 5 runs
+        const runOutput = await this.executeCommand('gh', [
+          'run', 'list',
+          '--workflow', workflow,
+          '--limit', '5',
+          '--json', 'status,conclusion,displayTitle,createdAt,headSha,headBranch'
+        ]);
+        
+        const runs = JSON.parse(runOutput);
+        
+        // Comparar commits con deployments
+        const deployedCommits = new Set(runs.map((r: any) => r.headSha));
+        const pendingCommits = commits.filter(c => !deployedCommits.has(c.hash));
+        
+        results.push(
+          `📦 ${svc}\n` +
+          `   Total commits: ${commits.length}\n` +
+          `   Total deployments: ${runs.length}\n` +
+          `   Commits desplegados: ${commits.length - pendingCommits.length}\n` +
+          `   Commits pendientes: ${pendingCommits.length}\n`
+        );
+        
+        if (pendingCommits.length > 0) {
+          results.push(`   ⚠️ Commits pendientes de deploy:\n`);
+          pendingCommits.forEach(commit => {
+            results.push(`      - ${commit.hash.substring(0, 7)}: ${commit.message}\n`);
+          });
+        } else {
+          results.push(`   ✅ Todos los commits están desplegados\n`);
+        }
+        
+        if (runs.length > 0) {
+          const lastRun = runs[0];
+          results.push(
+            `   Último deployment: ${lastRun.headSha.substring(0, 7)} - ${lastRun.displayTitle}\n` +
+            `   Estado: ${lastRun.status} - ${lastRun.conclusion || 'in_progress'}\n`
+          );
+        }
+        
+      } catch (error) {
+        results.push(`📦 ${svc}\n   ❌ Error: ${error instanceof Error ? error.message : String(error)}\n`);
+      }
+    }
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `📊 Comparación de Commits con Deployments\n\n${results.join('\n')}`,
         },
       ],
     };

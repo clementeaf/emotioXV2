@@ -64,6 +64,9 @@ O si instalaste globalmente:
 
 - `deployment_status`: Verificar estado de deployments
 - `deployment_summary`: Resumen completo del estado
+- `check_deployment_sync`: Verificar si los deployments están sincronizados con los últimos commits
+- `verify_s3_cloudfront_status`: Verificar el estado de S3/CloudFront y comparar con los últimos commits
+- `compare_commits_with_deployments`: Comparar los últimos commits con los últimos deployments para identificar commits pendientes
 
 ## 📝 Requisitos
 
