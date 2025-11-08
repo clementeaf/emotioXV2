@@ -130,7 +130,10 @@ const login = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult
     // Realizar login
     const authResponse = await authService.login(credentials);
 
-    return createResponse(200, authResponse, event);
+    return createResponse(200, {
+      success: true,
+      data: authResponse
+    }, event);
   } catch (error: unknown) {
     if ((error as Error).message?.includes('Credenciales inválidas') ||
         (error as Error).message?.includes('Cuenta desactivada')) {
