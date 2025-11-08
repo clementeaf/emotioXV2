@@ -15,7 +15,7 @@ jobs:
     
     name: TypeScript Check - ${{ matrix.project }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -51,7 +51,7 @@ jobs:
     needs: typescript-check
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -77,7 +77,7 @@ jobs:
     name: "🚫 Prohibir any/unknown"
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Check for prohibited 'any' and 'unknown' types
       run: |
@@ -142,7 +142,7 @@ jobs:
     name: "🏗️ Clean Architecture Validation"
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Validate file structure
       run: |
@@ -171,7 +171,7 @@ jobs:
     name: "🎯 Quality Gates"
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Quality Summary
       run: |
