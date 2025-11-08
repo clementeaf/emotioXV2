@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toastHelpers } from '@/utils/toast';
-import { apiClient } from '@/api/config/axios';
+import { useWelcomeScreenData } from '@/api/domains/welcome-screen';
 
 interface WelcomeScreenData {
   title: string;
@@ -35,6 +35,18 @@ interface UseWelcomeScreenResult {
 }
 
 export const useWelcomeScreen = (researchId: string): UseWelcomeScreenResult => {
+  // Hook centralizado para obtener datos y operaciones CRUD
+  const {
+    data: existingScreen,
+    isLoading,
+    createWelcomeScreen,
+    updateWelcomeScreen,
+    deleteWelcomeScreen,
+    isCreating,
+    isUpdating,
+    isDeleting
+  } = useWelcomeScreenData(researchId);
+
   const [formData, setFormData] = useState<WelcomeScreenData>({
     title: '',
     message: '',
@@ -42,41 +54,33 @@ export const useWelcomeScreen = (researchId: string): UseWelcomeScreenResult => 
     isEnabled: true
   });
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [existingScreen, setExistingScreen] = useState<any | null>(null);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
-  // Cargar datos existentes
+  // Cargar datos cuando cambie la respuesta del hook centralizado
   useEffect(() => {
-    if (!researchId) return;
-    
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const response = await apiClient.get(`/research/${researchId}/welcome-screen`);
-        const data = response.data;
-        setFormData({
-          title: data.title || '',
-          message: data.message || '',
-          startButtonText: data.startButtonText || '',
-          isEnabled: data.isEnabled ?? true
-        });
-        setExistingScreen(data);
-      } catch (error) {
-        console.error('Error loading welcome screen:', error);
-        // Si no existe, mantener valores por defecto
-        setExistingScreen(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [researchId]);
+    if (isLoading) return;
+
+    if (!existingScreen) {
+      // Si no existe, mantener valores por defecto
+      setFormData({
+        title: '',
+        message: '',
+        startButtonText: '',
+        isEnabled: true
+      });
+      return;
+    }
+
+    // Actualizar formData con los datos existentes
+    setFormData({
+      title: existingScreen.title || '',
+      message: existingScreen.message || '',
+      startButtonText: existingScreen.startButtonText || '',
+      isEnabled: existingScreen.isEnabled ?? true
+    });
+  }, [existingScreen, isLoading]);
 
   const handleChange = (field: keyof WelcomeScreenData, value: string | boolean) => {
     setFormData(prev => ({
@@ -91,42 +95,47 @@ export const useWelcomeScreen = (researchId: string): UseWelcomeScreenResult => 
       return;
     }
 
-    setIsSaving(true);
     try {
-      const response = await apiClient.post(`/research/${researchId}/welcome-screen`, {
-        researchId,
-        questionKey: 'WELCOME_SCREEN',
-        ...formData
+      let savedData;
+      if (existingScreen?.id) {
+        // Actualizar existente usando hook centralizado
+        savedData = await updateWelcomeScreen(researchId, formData);
+      } else {
+        // Crear nuevo usando hook centralizado
+        savedData = await createWelcomeScreen(formData);
+      }
+      
+      // Actualizar formData con los datos guardados
+      setFormData({
+        title: savedData.title || '',
+        message: savedData.message || '',
+        startButtonText: savedData.startButtonText || '',
+        isEnabled: savedData.isEnabled ?? true
       });
       
-      const savedData = response.data;
-      setFormData(prev => ({
-        ...prev,
-        ...savedData
-      }));
-      setExistingScreen(savedData);
       toastHelpers.saveSuccess('Pantalla de bienvenida');
     } catch (error) {
       console.error('Error saving welcome screen:', error);
-      toastHelpers.error('Error al guardar la pantalla de bienvenida');
-    } finally {
-      setIsSaving(false);
+      setModalError({
+        title: 'Error al guardar',
+        message: 'No se pudo guardar la pantalla de bienvenida',
+        type: 'error'
+      });
+      setModalVisible(true);
     }
   };
 
   const handleDelete = async () => {
     if (!existingScreen || !existingScreen.id) return;
 
-    setIsDeleting(true);
     try {
-      await apiClient.delete(`/research/${researchId}/welcome-screen`);
+      await deleteWelcomeScreen();
       setFormData({
         title: '',
         message: '',
         startButtonText: '',
         isEnabled: true
       });
-      setExistingScreen(null);
       toastHelpers.deleteSuccess('Pantalla de bienvenida');
     } catch (error) {
       console.error('Error deleting welcome screen:', error);
@@ -136,8 +145,6 @@ export const useWelcomeScreen = (researchId: string): UseWelcomeScreenResult => 
         type: 'error'
       });
       setModalVisible(true);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -201,6 +208,9 @@ export const useWelcomeScreen = (researchId: string): UseWelcomeScreenResult => 
       toastHelpers.error('No se pudo abrir la ventana de vista previa');
     }
   };
+
+  // Usar estados del hook centralizado para isSaving e isDeleting
+  const isSaving = isCreating || isUpdating;
 
   return {
     formData,
