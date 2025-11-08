@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-11-01T23:51:56.000Z
+// Generado: 2025-11-08T17:38:38.000Z
 // Stage: dev
 
 /**
@@ -23,7 +23,7 @@ export const DYNAMIC_API_ENDPOINTS = {
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-11-01T23:51:56.000Z",
+  syncedAt: "2025-11-08T17:38:38.000Z",
   syncedFromStage: "dev"
 };
 
@@ -31,7 +31,7 @@ export const DYNAMIC_API_ENDPOINTS = {
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:5173",
-  "generatedAt": "2025-11-01T23:51:56.000Z"
+  "generatedAt": "2025-11-08T17:38:38.000Z"
 };
 
 // Constantes para uso más fácil
@@ -57,16 +57,7 @@ export function getWebsocketUrl(): string {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl(): string {
-  // 🎯 DETECTAR ENTORNO AUTOMÁTICAMENTE
-  const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  
-  // Si estamos en localhost → usar localhost de public-tests
-  if (isDevelopment) {
-    return LOCAL_URLS.publicTests; // http://localhost:5173
-  }
-  
-  // Si estamos desplegados en S3/CloudFront → usar S3/CloudFront de public-tests
-  return process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net';
+  return LOCAL_URLS.publicTests;
 }
 
 // Función para navegar a public-tests con researchID

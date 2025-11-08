@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE POR POST-DEPLOY SYNC
 // NO MODIFICAR MANUALMENTE - Se sobrescribe en cada deploy
-// Generado: 2025-10-16T00:40:17.000Z
+// Generado: 2025-11-08T17:38:38.000Z
 // Stage: dev
 
 /**
@@ -23,7 +23,7 @@ export const DYNAMIC_API_ENDPOINTS = {
   stage: "dev",
 
   // Metadata de sincronización
-  syncedAt: "2025-10-16T00:40:17.000Z",
+  syncedAt: "2025-11-08T17:38:38.000Z",
   syncedFromStage: "dev"
 };
 
@@ -31,7 +31,7 @@ export const DYNAMIC_API_ENDPOINTS = {
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:5173",
-  "generatedAt": "2025-10-16T00:40:17.000Z"
+  "generatedAt": "2025-11-08T17:38:38.000Z"
 };
 
 // Constantes para uso más fácil
@@ -47,6 +47,10 @@ export function getApiUrl(path: string): string {
 // Función para obtener URL de WebSocket
 export function getWebsocketUrl(): string {
   const wsUrl = API_WEBSOCKET_ENDPOINT;
+  
+  if (typeof window !== 'undefined') {
+    console.log('🔌 WebSocket URL configurada:', wsUrl);
+  }
   
   return wsUrl;
 }
