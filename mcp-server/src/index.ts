@@ -225,6 +225,290 @@ class EmotioXV2MCPServer {
             },
           },
         },
+        {
+          name: 'dynamodb_list_tables',
+          description: 'Listar todas las tablas de DynamoDB disponibles',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              stage: {
+                type: 'string',
+                description: 'Stage a filtrar (dev, prod) o "all" para todos',
+                enum: ['dev', 'prod', 'all'],
+                default: 'all',
+              },
+            },
+          },
+        },
+        {
+          name: 'dynamodb_get_item',
+          description: 'Obtener un item específico de una tabla de DynamoDB',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              tableName: {
+                type: 'string',
+                description: 'Nombre de la tabla',
+              },
+              key: {
+                type: 'object',
+                description: 'Clave del item (formato JSON)',
+              },
+            },
+            required: ['tableName', 'key'],
+          },
+        },
+        {
+          name: 'dynamodb_put_item',
+          description: 'Crear o actualizar un item en una tabla de DynamoDB',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              tableName: {
+                type: 'string',
+                description: 'Nombre de la tabla',
+              },
+              item: {
+                type: 'object',
+                description: 'Item a crear/actualizar (formato JSON)',
+              },
+            },
+            required: ['tableName', 'item'],
+          },
+        },
+        {
+          name: 'dynamodb_query',
+          description: 'Consultar una tabla de DynamoDB usando una clave o índice',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              tableName: {
+                type: 'string',
+                description: 'Nombre de la tabla',
+              },
+              keyConditionExpression: {
+                type: 'string',
+                description: 'Expresión de condición de clave (ej: "id = :id")',
+              },
+              expressionAttributeValues: {
+                type: 'object',
+                description: 'Valores de atributos para la expresión (formato JSON)',
+              },
+              indexName: {
+                type: 'string',
+                description: 'Nombre del índice a usar (opcional)',
+              },
+              limit: {
+                type: 'number',
+                description: 'Límite de resultados (por defecto: 100)',
+                default: 100,
+              },
+            },
+            required: ['tableName', 'keyConditionExpression', 'expressionAttributeValues'],
+          },
+        },
+        {
+          name: 'dynamodb_scan',
+          description: 'Escanear una tabla de DynamoDB (obtener todos los items)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              tableName: {
+                type: 'string',
+                description: 'Nombre de la tabla',
+              },
+              filterExpression: {
+                type: 'string',
+                description: 'Expresión de filtro (opcional, ej: "status = :status")',
+              },
+              expressionAttributeValues: {
+                type: 'object',
+                description: 'Valores de atributos para la expresión (formato JSON, opcional)',
+              },
+              limit: {
+                type: 'number',
+                description: 'Límite de resultados (por defecto: 100)',
+                default: 100,
+              },
+            },
+            required: ['tableName'],
+          },
+        },
+        {
+          name: 'dynamodb_delete_item',
+          description: 'Eliminar un item de una tabla de DynamoDB',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              tableName: {
+                type: 'string',
+                description: 'Nombre de la tabla',
+              },
+              key: {
+                type: 'object',
+                description: 'Clave del item a eliminar (formato JSON)',
+              },
+            },
+            required: ['tableName', 'key'],
+          },
+        },
+        {
+          name: 's3_list_buckets',
+          description: 'Listar todos los buckets de S3 disponibles',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+          },
+        },
+        {
+          name: 's3_list_objects',
+          description: 'Listar objetos en un bucket de S3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              bucket: {
+                type: 'string',
+                description: 'Nombre del bucket',
+              },
+              prefix: {
+                type: 'string',
+                description: 'Prefijo para filtrar objetos (opcional)',
+              },
+              limit: {
+                type: 'number',
+                description: 'Límite de resultados (por defecto: 100)',
+                default: 100,
+              },
+            },
+            required: ['bucket'],
+          },
+        },
+        {
+          name: 's3_get_object',
+          description: 'Obtener un objeto de S3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              bucket: {
+                type: 'string',
+                description: 'Nombre del bucket',
+              },
+              key: {
+                type: 'string',
+                description: 'Clave del objeto',
+              },
+            },
+            required: ['bucket', 'key'],
+          },
+        },
+        {
+          name: 's3_put_object',
+          description: 'Subir un objeto a S3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              bucket: {
+                type: 'string',
+                description: 'Nombre del bucket',
+              },
+              key: {
+                type: 'string',
+                description: 'Clave del objeto',
+              },
+              body: {
+                type: 'string',
+                description: 'Contenido del objeto',
+              },
+              contentType: {
+                type: 'string',
+                description: 'Tipo de contenido (opcional, ej: "application/json")',
+              },
+            },
+            required: ['bucket', 'key', 'body'],
+          },
+        },
+        {
+          name: 's3_delete_object',
+          description: 'Eliminar un objeto de S3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              bucket: {
+                type: 'string',
+                description: 'Nombre del bucket',
+              },
+              key: {
+                type: 'string',
+                description: 'Clave del objeto',
+              },
+            },
+            required: ['bucket', 'key'],
+          },
+        },
+        {
+          name: 's3_get_bucket_policy',
+          description: 'Obtener la política de un bucket de S3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              bucket: {
+                type: 'string',
+                description: 'Nombre del bucket',
+              },
+            },
+            required: ['bucket'],
+          },
+        },
+        {
+          name: 's3_put_bucket_policy',
+          description: 'Actualizar la política de un bucket de S3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              bucket: {
+                type: 'string',
+                description: 'Nombre del bucket',
+              },
+              policy: {
+                type: 'object',
+                description: 'Política del bucket (formato JSON)',
+              },
+            },
+            required: ['bucket', 'policy'],
+          },
+        },
+        {
+          name: 's3_get_bucket_cors',
+          description: 'Obtener la configuración CORS de un bucket de S3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              bucket: {
+                type: 'string',
+                description: 'Nombre del bucket',
+              },
+            },
+            required: ['bucket'],
+          },
+        },
+        {
+          name: 's3_put_bucket_cors',
+          description: 'Actualizar la configuración CORS de un bucket de S3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              bucket: {
+                type: 'string',
+                description: 'Nombre del bucket',
+              },
+              corsConfig: {
+                type: 'object',
+                description: 'Configuración CORS (formato JSON)',
+              },
+            },
+            required: ['bucket', 'corsConfig'],
+          },
+        },
       ],
     }));
 
@@ -259,6 +543,36 @@ class EmotioXV2MCPServer {
             return await this.verifyS3CloudFrontStatus(args as { service: string });
           case 'compare_commits_with_deployments':
             return await this.compareCommitsWithDeployments(args as { service?: string });
+          case 'dynamodb_list_tables':
+            return await this.dynamodbListTables(args as { stage?: string });
+          case 'dynamodb_get_item':
+            return await this.dynamodbGetItem(args as { tableName: string; key: Record<string, unknown> });
+          case 'dynamodb_put_item':
+            return await this.dynamodbPutItem(args as { tableName: string; item: Record<string, unknown> });
+          case 'dynamodb_query':
+            return await this.dynamodbQuery(args as { tableName: string; keyConditionExpression: string; expressionAttributeValues: Record<string, unknown>; indexName?: string; limit?: number });
+          case 'dynamodb_scan':
+            return await this.dynamodbScan(args as { tableName: string; filterExpression?: string; expressionAttributeValues?: Record<string, unknown>; limit?: number });
+          case 'dynamodb_delete_item':
+            return await this.dynamodbDeleteItem(args as { tableName: string; key: Record<string, unknown> });
+          case 's3_list_buckets':
+            return await this.s3ListBuckets();
+          case 's3_list_objects':
+            return await this.s3ListObjects(args as { bucket: string; prefix?: string; limit?: number });
+          case 's3_get_object':
+            return await this.s3GetObject(args as { bucket: string; key: string });
+          case 's3_put_object':
+            return await this.s3PutObject(args as { bucket: string; key: string; body: string; contentType?: string });
+          case 's3_delete_object':
+            return await this.s3DeleteObject(args as { bucket: string; key: string });
+          case 's3_get_bucket_policy':
+            return await this.s3GetBucketPolicy(args as { bucket: string });
+          case 's3_put_bucket_policy':
+            return await this.s3PutBucketPolicy(args as { bucket: string; policy: Record<string, unknown> });
+          case 's3_get_bucket_cors':
+            return await this.s3GetBucketCors(args as { bucket: string });
+          case 's3_put_bucket_cors':
+            return await this.s3PutBucketCors(args as { bucket: string; corsConfig: Record<string, unknown> });
           default:
             throw new McpError(
               ErrorCode.MethodNotFound,
@@ -767,6 +1081,596 @@ class EmotioXV2MCPServer {
         },
       ],
     };
+  }
+
+  private async dynamodbListTables(args: { stage?: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { stage = 'all' } = args;
+    
+    try {
+      const output = await this.executeCommand('aws', [
+        'dynamodb', 'list-tables',
+        '--region', 'us-east-1',
+        '--output', 'json'
+      ]);
+      
+      const result = JSON.parse(output);
+      let tables = result.TableNames || [];
+      
+      if (stage !== 'all') {
+        tables = tables.filter((table: string) => table.includes(`-${stage}`));
+      }
+      
+      const formatted = tables.map((table: string) => `  - ${table}`).join('\n');
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `📊 Tablas de DynamoDB${stage !== 'all' ? ` (stage: ${stage})` : ''}\n\n${formatted || 'No hay tablas disponibles'}\n\nTotal: ${tables.length}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error listando tablas: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async dynamodbGetItem(args: { tableName: string; key: Record<string, unknown> }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { tableName, key } = args;
+    
+    try {
+      const keyJson = JSON.stringify(this.convertToDynamoDBItem(key));
+      const output = await this.executeCommand('aws', [
+        'dynamodb', 'get-item',
+        '--table-name', tableName,
+        '--key', keyJson,
+        '--region', 'us-east-1',
+        '--output', 'json'
+      ]);
+      
+      const result = JSON.parse(output);
+      
+      if (!result.Item) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ Item no encontrado en la tabla ${tableName}`,
+            },
+          ],
+        };
+      }
+      
+      const item = this.convertDynamoDBItem(result.Item);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Item encontrado en ${tableName}\n\n${JSON.stringify(item, null, 2)}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error obteniendo item: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async dynamodbPutItem(args: { tableName: string; item: Record<string, unknown> }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { tableName, item } = args;
+    
+    try {
+      const dynamoItem = this.convertToDynamoDBItem(item);
+      const itemJson = JSON.stringify(dynamoItem);
+      
+      await this.executeCommand('aws', [
+        'dynamodb', 'put-item',
+        '--table-name', tableName,
+        '--item', itemJson,
+        '--region', 'us-east-1'
+      ]);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Item creado/actualizado en ${tableName}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error creando/actualizando item: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async dynamodbQuery(args: { tableName: string; keyConditionExpression: string; expressionAttributeValues: Record<string, unknown>; indexName?: string; limit?: number }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { tableName, keyConditionExpression, expressionAttributeValues, indexName, limit = 100 } = args;
+    
+    try {
+      const values = this.convertToDynamoDBItem(expressionAttributeValues);
+      const valuesJson = JSON.stringify(values);
+      
+      const command = [
+        'aws', 'dynamodb', 'query',
+        '--table-name', tableName,
+        '--key-condition-expression', keyConditionExpression,
+        '--expression-attribute-values', valuesJson,
+        '--limit', limit.toString(),
+        '--region', 'us-east-1',
+        '--output', 'json'
+      ];
+      
+      if (indexName) {
+        command.splice(3, 0, '--index-name', indexName);
+      }
+      
+      const output = await this.executeCommand(command[0], command.slice(1));
+      const result = JSON.parse(output);
+      
+      const items = (result.Items || []).map((item: Record<string, unknown>) => this.convertDynamoDBItem(item));
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `📊 Resultados de consulta en ${tableName}\n\nTotal: ${items.length}\n\n${JSON.stringify(items, null, 2)}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error consultando tabla: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async dynamodbScan(args: { tableName: string; filterExpression?: string; expressionAttributeValues?: Record<string, unknown>; limit?: number }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { tableName, filterExpression, expressionAttributeValues, limit = 100 } = args;
+    
+    try {
+      const command = [
+        'aws', 'dynamodb', 'scan',
+        '--table-name', tableName,
+        '--limit', limit.toString(),
+        '--region', 'us-east-1',
+        '--output', 'json'
+      ];
+      
+      if (filterExpression && expressionAttributeValues) {
+        const values = this.convertToDynamoDBItem(expressionAttributeValues);
+        const valuesJson = JSON.stringify(values);
+        command.push('--filter-expression', filterExpression);
+        command.push('--expression-attribute-values', valuesJson);
+      }
+      
+      const output = await this.executeCommand(command[0], command.slice(1));
+      const result = JSON.parse(output);
+      
+      const items = (result.Items || []).map((item: Record<string, unknown>) => this.convertDynamoDBItem(item));
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `📊 Resultados de escaneo en ${tableName}\n\nTotal: ${items.length}\n\n${JSON.stringify(items, null, 2)}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error escaneando tabla: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async dynamodbDeleteItem(args: { tableName: string; key: Record<string, unknown> }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { tableName, key } = args;
+    
+    try {
+      const keyJson = JSON.stringify(this.convertToDynamoDBItem(key));
+      
+      await this.executeCommand('aws', [
+        'dynamodb', 'delete-item',
+        '--table-name', tableName,
+        '--key', keyJson,
+        '--region', 'us-east-1'
+      ]);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Item eliminado de ${tableName}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error eliminando item: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3ListBuckets(): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const output = await this.executeCommand('aws', [
+        's3api', 'list-buckets',
+        '--region', 'us-east-1',
+        '--output', 'json'
+      ]);
+      
+      const result = JSON.parse(output);
+      const buckets = (result.Buckets || []).map((bucket: { Name: string; CreationDate: string }) => 
+        `  - ${bucket.Name} (creado: ${new Date(bucket.CreationDate).toLocaleString()})`
+      ).join('\n');
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🪣 Buckets de S3\n\n${buckets || 'No hay buckets disponibles'}\n\nTotal: ${result.Buckets?.length || 0}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error listando buckets: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3ListObjects(args: { bucket: string; prefix?: string; limit?: number }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { bucket, prefix = '', limit = 100 } = args;
+    
+    try {
+      const command = [
+        'aws', 's3api', 'list-objects-v2',
+        '--bucket', bucket,
+        '--max-items', limit.toString(),
+        '--region', 'us-east-1',
+        '--output', 'json'
+      ];
+      
+      if (prefix) {
+        command.push('--prefix', prefix);
+      }
+      
+      const output = await this.executeCommand(command[0], command.slice(1));
+      const result = JSON.parse(output);
+      
+      const objects = (result.Contents || []).map((obj: { Key: string; Size: number; LastModified: string }) => 
+        `  - ${obj.Key} (${obj.Size} bytes, modificado: ${new Date(obj.LastModified).toLocaleString()})`
+      ).join('\n');
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `📁 Objetos en ${bucket}${prefix ? ` (prefijo: ${prefix})` : ''}\n\n${objects || 'No hay objetos'}\n\nTotal: ${result.Contents?.length || 0}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error listando objetos: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3GetObject(args: { bucket: string; key: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { bucket, key } = args;
+    
+    try {
+      const fs = await import('fs/promises');
+      const tempFile = `/tmp/s3-get-temp-${Date.now()}`;
+      
+      await this.executeCommand('aws', [
+        's3api', 'get-object',
+        '--bucket', bucket,
+        '--key', key,
+        '--region', 'us-east-1',
+        tempFile
+      ]);
+      
+      const content = await fs.readFile(tempFile, 'utf-8');
+      await fs.unlink(tempFile);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Objeto obtenido de ${bucket}/${key}\n\n${content}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error obteniendo objeto: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3PutObject(args: { bucket: string; key: string; body: string; contentType?: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { bucket, key, body, contentType } = args;
+    
+    try {
+      const fs = await import('fs/promises');
+      const tempFile = `/tmp/s3-put-temp-${Date.now()}`;
+      
+      await fs.writeFile(tempFile, body, 'utf-8');
+      
+      const command = [
+        'aws', 's3api', 'put-object',
+        '--bucket', bucket,
+        '--key', key,
+        '--body', tempFile,
+        '--region', 'us-east-1'
+      ];
+      
+      if (contentType) {
+        command.push('--content-type', contentType);
+      }
+      
+      await this.executeCommand(command[0], command.slice(1));
+      await fs.unlink(tempFile);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Objeto subido a ${bucket}/${key}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error subiendo objeto: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3DeleteObject(args: { bucket: string; key: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { bucket, key } = args;
+    
+    try {
+      await this.executeCommand('aws', [
+        's3api', 'delete-object',
+        '--bucket', bucket,
+        '--key', key,
+        '--region', 'us-east-1'
+      ]);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Objeto eliminado de ${bucket}/${key}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error eliminando objeto: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3GetBucketPolicy(args: { bucket: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { bucket } = args;
+    
+    try {
+      const output = await this.executeCommand('aws', [
+        's3api', 'get-bucket-policy',
+        '--bucket', bucket,
+        '--region', 'us-east-1',
+        '--output', 'json'
+      ]);
+      
+      const result = JSON.parse(output);
+      const policy = typeof result.Policy === 'string' ? JSON.parse(result.Policy) : result.Policy;
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `📋 Política del bucket ${bucket}\n\n${JSON.stringify(policy, null, 2)}`,
+          },
+        ],
+      };
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('NoSuchBucketPolicy')) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `⚠️ El bucket ${bucket} no tiene política configurada`,
+            },
+          ],
+        };
+      }
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error obteniendo política: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3PutBucketPolicy(args: { bucket: string; policy: Record<string, unknown> }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { bucket, policy } = args;
+    
+    try {
+      const fs = await import('fs/promises');
+      const policyJson = JSON.stringify(policy);
+      const tempFile = `/tmp/s3-policy-temp-${Date.now()}.json`;
+      
+      await fs.writeFile(tempFile, policyJson, 'utf-8');
+      
+      await this.executeCommand('aws', [
+        's3api', 'put-bucket-policy',
+        '--bucket', bucket,
+        '--policy', `file://${tempFile}`,
+        '--region', 'us-east-1'
+      ]);
+      
+      await fs.unlink(tempFile);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Política actualizada para el bucket ${bucket}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error actualizando política: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3GetBucketCors(args: { bucket: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { bucket } = args;
+    
+    try {
+      const output = await this.executeCommand('aws', [
+        's3api', 'get-bucket-cors',
+        '--bucket', bucket,
+        '--region', 'us-east-1',
+        '--output', 'json'
+      ]);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `📋 Configuración CORS del bucket ${bucket}\n\n${JSON.stringify(JSON.parse(output), null, 2)}`,
+          },
+        ],
+      };
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('NoSuchCORSConfiguration')) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `⚠️ El bucket ${bucket} no tiene configuración CORS`,
+            },
+          ],
+        };
+      }
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error obteniendo CORS: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async s3PutBucketCors(args: { bucket: string; corsConfig: Record<string, unknown> }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { bucket, corsConfig } = args;
+    
+    try {
+      const fs = await import('fs/promises');
+      const configJson = JSON.stringify(corsConfig);
+      const tempFile = `/tmp/s3-cors-temp-${Date.now()}.json`;
+      
+      await fs.writeFile(tempFile, configJson, 'utf-8');
+      
+      await this.executeCommand('aws', [
+        's3api', 'put-bucket-cors',
+        '--bucket', bucket,
+        '--cors-configuration', `file://${tempFile}`,
+        '--region', 'us-east-1'
+      ]);
+      
+      await fs.unlink(tempFile);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Configuración CORS actualizada para el bucket ${bucket}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Error actualizando CORS: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private convertDynamoDBItem(item: Record<string, unknown>): Record<string, unknown> {
+    const converted: Record<string, unknown> = {};
+    
+    for (const [key, value] of Object.entries(item)) {
+      if (value && typeof value === 'object' && 'S' in value) {
+        converted[key] = (value as { S: string }).S;
+      } else if (value && typeof value === 'object' && 'N' in value) {
+        converted[key] = Number((value as { N: string }).N);
+      } else if (value && typeof value === 'object' && 'BOOL' in value) {
+        converted[key] = (value as { BOOL: boolean }).BOOL;
+      } else if (value && typeof value === 'object' && 'L' in value) {
+        converted[key] = ((value as { L: unknown[] }).L).map(item => this.convertDynamoDBItem({ item }).item);
+      } else if (value && typeof value === 'object' && 'M' in value) {
+        converted[key] = this.convertDynamoDBItem((value as { M: Record<string, unknown> }).M);
+      } else if (value && typeof value === 'object' && 'SS' in value) {
+        converted[key] = (value as { SS: string[] }).SS;
+      } else if (value && typeof value === 'object' && 'NS' in value) {
+        converted[key] = ((value as { NS: string[] }).NS).map(n => Number(n));
+      } else {
+        converted[key] = value;
+      }
+    }
+    
+    return converted;
+  }
+
+  private convertToDynamoDBItem(item: Record<string, unknown>): Record<string, unknown> {
+    const converted: Record<string, unknown> = {};
+    
+    for (const [key, value] of Object.entries(item)) {
+      if (typeof value === 'string') {
+        converted[key] = { S: value };
+      } else if (typeof value === 'number') {
+        converted[key] = { N: value.toString() };
+      } else if (typeof value === 'boolean') {
+        converted[key] = { BOOL: value };
+      } else if (Array.isArray(value)) {
+        if (value.length > 0 && typeof value[0] === 'string') {
+          converted[key] = { SS: value as string[] };
+        } else if (value.length > 0 && typeof value[0] === 'number') {
+          converted[key] = { NS: (value as number[]).map(n => n.toString()) };
+        } else {
+          converted[key] = { L: value.map(item => this.convertToDynamoDBItem({ item }).item) };
+        }
+      } else if (value && typeof value === 'object') {
+        converted[key] = { M: this.convertToDynamoDBItem(value as Record<string, unknown>) };
+      } else {
+        converted[key] = { S: String(value) };
+      }
+    }
+    
+    return converted;
   }
 
   async run(): Promise<void> {

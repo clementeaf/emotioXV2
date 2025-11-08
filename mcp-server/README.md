@@ -68,11 +68,33 @@ O si instalaste globalmente:
 - `verify_s3_cloudfront_status`: Verificar el estado de S3/CloudFront y comparar con los últimos commits
 - `compare_commits_with_deployments`: Comparar los últimos commits con los últimos deployments para identificar commits pendientes
 
+### DynamoDB
+
+- `dynamodb_list_tables`: Listar todas las tablas de DynamoDB disponibles
+- `dynamodb_get_item`: Obtener un item específico de una tabla
+- `dynamodb_put_item`: Crear o actualizar un item en una tabla
+- `dynamodb_query`: Consultar una tabla usando una clave o índice
+- `dynamodb_scan`: Escanear una tabla (obtener todos los items)
+- `dynamodb_delete_item`: Eliminar un item de una tabla
+
+### S3
+
+- `s3_list_buckets`: Listar todos los buckets de S3 disponibles
+- `s3_list_objects`: Listar objetos en un bucket
+- `s3_get_object`: Obtener un objeto de S3
+- `s3_put_object`: Subir un objeto a S3
+- `s3_delete_object`: Eliminar un objeto de S3
+- `s3_get_bucket_policy`: Obtener la política de un bucket
+- `s3_put_bucket_policy`: Actualizar la política de un bucket
+- `s3_get_bucket_cors`: Obtener la configuración CORS de un bucket
+- `s3_put_bucket_cors`: Actualizar la configuración CORS de un bucket
+
 ## 📝 Requisitos
 
 - Node.js 20+
 - GitHub CLI (`gh`) instalado y autenticado
 - Git configurado
+- AWS CLI (`aws`) instalado y configurado (para DynamoDB y S3)
 
 ## 🔐 Autenticación
 

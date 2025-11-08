@@ -93,6 +93,101 @@
 "¿Hay commits pendientes de deploy?"
 ```
 
+### DynamoDB
+
+#### 14. Listar tablas de DynamoDB
+```
+"Lista todas las tablas de DynamoDB"
+"dynamodb_list_tables para dev"
+"¿Qué tablas de DynamoDB hay?"
+```
+
+#### 15. Obtener item de DynamoDB
+```
+"Obtén el item con id '123' de la tabla 'researches-dev'"
+"dynamodb_get_item con tableName: 'researches-dev' y key: {id: '123'}"
+```
+
+#### 16. Crear/actualizar item en DynamoDB
+```
+"Crea un item en la tabla 'researches-dev'"
+"dynamodb_put_item con tableName: 'researches-dev' y item: {id: '123', name: 'Test'}"
+```
+
+#### 17. Consultar tabla de DynamoDB
+```
+"Consulta la tabla 'researches-dev' por researchId"
+"dynamodb_query con tableName: 'researches-dev', keyConditionExpression: 'researchId = :id', expressionAttributeValues: {':id': '123'}"
+```
+
+#### 18. Escanear tabla de DynamoDB
+```
+"Escanea la tabla 'researches-dev'"
+"dynamodb_scan con tableName: 'researches-dev'"
+```
+
+#### 19. Eliminar item de DynamoDB
+```
+"Elimina el item con id '123' de la tabla 'researches-dev'"
+"dynamodb_delete_item con tableName: 'researches-dev' y key: {id: '123'}"
+```
+
+### S3
+
+#### 20. Listar buckets de S3
+```
+"Lista todos los buckets de S3"
+"s3_list_buckets"
+```
+
+#### 21. Listar objetos en bucket
+```
+"Lista los objetos en el bucket 'emotioxv2-uploads-dev'"
+"s3_list_objects con bucket: 'emotioxv2-uploads-dev'"
+```
+
+#### 22. Obtener objeto de S3
+```
+"Obtén el objeto 'config.json' del bucket 'emotioxv2-uploads-dev'"
+"s3_get_object con bucket: 'emotioxv2-uploads-dev' y key: 'config.json'"
+```
+
+#### 23. Subir objeto a S3
+```
+"Sube el objeto 'config.json' al bucket 'emotioxv2-uploads-dev'"
+"s3_put_object con bucket: 'emotioxv2-uploads-dev', key: 'config.json' y body: '{\"key\": \"value\"}'"
+```
+
+#### 24. Eliminar objeto de S3
+```
+"Elimina el objeto 'config.json' del bucket 'emotioxv2-uploads-dev'"
+"s3_delete_object con bucket: 'emotioxv2-uploads-dev' y key: 'config.json'"
+```
+
+#### 25. Obtener política de bucket
+```
+"Obtén la política del bucket 'emotioxv2-uploads-dev'"
+"s3_get_bucket_policy con bucket: 'emotioxv2-uploads-dev'"
+```
+
+#### 26. Actualizar política de bucket
+```
+"Actualiza la política del bucket 'emotioxv2-uploads-dev'"
+"s3_put_bucket_policy con bucket: 'emotioxv2-uploads-dev' y policy: {...}"
+```
+
+#### 27. Obtener configuración CORS de bucket
+```
+"Obtén la configuración CORS del bucket 'emotioxv2-uploads-dev'"
+"s3_get_bucket_cors con bucket: 'emotioxv2-uploads-dev'"
+```
+
+#### 28. Actualizar configuración CORS de bucket
+```
+"Actualiza la configuración CORS del bucket 'emotioxv2-uploads-dev'"
+"s3_put_bucket_cors con bucket: 'emotioxv2-uploads-dev' y corsConfig: {...}"
+```
+
 ## 💡 Consejos de Uso
 
 ### Uso Natural
@@ -139,6 +234,14 @@ Puedes combinar múltiples operaciones:
 5. **Ver logs si hay problemas**
    ```
    "Muéstrame los logs del último run"
+   ```
+
+6. **Gestionar DynamoDB y S3**
+   ```
+   "Lista todas las tablas de DynamoDB"
+   "Obtén el item con id '123' de la tabla 'researches-dev'"
+   "Lista los objetos en el bucket 'emotioxv2-uploads-dev'"
+   "Obtén la política del bucket 'emotioxv2-uploads-dev'"
    ```
 
 ## 🎯 Casos de Uso Comunes
