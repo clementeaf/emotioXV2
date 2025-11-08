@@ -216,11 +216,35 @@ jobs:
     if: always()
 
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+
       - name: 📢 Notify success
         if: needs.deploy.result == 'success'
         run: |
           echo "✅ Despliegue de public-tests a S3/CloudFront completado exitosamente"
-          echo "🔗 URL: https://${{ env.CLOUDFRONT_DISTRIBUTION_ID }}.cloudfront.net"
+          
+          # Obtener dominio de CloudFront si está configurado
+          CLOUDFRONT_ID="${{ secrets.PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID }}"
+          if [ -n "$CLOUDFRONT_ID" ] && [ "$CLOUDFRONT_ID" != "none" ]; then
+            CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
+              --id "$CLOUDFRONT_ID" \
+              --region ${{ env.REGION }} \
+              --query 'Distribution.DomainName' \
+              --output text 2>/dev/null || echo "")
+            
+            if [ -n "$CLOUDFRONT_DOMAIN" ]; then
+              echo "🔗 CloudFront URL: https://$CLOUDFRONT_DOMAIN"
+            else
+              echo "🔗 S3 URL: http://${{ env.BUCKET }}.s3-website-${{ env.REGION }}.amazonaws.com"
+            fi
+          else
+            echo "🔗 S3 URL: http://${{ env.BUCKET }}.s3-website-${{ env.REGION }}.amazonaws.com"
+          fi
 
       - name: 📢 Notify failure
         if: needs.deploy.result == 'failure'
