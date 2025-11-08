@@ -1,47 +1,72 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { v4 as uuidv4 } from 'uuid';
 import {
   CognitiveTaskFormData,
+  HitZone,
   UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 
 import { useAuth } from '@/providers/AuthProvider';
-import { useCreateCognitiveTask, useDeleteCognitiveTask, useCognitiveTaskData, useUpdateCognitiveTask } from '@/api/domains/cognitive-task';
-import { toastHelpers } from '@/utils/toast';
+import { apiClient } from '@/api/config';
+import { useCognitiveTaskData } from '@/api/domains/cognitive-task';
+import type { Question, UICognitiveTaskFormData, UseCognitiveTaskFormResult, ValidationErrors, ErrorModalData } from '../types';
+import { filterValidQuestionsLocal, ensureCognitiveTaskQuestionKeys } from '../utils';
 
-import {
-  logFormDebugInfo
-} from '../../utils/CognitiveTaskFormHelpers';
-import {
-  QUERY_KEYS
-} from '../constants';
-import type { ErrorModalData, Question, UICognitiveTaskFormData, UseCognitiveTaskFormResult } from '../types';
-import { ValidationErrors } from '../types';
-import { debugQuestionsToSendLocal, filterValidQuestionsLocal, ensureCognitiveTaskQuestionKeys } from '../utils';
-
-import { QuestionType as GlobalQuestionType } from 'shared/interfaces/question-types.enum';
-import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
-import { useCognitiveTaskModals } from './useCognitiveTaskModals';
-
-type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'linear_scale' | 'ranking' | 'navigation_flow' | 'preference_test';
-
-interface UIUploadedFile extends UploadedFile {
-  status?: 'uploaded' | 'uploading' | 'error' | 'pending-delete';
-  isLoading?: boolean;
-  progress?: number;
-  questionId?: string;
+// Tipos y utilidades para file upload
+interface HitzoneArea {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
-interface ExtendedUploadedFile extends UploadedFile {
-  isLoading?: boolean;
+interface UIFile extends UploadedFile {
+  status?: 'uploading' | 'uploaded' | 'pending-delete' | 'error';
   progress?: number;
-  error?: boolean;
-  url: string;
+  isLoading?: boolean;
   questionId?: string;
-  status?: 'uploaded' | 'uploading' | 'error' | 'pending-delete';
+  hitZones?: any;
 }
 
-// Usar la interfaz exportada de types.ts en lugar de definir una local duplicada
+function mapHitZonesToHitzoneAreas(hitZones?: HitZone[] | HitzoneArea[]): HitzoneArea[] | undefined {
+  if (!hitZones) {return undefined;}
+  if ((hitZones as HitzoneArea[])[0]?.x !== undefined) {
+    return hitZones as HitzoneArea[];
+  }
+
+  return (hitZones as HitZone[]).map(hz => ({
+    id: hz.id,
+    x: hz.region.x,
+    y: hz.region.y,
+    width: hz.region.width,
+    height: hz.region.height
+  }));
+}
+
+const asUIFile = (file: any): UIFile => ({
+  id: file.id || uuidv4(),
+  name: file.name || file.fileName || '',
+  size: file.size || 0,
+  type: file.type || file.contentType || '',
+  url: file.fileUrl || file.url || '',
+  s3Key: file.s3Key,
+  status: file.status || 'uploaded',
+  progress: file.progress,
+  error: file.error,
+  isLoading: file.isLoading,
+  questionId: file.questionId,
+  hitZones: mapHitZonesToHitzoneAreas(file.hitZones)
+});
+
+function normalizeFileName(name: string): string {
+  return name
+    .normalize('NFD').replace(/[^\w.-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/\.+/g, '.')
+    .toLowerCase();
+}
 
 // Constante para el estado inicial por defecto con las 8 preguntas originales (3.1-3.8)
 const DEFAULT_STATE: UICognitiveTaskFormData = {
@@ -147,8 +172,7 @@ const DEFAULT_STATE: UICognitiveTaskFormData = {
 };
 
 export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormResult => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { token } = useAuth();
 
   // Estados principales
   const [formData, setFormData] = useState<UICognitiveTaskFormData>(DEFAULT_STATE);
@@ -156,44 +180,113 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
   const [validationErrors, setValidationErrors] = useState<ValidationErrors | null>(null);
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
 
-  // Hooks de dominio
-  const { data: existingData, isLoading } = useCognitiveTaskData(researchId || '');
-  const createMutation = useCreateCognitiveTask();
-  const updateMutation = useUpdateCognitiveTask();
-  const deleteMutation = useDeleteCognitiveTask();
-
-  // Hooks auxiliares
+  // Hook centralizado para obtener datos y operaciones CRUD
   const {
-    isUploading,
-    uploadProgress,
-    currentFileIndex,
-    totalFiles,
-    handleFileUpload: uploadFile,
-    handleMultipleFilesUpload: uploadMultipleFiles,
-    handleFileDelete: deleteFile
-  } = useCognitiveTaskFileUpload({
-    researchId,
-    formData,
-    setFormData
-  });
+    data: existingData,
+    isLoading,
+    createCognitiveTask,
+    updateCognitiveTask,
+    deleteCognitiveTask,
+    isCreating,
+    isUpdating,
+    isDeleting
+  } = useCognitiveTaskData(researchId || '');
 
-  const {
-    modalVisible,
-    modalError,
-    showErrorModal,
-    closeModal,
-    showJsonPreview,
-    jsonToSend,
-    pendingAction,
-    openJsonModal,
-    closeJsonModal,
-    showInteractivePreview,
-    openInteractivePreview,
-    closeInteractivePreview,
-    isDeleteModalOpen,
-    openDeleteModal,
-    closeDeleteModal
-  } = useCognitiveTaskModals();
+  // Estados de modales (integrados)
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalError, setModalError] = useState<ErrorModalData | null>(null);
+  const [showJsonPreview, setShowJsonPreview] = useState(false);
+  const [jsonToSend, setJsonToSend] = useState('');
+  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
+  const [showInteractivePreview, setShowInteractivePreview] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Estados de file upload (integrados)
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
+  const [totalFiles, setTotalFiles] = useState<number>(0);
+
+  // Funciones de modales (integradas)
+  const showErrorModal = useCallback((error: ErrorModalData) => {
+    setModalError(error);
+    setModalVisible(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalVisible(false);
+    setShowJsonPreview(false);
+    setShowInteractivePreview(false);
+    setIsDeleteModalOpen(false);
+    setModalError(null);
+    setPendingAction(null);
+  }, []);
+
+  const openJsonModal = useCallback((jsonData: object, action: 'save' | 'preview') => {
+    setJsonToSend(JSON.stringify(jsonData, null, 2));
+    setPendingAction(action);
+    setShowJsonPreview(true);
+  }, []);
+
+  const closeJsonModal = useCallback(() => {
+    setShowJsonPreview(false);
+    setPendingAction(null);
+  }, []);
+
+  const openInteractivePreview = useCallback(() => {
+    setShowInteractivePreview(true);
+  }, []);
+
+  const closeInteractivePreview = useCallback(() => {
+    setShowInteractivePreview(false);
+  }, []);
+
+  const openDeleteModal = useCallback(() => {
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const closeDeleteModal = useCallback(() => {
+    setIsDeleteModalOpen(false);
+  }, []);
+
+  // Funciones de file upload (integradas)
+  const saveFilesToLocalStorage = useCallback((questions: Question[]) => {
+    if (!researchId) {return;}
+    try {
+      const filesMap: Record<string, UIFile[]> = {};
+      questions.forEach(question => {
+        if (question.files && question.files.length > 0) {
+          const validFiles = (question.files as any[]).map(asUIFile).filter((f: UIFile) => f.status !== 'error') as UIFile[];
+          if (validFiles.length > 0) {
+            filesMap[question.id] = validFiles;
+          }
+        }
+      });
+      if (Object.keys(filesMap).length > 0) {
+        const storageKey = `cognitive_task_temp_files_${researchId}`;
+        localStorage.setItem(storageKey, JSON.stringify(filesMap));
+      }
+    } catch (error) {
+      // Silently fail
+    }
+  }, [researchId]);
+
+  const loadFilesFromLocalStorage = useCallback((): Record<string, UIFile[]> | null => {
+    if (!researchId) {return null;}
+    try {
+      const storageKey = `cognitive_task_temp_files_${researchId}`;
+      const savedFilesJson = localStorage.getItem(storageKey);
+      if (!savedFilesJson) {return null;}
+      const savedFiles = JSON.parse(savedFilesJson) as Record<string, any[]>;
+      const filesMapResult: Record<string, UIFile[]> = {};
+      Object.keys(savedFiles).forEach(questionId => {
+        filesMapResult[questionId] = (savedFiles[questionId] as any[]).map(asUIFile).filter((f: UIFile) => f.status !== 'error') as UIFile[];
+      });
+      return filesMapResult;
+    } catch (error) {
+      return null;
+    }
+  }, [researchId]);
 
   // Cargar datos existentes
   useEffect(() => {
@@ -287,18 +380,312 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     setIsAddQuestionModalOpen(false);
   }, []);
 
-  // Función para manejar subida de archivos
+  // Funciones de file upload (implementación completa)
   const handleFileUpload = useCallback(async (questionId: string, files: FileList) => {
-    await uploadFile(questionId, files);
-  }, [uploadFile]);
+    if (!researchId || files.length === 0 || !token) {
+      toast.error('No se pudo iniciar la subida. Falta información necesaria o autenticación.');
+      return;
+    }
+
+    setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
+      const updatedQuestions = prevData.questions.map(q => {
+        if (q.id === questionId && q.files && q.files.length > 0) {
+          const cleanedFiles = q.files.filter(f => {
+            const fileInfo = asUIFile(f);
+            return fileInfo.status !== 'error' &&
+                            !(fileInfo.status === 'uploading' && fileInfo.isLoading);
+          });
+
+          const uniqueFileMap = new Map<string, any>();
+          cleanedFiles.forEach(f => {
+            const fileInfo = asUIFile(f);
+            if (fileInfo.status === 'uploaded') {
+              const key = `${fileInfo.name}_${fileInfo.size}`;
+              if (!uniqueFileMap.has(key) ||
+                              (!uniqueFileMap.get(key).url && fileInfo.url)) {
+                uniqueFileMap.set(key, f);
+              }
+            } else {
+              uniqueFileMap.set(fileInfo.id, f);
+            }
+          });
+
+          return { ...q, files: Array.from(uniqueFileMap.values()) };
+        }
+        return q;
+      });
+      return { ...prevData, questions: updatedQuestions };
+    });
+
+    const filesToUploadInput = Array.from(files);
+    const initialFileCount = filesToUploadInput.length;
+
+    let currentFilesForQuestion: UIFile[] = [];
+    const questionIndex = formData.questions.findIndex(q => q.id === questionId);
+    if (questionIndex !== -1 && formData.questions[questionIndex].files) {
+      currentFilesForQuestion = formData.questions[questionIndex].files
+        .map(asUIFile)
+        .filter(f => f.status !== 'pending-delete' && f.status !== 'error');
+    }
+
+    const filesToProcess = filesToUploadInput.filter(newFile => {
+      const isDuplicate = currentFilesForQuestion.some(existingFile => {
+        const nameMatch = existingFile.name === newFile.name;
+        const sizeMatch = existingFile.size === newFile.size;
+        return nameMatch && sizeMatch;
+      });
+      return !isDuplicate;
+    });
+    const processedFileCount = filesToProcess.length;
+    const skippedFileCount = initialFileCount - processedFileCount;
+
+    if (skippedFileCount > 0) {
+      toast(`${skippedFileCount} archivo(s) omitido(s) por ser duplicado(s).`);
+    }
+
+    if (filesToProcess.length === 0) {
+      return;
+    }
+
+    setIsUploading(true);
+    setTotalFiles(filesToProcess.length);
+    setCurrentFileIndex(0);
+    setUploadProgress(0);
+
+    const tempFilesMap = new Map<string, UIFile>();
+    filesToProcess.forEach(file => {
+      const normalizedFileName = normalizeFileName(file.name);
+      const tempFile: UIFile = {
+        id: `${questionId}_${uuidv4()}`,
+        name: normalizedFileName,
+        size: file.size,
+        type: file.type,
+        url: URL.createObjectURL(file),
+        s3Key: '',
+        status: 'uploading',
+        progress: 0,
+        isLoading: true,
+        questionId: questionId,
+        hitZones: 'hitZones' in file ? mapHitZonesToHitzoneAreas((file as any).hitZones) : undefined
+      };
+      tempFilesMap.set(tempFile.id, tempFile);
+    });
+    const tempFilesArray = Array.from(tempFilesMap.values());
+
+    setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
+      const updatedQuestions = [...prevData.questions];
+      const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
+      if (questionIndex === -1) {return prevData;}
+      const existingFiles = (updatedQuestions[questionIndex].files || []).map(asUIFile);
+      const filteredExistingFiles = existingFiles.filter(
+        f =>
+          !(
+            (f.status === 'uploading' || f.isLoading === true) &&
+                filesToProcess.some(
+                  file => file.name === f.name && file.size === f.size
+                )
+          )
+      );
+      updatedQuestions[questionIndex].files = [...filteredExistingFiles, ...tempFilesArray];
+      return { ...prevData, questions: updatedQuestions };
+    });
+
+    let successfulUploads = 0;
+    for (let i = 0; i < filesToProcess.length; i++) {
+      const file = filesToProcess[i];
+      const tempFileId = tempFilesArray[i].id;
+      const normalizedFileName = tempFilesArray[i].name;
+      const fileToUpload = new File([file], normalizedFileName, { type: file.type });
+      setCurrentFileIndex(i + 1);
+
+      let finalUploadedFile: UIFile | null = null;
+      let uploadError = false;
+
+      try {
+        if (token) {
+          apiClient.setAuthToken(token);
+        }
+
+        const result = await apiClient.post('cognitiveTask', 'getUploadUrl', {
+          fileName: normalizedFileName,
+          fileSize: file.size,
+          fileType: file.type,
+          mimeType: file.type,
+          contentType: file.type,
+          questionId: questionId
+        }, { researchId });
+        if (!result || !result.uploadUrl || !result.file || !result.file.s3Key) {
+          throw new Error('Respuesta inválida del servidor al obtener URL de subida.');
+        }
+
+        const { uploadUrl, file: backendFileInfo } = result;
+        finalUploadedFile = backendFileInfo;
+
+        const s3Response = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': fileToUpload.type
+          },
+          body: fileToUpload
+        });
+
+        if (!s3Response.ok) {
+          throw new Error(`Error subiendo archivo: ${s3Response.status === 403 ? 'URL expirada' : 'Error del servidor'}`);
+        }
+
+        successfulUploads++;
+
+      } catch (error: any) {
+        toast.error(`Error subiendo ${file.name}: ${error.message || 'Error desconocido'}`);
+        uploadError = true;
+        setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
+          const updatedQuestions = prevData.questions.map(q => {
+            if (q.id === questionId && q.files) {
+              const filesAsInfo: UIFile[] = q.files.map(asUIFile);
+              const updatedFiles = filesAsInfo.map(f =>
+                f.id === tempFileId ? { ...f, status: 'error' as const, isLoading: false, progress: 0 } : f
+              );
+              return { ...q, files: updatedFiles };
+            }
+            return q;
+          });
+          return { ...prevData, questions: updatedQuestions };
+        });
+      }
+
+      if (!uploadError && finalUploadedFile) {
+        const finalFileState: UIFile = {
+          ...asUIFile(finalUploadedFile),
+          id: tempFileId,
+          url: (finalUploadedFile as any).fileUrl || finalUploadedFile.url,
+          status: 'uploaded',
+          isLoading: false,
+          progress: 100,
+          questionId: questionId,
+          hitZones: mapHitZonesToHitzoneAreas(finalUploadedFile.hitZones)
+        };
+
+        setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
+          const updatedQuestions = [...prevData.questions];
+          const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
+          if (questionIndex !== -1 && updatedQuestions[questionIndex].files) {
+            let currentFiles = updatedQuestions[questionIndex].files.map(asUIFile);
+            currentFiles = currentFiles.filter(f => f.id !== tempFileId);
+            currentFiles = currentFiles.filter(f => {
+              if (
+                (f.status === 'uploading' || f.isLoading === true) &&
+                            f.name === finalFileState.name &&
+                            f.size === finalFileState.size
+              ) {
+                return false;
+              }
+              return true;
+            });
+            const mergedFile = {
+              ...finalFileState,
+              status: 'uploaded',
+              isLoading: false
+            } as UIFile;
+            updatedQuestions[questionIndex].files = [...currentFiles, mergedFile];
+          }
+          return { ...prevData, questions: updatedQuestions };
+        });
+      }
+      setUploadProgress(((i + 1) / filesToProcess.length) * 100);
+    }
+
+    setIsUploading(false);
+
+    if (successfulUploads > 0) {
+      setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
+        const updatedQuestions = prevData.questions.map(q => {
+          if (q.id === questionId && q.files && q.files.length > 0) {
+            const uniqueFileMap = new Map<string, UIFile>();
+            const filesAsInfo = q.files.map(asUIFile)
+              .sort((a, b) => {
+                if (a.status === 'uploaded' && b.status !== 'uploaded') {return -1;}
+                if (a.status !== 'uploaded' && b.status === 'uploaded') {return 1;}
+                return 0;
+              });
+            filesAsInfo.forEach(file => {
+              if (file.status === 'uploaded') {
+                const key = `${file.name}_${file.size}`;
+                if (!uniqueFileMap.has(key) || !uniqueFileMap.get(key)?.url) {
+                  uniqueFileMap.set(key, file);
+                }
+              } else if (file.status === 'pending-delete') {
+                uniqueFileMap.set(file.id, file);
+              } else {
+                const key = `${file.name}_${file.size}`;
+                if (!uniqueFileMap.has(key)) {
+                  uniqueFileMap.set(file.id, file);
+                }
+              }
+            });
+            return { ...q, files: Array.from(uniqueFileMap.values()) };
+          }
+          return q;
+        });
+        saveFilesToLocalStorage(updatedQuestions);
+        return { ...prevData, questions: updatedQuestions };
+      });
+    }
+
+    if (successfulUploads === filesToProcess.length) {
+      // All files uploaded successfully
+    } else if (successfulUploads > 0) {
+      toast(`${successfulUploads}/${filesToProcess.length} archivos subidos. Algunos fallaron. ⚠️`);
+    }
+  }, [researchId, token, formData.questions, saveFilesToLocalStorage]);
 
   const handleMultipleFilesUpload = useCallback(async (questionId: string, files: FileList) => {
-    await uploadMultipleFiles(questionId, files);
-  }, [uploadMultipleFiles]);
+    await handleFileUpload(questionId, files);
+  }, [handleFileUpload]);
 
   const handleFileDelete = useCallback(async (questionId: string, fileId: string) => {
-    await deleteFile(questionId, fileId);
-  }, [deleteFile]);
+    const fileToDelete = formData.questions
+      .find((q: Question) => q.id === questionId)
+      ?.files?.find((f: UIFile) => f.id === fileId);
+
+    if (!fileToDelete) {
+      return;
+    }
+
+    setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
+      const updatedQuestions = prevData.questions.map((q: Question) => {
+        if (q.id === questionId && q.files) {
+          const updatedFiles = q.files.filter((f: UIFile) => f.id !== fileId);
+          return { ...q, files: updatedFiles };
+        }
+        return q;
+      });
+
+      saveFilesToLocalStorage(updatedQuestions);
+
+      if (researchId) {
+        const storageKey = `cognitive_task_temp_files_${researchId}`;
+        const savedFilesJson = localStorage.getItem(storageKey);
+        if (savedFilesJson) {
+          const savedFiles = JSON.parse(savedFilesJson);
+          if (savedFiles[questionId]) {
+            savedFiles[questionId] = savedFiles[questionId].filter((f: UIFile) => f.id !== fileId);
+            if (savedFiles[questionId].length === 0) {
+              delete savedFiles[questionId];
+            }
+            if (Object.keys(savedFiles).length === 0) {
+              localStorage.removeItem(storageKey);
+            } else {
+              localStorage.setItem(storageKey, JSON.stringify(savedFiles));
+            }
+          }
+        }
+      }
+
+      return { ...prevData, questions: updatedQuestions };
+    });
+
+    toast.success(`Archivo ${fileToDelete.name} eliminado correctamente.`);
+  }, [formData.questions, saveFilesToLocalStorage, researchId]);
 
   // Función para abrir/cerrar modal de agregar pregunta
   const openAddQuestionModal = useCallback(() => {
@@ -346,7 +733,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       // Convertir a los tipos del domain y normalizar tipos antiguos
       const domainData: CognitiveTaskFormData = {
         ...dataToSave,
-        questions: questionsWithKeys.map(q => ({
+        questions: questionsWithKeys.map((q: Question) => ({
           ...q,
           // Normalizar file_upload a navigation_flow para compatibilidad
           type: (q.type === 'file_upload' ? 'navigation_flow' : q.type) as any,
@@ -356,9 +743,9 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       };
       
       if (cognitiveTaskId) {
-        await updateMutation.mutateAsync({ researchId: researchId || '', data: domainData });
+        await updateCognitiveTask(domainData);
       } else {
-        await createMutation.mutateAsync({ ...domainData, researchId: researchId || '' });
+        await createCognitiveTask(domainData);
       }
     } catch (error) {
       showErrorModal({
@@ -367,7 +754,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
         type: 'error'
       });
     }
-  }, [validateForm, formData, cognitiveTaskId, researchId, updateMutation, createMutation, showErrorModal]);
+  }, [validateForm, formData, cognitiveTaskId, researchId, updateCognitiveTask, createCognitiveTask, showErrorModal]);
 
   // Función para vista previa
   const handlePreview = useCallback(() => {
@@ -379,11 +766,11 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     if (!cognitiveTaskId) return;
 
     try {
-      await deleteMutation.mutateAsync(researchId || '');
+      await deleteCognitiveTask();
       setFormData(DEFAULT_STATE);
       setCognitiveTaskId(null);
       closeDeleteModal(); // Cerrar el modal después de eliminar exitosamente
-      // El toast se muestra en el hook de la API (useDeleteCognitiveTask)
+      // El toast se muestra en el hook de la API (useCognitiveTaskData)
     } catch (error) {
       showErrorModal({
         title: 'Error al eliminar',
@@ -392,7 +779,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       });
       closeDeleteModal(); // Cerrar el modal incluso si hay error
     }
-  }, [cognitiveTaskId, researchId, deleteMutation, showErrorModal, closeDeleteModal]);
+  }, [cognitiveTaskId, deleteCognitiveTask, showErrorModal, closeDeleteModal]);
 
   // Función para inicializar preguntas por defecto
   const initializeDefaultQuestions = useCallback((defaultQuestions: Question[]) => {
@@ -418,7 +805,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     formData,
     cognitiveTaskId,
     isLoading,
-    isSaving: createMutation.isPending || updateMutation.isPending,
+    isSaving: isCreating || isUpdating,
     modalError,
     modalVisible,
     isAddQuestionModalOpen,
@@ -451,8 +838,16 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
 
     // Nuevas propiedades para el modal JSON
     showJsonPreview,
+    jsonToSend,
+    pendingAction,
+    openJsonModal,
     closeJsonModal,
     isEmpty: formData.questions.length === 0,
+
+    // Modal de previsualización interactiva
+    showInteractivePreview,
+    openInteractivePreview,
+    closeInteractivePreview,
 
     // Modal de confirmación para eliminar datos
     isDeleteModalOpen,

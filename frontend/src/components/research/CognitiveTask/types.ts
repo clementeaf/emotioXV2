@@ -153,8 +153,14 @@ export interface UseCognitiveTaskFormResult {
   closeModal: () => void;
   initializeDefaultQuestions: (defaultQuestions: Question[]) => void;
   showJsonPreview: boolean;
+  jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  openJsonModal: (jsonData: object, action: 'save' | 'preview') => void;
   closeJsonModal: () => void;
   isEmpty: boolean;
+  showInteractivePreview: boolean;
+  openInteractivePreview: () => void;
+  closeInteractivePreview: () => void;
   isDeleteModalOpen: boolean;
   openDeleteModal: () => void;
   closeDeleteModal: () => void;
