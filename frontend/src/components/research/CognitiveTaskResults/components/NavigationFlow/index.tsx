@@ -139,6 +139,9 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
 
   const currentImage = data.files[selectedImageIndex];
 
+  // Obtener hitzones de la imagen actual
+  const currentImageHitzones = currentImage?.hitZones || [];
+
   // Helper function to get image draw rect (same logic as public-tests)
   function getImageDrawRect(
     imgNatural: { width: number; height: number },
@@ -163,6 +166,45 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
     
     return { drawWidth, drawHeight, offsetX, offsetY };
   }
+
+  // Calcular escalado de coordenadas de hitzones desde tamaño natural a renderizado
+  const getScaledHitzoneCoordinates = (hitzone: {
+    region?: { x: number; y: number; width: number; height: number };
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+  }): { x: number; y: number; width: number; height: number } | null => {
+    if (!imageNaturalSize || !imgRenderSize || !imageRef.current) {
+      return null;
+    }
+
+    // Obtener coordenadas del hitzone (puede venir en region o directamente)
+    const hitzoneX = hitzone.region?.x ?? hitzone.x ?? 0;
+    const hitzoneY = hitzone.region?.y ?? hitzone.y ?? 0;
+    const hitzoneWidth = hitzone.region?.width ?? hitzone.width ?? 0;
+    const hitzoneHeight = hitzone.region?.height ?? hitzone.height ?? 0;
+
+    // Calcular el rectángulo de dibujo de la imagen
+    const drawRect = getImageDrawRect(imageNaturalSize, imgRenderSize);
+
+    // Calcular el factor de escala
+    const scaleX = drawRect.drawWidth / imageNaturalSize.width;
+    const scaleY = drawRect.drawHeight / imageNaturalSize.height;
+
+    // Escalar coordenadas del hitzone
+    const scaledX = hitzoneX * scaleX + drawRect.offsetX;
+    const scaledY = hitzoneY * scaleY + drawRect.offsetY;
+    const scaledWidth = hitzoneWidth * scaleX;
+    const scaledHeight = hitzoneHeight * scaleY;
+
+    return {
+      x: scaledX,
+      y: scaledY,
+      width: scaledWidth,
+      height: scaledHeight
+    };
+  };
 
   return (
     <div className="p-6">
@@ -245,7 +287,7 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
 
       {/* Image with Click Visualization */}
       {currentImage && (
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+        <div className="">
           <div className="flex justify-between items-center mb-2">
             <h4 className="text-lg font-medium text-gray-900">
               {currentImage.name || `Imagen ${selectedImageIndex + 1}`}
@@ -257,24 +299,57 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
           </div>
           
           <div 
-            className="relative w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
-            style={{ aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : undefined }}
+            className="relative flex justify-center items-center h-[500px]"
           >
-            <img
-              ref={imageRef}
-              src={currentImage.url}
-              alt={currentImage.name || `Imagen ${selectedImageIndex + 1}`}
-              className="w-full h-auto object-contain"
-              onLoad={handleImageLoad}
-              style={{ display: 'block', maxHeight: '600px' }}
-            />
-            
-            {/* Click Points Overlay - Same as public-tests */}
-            {imageNaturalSize && imgRenderSize && (
-              <div
-                className="absolute top-0 left-0 pointer-events-none"
-                style={{ width: imgRenderSize.width, height: imgRenderSize.height }}
-              >
+            <div className="relative">
+              <img
+                ref={imageRef}
+                src={currentImage.url}
+                alt={currentImage.name || `Imagen ${selectedImageIndex + 1}`}
+                className="h-[500px] object-contain border border-gray-300 rounded"
+                onLoad={handleImageLoad}
+                style={{ maxHeight: '500px' }}
+              />
+              
+              {/* Hitzones y Click Points Overlay */}
+              {imageNaturalSize && imgRenderSize && (
+                <div
+                  className="absolute top-0 left-0 pointer-events-none"
+                  style={{ 
+                    width: `${imgRenderSize.width}px`, 
+                    height: `${imgRenderSize.height}px`
+                  }}
+                >
+                {/* Renderizar Hitzones */}
+                {currentImageHitzones.length > 0 && currentImageHitzones.map((hitzone, hzIndex) => {
+                  const scaledCoords = getScaledHitzoneCoordinates(hitzone);
+                  if (!scaledCoords) return null;
+
+                  return (
+                    <div
+                      key={`hitzone-${hitzone.id || hzIndex}`}
+                      className="absolute border-2 border-blue-400 bg-blue-200 bg-opacity-30"
+                      style={{
+                        left: `${scaledCoords.x}px`,
+                        top: `${scaledCoords.y}px`,
+                        width: `${scaledCoords.width}px`,
+                        height: `${scaledCoords.height}px`,
+                        zIndex: 5,
+                        pointerEvents: 'none'
+                      }}
+                      title={hitzone.name || `Hitzone ${hitzone.id || hzIndex + 1}`}
+                    >
+                      {/* Label del hitzone */}
+                      {hitzone.name && (
+                        <div className="absolute -top-6 left-0 text-xs font-medium text-blue-600 bg-white px-1 rounded">
+                          {hitzone.name}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Renderizar Click Points */}
                 {currentImageClicks.map((point, index) => (
                   <div
                     key={`${point.timestamp}-${index}`}
@@ -297,8 +372,9 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
                     }`}
                   />
                 ))}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

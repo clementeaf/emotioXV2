@@ -86,4 +86,19 @@ export interface ImageFile {
   id: string;
   url: string;
   name: string;
+  hitZones?: Array<{
+    id: string;
+    name?: string;
+    region?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    fileId?: string;
+  }>;
 }

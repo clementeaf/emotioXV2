@@ -679,6 +679,12 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           };
         });
         
+        // Incluir hitzones de cada archivo en los files
+        const filesWithHitzones = (question.files || []).map((file: any) => ({
+          ...file,
+          hitZones: file.hitZones || []
+        }));
+
         transformedNavigationFlowData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
           totalParticipants: navigationFlowDataRaw.totalResponses,
@@ -687,7 +693,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           imageSelections,
           visualClickPoints,
           allClicksTracking,
-          files: question.files || []
+          files: filesWithHitzones
         };
       }
 
