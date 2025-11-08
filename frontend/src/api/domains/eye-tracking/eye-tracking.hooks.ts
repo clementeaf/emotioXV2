@@ -150,13 +150,29 @@ export function useEyeTrackingBuild(researchId: string | null) {
     },
   });
 
+  // Wrapper functions for easier use
+  const createEyeTrackingBuild = async (data: EyeTrackingBuildRequest): Promise<EyeTrackingBuildConfig> => {
+    if (!researchId) throw new Error('Research ID is required');
+    return createMutation.mutateAsync(data);
+  };
+
+  const updateEyeTrackingBuild = async (id: string, data: EyeTrackingBuildUpdateRequest): Promise<EyeTrackingBuildConfig> => {
+    if (!researchId) throw new Error('Research ID is required');
+    return updateMutation.mutateAsync({ id, data });
+  };
+
+  const deleteEyeTrackingBuild = async (id: string): Promise<void> => {
+    if (!researchId) throw new Error('Research ID is required');
+    return deleteMutation.mutateAsync(id);
+  };
+
   return {
     data,
     isLoading,
     error,
-    create: createMutation.mutate,
-    update: updateMutation.mutate,
-    delete: deleteMutation.mutate,
+    createEyeTrackingBuild,
+    updateEyeTrackingBuild,
+    deleteEyeTrackingBuild,
     uploadStimuli: uploadStimuliMutation.mutateAsync,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,

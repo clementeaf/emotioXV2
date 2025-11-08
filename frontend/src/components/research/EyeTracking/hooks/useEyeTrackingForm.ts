@@ -5,8 +5,8 @@ import { QuestionType } from '../../../../../../shared/interfaces/question-types
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useFileUpload } from '@/hooks';
-import { useEyeTrackingData } from '@/hooks/useEyeTrackingData';
-import { eyeTrackingApi } from '@/api/domains/eye-tracking';
+import { useEyeTrackingBuild } from '@/api/domains/eye-tracking';
+import type { EyeTrackingBuildRequest, EyeTrackingBuildUpdateRequest } from '@/api/domains/eye-tracking';
 
 // Interfaz extendida que incluye propiedades de UI para la experiencia de carga
 interface EyeTrackingStimulusWithUI extends EyeTrackingStimulus {
@@ -59,7 +59,6 @@ export function useEyeTrackingForm({
     researchId
   });
   const [isUploading, setIsUploading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [eyeTrackingId, setEyeTrackingId] = useState<string | null>(null);
   const [isEmpty, setIsEmpty] = useState(false);
 
@@ -335,10 +334,20 @@ export function useEyeTrackingForm({
     }
   }, [researchId, logger]);
 
-  // Usar el hook centralizado para obtener datos de eye-tracking
-  const { data: eyeTrackingData, isLoading: isLoadingEyeTracking } = useEyeTrackingData(researchId, {
-    type: 'build'
-  });
+  // Hook centralizado para obtener datos y operaciones CRUD
+  const {
+    data: eyeTrackingData,
+    isLoading: isLoadingEyeTracking,
+    createEyeTrackingBuild,
+    updateEyeTrackingBuild,
+    deleteEyeTrackingBuild,
+    isCreating,
+    isUpdating,
+    isDeleting
+  } = useEyeTrackingBuild(researchId);
+  
+  // Usar estados del hook centralizado para isSaving
+  const isSavingFromHook = isCreating || isUpdating;
 
   // Cargar datos cuando cambie la respuesta del hook centralizado
   useEffect(() => {
@@ -357,24 +366,24 @@ export function useEyeTrackingForm({
       researchId: researchId || ''
     };
     
-    // Solo actualizar si hay datos build compatibles
-    if (eyeTrackingData.build?.researchId) {
-      baseFormData.researchId = eyeTrackingData.build.researchId;
+    // Actualizar con datos del build config
+    if (eyeTrackingData.researchId) {
+      baseFormData.researchId = eyeTrackingData.researchId;
     }
     
     setFormData(baseFormData);
-    setEyeTrackingId((eyeTrackingData.build as any)?.id || null);
+    setEyeTrackingId(eyeTrackingData.id || null);
   }, [eyeTrackingData, isLoadingEyeTracking]);
 
   // Limpiar localStorage después de guardar exitosamente
   useEffect(() => {
     // Limpiar cuando se completa el guardado
-    if (!isSaving && eyeTrackingId && researchId) {
+    if (!isSavingFromHook && eyeTrackingId && researchId) {
       const storageKey = `eye_tracking_temp_stimuli_${researchId}`;
       localStorage.removeItem(storageKey);
       logger.debug('[EyeTrackingForm] Limpiando estímulos temporales de localStorage después de guardar');
     }
-  }, [isSaving, eyeTrackingId, researchId, logger]);
+  }, [isSavingFromHook, eyeTrackingId, researchId, logger]);
 
   // Manejador para el componente FileUploader
   const handleFileUploaderComplete = useCallback((fileData: { fileUrl: string; key: string }) => {
@@ -569,7 +578,7 @@ export function useEyeTrackingForm({
       return null;
     }
 
-    setIsSaving(true);
+    // No necesitamos setIsSaving porque usamos isCreating/isUpdating del hook
 
     try {
       // Preparar datos para guardar
@@ -585,7 +594,6 @@ export function useEyeTrackingForm({
 
       if (tempItems.length > 0) {
         toast.error('Hay imágenes sin procesar. Por favor espere a que se completen las cargas.');
-        setIsSaving(false);
         return null;
       }
 
@@ -604,11 +612,8 @@ export function useEyeTrackingForm({
       }
 
       // Enviar solicitud al backend solo si autoSync está activado
-      let response;
-      const api = eyeTrackingApi.build;
-
       // Transform stimuli data to match API expectations
-      const apiData = {
+      const apiData: EyeTrackingBuildRequest = {
         ...dataToSave,
         researchId, // Include researchId for create requests
         stimuli: dataToSave.stimuli?.items?.map(stimulus => ({
@@ -616,14 +621,15 @@ export function useEyeTrackingForm({
           type: stimulus.fileType,
           duration: dataToSave.stimuli?.durationPerStimulus
         })) || []
-      };
+      } as EyeTrackingBuildRequest;
 
+      let response;
       if (eyeTrackingId) {
         // Actualizar existente
-        response = await api.update(researchId, apiData);
+        response = await updateEyeTrackingBuild(eyeTrackingId, apiData as EyeTrackingBuildUpdateRequest);
       } else {
         // Crear nuevo
-        response = await api.create(apiData);
+        response = await createEyeTrackingBuild(apiData);
 
         if (response && response.id) {
           setEyeTrackingId(response.id);
@@ -644,17 +650,15 @@ export function useEyeTrackingForm({
       logger.error('Error al guardar configuración:', error);
       toast.error(`Error al guardar: ${errorMessage}`);
       return null;
-    } finally {
-      setIsSaving(false);
     }
-  }, [researchId, eyeTrackingId, onSave, logger, autoSync, validateStimuliData]);
+  }, [researchId, eyeTrackingId, onSave, logger, autoSync, validateStimuliData, createEyeTrackingBuild, updateEyeTrackingBuild]);
 
   return {
     // Estado general del formulario
     formData,
     activeTab,
     setActiveTab,
-    isSaving,
+    isSaving: isSavingFromHook,
     isUploading,
     eyeTrackingId,
     isEmpty,

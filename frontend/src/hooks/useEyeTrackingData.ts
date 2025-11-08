@@ -82,9 +82,9 @@ export function useEyeTrackingBuildData(researchId: string) {
     error: buildResult.error ? String(buildResult.error) : null,
     saveBuildConfig: async (config: Partial<EyeTrackingBuildConfig>) => {
       if (config.id) {
-        buildResult.update({ id: config.id, data: config });
+        await buildResult.updateEyeTrackingBuild(config.id, config as any);
       } else {
-        buildResult.create({ ...config, researchId } as any);
+        await buildResult.createEyeTrackingBuild({ ...config, researchId } as any);
       }
     },
     saveRecruitConfig: async () => {},
