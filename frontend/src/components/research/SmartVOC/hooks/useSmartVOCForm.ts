@@ -135,16 +135,21 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
     isLoading,
     updateSmartVOC,
     createSmartVOC,
-    deleteSmartVOC
+    deleteSmartVOC,
+    isCreating,
+    isUpdating,
+    isDeleting
   } = useSmartVOCData(actualResearchId);
 
   const [formData, setFormData] = useState<SmartVOCFormData>(INITIAL_FORM_DATA);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [isSaving, setIsSaving] = useState(false);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+
+  // Derivar isSaving del hook centralizado
+  const isSaving = isCreating || isUpdating;
 
   // Procesar datos cuando cambien
   useEffect(() => {
@@ -214,7 +219,6 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
       return;
     }
 
-    setIsSaving(true);
     try {
       // Validar que questions exista
       if (!formData.questions || !Array.isArray(formData.questions)) {
@@ -250,8 +254,6 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
         type: 'error'
       });
       setModalVisible(true);
-    } finally {
-      setIsSaving(false);
     }
   };
 

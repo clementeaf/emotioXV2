@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useThankYouScreenData } from '@/api/domains/thank-you-screen';
 import { ThankYouScreenModel } from '@/shared/interfaces/thank-you-screen.interface';
-import { toastHelpers } from '@/utils/toast';
 
 // Tipos locales del hook
 interface ErrorModalData {
@@ -73,17 +72,21 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     isLoading,
     updateThankYouScreen,
     createThankYouScreen,
-    deleteThankYouScreen
+    deleteThankYouScreen,
+    isCreating,
+    isUpdating,
+    isDeleting
   } = useThankYouScreenData(actualResearchId);
 
   const [formData, setFormData] = useState<ThankYouScreenFormData>(INITIAL_FORM_DATA);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [isSaving, setIsSaving] = useState(false);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+
+  // Derivar isSaving del hook centralizado
+  const isSaving = isCreating || isUpdating;
 
   // Procesar datos cuando cambien
   useEffect(() => {
@@ -152,7 +155,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       return;
     }
 
-    setIsSaving(true);
     try {
       const dataToSubmit = formData;
       let resultRecord: ThankYouScreenModel;
@@ -191,9 +193,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       setFormData(formDataFromResult);
       setHasBeenSaved(true);
 
-      // Usar toast en lugar de modal para éxito
-      toastHelpers.saveSuccess('Pantalla de agradecimiento');
-
+      // El toast se muestra en el hook centralizado (createThankYouScreen/updateThankYouScreen)
     } catch (error) {
       setModalError({
         title: 'Error al Guardar',
@@ -201,8 +201,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         type: 'error'
       });
       setModalVisible(true);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -258,14 +256,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
 
   const handleDelete = useCallback(async () => {
     if (!existingScreen?.id || !actualResearchId) return;
-    setIsDeleting(true);
     try {
       await deleteThankYouScreen();
       setFormData({ ...INITIAL_FORM_DATA });
       setHasBeenSaved(false);
 
-      // Usar toast en lugar de modal para éxito
-      toastHelpers.deleteSuccess('Pantalla de agradecimiento');
+      // El toast se muestra en el hook centralizado (deleteThankYouScreen)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'No se pudo eliminar la pantalla de agradecimiento.';
       setModalError({
@@ -274,8 +270,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         type: 'error'
       });
       setModalVisible(true);
-    } finally {
-      setIsDeleting(false);
     }
   }, [existingScreen, actualResearchId, deleteThankYouScreen]);
 
