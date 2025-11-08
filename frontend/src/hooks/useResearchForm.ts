@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
  * Tipos genéricos para el hook de formulario de investigación
  */
 export interface ErrorModalData {
-  type: 'error' | 'warning' | 'info' | 'success';
+  type: 'error' | 'warning' | 'info';
   title?: string;
   message: string;
 }

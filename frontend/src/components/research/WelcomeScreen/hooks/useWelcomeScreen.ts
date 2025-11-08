@@ -1,180 +1,162 @@
-import { useState, useEffect } from 'react';
-import { toastHelpers } from '@/utils/toast';
 import { useWelcomeScreenData } from '@/api/domains/welcome-screen';
+import type { WelcomeScreenModel, CreateWelcomeScreenRequest, UpdateWelcomeScreenRequest, WelcomeScreenFormData } from '@/api/domains/welcome-screen';
+import { useResearchForm, type UseResearchFormResult } from '@/hooks/useResearchForm';
+import { toastHelpers } from '@/utils/toast';
 
-interface WelcomeScreenData {
+/**
+ * Tipo de datos del formulario de WelcomeScreen
+ */
+interface WelcomeScreenData extends Record<string, unknown> {
   title: string;
   message: string;
   startButtonText: string;
   isEnabled: boolean;
 }
 
-interface ErrorModalData {
-  type: 'error' | 'warning' | 'info';
-  title?: string;
-  message: string;
-}
-
-interface UseWelcomeScreenResult {
-  formData: WelcomeScreenData;
-  isLoading: boolean;
-  isSaving: boolean;
-  isDeleting: boolean;
-  existingScreen: any | null;
-  modalError: ErrorModalData | null;
-  modalVisible: boolean;
-  confirmModalVisible: boolean;
-  handleChange: (field: keyof WelcomeScreenData, value: string | boolean) => void;
+/**
+ * Resultado del hook de WelcomeScreen
+ * Extiende el resultado del hook genérico con funcionalidad específica
+ */
+interface UseWelcomeScreenResult extends Omit<UseResearchFormResult<WelcomeScreenData>, 'handleSave'> {
+  existingScreen: WelcomeScreenModel | null;
   handleSubmit: () => Promise<void>;
-  handleDelete: () => Promise<void>;
   handlePreview: () => void;
-  closeModal: () => void;
-  showConfirmModal: () => void;
-  closeConfirmModal: () => void;
-  confirmDelete: () => Promise<void>;
 }
 
+/**
+ * Datos iniciales del formulario
+ */
+const INITIAL_FORM_DATA: WelcomeScreenData = {
+  title: '',
+  message: '',
+  startButtonText: '',
+  isEnabled: true
+};
+
+/**
+ * Hook para WelcomeScreen usando el hook genérico useResearchForm
+ */
 export const useWelcomeScreen = (researchId: string): UseWelcomeScreenResult => {
   // Hook centralizado para obtener datos y operaciones CRUD
-  const {
-    data: existingScreen,
-    isLoading,
-    createWelcomeScreen,
-    updateWelcomeScreen,
-    deleteWelcomeScreen,
-    isCreating,
-    isUpdating,
-    isDeleting
-  } = useWelcomeScreenData(researchId);
+  const welcomeScreenData = useWelcomeScreenData(researchId);
 
-  const [formData, setFormData] = useState<WelcomeScreenData>({
-    title: '',
-    message: '',
-    startButtonText: '',
-    isEnabled: true
+  // Adaptar el hook centralizado a la interfaz ResearchDataHook
+  const dataHook = {
+    data: welcomeScreenData.data,
+    isLoading: welcomeScreenData.isLoading,
+    create: async (data: CreateWelcomeScreenRequest): Promise<WelcomeScreenModel> => {
+      // El hook centralizado espera WelcomeScreenFormData, pero CreateWelcomeScreenRequest ya incluye researchId
+      // Necesitamos adaptar la llamada convirtiendo CreateWelcomeScreenRequest a WelcomeScreenFormData
+      const formData: WelcomeScreenFormData = {
+        isEnabled: data.isEnabled,
+        title: data.title,
+        message: data.message,
+        startButtonText: data.startButtonText,
+        metadata: data.metadata ? {
+          version: data.metadata.version || '1.0.0',
+          lastUpdated: new Date(),
+          lastModifiedBy: 'user'
+        } : {
+          version: '1.0.0',
+          lastUpdated: new Date(),
+          lastModifiedBy: 'user'
+        }
+      };
+      return welcomeScreenData.createWelcomeScreen(formData);
+    },
+    update: async (researchId: string, data: UpdateWelcomeScreenRequest): Promise<WelcomeScreenModel> => {
+      // El hook centralizado espera Partial<WelcomeScreenFormData>
+      const formData: Partial<WelcomeScreenFormData> = {
+        isEnabled: data.isEnabled,
+        title: data.title,
+        message: data.message,
+        startButtonText: data.startButtonText,
+        metadata: data.metadata ? {
+          version: data.metadata.version || '1.0.0',
+          lastUpdated: new Date(),
+          lastModifiedBy: 'user'
+        } : undefined
+      };
+      return welcomeScreenData.updateWelcomeScreen(researchId, formData);
+    },
+    delete: async (): Promise<void> => {
+      return welcomeScreenData.deleteWelcomeScreen();
+    },
+    isCreating: welcomeScreenData.isCreating,
+    isUpdating: welcomeScreenData.isUpdating,
+    isDeleting: welcomeScreenData.isDeleting
+  };
+
+  // Función para mapear datos de API a formulario
+  const mapDataToForm = (data: WelcomeScreenModel | null): WelcomeScreenData => {
+    if (!data) {
+      return INITIAL_FORM_DATA;
+    }
+    return {
+      title: data.title || '',
+      message: data.message || '',
+      startButtonText: data.startButtonText || '',
+      isEnabled: data.isEnabled ?? true
+    };
+  };
+
+  // Función para mapear formulario a request de creación
+  const mapFormToCreate = (formData: WelcomeScreenData, researchId: string): CreateWelcomeScreenRequest => {
+    return {
+      researchId,
+      isEnabled: formData.isEnabled,
+      title: formData.title,
+      message: formData.message,
+      startButtonText: formData.startButtonText
+    };
+  };
+
+  // Función para mapear formulario a request de actualización
+  const mapFormToUpdate = (formData: WelcomeScreenData, researchId: string): UpdateWelcomeScreenRequest => {
+    return {
+      isEnabled: formData.isEnabled,
+      title: formData.title,
+      message: formData.message,
+      startButtonText: formData.startButtonText
+    };
+  };
+
+  // Función de validación
+  const validateForm = (formData: WelcomeScreenData): Record<string, string> | null => {
+    const errors: Record<string, string> = {};
+    if (!formData.title) {
+      errors.title = 'El título es requerido';
+    }
+    if (!formData.message) {
+      errors.message = 'El mensaje es requerido';
+    }
+    if (!formData.startButtonText) {
+      errors.startButtonText = 'El texto del botón es requerido';
+    }
+    return Object.keys(errors).length > 0 ? errors : null;
+  };
+
+  // Usar el hook genérico
+  const baseHook = useResearchForm<WelcomeScreenModel, WelcomeScreenData, CreateWelcomeScreenRequest, UpdateWelcomeScreenRequest>({
+    researchId,
+    dataHook,
+    initialFormData: INITIAL_FORM_DATA,
+    mapDataToForm,
+    mapFormToCreate,
+    mapFormToUpdate,
+    validateForm
   });
-  
-  const [modalError, setModalError] = useState<ErrorModalData | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
-  // Cargar datos cuando cambie la respuesta del hook centralizado
-  useEffect(() => {
-    if (isLoading) return;
-
-    if (!existingScreen) {
-      // Si no existe, mantener valores por defecto
-      setFormData({
-        title: '',
-        message: '',
-        startButtonText: '',
-        isEnabled: true
-      });
-      return;
-    }
-
-    // Actualizar formData con los datos existentes
-    setFormData({
-      title: existingScreen.title || '',
-      message: existingScreen.message || '',
-      startButtonText: existingScreen.startButtonText || '',
-      isEnabled: existingScreen.isEnabled ?? true
-    });
-  }, [existingScreen, isLoading]);
-
-  const handleChange = (field: keyof WelcomeScreenData, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.title || !formData.message || !formData.startButtonText) {
-      toastHelpers.error('Por favor completa todos los campos');
-      return;
-    }
-
-    try {
-      let savedData;
-      if (existingScreen?.id) {
-        // Actualizar existente usando hook centralizado
-        savedData = await updateWelcomeScreen(researchId, formData);
-      } else {
-        // Crear nuevo usando hook centralizado
-        savedData = await createWelcomeScreen(formData);
-      }
-      
-      // Actualizar formData con los datos guardados
-      setFormData({
-        title: savedData.title || '',
-        message: savedData.message || '',
-        startButtonText: savedData.startButtonText || '',
-        isEnabled: savedData.isEnabled ?? true
-      });
-      
-      toastHelpers.saveSuccess('Pantalla de bienvenida');
-    } catch (error) {
-      console.error('Error saving welcome screen:', error);
-      setModalError({
-        title: 'Error al guardar',
-        message: 'No se pudo guardar la pantalla de bienvenida',
-        type: 'error'
-      });
-      setModalVisible(true);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!existingScreen || !existingScreen.id) return;
-
-    try {
-      await deleteWelcomeScreen();
-      setFormData({
-        title: '',
-        message: '',
-        startButtonText: '',
-        isEnabled: true
-      });
-      toastHelpers.deleteSuccess('Pantalla de bienvenida');
-    } catch (error) {
-      console.error('Error deleting welcome screen:', error);
-      setModalError({
-        title: 'Error al eliminar',
-        message: 'No se pudo eliminar la pantalla de bienvenida',
-        type: 'error'
-      });
-      setModalVisible(true);
-    }
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setModalError(null);
-  };
-
-  const showConfirmModal = () => {
-    setConfirmModalVisible(true);
-  };
-
-  const closeConfirmModal = () => {
-    setConfirmModalVisible(false);
-  };
-
-  const confirmDelete = async () => {
-    await handleDelete();
-    closeConfirmModal();
-  };
-
+  // Función específica de preview
   const handlePreview = () => {
-    if (!formData.title || !formData.message || !formData.startButtonText) {
+    if (!baseHook.formData.title || !baseHook.formData.message || !baseHook.formData.startButtonText) {
       toastHelpers.error('Por favor completa todos los campos antes de previsualizar');
       return;
     }
 
     const previewWindow = window.open('', '_blank');
     if (previewWindow) {
-      const { title, message, startButtonText } = formData;
+      const { title, message, startButtonText } = baseHook.formData;
       const previewHtml = `
         <!DOCTYPE html>
         <html lang="es">
@@ -209,25 +191,10 @@ export const useWelcomeScreen = (researchId: string): UseWelcomeScreenResult => 
     }
   };
 
-  // Usar estados del hook centralizado para isSaving e isDeleting
-  const isSaving = isCreating || isUpdating;
-
   return {
-    formData,
-    isLoading,
-    isSaving,
-    isDeleting,
-    existingScreen,
-    modalError,
-    modalVisible,
-    confirmModalVisible,
-    handleChange,
-    handleSubmit,
-    handleDelete,
-    handlePreview,
-    closeModal,
-    showConfirmModal,
-    closeConfirmModal,
-    confirmDelete
+    ...baseHook,
+    existingScreen: welcomeScreenData.data,
+    handleSubmit: baseHook.handleSave,
+    handlePreview
   };
 };
