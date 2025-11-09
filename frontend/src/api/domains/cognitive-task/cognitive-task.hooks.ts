@@ -32,6 +32,9 @@ export function useCognitiveTaskData(researchId: string | null) {
     queryFn: () => researchId ? cognitiveTaskApi.getByResearchId(researchId) : Promise.resolve(null),
     enabled: !!researchId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // No refetch si ya hay datos en cache
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   // Create mutation

@@ -1,6 +1,6 @@
 import React from 'react';
 import { moduleResponsesAPI } from '@/api/config';
-import { cognitiveTaskApi, cognitiveTaskKeys } from '@/api/domains/cognitive-task';
+import { useCognitiveTaskData } from '@/api/domains/cognitive-task';
 import { useQuery } from '@tanstack/react-query';
 
 /**
@@ -264,54 +264,29 @@ export const useCognitiveTaskResponses = (researchId: string | null) => {
   });
 
   // Obtener configuración de CognitiveTask
-  // Usar el mismo query key que useCognitiveTaskData para compartir datos y evitar peticiones duplicadas
-  const configQuery = useQuery({
-    queryKey: cognitiveTaskKeys.byResearch(researchId || ''),
-    queryFn: async () => {
-      if (!researchId) {
-        return null;
-      }
-
-      try {
-        const config = await cognitiveTaskApi.getByResearchId(researchId);
-        return config;
-      } catch (error) {
-        // Si no existe configuración, retornar null
-        if ((error as any)?.response?.status === 404) {
-          return null;
-        }
-        throw error;
-      }
-    },
-    enabled: !!researchId,
-    staleTime: 10 * 60 * 1000, // Cache más largo para configuración
-    gcTime: 30 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // No refetch si ya hay datos en cache
-    retry: 1
-  });
+  // Usar useCognitiveTaskData directamente para compartir el cache y evitar peticiones duplicadas
+  const { data: configData, isLoading: isConfigLoading, error: configError } = useCognitiveTaskData(researchId);
 
   // Procesar datos cuando ambos queries estén listos
   // Solo procesar cuando tengamos respuestas Y configuración (para mejor mapeo)
   const processedData = React.useMemo(() => {
-    if (responsesQuery.data && configQuery.data) {
-      return processCognitiveTaskData(responsesQuery.data, configQuery.data as { questions: Array<{ id: string; [key: string]: unknown }> });
+    if (responsesQuery.data && configData) {
+      return processCognitiveTaskData(responsesQuery.data, configData as { questions: Array<{ id: string; [key: string]: unknown }> });
     } else if (responsesQuery.data) {
       return processCognitiveTaskData(responsesQuery.data, null);
     }
     return [];
-  }, [responsesQuery.data, configQuery.data]);
+  }, [responsesQuery.data, configData]);
 
   return {
-    researchConfig: configQuery.data,
+    researchConfig: configData,
     groupedResponses: responsesQuery.data || {},
     processedData,
-    isLoading: responsesQuery.isLoading || configQuery.isLoading,
-    isError: responsesQuery.isError || configQuery.isError,
-    error: responsesQuery.error || configQuery.error,
+    isLoading: responsesQuery.isLoading || isConfigLoading,
+    isError: responsesQuery.isError || (configError !== null && configError !== undefined),
+    error: responsesQuery.error || configError,
     refetch: () => {
       responsesQuery.refetch();
-      configQuery.refetch();
     }
   };
 };

@@ -1,5 +1,5 @@
 import { useSearchParams } from 'next/navigation';
-import { ReactElement } from 'react';
+import React, { ReactElement } from 'react';
 
 import { CognitiveTaskForm } from '../CognitiveTask';
 import { Suspense } from 'react';
@@ -52,7 +52,8 @@ export function useStageManager(researchId: string): StageManagerResult {
     TestCommonPage
   } as const;
 
-  const renderStageContent = (): ReactElement => {
+  // Memoizar renderStageContent para evitar recrear el componente en cada render
+  const renderStageContent = React.useCallback((): ReactElement => {
     const stageConfig = STAGE_COMPONENTS[currentSection] || STAGE_COMPONENTS.default;
     const ComponentToRender = componentMap[stageConfig.component as keyof typeof componentMap];
 
@@ -80,11 +81,11 @@ export function useStageManager(researchId: string): StageManagerResult {
     }
 
     return component;
-  };
+  }, [currentSection, researchId]);
 
-  const getStageTitle = (): string => {
+  const getStageTitle = React.useCallback((): string => {
     return STAGE_TITLES[currentSection] || STAGE_TITLES.default;
-  };
+  }, [currentSection]);
 
   return {
     currentSection,
