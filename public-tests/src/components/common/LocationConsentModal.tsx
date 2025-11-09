@@ -39,15 +39,15 @@ export const LocationConsentModal: React.FC<LocationConsentModalProps> = ({
     >
       <div className="bg-white rounded-xl shadow-lg w-full max-w-md my-auto">
         {/* Header - Sticky en móvil */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl z-10">
+        <div className="flex items-center justify-between p-3 sm:p-5 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl z-10">
           <div className="flex items-center">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2 sm:mr-2.5 flex-shrink-0">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">
               Ubicación
             </h2>
           </div>
@@ -56,23 +56,23 @@ export const LocationConsentModal: React.FC<LocationConsentModalProps> = ({
             className="text-gray-400 hover:text-gray-600 transition-colors p-1 touch-manipulation"
             aria-label="Cerrar modal"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Content - Scrollable */}
-        <div className="p-4 sm:p-6 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
-          <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+        <div className="p-3 sm:p-5 space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
             Para mejorar la calidad de <strong>{researchTitle}</strong>, nos gustaría obtener tu ubicación aproximada.
           </p>
 
           {/* Aviso específico para Safari */}
           {/^((?!chrome|android).)*safari/i.test(navigator.userAgent) && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
-              <h3 className="font-medium text-yellow-900 mb-2 text-sm sm:text-base">Usuarios de Safari</h3>
-              <ul className="text-xs sm:text-sm text-yellow-800 space-y-1.5">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 sm:p-3">
+              <h3 className="font-medium text-yellow-900 mb-1.5 text-xs sm:text-sm">Usuarios de Safari</h3>
+              <ul className="text-xs text-yellow-800 space-y-1">
                 <li>• Asegúrate de que Safari tenga permisos de ubicación habilitados</li>
                 <li>• Ve a Safari &gt; Preferencias &gt; Privacidad &gt; Servicios de ubicación</li>
                 <li>• Si usas HTTPS, la ubicación funcionará mejor</li>
@@ -81,9 +81,9 @@ export const LocationConsentModal: React.FC<LocationConsentModalProps> = ({
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-            <h3 className="font-medium text-blue-900 mb-2 text-sm sm:text-base">¿Qué información recopilamos?</h3>
-            <ul className="text-xs sm:text-sm text-blue-800 space-y-1.5">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 sm:p-3">
+            <h3 className="font-medium text-blue-900 mb-1.5 text-xs sm:text-sm">¿Qué información recopilamos?</h3>
+            <ul className="text-xs text-blue-800 space-y-1">
               <li>• Coordenadas GPS (latitud y longitud)</li>
               <li>• Precisión de la ubicación</li>
               <li>• Ciudad y país aproximados</li>
@@ -91,9 +91,9 @@ export const LocationConsentModal: React.FC<LocationConsentModalProps> = ({
             </ul>
           </div>
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
-            <h3 className="font-medium text-green-900 mb-2 text-sm sm:text-base">¿Cómo protegemos tu privacidad?</h3>
-            <ul className="text-xs sm:text-sm text-green-800 space-y-1.5">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 sm:p-3">
+            <h3 className="font-medium text-green-900 mb-1.5 text-xs sm:text-sm">¿Cómo protegemos tu privacidad?</h3>
+            <ul className="text-xs text-green-800 space-y-1">
               <li>• Solo usamos ubicación para análisis de investigación</li>
               <li>• No compartimos datos con terceros</li>
               <li>• Puedes rechazar sin afectar tu participación</li>
@@ -101,33 +101,33 @@ export const LocationConsentModal: React.FC<LocationConsentModalProps> = ({
             </ul>
           </div>
 
-          <p className="text-xs sm:text-sm text-gray-600">
+          <p className="text-xs text-gray-600">
             Tu participación es completamente voluntaria. Puedes rechazar el tracking de ubicación y continuar con la investigación normalmente.
           </p>
         </div>
 
         {/* Actions - Sticky en móvil */}
-        <div className="p-4 sm:p-6 border-t border-gray-200 bg-white rounded-b-xl sticky bottom-0">
-          <div className="flex flex-col sm:flex-row gap-3">
+        <div className="p-3 sm:p-5 border-t border-gray-200 bg-white rounded-b-xl sticky bottom-0">
+          <div className="flex flex-col sm:flex-row gap-2.5">
             <button
               onClick={onReject}
-              className="flex-1 px-4 py-3 sm:py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation min-h-[44px] text-sm sm:text-base"
+              className="flex-1 px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation min-h-[44px] text-sm"
             >
               Rechazar
             </button>
             <button
               onClick={onAccept}
-              className="flex-1 px-4 py-3 sm:py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation min-h-[44px] text-sm sm:text-base"
+              className="flex-1 px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation min-h-[44px] text-sm"
             >
               Permitir Ubicación
             </button>
           </div>
 
           {/* Footer */}
-          <div className="mt-4 text-center">
+          <div className="mt-3 text-center">
             <a
               href="/privacy"
-              className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 underline touch-manipulation"
+              className="text-xs text-blue-600 hover:text-blue-800 underline touch-manipulation"
               target="_blank"
               rel="noopener noreferrer"
             >
