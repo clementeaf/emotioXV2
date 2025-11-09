@@ -17,9 +17,9 @@ const TestLayoutMain: React.FC = () => {
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   
   // Leer parámetros de query cuando se accede directamente a /test?researchId=...&participantId=...
-  // Ejecutar inmediatamente al montar, antes de renderizar TestLayoutRenderer
+  // Ejecutar inmediatamente al montar y cuando cambie researchId del store
   useEffect(() => {
-    // Si ya tenemos researchId, no hacer nada (evitar perderlo)
+    // Si ya tenemos researchId, marcar como inicializado
     if (researchId) {
       setIsInitializing(false);
       return;
@@ -63,14 +63,27 @@ const TestLayoutMain: React.FC = () => {
           queryResearchId
         );
       }
-    }
-    
-    // Marcar como inicializado después de un breve delay para asegurar que el store se actualizó
-    setTimeout(() => {
+      
+      // Verificar que el store se actualizó correctamente
+      const checkStore = setInterval(() => {
+        const { researchId: currentResearchId } = useTestStore.getState();
+        if (currentResearchId) {
+          setIsInitializing(false);
+          clearInterval(checkStore);
+        }
+      }, 50);
+      
+      // Timeout de seguridad: marcar como inicializado después de 500ms máximo
+      setTimeout(() => {
+        clearInterval(checkStore);
+        setIsInitializing(false);
+      }, 500);
+    } else {
+      // No hay queryResearchId en la URL, marcar como inicializado
       setIsInitializing(false);
-    }, 100);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Solo ejecutar una vez al montar
+  }, [researchId]); // Ejecutar cuando cambie researchId del store
   
   const shouldShowSidebar = eyeTrackingConfig?.linkConfig?.showProgressBar ?? true;
 

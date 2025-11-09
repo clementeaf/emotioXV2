@@ -23,6 +23,7 @@ const TestLayoutRenderer: React.FC = () => {
   const [checkingResearchId, setCheckingResearchId] = React.useState(false);
 
   // Verificar si researchId se carga desde localStorage después de un breve delay
+  // Aumentar el delay para móviles que pueden tardar más en cargar el store
   useEffect(() => {
     if (!researchId && !checkingResearchId) {
       setCheckingResearchId(true);
@@ -36,7 +37,7 @@ const TestLayoutRenderer: React.FC = () => {
           }
         }
         setCheckingResearchId(false);
-      }, 500);
+      }, 1500); // Aumentar a 1.5 segundos para móviles
       return () => clearTimeout(timeout);
     }
   }, [researchId, checkingResearchId]);
@@ -49,14 +50,19 @@ const TestLayoutRenderer: React.FC = () => {
     }
     
     if (researchId && !participantId) {
-      // Si tenemos researchId pero no participantId, esperar un poco más
+      // Si tenemos researchId pero no participantId, esperar más tiempo para móviles
       const timeout = setTimeout(() => {
         const { participantId: currentParticipantId } = useTestStore.getState();
         if (!currentParticipantId) {
-          // Solo redirigir si realmente no hay participantId después de esperar
-          navigate('/error-no-research-id');
+          // Verificar también en la URL antes de redirigir
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlParticipantId = urlParams.get('participantId') || urlParams.get('userId');
+          if (!urlParticipantId) {
+            // Solo redirigir si realmente no hay participantId después de esperar
+            navigate('/error-no-research-id');
+          }
         }
-      }, 1000);
+      }, 2000); // Aumentar a 2 segundos para móviles
       return () => clearTimeout(timeout);
     }
   }, [researchId, participantId, navigate, checkingResearchId]);
