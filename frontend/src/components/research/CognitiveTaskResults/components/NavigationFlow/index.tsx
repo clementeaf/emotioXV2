@@ -11,17 +11,6 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
   researchId, 
   data 
 }) => {
-  // DEBUG: Log datos recibidos
-  console.log('[NavigationFlowResults] Datos recibidos:', {
-    hasData: !!data,
-    hasAllClicksTracking: !!data?.allClicksTracking,
-    hasVisualClickPoints: !!data?.visualClickPoints,
-    hasFiles: !!data?.files,
-    allClicksTrackingCount: data?.allClicksTracking?.length || 0,
-    visualClickPointsCount: data?.visualClickPoints?.length || 0,
-    filesCount: data?.files?.length || 0,
-    data: data
-  });
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showParticipantFilter, setShowParticipantFilter] = useState(false);
@@ -33,7 +22,6 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
   // 🧪 INYECTAR UTILIDADES DE TEST DE FIDELIDAD FRONTEND
   useEffect(() => {
     // injectFrontendFidelityTest(); // Eliminado - usar herramientas nativas del navegador
-    console.log('🧪 [NavigationFlowResults] Frontend fidelity test utilities injected for testing');
   }, []);
 
   // 🧪 EJECUTAR TESTS DE FIDELIDAD CUANDO CAMBIE LA IMAGEN O DATOS
@@ -73,8 +61,6 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
               // );
             }
           });
-
-          console.log('🧪 [NavigationFlowResults] Fidelity test completed for current view');
         }
       }
     }
@@ -120,7 +106,11 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
 
   // Filter clicks for current image and selected participant
   const getFilteredClicksForCurrentImage = (): VisualClickPoint[] => {
-    let clicks = data.visualClickPoints.filter(point => point.imageIndex === selectedImageIndex);
+    // Normalizar imageIndex a número para comparación (puede venir como string o número)
+    let clicks = data.visualClickPoints.filter(point => {
+      const pointImageIndex = typeof point.imageIndex === 'string' ? parseInt(point.imageIndex) : point.imageIndex;
+      return pointImageIndex === selectedImageIndex;
+    });
     
     if (selectedParticipant !== 'all') {
       clicks = clicks.filter(point => point.participantId === selectedParticipant);
@@ -203,6 +193,22 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
       y: scaledY,
       width: scaledWidth,
       height: scaledHeight
+    };
+  };
+
+  // Los clicks vienen en coordenadas renderizadas del momento del click (igual que en public-tests)
+  // NO necesitan escalado adicional, se usan directamente
+  // Esta función solo verifica que tenemos los datos necesarios
+  const getClickCoordinates = (clickX: number, clickY: number): { x: number; y: number } | null => {
+    if (!imageNaturalSize || !imgRenderSize || !imageRef.current) {
+      return null;
+    }
+
+    // Los clicks ya vienen en coordenadas renderizadas (como en public-tests)
+    // Se usan directamente sin escalado adicional
+    return {
+      x: clickX,
+      y: clickY
     };
   };
 
@@ -299,27 +305,31 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
           </div>
           
           <div 
-            className="relative flex justify-center items-center h-[500px]"
+            className="relative w-[70vw] max-w-4xl bg-white rounded-lg shadow-lg mx-auto"
           >
-            <div className="relative">
-              <img
-                ref={imageRef}
-                src={currentImage.url}
-                alt={currentImage.name || `Imagen ${selectedImageIndex + 1}`}
-                className="h-[500px] object-contain border border-gray-300 rounded"
-                onLoad={handleImageLoad}
-                style={{ maxHeight: '500px' }}
-              />
+            <img
+              ref={imageRef}
+              src={currentImage.url}
+              alt={currentImage.name || `Imagen ${selectedImageIndex + 1}`}
+              className="w-full h-full object-contain bg-white"
+              loading="eager"
+              style={{ display: 'block' }}
+              onLoad={handleImageLoad}
+              crossOrigin="anonymous"
+            />
               
               {/* Hitzones y Click Points Overlay */}
               {imageNaturalSize && imgRenderSize && (
-                <div
-                  className="absolute top-0 left-0 pointer-events-none"
-                  style={{ 
-                    width: `${imgRenderSize.width}px`, 
-                    height: `${imgRenderSize.height}px`
-                  }}
-                >
+                (() => {
+                  const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+                  return (
+                    <div
+                      className="absolute top-0 left-0 pointer-events-none"
+                      style={{ 
+                        width: `${imgRenderSize.width}px`, 
+                        height: `${imgRenderSize.height}px`
+                      }}
+                    >
                 {/* Renderizar Hitzones */}
                 {currentImageHitzones.length > 0 && currentImageHitzones.map((hitzone, hzIndex) => {
                   const scaledCoords = getScaledHitzoneCoordinates(hitzone);
@@ -350,31 +360,37 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
                 })}
 
                 {/* Renderizar Click Points */}
-                {currentImageClicks.map((point, index) => (
-                  <div
-                    key={`${point.timestamp}-${index}`}
-                    data-testid={`navigation-click-point-${index}`}
-                    data-original-x={point.x}
-                    data-original-y={point.y}
-                    data-is-correct={point.isCorrect}
-                    data-image-index={point.imageIndex}
-                    data-participant-id={point.participantId || ''}
-                    className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg ${
-                      point.isCorrect ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                    style={{
-                      left: point.x - 6,
-                      top: point.y - 6,
-                      zIndex: 10
-                    }}
-                    title={`${point.isCorrect ? 'Correcto' : 'Incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}${
-                      point.participantId ? ` - ${point.participantId.slice(-8).toUpperCase()}` : ''
-                    }`}
-                  />
-                ))}
-                </div>
+                {currentImageClicks.map((point, index) => {
+                  const clickCoords = getClickCoordinates(point.x, point.y);
+                  if (!clickCoords) return null;
+
+                  return (
+                    <div
+                      key={`${point.timestamp}-${index}`}
+                      data-testid={`navigation-click-point-${index}`}
+                      data-original-x={point.x}
+                      data-original-y={point.y}
+                      data-is-correct={point.isCorrect}
+                      data-image-index={point.imageIndex}
+                      data-participant-id={point.participantId || ''}
+                      className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${
+                        point.isCorrect ? 'bg-green-500' : 'bg-red-500'
+                      }`}
+                      style={{
+                        left: `${clickCoords.x - 6}px`,
+                        top: `${clickCoords.y - 6}px`,
+                        zIndex: 10
+                      }}
+                      title={`${point.isCorrect ? 'Correcto' : 'Incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}${
+                        point.participantId ? ` - ${point.participantId.slice(-8).toUpperCase()}` : ''
+                      }`}
+                    />
+                  );
+                })}
+                    </div>
+                  );
+                })()
               )}
-            </div>
           </div>
         </div>
       )}

@@ -80,8 +80,6 @@ export const useDemographicsData = (researchId: string) => {
     const demographicsQuestionKeys = Object.keys(groupedResponses).filter(key => 
       key.toLowerCase().includes('demographic')
     );
-    
-    console.log('[useDemographicsData] QuestionKeys de demographics encontrados:', demographicsQuestionKeys);
 
     // Procesar todas las respuestas de demographics
     demographicsQuestionKeys.forEach(questionKey => {

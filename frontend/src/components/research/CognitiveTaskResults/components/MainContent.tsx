@@ -54,15 +54,6 @@ export function MainContent({
     }
   };
 
-  // DEBUG: Log de datos recibidos
-  console.log('[MainContent] Datos recibidos:', {
-    hasSentimentResults: !!data.sentimentResults,
-    sentimentResultsCount: data.sentimentResults?.length || 0,
-    sentimentResults: data.sentimentResults,
-    questionId: data.id,
-    questionNumber: data.questionNumber
-  });
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
       {/* Panel izquierdo: Lista de comentarios */}

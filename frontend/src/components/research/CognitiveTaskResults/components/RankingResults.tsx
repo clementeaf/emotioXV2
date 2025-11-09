@@ -34,18 +34,7 @@ interface RankingResultsProps {
  * Implementa la visualización horizontal como en la imagen de referencia
  */
 export function RankingResults({ data }: RankingResultsProps) {
-  // DEBUG: Log datos recibidos
-  console.log('[RankingResults] Datos recibidos:', {
-    hasData: !!data,
-    hasOptions: !!data?.options,
-    hasResponses: !!(data as any)?.responses,
-    optionsCount: data?.options?.length || 0,
-    responsesCount: (data as any)?.responses?.length || 0,
-    data: data
-  });
-
   if (!data || (!data.options && !(data as any)?.responses)) {
-    console.log('[RankingResults] ⚠️ No hay datos disponibles');
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500">No hay datos de ranking disponibles.</p>
@@ -57,7 +46,6 @@ export function RankingResults({ data }: RankingResultsProps) {
   // Si no hay options pero hay responses, construir options desde responses
   if (!data.options && (data as any)?.responses) {
     // TODO: Procesar responses para construir options
-    console.log('[RankingResults] ⚠️ No hay options, solo responses. Necesita procesamiento.');
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500">Procesando datos de ranking...</p>

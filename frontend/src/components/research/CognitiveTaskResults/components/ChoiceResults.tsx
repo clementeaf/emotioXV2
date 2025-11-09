@@ -25,16 +25,7 @@ interface ChoiceResultsProps {
 }
 
 export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
-  // DEBUG: Log datos recibidos
-  console.log('[ChoiceResults] Datos recibidos:', {
-    hasData: !!data,
-    hasOptions: !!data?.options,
-    optionsCount: data?.options?.length || 0,
-    data: data
-  });
-
   if (!data || !data.options || !Array.isArray(data.options)) {
-    console.log('[ChoiceResults] ⚠️ No hay datos o opciones disponibles');
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500">No hay datos de selección disponibles.</p>

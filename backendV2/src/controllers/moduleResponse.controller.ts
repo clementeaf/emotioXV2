@@ -1129,8 +1129,10 @@ export class ModuleResponseController {
 
         // Extraer el valor de la respuesta con type guards
         let responseValue: unknown;
+        console.log(`[transformToOptimizedStructure] questionKey: ${questionKey}, response.response type: ${typeof response.response}, isObject: ${typeof response.response === 'object'}`);
         if (response.response && typeof response.response === 'object') {
           const responseObj = response.response as Record<string, unknown>;
+          console.log(`[transformToOptimizedStructure] questionKey: ${questionKey}, responseObj keys: ${Object.keys(responseObj).join(', ')}`);
           // Para respuestas complejas como ranking
           if ('selectedValue' in responseObj && responseObj.selectedValue) {
             // Intentar parsear JSON si es un string
@@ -1144,9 +1146,226 @@ export class ModuleResponseController {
               responseValue = responseObj.selectedValue;
             }
           } else if ('value' in responseObj && responseObj.value !== undefined) {
-            responseValue = responseObj.value;
+            // Si value es un objeto, devolverlo tal cual
+            // Si value es un string, intentar parsearlo como JSON (puede ser un objeto serializado)
+            if (typeof responseObj.value === 'string') {
+              try {
+                // Intentar parsear como JSON
+                const parsed = JSON.parse(responseObj.value);
+                responseValue = parsed;
+              } catch {
+                // Si no es JSON válido, devolver el string tal cual
+                responseValue = responseObj.value;
+              }
+            } else if (typeof responseObj.value === 'object' && responseObj.value !== null) {
+              // Si value es un objeto, asegurarse de que campos críticos estén parseados
+              const valueObj = responseObj.value as Record<string, unknown>;
+              console.log(`[transformToOptimizedStructure] valueObj keys: ${Object.keys(valueObj).join(', ')}, questionKey: ${questionKey}`);
+              // Para navigation flow, parsear campos críticos que pueden venir como strings JSON
+              if (questionKey === 'cognitive_navigation_flow') {
+                console.log('[transformToOptimizedStructure] Procesando cognitive_navigation_flow');
+                const criticalFields = ['imageSelections', 'clickPosition', 'allClicksTracking', 'visualClickPoints'];
+                criticalFields.forEach(field => {
+                  if (valueObj[field] && typeof valueObj[field] === 'string') {
+                    console.log(`[transformToOptimizedStructure] Parseando campo ${field}, tipo: ${typeof valueObj[field]}, valor: ${String(valueObj[field]).substring(0, 100)}`);
+                    // Si es un string JSON, intentar parsearlo
+                    try {
+                      const fieldValue = valueObj[field] as string;
+                      // Intentar parsear el string JSON
+                      const parsed = JSON.parse(fieldValue);
+                      valueObj[field] = parsed;
+                      console.log(`[transformToOptimizedStructure] ✅ Campo ${field} parseado correctamente, nuevo tipo: ${typeof valueObj[field]}`);
+                    } catch (parseError) {
+                      console.log(`[transformToOptimizedStructure] ⚠️ Error al parsear ${field}: ${parseError}`);
+                      // Si falla el parseo, puede estar truncado
+                      // Intentar extraer objetos completos del JSON truncado
+                      try {
+                        const truncatedStr = valueObj[field] as string;
+                        // Buscar el último objeto completo antes del truncado
+                        let lastCompleteIndex = -1;
+                        let braceCount = 0;
+                        let inString = false;
+                        let escapeNext = false;
+                        
+                        for (let i = truncatedStr.length - 1; i >= 0; i--) {
+                          const char = truncatedStr[i];
+                          
+                          if (escapeNext) {
+                            escapeNext = false;
+                            continue;
+                          }
+                          
+                          if (char === '\\') {
+                            escapeNext = true;
+                            continue;
+                          }
+                          
+                          if (char === '"' && !escapeNext) {
+                            inString = !inString;
+                            continue;
+                          }
+                          
+                          if (inString) continue;
+                          
+                          if (char === '}') {
+                            braceCount++;
+                          } else if (char === '{') {
+                            braceCount--;
+                            if (braceCount === 0) {
+                              // Encontramos el inicio de un objeto completo
+                              // Buscar hacia adelante para encontrar el cierre completo
+                              let forwardBraceCount = 0;
+                              let foundComplete = false;
+                              for (let j = i; j < truncatedStr.length; j++) {
+                                const forwardChar = truncatedStr[j];
+                                if (forwardChar === '{') forwardBraceCount++;
+                                if (forwardChar === '}') {
+                                  forwardBraceCount--;
+                                  if (forwardBraceCount === 0) {
+                                    lastCompleteIndex = j;
+                                    foundComplete = true;
+                                    break;
+                                  }
+                                }
+                              }
+                              if (foundComplete) break;
+                            }
+                          }
+                        }
+                        
+                        if (lastCompleteIndex > 0) {
+                          // Extraer hasta el último objeto completo
+                          const partialStr = truncatedStr.substring(0, lastCompleteIndex + 1);
+                          // Cerrar el objeto principal si es necesario
+                          let openBraces = 0;
+                          for (let i = 0; i < partialStr.length; i++) {
+                            if (partialStr[i] === '{') openBraces++;
+                            if (partialStr[i] === '}') openBraces--;
+                          }
+                          
+                          let closedStr = partialStr;
+                          // Cerrar las llaves faltantes
+                          while (openBraces > 0) {
+                            closedStr += '}';
+                            openBraces--;
+                          }
+                          
+                          valueObj[field] = JSON.parse(closedStr);
+                        }
+                        // Si no se puede parsear ni parcialmente, mantener el string tal cual
+                      } catch (truncatedError) {
+                        console.log(`[transformToOptimizedStructure] ⚠️ Error al parsear JSON truncado para ${field}: ${truncatedError}`);
+                        // Si falla completamente, mantener el string tal cual
+                      }
+                    }
+                  }
+                });
+                console.log(`[transformToOptimizedStructure] ✅ valueObj después del parseo:`, JSON.stringify(valueObj, null, 2).substring(0, 500));
+              }
+              responseValue = valueObj;
+            } else {
+              responseValue = responseObj.value;
+            }
           } else {
-            responseValue = response.response;
+            // Si no hay selectedValue ni value, pero es cognitive_navigation_flow, parsear campos directamente
+            if (questionKey === 'cognitive_navigation_flow') {
+              console.log('[transformToOptimizedStructure] Procesando cognitive_navigation_flow directamente en responseObj');
+              const criticalFields = ['imageSelections', 'clickPosition', 'allClicksTracking', 'visualClickPoints'];
+              criticalFields.forEach(field => {
+                if (responseObj[field] && typeof responseObj[field] === 'string') {
+                  console.log(`[transformToOptimizedStructure] Parseando campo ${field} directamente, tipo: ${typeof responseObj[field]}, valor: ${String(responseObj[field]).substring(0, 100)}`);
+                  try {
+                    const fieldValue = responseObj[field] as string;
+                    const parsed = JSON.parse(fieldValue);
+                    responseObj[field] = parsed;
+                    console.log(`[transformToOptimizedStructure] ✅ Campo ${field} parseado correctamente, nuevo tipo: ${typeof responseObj[field]}`);
+                  } catch (parseError) {
+                    console.log(`[transformToOptimizedStructure] ⚠️ Error al parsear ${field}: ${parseError}`);
+                    // Si falla el parseo, puede estar truncado - intentar extraer objetos completos
+                    try {
+                      const truncatedStr = responseObj[field] as string;
+                      // Buscar el último objeto completo antes del truncado
+                      let lastCompleteIndex = -1;
+                      let braceCount = 0;
+                      let inString = false;
+                      let escapeNext = false;
+                      
+                      for (let i = truncatedStr.length - 1; i >= 0; i--) {
+                        const char = truncatedStr[i];
+                        
+                        if (escapeNext) {
+                          escapeNext = false;
+                          continue;
+                        }
+                        
+                        if (char === '\\') {
+                          escapeNext = true;
+                          continue;
+                        }
+                        
+                        if (char === '"' && !escapeNext) {
+                          inString = !inString;
+                          continue;
+                        }
+                        
+                        if (inString) continue;
+                        
+                        if (char === '}') {
+                          braceCount++;
+                        } else if (char === '{') {
+                          braceCount--;
+                          if (braceCount === 0) {
+                            // Encontramos el inicio de un objeto completo
+                            // Buscar hacia adelante para encontrar el cierre completo
+                            let forwardBraceCount = 0;
+                            let foundComplete = false;
+                            for (let j = i; j < truncatedStr.length; j++) {
+                              const forwardChar = truncatedStr[j];
+                              if (forwardChar === '{') forwardBraceCount++;
+                              if (forwardChar === '}') {
+                                forwardBraceCount--;
+                                if (forwardBraceCount === 0) {
+                                  lastCompleteIndex = j;
+                                  foundComplete = true;
+                                  break;
+                                }
+                              }
+                            }
+                            if (foundComplete) break;
+                          }
+                        }
+                      }
+                      
+                      if (lastCompleteIndex > 0) {
+                        // Extraer hasta el último objeto completo
+                        const partialStr = truncatedStr.substring(0, lastCompleteIndex + 1);
+                        // Cerrar el objeto principal si es necesario
+                        let openBraces = 0;
+                        for (let i = 0; i < partialStr.length; i++) {
+                          if (partialStr[i] === '{') openBraces++;
+                          if (partialStr[i] === '}') openBraces--;
+                        }
+                        
+                        let closedStr = partialStr;
+                        // Cerrar las llaves faltantes
+                        while (openBraces > 0) {
+                          closedStr += '}';
+                          openBraces--;
+                        }
+                        
+                        responseObj[field] = JSON.parse(closedStr);
+                        console.log(`[transformToOptimizedStructure] ✅ Campo ${field} parseado parcialmente (truncado), nuevo tipo: ${typeof responseObj[field]}`);
+                      }
+                    } catch (truncatedError) {
+                      console.log(`[transformToOptimizedStructure] ⚠️ Error al parsear JSON truncado para ${field}: ${truncatedError}`);
+                    }
+                  }
+                }
+              });
+              responseValue = responseObj;
+            } else {
+              responseValue = response.response;
+            }
           }
         } else {
           responseValue = response.response;

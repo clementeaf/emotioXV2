@@ -73,12 +73,6 @@ const processCognitiveTaskData = (
   const processed: CognitiveTaskResponses['processedData'] = [];
 
   // Procesar cada questionKey
-  // DEBUG: Log datos recibidos
-  console.log('[useCognitiveTaskResponses] Procesando datos:', {
-    groupedResponsesKeys: Object.keys(groupedResponses),
-    researchConfigQuestions: researchConfig?.questions?.map((q: any) => ({ id: q.id, type: q.type })),
-    totalResponses: Object.values(groupedResponses).reduce((acc: number, arr: any) => acc + (arr?.length || 0), 0)
-  });
 
   Object.entries(groupedResponses).forEach(([questionKey, responses]) => {
     if (!responses || responses.length === 0) {
@@ -95,19 +89,16 @@ const processCognitiveTaskData = (
       
       // Comparar questionKey del endpoint con el esperado desde question.type
       if (questionKey === expectedQuestionKey) {
-        console.log(`[useCognitiveTaskResponses] ✅ Match: questionKey ${questionKey} === expectedQuestionKey ${expectedQuestionKey} para pregunta ${q.id}`);
         return true;
       }
       
       // Comparar por questionId si el questionKey contiene el id
       if (questionKey.includes(q.id)) {
-        console.log(`[useCognitiveTaskResponses] ✅ Match: questionKey ${questionKey} incluye questionId ${q.id}`);
         return true;
       }
       
       // Comparar si el questionKey contiene el tipo de pregunta
       if (normalizedType && questionKey.toLowerCase().includes(normalizedType.toLowerCase())) {
-        console.log(`[useCognitiveTaskResponses] ✅ Match: questionKey ${questionKey} incluye tipo ${normalizedType} para pregunta ${q.id}`);
         return true;
       }
       
@@ -116,11 +107,6 @@ const processCognitiveTaskData = (
 
     // Usar el questionId de la pregunta encontrada, o el questionKey como fallback
     const questionId = question?.id || questionKey;
-    
-    // DEBUG: Log si no se encontró pregunta
-    if (!question) {
-      console.log(`[useCognitiveTaskResponses] ⚠️ No se encontró pregunta en config para questionKey: ${questionKey}`);
-    }
 
     // Procesar respuestas según el tipo de pregunta
     const processedQuestion: {
@@ -246,9 +232,6 @@ const processCognitiveTaskData = (
  * Hook para obtener y procesar respuestas de CognitiveTask
  */
 export const useCognitiveTaskResponses = (researchId: string | null) => {
-  // DEBUG: Log cuando se llama el hook
-  console.log('[useCognitiveTaskResponses] Hook llamado con researchId:', researchId);
-  
   // Obtener respuestas del endpoint
   const responsesQuery = useQuery({
     queryKey: ['cognitiveTaskResponses', researchId],
@@ -257,13 +240,7 @@ export const useCognitiveTaskResponses = (researchId: string | null) => {
         throw new Error('Research ID es requerido');
       }
 
-      console.log('[useCognitiveTaskResponses] 🔄 Fetching responses para researchId:', researchId);
       const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
-      console.log('[useCognitiveTaskResponses] ✅ Responses recibidas:', {
-        hasData: !!response,
-        dataKeys: response?.data ? Object.keys(response.data) : [],
-        directKeys: response && !response.data ? Object.keys(response as any) : []
-      });
 
       if (!response) {
         throw new Error('No se recibieron datos del servidor');
@@ -318,10 +295,8 @@ export const useCognitiveTaskResponses = (researchId: string | null) => {
   // Solo procesar cuando tengamos respuestas Y configuración (para mejor mapeo)
   const processedData = React.useMemo(() => {
     if (responsesQuery.data && configQuery.data) {
-      console.log('[useCognitiveTaskResponses] Procesando con configuración disponible');
       return processCognitiveTaskData(responsesQuery.data, configQuery.data as { questions: Array<{ id: string; [key: string]: unknown }> });
     } else if (responsesQuery.data) {
-      console.log('[useCognitiveTaskResponses] Procesando sin configuración (fallback)');
       return processCognitiveTaskData(responsesQuery.data, null);
     }
     return [];

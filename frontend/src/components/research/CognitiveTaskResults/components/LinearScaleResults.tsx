@@ -20,16 +20,6 @@ interface LinearScaleResultsProps {
  * Implementa la visualización horizontal con barras de colores como en la imagen de referencia
  */
 export function LinearScaleResults({ data }: LinearScaleResultsProps) {
-  // DEBUG: Log datos recibidos
-  console.log('[LinearScaleResults] Datos recibidos:', {
-    hasData: !!data,
-    hasScaleRange: !!data?.scaleRange,
-    hasResponses: !!data?.responses,
-    hasValues: !!(data as any)?.values,
-    responsesCount: data?.responses?.length || 0,
-    valuesCount: (data as any)?.values?.length || 0,
-    data: data
-  });
 
   // Si hay values pero no responses, construir responses desde values
   const values = (data as any)?.values;
@@ -55,7 +45,6 @@ export function LinearScaleResults({ data }: LinearScaleResultsProps) {
   }
 
   if (!data || (!data.responses || data.responses.length === 0)) {
-    console.log('[LinearScaleResults] ⚠️ No hay datos o respuestas disponibles');
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500">No hay datos de escala lineal disponibles.</p>

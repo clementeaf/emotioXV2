@@ -383,68 +383,34 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       const normalizedType = questionType.replace(/^cognitive_/, ''); // Remover prefijo si existe
       const expectedQuestionKey = `cognitive_${normalizedType}`;
       
-      // DEBUG: Log para depuración
-      if (processedData.length > 0) {
-        console.log(`[CognitiveTaskResults] Buscando datos para pregunta:`, {
-          questionId: question.id,
-          questionType,
-          normalizedType,
-          expectedQuestionKey,
-          processedDataKeys: processedData.map((d: any) => ({ questionId: d.questionId, questionKey: d.questionKey }))
-        });
-      }
-      
       const processedDataForQuestion = processedData.find((data: any) => {
         // 1. Comparar por questionId directo
         if (data.questionId === question.id) {
-          console.log(`[CognitiveTaskResults] ✅ Match por questionId: ${question.id}`);
           return true;
         }
         
         // 2. Comparar questionKey del endpoint con el esperado desde question.type
         if (data.questionKey === expectedQuestionKey) {
-          console.log(`[CognitiveTaskResults] ✅ Match por questionKey: ${expectedQuestionKey}`);
           return true;
         }
         
         // 3. Comparar questionKey con question.id (por si el questionKey es el mismo que el id)
         if (data.questionKey === question.id) {
-          console.log(`[CognitiveTaskResults] ✅ Match por questionKey === question.id: ${question.id}`);
           return true;
         }
         
         // 4. Comparar si el questionKey contiene el tipo de pregunta (más flexible)
         if (data.questionKey && normalizedType && data.questionKey.toLowerCase().includes(normalizedType.toLowerCase())) {
-          console.log(`[CognitiveTaskResults] ✅ Match por questionKey.includes: ${data.questionKey} incluye ${normalizedType}`);
           return true;
         }
         
         return false;
       });
-      
-      // DEBUG: Log resultado del mapeo
-      if (processedDataForQuestion) {
-        console.log(`[CognitiveTaskResults] ✅ Datos encontrados para pregunta ${question.id}:`, {
-          questionId: processedDataForQuestion.questionId,
-          questionKey: processedDataForQuestion.questionKey,
-          hasSentimentData: !!processedDataForQuestion.sentimentData,
-          hasChoiceData: !!processedDataForQuestion.choiceData,
-          totalResponses: (processedDataForQuestion as any).totalResponses
-        });
-      } else {
-        console.log(`[CognitiveTaskResults] ❌ No se encontraron datos para pregunta ${question.id} (type: ${questionType})`);
-      }
 
       // Transformar sentimentData al formato que espera MainContent (CognitiveTaskQuestion)
       let transformedSentimentData: any = undefined;
       if (processedDataForQuestion?.sentimentData) {
         const sentimentDataRaw = processedDataForQuestion.sentimentData as { responses: Array<{ text: string; participantId: string; timestamp: string }>; totalResponses: number };
-        
-        // DEBUG: Log de transformación
-        console.log(`[CognitiveTaskResults] Transformando sentimentData para pregunta ${question.id}:`, {
-          responsesCount: sentimentDataRaw.responses.length,
-          responses: sentimentDataRaw.responses
-        });
         
         transformedSentimentData = {
           id: question.id,
@@ -466,14 +432,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           themes: [],
           keywords: []
         };
-        
-        // DEBUG: Log resultado de transformación
-        console.log(`[CognitiveTaskResults] ✅ SentimentData transformado para pregunta ${question.id}:`, {
-          sentimentResultsCount: transformedSentimentData.sentimentResults.length,
-          hasSentimentAnalysis: !!transformedSentimentData.sentimentAnalysis
-        });
-      } else {
-        console.log(`[CognitiveTaskResults] ⚠️ No hay sentimentData para pregunta ${question.id}`);
       }
 
       // Transformar choiceData al formato que espera ChoiceResults
@@ -602,7 +560,8 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       // Transformar navigationFlowData al formato que espera NavigationFlowResults
       let transformedNavigationFlowData: any = undefined;
       if (processedDataForQuestion?.navigationFlowData) {
-        const navigationFlowDataRaw = processedDataForQuestion.navigationFlowData as { responses: Array<{ participantId: string; data: unknown; timestamp: string }>; totalResponses: number };
+        const navigationFlowDataRaw = processedDataForQuestion.navigationFlowData as { responses: Array<{ participantId: string; data: unknown; value?: unknown; timestamp: string }>; totalResponses: number };
+        
         
         // Procesar responses para construir allClicksTracking y visualClickPoints
         const allClicksTracking: Array<{
@@ -635,48 +594,128 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         }> = {};
         
         navigationFlowDataRaw.responses.forEach((response, index) => {
-          const data = response.data as any;
+          // El data viene de r.value mapeado en useCognitiveTaskResponses.ts
+          // En useCognitiveTaskResponses.ts línea 232: data: r.value
+          // El backend ahora parsea los campos críticos (imageSelections, clickPosition, etc.)
+          const responseValue = (response.data || response.value) as any;
           
-          // Extraer información del click
-          const x = data?.x || data?.clickX || 0;
-          const y = data?.y || data?.clickY || 0;
-          const imageIndex = data?.imageIndex ?? 0;
-          const hitzoneId = data?.hitzoneId || data?.hitzone?.id || `hitzone-${index}`;
-          const isCorrect = data?.isCorrect !== false; // Default a true si no se especifica
-          const timestamp = new Date(response.timestamp).getTime() || Date.now();
+          // Intentar extraer clicks de diferentes estructuras posibles
+          let clicks: Array<{ x: number; y: number; timestamp: number; isCorrect: boolean; imageIndex: number }> = [];
           
-          // Agregar a allClicksTracking
-          allClicksTracking.push({
-            x,
-            y,
-            timestamp,
-            hitzoneId,
-            imageIndex,
-            isCorrectHitzone: isCorrect,
-            participantId: response.participantId
-          });
+          // Caso 1: imageSelections (ya parseado por el backend)
+          if (responseValue?.imageSelections && typeof responseValue.imageSelections === 'object') {
+            Object.entries(responseValue.imageSelections).forEach(([imageIndexStr, selection]: [string, any]) => {
+              if (selection?.click) {
+                clicks.push({
+                  x: selection.click.x || 0,
+                  y: selection.click.y || 0,
+                  timestamp: new Date(response.timestamp).getTime() || Date.now(),
+                  isCorrect: true,
+                  imageIndex: parseInt(imageIndexStr) || 0
+                });
+              }
+            });
+          }
           
-          // Agregar a visualClickPoints
-          visualClickPoints.push({
-            x,
-            y,
-            timestamp,
-            isCorrect,
-            imageIndex,
-            participantId: response.participantId
-          });
+          // Caso 2: clickPosition (ya parseado por el backend) - SIEMPRE agregarlo si existe
+          // IMPORTANTE: clickPosition tiene el último click, que puede no estar en imageSelections
+          if (responseValue?.clickPosition && typeof responseValue.clickPosition === 'object') {
+            const lastImageIndex = responseValue.selectedImageIndex ?? 0;
+            // Verificar si ya tenemos un click para esta imagen
+            const hasClickForLastImage = clicks.some(c => c.imageIndex === lastImageIndex);
+            if (!hasClickForLastImage) {
+              // Agregar el click del clickPosition si no está en imageSelections
+              clicks.push({
+                x: responseValue.clickPosition.x || 0,
+                y: responseValue.clickPosition.y || 0,
+                timestamp: new Date(response.timestamp).getTime() || Date.now(),
+                isCorrect: true,
+                imageIndex: lastImageIndex
+              });
+            }
+          }
           
-          // Agregar a imageSelections
-          const selectionKey = `${response.participantId}-${imageIndex}-${index}`;
-          imageSelections[selectionKey] = {
-            hitzoneId,
-            click: {
+          // Caso 3: allClicksTracking (ya parseado por el backend)
+          if (responseValue?.allClicksTracking && Array.isArray(responseValue.allClicksTracking) && clicks.length === 0) {
+            clicks = responseValue.allClicksTracking.map((click: any) => ({
+              x: click.x || 0,
+              y: click.y || 0,
+              timestamp: click.timestamp || new Date(response.timestamp).getTime() || Date.now(),
+              isCorrect: click.isCorrectHitzone !== false,
+              imageIndex: click.imageIndex ?? 0
+            }));
+          }
+          
+          // Caso 4: visualClickPoints es un array plano de objetos con imageIndex
+          if (Array.isArray(responseValue?.visualClickPoints) && clicks.length === 0) {
+            clicks = responseValue.visualClickPoints.map((point: any) => ({
+              x: point.x || 0,
+              y: point.y || 0,
+              timestamp: point.timestamp || new Date(response.timestamp).getTime() || Date.now(),
+              isCorrect: point.isCorrect !== false,
+              imageIndex: point.imageIndex ?? 0
+            }));
+          }
+          
+          // Caso 5: visualClickPoints es un objeto con índices de imagen
+          else if (responseValue?.visualClickPoints && typeof responseValue.visualClickPoints === 'object' && !Array.isArray(responseValue.visualClickPoints) && clicks.length === 0) {
+            Object.entries(responseValue.visualClickPoints).forEach(([imageIndexStr, imageClicks]: [string, any]) => {
+              if (Array.isArray(imageClicks)) {
+                imageClicks.forEach((point: any) => {
+                  clicks.push({
+                    x: point.x || 0,
+                    y: point.y || 0,
+                    timestamp: point.timestamp || new Date(response.timestamp).getTime() || Date.now(),
+                    isCorrect: point.isCorrect !== false,
+                    imageIndex: parseInt(imageIndexStr) || (point.imageIndex ?? 0)
+                  });
+                });
+              }
+            });
+          }
+          
+          // Procesar cada click encontrado
+          clicks.forEach((click) => {
+            const x = click.x || 0;
+            const y = click.y || 0;
+            const imageIndex = click.imageIndex ?? 0;
+            const hitzoneId = responseValue?.selectedHitzone || responseValue?.hitzoneId || `hitzone-${index}`;
+            const isCorrect = click.isCorrect !== false;
+            const timestamp = click.timestamp || new Date(response.timestamp).getTime() || Date.now();
+          
+            // Agregar a allClicksTracking
+            allClicksTracking.push({
               x,
               y,
-              hitzoneWidth: data?.hitzoneWidth || data?.hitzone?.width || 50,
-              hitzoneHeight: data?.hitzoneHeight || data?.hitzone?.height || 50
-            }
-          };
+              timestamp,
+              hitzoneId,
+              imageIndex,
+              isCorrectHitzone: isCorrect,
+              participantId: response.participantId
+            });
+            
+            // Agregar a visualClickPoints
+            visualClickPoints.push({
+              x,
+              y,
+              timestamp,
+              isCorrect,
+              imageIndex,
+              participantId: response.participantId
+            });
+            
+            // Agregar a imageSelections
+            const selectionKey = `${response.participantId}-${imageIndex}-${allClicksTracking.length}`;
+            imageSelections[selectionKey] = {
+              hitzoneId,
+              click: {
+                x,
+                y,
+                hitzoneWidth: responseValue?.clickPosition?.hitzoneWidth || responseValue?.hitzoneWidth || 50,
+                hitzoneHeight: responseValue?.clickPosition?.hitzoneHeight || responseValue?.hitzoneHeight || 50
+              }
+            };
+          });
         });
         
         // Incluir hitzones de cada archivo en los files
@@ -717,18 +756,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         initialActiveTab: 'sentiment' as const,
         themeImageSrc: '',
       };
-      
-      // DEBUG: Log datos que se pasan a QuestionContainer
-      console.log(`[CognitiveTaskResults] Datos para pregunta ${question.id}:`, {
-        viewType: questionData.viewType,
-        hasSentimentData: !!questionData.sentimentData,
-        hasChoiceData: !!questionData.choiceData,
-        hasRankingData: !!questionData.rankingData,
-        hasLinearScaleData: !!questionData.linearScaleData,
-        hasPreferenceTestData: !!questionData.preferenceTestData,
-        hasNavigationFlowData: !!questionData.navigationFlowData,
-        hasNewData: questionData.hasNewData
-      });
       
       return questionData;
     });

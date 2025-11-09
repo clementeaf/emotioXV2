@@ -29,22 +29,11 @@ interface PreferenceTestResultsProps {
 export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
 
-  // DEBUG: Log datos recibidos
-  console.log('[PreferenceTestResults] Datos recibidos:', {
-    hasData: !!data,
-    hasOptions: !!data?.options,
-    hasPreferences: !!(data as any)?.preferences,
-    optionsCount: data?.options?.length || 0,
-    preferencesCount: (data as any)?.preferences?.length || 0,
-    data: data
-  });
-
   // Verificar que los datos sean válidos
   // Aceptar tanto 'options' como 'preferences' para compatibilidad
   const validOptions = data?.options || (data as any)?.preferences || [];
   
   if (!data || !Array.isArray(validOptions) || validOptions.length === 0) {
-    console.log('[PreferenceTestResults] ⚠️ No hay datos o opciones disponibles');
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500">No hay datos de preferencias disponibles.</p>
