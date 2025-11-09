@@ -78,18 +78,22 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
   // Datos CPV derivados de smartVOCData
   const cpvData = smartVOCData ? {
-    cpvValue: smartVOCData.cpvValue,
-    satisfaction: smartVOCData.satisfaction,
-    retention: smartVOCData.retention,
-    impact: smartVOCData.impact,
-    trend: smartVOCData.trend,
-    csatPercentage: smartVOCData.csatScores.length > 0 ? Math.round((smartVOCData.csatScores.filter(s => s >= 4).length / smartVOCData.csatScores.length) * 100) : 0,
-    cesPercentage: smartVOCData.cesScores.length > 0 ? Math.round((smartVOCData.cesScores.filter(s => s <= 2).length / smartVOCData.cesScores.length) * 100) : 0,
-    peakValue: Math.max(smartVOCData.cpvValue, smartVOCData.satisfaction),
-    npsValue: smartVOCData.npsScore,
-    promoters: smartVOCData.promoters,
-    neutrals: smartVOCData.neutrals,
-    detractors: smartVOCData.detractors
+    cpvValue: smartVOCData.cpvValue || 0,
+    satisfaction: smartVOCData.satisfaction || 0,
+    retention: smartVOCData.retention || 0,
+    impact: smartVOCData.impact || '',
+    trend: smartVOCData.trend || '',
+    csatPercentage: (smartVOCData.csatScores && Array.isArray(smartVOCData.csatScores) && smartVOCData.csatScores.length > 0) 
+      ? Math.round((smartVOCData.csatScores.filter(s => s >= 4).length / smartVOCData.csatScores.length) * 100) 
+      : 0,
+    cesPercentage: (smartVOCData.cesScores && Array.isArray(smartVOCData.cesScores) && smartVOCData.cesScores.length > 0) 
+      ? Math.round((smartVOCData.cesScores.filter(s => s <= 2).length / smartVOCData.cesScores.length) * 100) 
+      : 0,
+    peakValue: Math.max(smartVOCData.cpvValue || 0, smartVOCData.satisfaction || 0),
+    npsValue: smartVOCData.npsScore || 0,
+    promoters: smartVOCData.promoters || 0,
+    neutrals: smartVOCData.neutrals || 0,
+    detractors: smartVOCData.detractors || 0
   } : null;
 
   // TrustFlow data derivado
