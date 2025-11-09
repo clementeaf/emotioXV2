@@ -143,7 +143,7 @@ function App() {
 
           {/* Indicador de ubicación obtenida */}
           {location && hasConsent && (
-            <div className="fixed top-11 sm:top-3 right-2 sm:right-4 bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg z-40">
+            <div className="fixed top-9 sm:top-3 right-2 sm:right-4 bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg z-40">
               <div className="flex items-center">
                 <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

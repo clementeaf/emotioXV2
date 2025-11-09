@@ -164,7 +164,15 @@ export const useLocationTracking = ({
       await sendLocationToBackend(locationData);
 
     } catch (gpsError) {
-      console.warn('[useLocationTracking] GPS falló, intentando IP:', gpsError);
+      // Si el usuario denegó el permiso, no es un error crítico
+      const isPermissionDenied = gpsError instanceof Error && 
+        (gpsError.message.includes('denied') || gpsError.message.includes('Permission'));
+      
+      if (isPermissionDenied) {
+        console.info('[useLocationTracking] Permiso de ubicación denegado, intentando IP como fallback');
+      } else {
+        console.warn('[useLocationTracking] GPS falló, intentando IP:', gpsError);
+      }
 
       try {
         // Fallback a IP
@@ -214,11 +222,22 @@ export const useLocationTracking = ({
       });
 
       if (!response.ok) {
+        // Si el endpoint no existe (404), es esperado si el tracking está deshabilitado en el backend
+        // La ubicación ya se guardó en localStorage, así que no es crítico
+        if (response.status === 404) {
+          console.warn('[useLocationTracking] Endpoint de location-tracking no disponible (deshabilitado en backend). La ubicación se guardó en localStorage.');
+          return;
+        }
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
     } catch (error) {
-      console.error('[useLocationTracking] Error enviando ubicación al backend:', error);
+      // Solo mostrar error si no es un 404 (endpoint no disponible)
+      if (error instanceof Error && !error.message.includes('404')) {
+        console.error('[useLocationTracking] Error enviando ubicación al backend:', error);
+      } else {
+        console.warn('[useLocationTracking] Endpoint de location-tracking no disponible. La ubicación se guardó en localStorage.');
+      }
     }
   }, [researchId]);
 
