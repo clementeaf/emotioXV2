@@ -192,8 +192,11 @@ export const useDemographicsData = (researchId: string) => {
         throw new Error('No se recibieron datos del servidor');
       }
 
+      // La respuesta puede venir como { data: { questionKey: [...] } } o directamente como { questionKey: [...] }
+      const groupedResponses = (response.data || response) as GroupedResponsesData;
+
       // Procesar datos demográficos
-      return processDemographicsData(response);
+      return processDemographicsData(groupedResponses);
     },
     enabled: !!researchId,
     staleTime: 5 * 60 * 1000, // 5 minutos
