@@ -1,16 +1,63 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import TestLayoutRenderer from '../TestLayoutRenderer';
 import TestLayoutSidebar from '../sidebar/TestLayoutSidebar';
 import { SidebarStep } from '../types/types';
 import { usePreviewModeStore } from '../../../stores/usePreviewModeStore';
 import { useTestStore } from '../../../stores/useTestStore';
+import { useParticipantStore } from '../../../stores/useParticipantStore';
 import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
 
 const TestLayoutMain: React.FC = () => {
   const [, setSidebarSteps] = useState<SidebarStep[]>([]);
   const isPreviewMode = usePreviewModeStore((state) => state.isPreviewMode);
-  const { researchId } = useTestStore();
+  const { researchId, setParticipant } = useTestStore();
+  const { setParticipantId } = useParticipantStore.getState();
+  const { setPreviewMode } = usePreviewModeStore.getState();
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+  
+  // Leer parámetros de query cuando se accede directamente a /test?researchId=...&participantId=...
+  useEffect(() => {
+    if (!researchId) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryResearchId = urlParams.get('researchId');
+      const queryParticipantId = urlParams.get('participantId');
+      const queryUserId = urlParams.get('userId');
+      
+      if (queryResearchId) {
+        const participantId = queryParticipantId || queryUserId;
+        
+        if (participantId) {
+          setPreviewMode(false);
+          setParticipantId(participantId);
+          
+          const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
+          const participantEmail = `${participantId.slice(-8)}@participant.study`;
+          
+          setParticipant(
+            participantId,
+            participantName,
+            participantEmail,
+            queryResearchId
+          );
+        } else {
+          setPreviewMode(true);
+          
+          const previewParticipantId = `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          setParticipantId(previewParticipantId);
+          
+          const participantName = `Preview User`;
+          const participantEmail = `preview@test.local`;
+          
+          setParticipant(
+            previewParticipantId,
+            participantName,
+            participantEmail,
+            queryResearchId
+          );
+        }
+      }
+    }
+  }, [researchId, setParticipant, setParticipantId, setPreviewMode]);
   
   const shouldShowSidebar = eyeTrackingConfig?.linkConfig?.showProgressBar ?? true;
 

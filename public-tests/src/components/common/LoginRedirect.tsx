@@ -21,7 +21,10 @@ const LoginRedirect: React.FC = () => {
     
     const pathResearchId = params.researchId;
     const pathParticipantId = params.participantId;
-    const urlParams = new URLSearchParams(location.search);
+    
+    // Fallback para móviles: leer directamente de window.location.search si location.search está vacío
+    const searchString = location.search || window.location.search;
+    const urlParams = new URLSearchParams(searchString);
     const queryResearchId = urlParams.get('researchId');
     const queryParticipantId = urlParams.get('participantId');
     const queryUserId = urlParams.get('userId');
