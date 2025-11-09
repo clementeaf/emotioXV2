@@ -29,10 +29,16 @@ function App() {
 
   useEffect(() => {
     const initializeStoreFromURL = () => {
+      // Si ya tenemos researchId, no hacer nada (evitar perderlo)
+      if (researchId) {
+        return;
+      }
+
+      // Leer desde window.location.search (más confiable en móviles)
       const urlParams = new URLSearchParams(window.location.search);
       const urlResearchId = urlParams.get('researchId');
 
-      if (urlResearchId && urlResearchId !== researchId) {
+      if (urlResearchId) {
         setParticipant(
           '',
           '',

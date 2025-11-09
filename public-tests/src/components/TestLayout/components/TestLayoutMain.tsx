@@ -16,48 +16,53 @@ const TestLayoutMain: React.FC = () => {
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   
   // Leer parámetros de query cuando se accede directamente a /test?researchId=...&participantId=...
+  // Solo ejecutar una vez al montar, no en cada cambio de researchId
   useEffect(() => {
-    if (!researchId) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const queryResearchId = urlParams.get('researchId');
-      const queryParticipantId = urlParams.get('participantId');
-      const queryUserId = urlParams.get('userId');
+    // Si ya tenemos researchId, no hacer nada (evitar perderlo)
+    if (researchId) {
+      return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryResearchId = urlParams.get('researchId');
+    const queryParticipantId = urlParams.get('participantId');
+    const queryUserId = urlParams.get('userId');
+    
+    if (queryResearchId) {
+      const participantId = queryParticipantId || queryUserId;
       
-      if (queryResearchId) {
-        const participantId = queryParticipantId || queryUserId;
+      if (participantId) {
+        setPreviewMode(false);
+        setParticipantId(participantId);
         
-        if (participantId) {
-          setPreviewMode(false);
-          setParticipantId(participantId);
-          
-          const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
-          const participantEmail = `${participantId.slice(-8)}@participant.study`;
-          
-          setParticipant(
-            participantId,
-            participantName,
-            participantEmail,
-            queryResearchId
-          );
-        } else {
-          setPreviewMode(true);
-          
-          const previewParticipantId = `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          setParticipantId(previewParticipantId);
-          
-          const participantName = `Preview User`;
-          const participantEmail = `preview@test.local`;
-          
-          setParticipant(
-            previewParticipantId,
-            participantName,
-            participantEmail,
-            queryResearchId
-          );
-        }
+        const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
+        const participantEmail = `${participantId.slice(-8)}@participant.study`;
+        
+        setParticipant(
+          participantId,
+          participantName,
+          participantEmail,
+          queryResearchId
+        );
+      } else {
+        setPreviewMode(true);
+        
+        const previewParticipantId = `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        setParticipantId(previewParticipantId);
+        
+        const participantName = `Preview User`;
+        const participantEmail = `preview@test.local`;
+        
+        setParticipant(
+          previewParticipantId,
+          participantName,
+          participantEmail,
+          queryResearchId
+        );
       }
     }
-  }, [researchId, setParticipant, setParticipantId, setPreviewMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar una vez al montar
   
   const shouldShowSidebar = eyeTrackingConfig?.linkConfig?.showProgressBar ?? true;
 

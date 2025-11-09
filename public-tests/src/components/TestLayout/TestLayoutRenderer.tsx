@@ -20,12 +20,46 @@ import { getCurrentStepData, getQuestionType } from './utils';
 const TestLayoutRenderer: React.FC = () => {
   const navigate = useNavigate();
   const { researchId, participantId, participantEmail } = useTestStore();
+  const [checkingResearchId, setCheckingResearchId] = React.useState(false);
 
+  // Verificar si researchId se carga desde localStorage después de un breve delay
   useEffect(() => {
-    if (!researchId || !participantId) {
-      navigate('/error-no-research-id');
+    if (!researchId && !checkingResearchId) {
+      setCheckingResearchId(true);
+      const timeout = setTimeout(() => {
+        const { researchId: currentResearchId } = useTestStore.getState();
+        if (!currentResearchId) {
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlResearchId = urlParams.get('researchId');
+          if (!urlResearchId) {
+            window.location.href = '/error-no-research-id';
+          }
+        }
+        setCheckingResearchId(false);
+      }, 500);
+      return () => clearTimeout(timeout);
     }
-  }, [researchId, participantId, navigate]);
+  }, [researchId, checkingResearchId]);
+
+  // No redirigir inmediatamente, esperar a que se cargue desde localStorage o URL
+  useEffect(() => {
+    if (!checkingResearchId && !researchId) {
+      // Ya se maneja en el useEffect anterior
+      return;
+    }
+    
+    if (researchId && !participantId) {
+      // Si tenemos researchId pero no participantId, esperar un poco más
+      const timeout = setTimeout(() => {
+        const { participantId: currentParticipantId } = useTestStore.getState();
+        if (!currentParticipantId) {
+          // Solo redirigir si realmente no hay participantId después de esperar
+          navigate('/error-no-research-id');
+        }
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [researchId, participantId, navigate, checkingResearchId]);
   const { currentQuestionKey } = useStepStore();
   const { getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
@@ -99,7 +133,13 @@ const TestLayoutRenderer: React.FC = () => {
         );
       }
     } else {
-      window.location.href = '/error-no-research-id';
+      // Esperar a que se cargue desde localStorage o que el useEffect lo maneje
+      return (
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Cargando investigación...</p>
+        </div>
+      );
     }
     return <div>Redirigiendo...</div>;
   }
