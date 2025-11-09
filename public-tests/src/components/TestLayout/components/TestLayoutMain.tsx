@@ -112,7 +112,7 @@ const TestLayoutMain: React.FC = () => {
         </div>
       )}
 
-      <main className="w-screen h-screen flex flex-col items-center justify-center px-2 sm:px-4 py-20 bg-blue-50">
+      <main className="w-screen h-screen flex flex-col items-center justify-center px-2 sm:px-4 py-4 sm:py-20 bg-blue-50">
         <div className={`flex w-full ${shouldShowSidebar ? 'max-w-7xl' : 'max-w-4xl'}`}>
           {shouldShowSidebar && (
             <TestLayoutSidebar
@@ -120,7 +120,7 @@ const TestLayoutMain: React.FC = () => {
               onNavigateToStep={() => { }}
             />
           )}
-          <div className={`bg-white shadow-sm rounded-xl p-6 justify-center w-full h-full`}>
+          <div className={`bg-white shadow-sm rounded-xl p-4 sm:p-6 justify-center w-full h-full`}>
             <TestLayoutRenderer />
           </div>
         </div>

@@ -112,27 +112,27 @@ function App() {
 
           {/* Indicador de carga de ubicación */}
           {isLoadingLocation && (
-            <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-40">
+            <div className="fixed top-16 sm:top-4 right-2 sm:right-4 bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg z-40">
               <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                <span className="text-sm">Obteniendo ubicación...</span>
+                <div className="animate-spin rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 border-b-2 border-white mr-1.5 sm:mr-2"></div>
+                <span className="text-xs sm:text-sm">Obteniendo ubicación...</span>
               </div>
             </div>
           )}
 
           {/* Indicador de error de ubicación */}
           {locationError && (
-            <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-40 max-w-sm">
+            <div className="fixed top-16 sm:top-4 right-2 sm:right-4 bg-red-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg z-40 max-w-xs sm:max-w-sm">
               <div className="flex items-start">
                 <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                <div className="text-sm">
+                <div className="text-xs sm:text-sm">
                   <div className="font-medium">Error de ubicación:</div>
                   <div className="text-xs mt-1 opacity-90">{locationError}</div>
                   {/* 🎯 AVISO ESPECÍFICO PARA SAFARI */}
                   {/^((?!chrome|android).)*safari/i.test(navigator.userAgent) && (
-                    <div className="text-xs mt-2 bg-red-700 bg-opacity-50 p-2 rounded">
+                    <div className="text-xs mt-1.5 sm:mt-2 bg-red-700 bg-opacity-50 p-1.5 sm:p-2 rounded">
                       <strong>Safari:</strong> Verifica permisos de ubicación en Safari &gt; Preferencias &gt; Privacidad
                     </div>
                   )}
@@ -143,12 +143,12 @@ function App() {
 
           {/* Indicador de ubicación obtenida */}
           {location && hasConsent && (
-            <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-40">
+            <div className="fixed top-16 sm:top-4 right-2 sm:right-4 bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg z-40">
               <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm">
+                <span className="text-xs sm:text-sm">
                   Ubicación: {location.source === 'gps' ? 'GPS' : 'IP'}
                 </span>
               </div>
