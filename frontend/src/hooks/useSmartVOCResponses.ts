@@ -358,8 +358,9 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
 };
 
 export const useSmartVOCResponses = (researchId: string) => {
+  // Usar el mismo query key que otros hooks para compartir cache
   const query = useQuery<SmartVOCResults>({
-    queryKey: ['smartVOCResponses', researchId],
+    queryKey: ['moduleResponses', 'research', researchId],
     queryFn: async () => {
       if (!researchId) {
         throw new Error('Research ID es requerido');

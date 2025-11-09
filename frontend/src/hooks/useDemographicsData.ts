@@ -1,5 +1,5 @@
 import { moduleResponsesAPI } from '@/api/config';
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 interface DemographicData {
   countries: Array<{ id: string; label: string; count: number }>;
@@ -22,39 +22,10 @@ interface GroupedResponsesData {
   [questionKey: string]: GroupedResponse[];
 }
 
-export const useDemographicsData = (researchId: string) => {
-  const [data, setData] = useState<DemographicData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchDemographicsData = async () => {
-      if (!researchId) {
-        setError('Research ID es requerido');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
-
-        if (response) {
-          const demographicsData = processDemographicsData(response);
-          setData(demographicsData);
-        } else {
-          setError('No se recibieron datos del servidor');
-        }
-      } catch (err: any) {
-        setError('Error al obtener datos demográficos');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDemographicsData();
-  }, [researchId]);
-
-  const processDemographicsData = (groupedResponses: GroupedResponsesData): DemographicData => {
+/**
+ * Procesa datos demográficos desde respuestas agrupadas
+ */
+const processDemographicsData = (groupedResponses: GroupedResponsesData): DemographicData => {
     if (!groupedResponses || Object.keys(groupedResponses).length === 0) {
       return {
         countries: [],
@@ -204,7 +175,37 @@ export const useDemographicsData = (researchId: string) => {
       userIds,
       participants
     };
-  };
+};
 
-  return { data, isLoading, error };
+export const useDemographicsData = (researchId: string) => {
+  // Usar React Query con el mismo query key que otros hooks para compartir cache
+  const query = useQuery({
+    queryKey: ['moduleResponses', 'research', researchId],
+    queryFn: async () => {
+      if (!researchId) {
+        throw new Error('Research ID es requerido');
+      }
+
+      const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
+
+      if (!response) {
+        throw new Error('No se recibieron datos del servidor');
+      }
+
+      // Procesar datos demográficos
+      return processDemographicsData(response);
+    },
+    enabled: !!researchId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // No refetch si ya hay datos en cache
+    retry: 1
+  });
+
+  return {
+    data: query.data || null,
+    isLoading: query.isLoading,
+    error: query.error ? String(query.error) : null
+  };
 };

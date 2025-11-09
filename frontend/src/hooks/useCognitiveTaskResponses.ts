@@ -233,8 +233,9 @@ const processCognitiveTaskData = (
  */
 export const useCognitiveTaskResponses = (researchId: string | null) => {
   // Obtener respuestas del endpoint
+  // Usar el mismo query key que otros hooks para compartir cache
   const responsesQuery = useQuery({
-    queryKey: ['cognitiveTaskResponses', researchId],
+    queryKey: ['moduleResponses', 'research', researchId],
     queryFn: async () => {
       if (!researchId) {
         throw new Error('Research ID es requerido');
