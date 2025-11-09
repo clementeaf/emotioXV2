@@ -766,7 +766,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
 
   return (
     <div className="flex gap-8">
-      <div className="flex-1 space-y-8">
+      <div className="flex-1 space-y-6">
         <CognitiveTaskHeader title="2.0.- Cognitive task" />
 
         {finalQuestions.map((q: any) => (
