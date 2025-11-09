@@ -9,6 +9,7 @@ import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQu
 
 const TestLayoutMain: React.FC = () => {
   const [, setSidebarSteps] = useState<SidebarStep[]>([]);
+  const [isInitializing, setIsInitializing] = useState(true);
   const isPreviewMode = usePreviewModeStore((state) => state.isPreviewMode);
   const { researchId, setParticipant } = useTestStore();
   const { setParticipantId } = useParticipantStore.getState();
@@ -16,13 +17,15 @@ const TestLayoutMain: React.FC = () => {
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   
   // Leer parámetros de query cuando se accede directamente a /test?researchId=...&participantId=...
-  // Solo ejecutar una vez al montar, no en cada cambio de researchId
+  // Ejecutar inmediatamente al montar, antes de renderizar TestLayoutRenderer
   useEffect(() => {
     // Si ya tenemos researchId, no hacer nada (evitar perderlo)
     if (researchId) {
+      setIsInitializing(false);
       return;
     }
 
+    // Leer parámetros de forma síncrona
     const urlParams = new URLSearchParams(window.location.search);
     const queryResearchId = urlParams.get('researchId');
     const queryParticipantId = urlParams.get('participantId');
@@ -61,6 +64,11 @@ const TestLayoutMain: React.FC = () => {
         );
       }
     }
+    
+    // Marcar como inicializado después de un breve delay para asegurar que el store se actualizó
+    setTimeout(() => {
+      setIsInitializing(false);
+    }, 100);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Solo ejecutar una vez al montar
   
@@ -69,6 +77,16 @@ const TestLayoutMain: React.FC = () => {
   const handleStepsReady = useCallback((steps: SidebarStep[]) => {
     setSidebarSteps(steps);
   }, []);
+
+  // Mostrar loading mientras se inicializan los parámetros
+  if (isInitializing && !researchId) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-blue-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p className="text-gray-600">Cargando investigación...</p>
+      </div>
+    );
+  }
 
   return (
     <>
