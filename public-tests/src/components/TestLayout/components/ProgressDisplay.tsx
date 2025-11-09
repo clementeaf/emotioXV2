@@ -18,8 +18,8 @@ const ProgressDisplay: React.FC<ProgressDisplayProps> = ({ current, total }) => 
 
   return (
     <div className="mb-6">
-      <div className="font-bold text-gray-700 text-lg mb-2">Progreso</div>
-      <div className="text-blue-700 font-semibold mb-4">
+      <div className="font-semibold text-neutral-700 text-base mb-2">Progreso</div>
+      <div className="text-primary-500 font-semibold mb-4">
         {current} de {total}
       </div>
     </div>
