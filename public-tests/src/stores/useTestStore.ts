@@ -237,6 +237,41 @@ export const useTestStore = create<TestState>()(
         currentStepIndex: state.currentStepIndex,
         completedSteps: state.completedSteps,
       }),
+      // 🎯 HIDRATACIÓN: Priorizar parámetros de URL sobre localStorage
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Leer parámetros de la URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlResearchId = urlParams.get('researchId');
+          const urlParticipantId = urlParams.get('participantId') || urlParams.get('userId');
+          
+          // Si hay parámetros en la URL, tienen prioridad sobre localStorage
+          if (urlResearchId) {
+            // Actualizar el store con los parámetros de la URL
+            if (urlParticipantId) {
+              const participantName = `Participante ${urlParticipantId.slice(-6).toUpperCase()}`;
+              const participantEmail = `${urlParticipantId.slice(-8)}@participant.study`;
+              state.setParticipant(
+                urlParticipantId,
+                participantName,
+                participantEmail,
+                urlResearchId
+              );
+            } else {
+              // Si no hay participantId en la URL, mantener el del localStorage o crear uno preview
+              const existingParticipantId = state.participantId || `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              const participantName = state.participantName || 'Preview User';
+              const participantEmail = state.participantEmail || 'preview@test.local';
+              state.setParticipant(
+                existingParticipantId,
+                participantName,
+                participantEmail,
+                urlResearchId
+              );
+            }
+          }
+        }
+      },
     }
   )
 );

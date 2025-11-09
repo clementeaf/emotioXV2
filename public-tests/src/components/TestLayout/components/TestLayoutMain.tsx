@@ -6,6 +6,7 @@ import { usePreviewModeStore } from '../../../stores/usePreviewModeStore';
 import { useTestStore } from '../../../stores/useTestStore';
 import { useParticipantStore } from '../../../stores/useParticipantStore';
 import { useEyeTrackingConfigQuery } from '../../../hooks/useEyeTrackingConfigQuery';
+import { getUrlParams } from '../../../hooks/useUrlParams';
 
 const TestLayoutMain: React.FC = () => {
   const [, setSidebarSteps] = useState<SidebarStep[]>([]);
@@ -17,7 +18,7 @@ const TestLayoutMain: React.FC = () => {
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   
   // Leer parámetros de query cuando se accede directamente a /test?researchId=...&participantId=...
-  // Ejecutar inmediatamente al montar y cuando cambie researchId del store
+  // Usar función síncrona para leer antes de que React renderice
   useEffect(() => {
     // Si ya tenemos researchId, marcar como inicializado
     if (researchId) {
@@ -25,24 +26,19 @@ const TestLayoutMain: React.FC = () => {
       return;
     }
 
-    // Leer parámetros de forma síncrona
-    const urlParams = new URLSearchParams(window.location.search);
-    const queryResearchId = urlParams.get('researchId');
-    const queryParticipantId = urlParams.get('participantId');
-    const queryUserId = urlParams.get('userId');
+    // Leer parámetros de forma síncrona usando la función helper
+    const { researchId: queryResearchId, participantId: queryParticipantId } = getUrlParams();
     
     if (queryResearchId) {
-      const participantId = queryParticipantId || queryUserId;
-      
-      if (participantId) {
+      if (queryParticipantId) {
         setPreviewMode(false);
-        setParticipantId(participantId);
+        setParticipantId(queryParticipantId);
         
-        const participantName = `Participante ${participantId.slice(-6).toUpperCase()}`;
-        const participantEmail = `${participantId.slice(-8)}@participant.study`;
+        const participantName = `Participante ${queryParticipantId.slice(-6).toUpperCase()}`;
+        const participantEmail = `${queryParticipantId.slice(-8)}@participant.study`;
         
         setParticipant(
-          participantId,
+          queryParticipantId,
           participantName,
           participantEmail,
           queryResearchId
@@ -65,19 +61,20 @@ const TestLayoutMain: React.FC = () => {
       }
       
       // Verificar que el store se actualizó correctamente
+      // En móviles, el store puede tardar más en actualizarse
       const checkStore = setInterval(() => {
         const { researchId: currentResearchId } = useTestStore.getState();
-        if (currentResearchId) {
+        if (currentResearchId === queryResearchId) {
           setIsInitializing(false);
           clearInterval(checkStore);
         }
       }, 50);
       
-      // Timeout de seguridad: marcar como inicializado después de 500ms máximo
+      // Timeout de seguridad: marcar como inicializado después de 1 segundo máximo
       setTimeout(() => {
         clearInterval(checkStore);
         setIsInitializing(false);
-      }, 500);
+      }, 1000);
     } else {
       // No hay queryResearchId en la URL, marcar como inicializado
       setIsInitializing(false);
