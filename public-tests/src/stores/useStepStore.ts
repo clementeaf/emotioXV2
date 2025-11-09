@@ -74,20 +74,36 @@ export const useStepStore = create<StepStore>()(
         // 🎯 ENCONTRAR STEP ACTIVO basado en respuestas
         const state = get();
         const stepOrder = state.steps.map(s => s.questionKey);
-        let activeStepIndex = 0;
+        let stepToActivate = '';
 
-        for (let i = 0; i < stepOrder.length; i++) {
-          if (!validResponses.some((r: { questionKey: string }) => r.questionKey === stepOrder[i])) {
-            activeStepIndex = i;
-            break;
+        // Si hay respuestas guardadas, encontrar el último step completado y ir al siguiente
+        if (validResponses.length > 0) {
+          // Encontrar el último step completado
+          const completedKeys = validResponses.map((r: { questionKey: string }) => r.questionKey);
+          let lastCompletedIndex = -1;
+
+          // Buscar el último step completado en el orden de steps
+          for (let i = stepOrder.length - 1; i >= 0; i--) {
+            if (completedKeys.includes(stepOrder[i])) {
+              lastCompletedIndex = i;
+              break;
+            }
           }
-        }
 
-        if (activeStepIndex === 0 && validResponses.length === stepOrder.length) {
-          activeStepIndex = stepOrder.length - 1;
+          // Si se encontró un último step completado, ir al siguiente
+          if (lastCompletedIndex >= 0 && lastCompletedIndex < stepOrder.length - 1) {
+            stepToActivate = stepOrder[lastCompletedIndex + 1];
+          } else if (lastCompletedIndex === stepOrder.length - 1) {
+            // Si el último step está completado, quedarse en el último step
+            stepToActivate = stepOrder[stepOrder.length - 1];
+          } else {
+            // Si no se encontró ningún step completado (no debería pasar), ir al primero
+            stepToActivate = stepOrder[0] || '';
+          }
+        } else {
+          // Si no hay respuestas, ir al primer step
+          stepToActivate = stepOrder[0] || '';
         }
-
-        const stepToActivate = stepOrder[activeStepIndex] || '';
 
         // 🎯 SOLO ACTUALIZAR currentQuestionKey SI NO HAY UNO ESTABLECIDO O SI EL ACTUAL NO ES VÁLIDO
         const currentKey = state.currentQuestionKey;
