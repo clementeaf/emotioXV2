@@ -38,38 +38,38 @@ export function Filters({ className, researchId }: FiltersProps) {
 
   const [showMoreSections, setShowMoreSections] = useState<Record<string, boolean>>({});
 
-  // Generar secciones de filtros basadas SOLO en datos reales (sin fallback hardcodeado)
+  // Generar secciones de filtros SOLO con datos reales (filtrar secciones vacías)
   const filterSections: FilterSection[] = [
-    {
+    ...(demographicsData?.countries && demographicsData.countries.length > 0 ? [{
       title: 'Country',
       initialVisibleItems: 5,
-      items: demographicsData?.countries || []
-    },
-    {
+      items: demographicsData.countries
+    }] : []),
+    ...(demographicsData?.ageRanges && demographicsData.ageRanges.length > 0 ? [{
       title: 'Age range',
       initialVisibleItems: 5,
-      items: demographicsData?.ageRanges || []
-    },
-    {
+      items: demographicsData.ageRanges
+    }] : []),
+    ...(demographicsData?.genders && demographicsData.genders.length > 0 ? [{
       title: 'Gender',
-      items: demographicsData?.genders || []
-    },
-    {
+      items: demographicsData.genders
+    }] : []),
+    ...(demographicsData?.educationLevels && demographicsData.educationLevels.length > 0 ? [{
       title: 'Education level',
       initialVisibleItems: 5,
-      items: demographicsData?.educationLevels || []
-    },
-    {
+      items: demographicsData.educationLevels
+    }] : []),
+    ...(demographicsData?.userIds && demographicsData.userIds.length > 0 ? [{
       title: 'User ID',
       initialVisibleItems: 10,
-      items: demographicsData?.userIds || []
-    },
-    {
+      items: demographicsData.userIds
+    }] : []),
+    ...(demographicsData?.participants && demographicsData.participants.length > 0 ? [{
       title: 'Participants',
       initialVisibleItems: 10,
-      items: demographicsData?.participants || []
-    }
-  ];
+      items: demographicsData.participants
+    }] : [])
+  ].filter(section => section.items.length > 0);
 
   // Mostrar resumen de datos si hay muchos participantes
   const totalParticipants = demographicsData?.participants?.reduce((sum, item) => sum + item.count, 0) || 0;
@@ -208,62 +208,60 @@ export function Filters({ className, researchId }: FiltersProps) {
 
 
         <div className="space-y-4">
-          {filterSections.map((section) => {
-            const isExpanded = expandedSections[section.title];
-            const showMore = showMoreSections[section.title];
-            const visibleItems = showMore
-              ? section.items
-              : section.items.slice(0, section.initialVisibleItems || section.items.length);
+          {filterSections.length > 0 ? (
+            filterSections.map((section) => {
+              const isExpanded = expandedSections[section.title];
+              const showMore = showMoreSections[section.title];
+              const visibleItems = showMore
+                ? section.items
+                : section.items.slice(0, section.initialVisibleItems || section.items.length);
 
-            return (
-              <div key={section.title} className="border-b border-gray-200 pb-4 last:border-b-0">
-                <button
-                  onClick={() => toggleSection(section.title)}
-                  className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
-                >
-                  {section.title}
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  )}
-                </button>
-
-                {isExpanded && (
-                  <div className="space-y-2">
-                    {visibleItems.length > 0 ? (
-                      <>
-                        {visibleItems.map((item) => (
-                          <div key={item.id} className="flex items-center">
-                            <Checkbox id={item.id} />
-                            <label htmlFor={item.id} className="ml-2 text-sm text-gray-700">
-                              {item.label}
-                              {item.count !== undefined && (
-                                <span className="text-gray-500 ml-1">({item.count})</span>
-                              )}
-                            </label>
-                          </div>
-                        ))}
-
-                        {section.items.length > (section.initialVisibleItems || section.items.length) && (
-                          <button
-                            onClick={() => toggleShowMore(section.title)}
-                            className="text-sm text-blue-600 hover:text-blue-800"
-                          >
-                            {showMore ? 'Show less' : `Show ${section.items.length - (section.initialVisibleItems || section.items.length)} more`}
-                          </button>
-                        )}
-                      </>
+              return (
+                <div key={section.title} className="border-b border-gray-200 pb-4 last:border-b-0">
+                  <button
+                    onClick={() => toggleSection(section.title)}
+                    className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
+                  >
+                    {section.title}
+                    {isExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
                     ) : (
-                      <div className="text-sm text-gray-500 italic">
-                        No hay datos disponibles para este filtro
-                      </div>
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
                     )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="space-y-2">
+                      {visibleItems.map((item) => (
+                        <div key={item.id} className="flex items-center">
+                          <Checkbox id={item.id} />
+                          <label htmlFor={item.id} className="ml-2 text-sm text-gray-700">
+                            {item.label}
+                            {item.count !== undefined && (
+                              <span className="text-gray-500 ml-1">({item.count})</span>
+                            )}
+                          </label>
+                        </div>
+                      ))}
+
+                      {section.items.length > (section.initialVisibleItems || section.items.length) && (
+                        <button
+                          onClick={() => toggleShowMore(section.title)}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          {showMore ? 'Show less' : `Show ${section.items.length - (section.initialVisibleItems || section.items.length)} more`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-sm text-gray-500 italic text-center py-8">
+              No hay datos de filtros disponibles
+            </div>
+          )}
         </div>
       </div>
     </Card>
