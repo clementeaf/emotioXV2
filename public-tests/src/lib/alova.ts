@@ -15,8 +15,16 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    // 🎯 Permitir que 404 en /module-responses pase sin modificar para manejo específico
+    const isModuleResponses404 = error.config?.url?.includes('/module-responses') && 
+                                  error.response?.status === 404;
+    
+    if (isModuleResponses404) {
+      // Re-lanzar el error original de Axios para que pueda ser manejado específicamente
+      return Promise.reject(error);
+    }
 
-    // Mensajes de error personalizados
+    // Mensajes de error personalizados para otros casos
     if (error.code === 'ECONNABORTED') {
       throw new Error('La solicitud tardó demasiado en completarse');
     }
