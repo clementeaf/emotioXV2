@@ -104,6 +104,30 @@ jobs:
           REGION: ${{ env.REGION }}
           CLOUDFRONT_DISTRIBUTION_ID: ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}
 
+      - name: 📊 Upload build info
+        run: |
+          echo "📊 Creando build-info.json..."
+          cat > /tmp/build-info.json << EOF
+          {
+            "build_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "commit_short": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "workflow": "${{ github.workflow }}",
+            "run_id": "${{ github.run_id }}",
+            "actor": "${{ github.actor }}",
+            "repository": "${{ github.repository }}"
+          }
+          EOF
+
+          echo "📤 Subiendo build-info.json a S3..."
+          aws s3 cp /tmp/build-info.json s3://${{ env.BUCKET }}/build-info.json \
+            --cache-control "no-cache,no-store,must-revalidate" \
+            --region ${{ env.REGION }}
+
+          echo "✅ build-info.json subido correctamente"
+          cat /tmp/build-info.json
+
       - name: 🔍 Verify deployment
         run: |
           echo "🔍 Verificando despliegue..."
@@ -117,6 +141,11 @@ jobs:
           # Verificar endpoints dinámicos
           aws s3 ls s3://${{ env.BUCKET }}/config/endpoints.js --region ${{ env.REGION }} || {
             echo "⚠️ Warning: endpoints.js no encontrado en S3"
+          }
+
+          # Verificar build-info.json
+          aws s3 ls s3://${{ env.BUCKET }}/build-info.json --region ${{ env.REGION }} || {
+            echo "⚠️ Warning: build-info.json no encontrado en S3"
           }
 
           echo "✅ Despliegue verificado correctamente"
@@ -176,6 +205,7 @@ jobs:
           echo "### 📋 Checklist:" >> $GITHUB_STEP_SUMMARY
           echo "- [x] Build completado" >> $GITHUB_STEP_SUMMARY
           echo "- [x] Archivos subidos a S3" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] build-info.json generado y subido" >> $GITHUB_STEP_SUMMARY
           echo "- [x] Endpoints dinámicos copiados" >> $GITHUB_STEP_SUMMARY
           if [ "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" != "none" ] && [ -n "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
             echo "- [x] Caché de CloudFront invalidado" >> $GITHUB_STEP_SUMMARY
