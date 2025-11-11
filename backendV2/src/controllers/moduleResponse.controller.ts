@@ -32,18 +32,39 @@ export class ModuleResponseController {
       // Validar los datos utilizando el esquema
       const validatedData = CreateModuleResponseDtoSchema.parse(data);
 
-      // 🎯 VALIDAR QUE EL PARTICIPANTE EXISTE
+      // 🎯 VALIDAR O CREAR EL PARTICIPANTE SI NO EXISTE
       if (validatedData.participantId) {
-        const participant = await participantService.findById(validatedData.participantId);
+        let participant = await participantService.findById(validatedData.participantId);
         if (!participant) {
-          return {
-            statusCode: 404,
-            headers: getCorsHeaders(event),
-            body: JSON.stringify({
-              error: `Participante con ID '${validatedData.participantId}' no encontrado`,
-              status: 404
-            })
-          };
+          // 🎯 CREAR PARTICIPANTE AUTOMÁTICAMENTE CON EL ID PROPORCIONADO
+          // Generar nombre y email basados en el ID para participantes externos
+          const participantName = `Participante ${validatedData.participantId.slice(-6).toUpperCase()}`;
+          const participantEmail = `${validatedData.participantId.slice(-8)}@participant.study`;
+          
+          try {
+            participant = await participantService.createWithId(
+              validatedData.participantId,
+              {
+                name: participantName,
+                email: participantEmail
+              }
+            );
+            console.log(`[ModuleResponse] ✅ Participante creado automáticamente: ${participant.name} (${participant.email})`);
+          } catch (error) {
+            console.error(`[ModuleResponse] ❌ Error creando participante:`, error);
+            // Si falla la creación, intentar obtenerlo de nuevo (puede haber sido creado por otra request concurrente)
+            participant = await participantService.findById(validatedData.participantId);
+            if (!participant) {
+              return {
+                statusCode: 500,
+                headers: getCorsHeaders(event),
+                body: JSON.stringify({
+                  error: `Error al crear participante con ID '${validatedData.participantId}'`,
+                  status: 500
+                })
+              };
+            }
+          }
         }
         console.log(`[ModuleResponse] Participante validado: ${participant.name} (${participant.email})`);
       }
@@ -186,15 +207,28 @@ export class ModuleResponseController {
         };
       }
 
-      // 🎯 VALIDAR QUE EL PARTICIPANTE EXISTE
+      // 🎯 VALIDAR QUE EL PARTICIPANTE EXISTE (pero no devolver 404 si no existe)
       const participant = await participantService.findById(participantId);
       if (!participant) {
+        // 🎯 Si el participante no existe, retornar documento vacío en lugar de 404
+        // Esto permite que participantes externos funcionen sin necesidad de crearlos primero
+        const emptyResponse: ParticipantResponsesDocument = {
+          id: '',
+          researchId,
+          participantId,
+          responses: [],
+          metadata: {},
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isCompleted: false
+        };
         return {
-          statusCode: 404,
+          statusCode: 200,
           headers: getCorsHeaders(event),
           body: JSON.stringify({
-            error: `Participante con ID '${participantId}' no encontrado`,
-            status: 404
+            data: emptyResponse,
+            message: 'Participante no encontrado, retornando documento vacío',
+            status: 200
           })
         };
       }
@@ -206,11 +240,22 @@ export class ModuleResponseController {
       );
 
       if (!responses) {
+        // Retornar documento vacío en lugar de null
+        const emptyResponse: ParticipantResponsesDocument = {
+          id: '',
+          researchId,
+          participantId,
+          responses: [],
+          metadata: {},
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isCompleted: false
+        };
         return {
           statusCode: 200,
           headers: getCorsHeaders(event),
           body: JSON.stringify({
-            data: null,
+            data: emptyResponse,
             message: 'No hay respuestas para este participante en este research',
             status: 200
           })

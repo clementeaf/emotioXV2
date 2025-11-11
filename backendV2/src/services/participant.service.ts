@@ -72,6 +72,43 @@ export class ParticipantService {
   }
 
   /**
+   * Crea un nuevo participante con un ID específico
+   * Útil para crear participantes con IDs externos proporcionados por el usuario
+   */
+  async createWithId(id: string, participantData: Omit<Participant, 'id' | 'createdAt' | 'updatedAt'>): Promise<Participant> {
+    const now = new Date().toISOString();
+    const newParticipant: Participant = {
+      id,
+      ...participantData,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    const command = new PutCommand({
+      TableName: this.tableName,
+      Item: newParticipant,
+      ConditionExpression: 'attribute_not_exists(id)'
+    });
+
+    try {
+      await this.dynamoClient.send(command);
+      return newParticipant;
+    } catch (error: unknown) {
+      console.error('[ParticipantService.createWithId] Error:', error);
+      if (error instanceof Error && error.name === 'ConditionalCheckFailedException') {
+        // Si el participante ya existe, retornarlo en lugar de lanzar error
+        const existing = await this.findById(id);
+        if (existing) {
+          return existing;
+        }
+        throw new ApiError('Conflict: Participant ID collision or already exists.', 409);
+      }
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new ApiError(`Database Error: Could not create participant - ${errorMessage}`, 500);
+    }
+  }
+
+  /**
    * Obtiene un participante por su ID
    */
   async findById(id: string): Promise<Participant | null> {
