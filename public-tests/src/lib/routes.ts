@@ -1,5 +1,6 @@
-import { apiRequest } from './alova';
+import { apiRequest, API_CONFIG } from './alova';
 import { AvailableFormsResponse, CreateModuleResponseDto, ParticipantResponsesDocument, UpdateModuleResponseDto } from './types';
+import { AxiosError } from 'axios';
 
 export const getAvailableForms = async (researchId: string): Promise<AvailableFormsResponse> => {
   const result = await apiRequest<AvailableFormsResponse>(`/research/${researchId}/forms`, {
@@ -32,10 +33,32 @@ export const updateModuleResponse = async (responseId: string, data: UpdateModul
 };
 
 export const getModuleResponses = async (researchId: string, participantId: string): Promise<ParticipantResponsesDocument> => {
-  return apiRequest<ParticipantResponsesDocument>('/module-responses', {
-    method: 'GET',
-    params: { researchId, participantId }
-  });
+  try {
+    // 🎯 Usar axiosInstance directamente para capturar 404 antes del interceptor
+    const response = await API_CONFIG.request<ParticipantResponsesDocument>({
+      url: '/module-responses',
+      method: 'GET',
+      params: { researchId, participantId }
+    });
+    return response.data;
+  } catch (error) {
+    // 🎯 404 es un caso normal cuando un participante nuevo no tiene respuestas guardadas
+    // Retornar un documento vacío en lugar de lanzar error
+    if (error instanceof AxiosError && error.response?.status === 404) {
+      return {
+        id: '',
+        researchId,
+        participantId,
+        responses: [],
+        metadata: {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isCompleted: false
+      };
+    }
+    // Para otros errores, re-lanzar el error (el interceptor lo convertirá en Error genérico)
+    throw error;
+  }
 };
 
 export const deleteAllResponses = async (researchId: string, participantId: string): Promise<{ message: string; status: number }> => {

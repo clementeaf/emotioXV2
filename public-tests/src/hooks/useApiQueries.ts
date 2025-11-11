@@ -1,4 +1,5 @@
 import { useMutation, UseMutationOptions, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import {
   deleteAllResponses,
   getAvailableForms,
@@ -40,10 +41,9 @@ export function useModuleResponsesQuery(researchId: string, participantId: strin
   return useQuery<ParticipantResponsesDocument, Error>({
     queryKey: ['moduleResponses', researchId, participantId],
     queryFn: async () => {
+      // 🎯 El error 404 ya está manejado en getModuleResponses
       const result = await getModuleResponses(researchId, participantId);
-
       const actualData = (result as { data?: ParticipantResponsesDocument }).data || result;
-
       return actualData;
     },
     enabled: !!researchId && !!participantId,
@@ -52,7 +52,15 @@ export function useModuleResponsesQuery(researchId: string, participantId: strin
     refetchOnWindowFocus: false,
     refetchOnMount: true, // 🎯 SIEMPRE refetch para nuevos participantes
     refetchOnReconnect: false,
-    retry: 1,
+    retry: (failureCount, error) => {
+      // 🎯 No reintentar si es un 404 (participante sin respuestas es normal)
+      // El 404 ya está manejado en getModuleResponses, pero por si acaso verificamos aquí también
+      if (error instanceof AxiosError && error.response?.status === 404) {
+        return false;
+      }
+      // Reintentar solo una vez para otros errores
+      return failureCount < 1;
+    },
     ...options,
   });
 }
