@@ -144,8 +144,13 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
   Object.entries(responsesByQuestionKey).forEach(([questionKey, responses]) => {
     if (!questionKey.toLowerCase().includes('smartvoc')) return;
 
+    console.log(`[processSmartVOCData] Procesando ${questionKey} con ${responses.length} respuestas`);
+
     // Procesar cada respuesta de esta pregunta
     responses.forEach((response) => {
+      console.log(`[processSmartVOCData] ${questionKey} - response completo:`, response);
+      console.log(`[processSmartVOCData] ${questionKey} - response.value:`, response.value, 'tipo:', typeof response.value);
+
       const smartVOCResponse = {
         questionKey,
         response: response.value,
@@ -157,19 +162,29 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
       allSmartVOCResponses.push(smartVOCResponse);
 
       const responseValue = parseResponseValue(response.value);
+      console.log(`[processSmartVOCData] ${questionKey} - responseValue parseado:`, responseValue);
 
       // Categorizar por tipo de pregunta
       if (questionKey.toLowerCase().includes('nps')) {
-        if (responseValue > 0) {
+        if (responseValue >= 0 && !isNaN(responseValue)) {
           npsScores.push(responseValue);
+          console.log(`[processSmartVOCData] ✅ NPS agregado: ${responseValue}, total: ${npsScores.length}`);
+        } else {
+          console.log(`[processSmartVOCData] ❌ NPS rechazado: ${responseValue}`);
         }
       } else if (questionKey.toLowerCase().includes('csat')) {
-        if (responseValue > 0) {
+        if (responseValue >= 0 && !isNaN(responseValue)) {
           csatScores.push(responseValue);
+          console.log(`[processSmartVOCData] ✅ CSAT agregado: ${responseValue}, total: ${csatScores.length}`);
+        } else {
+          console.log(`[processSmartVOCData] ❌ CSAT rechazado: ${responseValue}`);
         }
       } else if (questionKey.toLowerCase().includes('ces')) {
-        if (responseValue > 0) {
+        if (responseValue >= 0 && !isNaN(responseValue)) {
           cesScores.push(responseValue);
+          console.log(`[processSmartVOCData] ✅ CES agregado: ${responseValue}, total: ${cesScores.length}`);
+        } else {
+          console.log(`[processSmartVOCData] ❌ CES rechazado: ${responseValue}`);
         }
       } else if (questionKey.toLowerCase().includes('nev')) {
         // NEV ahora devuelve string de emociones, no array
@@ -196,7 +211,7 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
           }
         }
       } else if (questionKey.toLowerCase().includes('cv')) {
-        if (responseValue > 0) {
+        if (responseValue >= 0 && !isNaN(responseValue)) {
           cvScores.push(responseValue);
         }
       } else if (questionKey.toLowerCase().includes('voc')) {
@@ -358,9 +373,9 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
 };
 
 export const useSmartVOCResponses = (researchId: string) => {
-  // Usar el mismo query key que otros hooks para compartir cache
+  // Usar query key específico para SmartVOC para evitar conflictos con otros hooks
   const query = useQuery<SmartVOCResults>({
-    queryKey: ['moduleResponses', 'research', researchId],
+    queryKey: ['smartVOCResponses', 'research', researchId],
     queryFn: async () => {
       if (!researchId) {
         throw new Error('Research ID es requerido');
@@ -382,15 +397,27 @@ export const useSmartVOCResponses = (researchId: string) => {
         metadata?: unknown;
       }>>;
 
+      console.log('[useSmartVOCResponses] groupedResponses:', groupedResponses);
+      console.log('[useSmartVOCResponses] keys:', Object.keys(groupedResponses || {}));
+      console.log('[useSmartVOCResponses] smartvoc keys:', Object.keys(groupedResponses || {}).filter(k => k.toLowerCase().includes('smartvoc')));
+
       // Procesar datos SmartVOC desde las respuestas agrupadas por questionKey
-      return processSmartVOCData(groupedResponses);
+      const result = processSmartVOCData(groupedResponses);
+      console.log('[useSmartVOCResponses] Resultado final:', {
+        csatScores: result.csatScores,
+        cesScores: result.cesScores,
+        cvScores: result.cvScores,
+        npsScores: result.npsScores,
+        totalResponses: result.totalResponses
+      });
+      return result;
     },
     enabled: !!researchId,
-    staleTime: 5 * 60 * 1000, // 5 minutos - cache por 5 minutos
-    gcTime: 10 * 60 * 1000,   // 10 minutos - mantener en memoria por 10 minutos
-    refetchOnWindowFocus: false, // No refetch cuando vuelve al foco de ventana
-    refetchOnMount: false,       // No refetch automático al montar si ya hay datos
-    retry: 1                     // Solo 1 reintento en caso de error
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1
   });
 
   return {

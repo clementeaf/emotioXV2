@@ -26,6 +26,14 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     error
   } = useSmartVOCResponses(researchId);
 
+  // 🎯 DEBUG: Ver qué devuelve el hook
+  console.log('[SmartVOCResults] smartVOCData completo:', smartVOCData);
+  console.log('[SmartVOCResults] isLoading:', isLoading);
+  console.log('[SmartVOCResults] error:', error);
+  console.log('[SmartVOCResults] csatScores:', smartVOCData?.csatScores);
+  console.log('[SmartVOCResults] cesScores:', smartVOCData?.cesScores);
+  console.log('[SmartVOCResults] cvScores:', smartVOCData?.cvScores);
+
   // Usar preguntas por defecto para mostrar textos
   const defaultQuestions = [
     {
@@ -129,35 +137,62 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
     // Contar emociones de las respuestas NEV si hay datos
     if (smartVOCData && smartVOCData.smartVOCResponses && smartVOCData.smartVOCResponses.length > 0) {
+      console.log('[processNEVData] smartVOCResponses:', smartVOCData.smartVOCResponses);
       smartVOCData.smartVOCResponses.forEach(response => {
         if (response.questionKey && response.questionKey.toLowerCase().includes('nev')) {
+          console.log('[processNEVData] Procesando respuesta NEV:', response);
           // 🔄 FIX: Los datos vienen como string separado por comas, no como array
           let emotions: string[] = [];
           
           if (typeof response.response === 'string') {
-            // Caso: "Feliz,Satisfecho,Confiado,Valorado"
-            emotions = response.response.split(',').map((e: string) => e.trim());
+            // Caso: "feliz,cuidado,seguro,interesado" (puede venir en minúsculas)
+            emotions = response.response.split(',').map((e: string) => {
+              const trimmed = e.trim();
+              // Capitalizar primera letra para que coincida con las emociones definidas
+              return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+            });
           } else if (Array.isArray(response.response)) {
             // Caso: ya es array
-            emotions = response.response;
+            emotions = response.response.map((e: string) => {
+              const trimmed = String(e).trim();
+              return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+            });
           } else if (response.response && typeof response.response === 'object' && response.response.value) {
-            // Caso: {value: "Feliz,Satisfecho,Confiado,Valorado"}
+            // Caso: {value: "feliz,cuidado,seguro,interesado"}
             if (typeof response.response.value === 'string') {
-              emotions = response.response.value.split(',').map((e: string) => e.trim());
+              emotions = response.response.value.split(',').map((e: string) => {
+                const trimmed = e.trim();
+                return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+              });
             } else if (Array.isArray(response.response.value)) {
-              emotions = response.response.value;
+              emotions = response.response.value.map((e: string) => {
+                const trimmed = String(e).trim();
+                return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+              });
             }
           }
           
+          console.log('[processNEVData] Emociones parseadas:', emotions);
+          
           emotions.forEach((emotion: string) => {
-            if (emotionCounts.hasOwnProperty(emotion)) {
-              emotionCounts[emotion]++;
+            // Buscar coincidencia case-insensitive
+            const emotionKey = Object.keys(emotionCounts).find(
+              key => key.toLowerCase() === emotion.toLowerCase()
+            );
+            if (emotionKey) {
+              emotionCounts[emotionKey]++;
               totalEmotionResponses++;
+              console.log(`[processNEVData] ✅ Emoción "${emotion}" encontrada como "${emotionKey}", count: ${emotionCounts[emotionKey]}`);
+            } else {
+              console.log(`[processNEVData] ❌ Emoción "${emotion}" no encontrada en emotionCounts`);
             }
           });
         }
       });
     }
+    
+    console.log('[processNEVData] emotionCounts final:', emotionCounts);
+    console.log('[processNEVData] totalEmotionResponses:', totalEmotionResponses);
 
     // Calcular porcentajes basados solo en respuestas existentes
     // Siempre mostrar todas las emociones, con valores reales o 0
