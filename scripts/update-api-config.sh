@@ -9,7 +9,16 @@ echo "🔄 Actualizando configuración de API..."
 
 # Obtener información del entorno actual
 ENVIRONMENT=${1:-development}
-STACK_NAME="emotioxv2-backend-${ENVIRONMENT}"
+# 🎯 Mapear environment a nombre de stack real
+if [ "$ENVIRONMENT" = "development" ]; then
+  STACK_NAME="emotioxv2-backend-dev"
+elif [ "$ENVIRONMENT" = "staging" ]; then
+  STACK_NAME="emotioxv2-backend-staging"
+elif [ "$ENVIRONMENT" = "production" ]; then
+  STACK_NAME="emotioxv2-backend-production"
+else
+  STACK_NAME="emotioxv2-backend-${ENVIRONMENT}"
+fi
 
 echo "📋 Entorno: $ENVIRONMENT"
 echo "🏗️ Stack: $STACK_NAME"
