@@ -26,14 +26,24 @@ export function ScaleRangeQuestion({
   const displayStartLabel = cleanLabel(startLabel, leftLabel);
   const displayEndLabel = cleanLabel(endLabel, rightLabel);
 
+  // 🎯 Determinar si usar layout responsive (más de 5 opciones)
+  const totalOptions = range.length;
+  const useResponsiveLayout = totalOptions > 5;
+  
+  // Calcular tamaño de botones para escalas grandes
+  const buttonSize = useResponsiveLayout ? 'w-9 h-9 text-base' : 'w-10 h-10 text-lg';
+  const containerClass = useResponsiveLayout
+    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 w-full max-w-4xl justify-items-center'
+    : 'flex flex-row items-center justify-center gap-4 sm:gap-6 flex-wrap';
+
   return (
     <div className="flex flex-col items-center w-full">
-      <div className="flex flex-row items-center justify-center gap-6">
+      <div className={containerClass}>
         {range.map((num) => (
           <button
             key={num}
             type="button"
-            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg font-semibold transition ${value === num
+            className={`${buttonSize} rounded-full border-2 flex items-center justify-center font-semibold transition flex-shrink-0 ${value === num
               ? 'bg-blue-600 text-white border-blue-700'
               : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
               }`}
