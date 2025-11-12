@@ -26,16 +26,23 @@ export function ScaleRangeQuestion({
   const displayStartLabel = cleanLabel(startLabel, leftLabel);
   const displayEndLabel = cleanLabel(endLabel, rightLabel);
 
+  // 🎯 Detectar si es NPS (escala 0-10 o 0-6)
+  const isNPS = min === 0 && (max === 10 || max === 6);
+  
   // 🎯 Determinar si usar layout responsive (más de 5 opciones)
   const totalOptions = range.length;
-  const useResponsiveLayout = totalOptions > 5;
+  const useResponsiveLayout = totalOptions > 5 && !isNPS;
   
   // 🎯 Determinar si mostrar labels debajo de números extremos (para CES y similares)
-  const showLabelsBelowExtremes = (startLabel || endLabel) && !useResponsiveLayout;
+  const showLabelsBelowExtremes = (startLabel || endLabel) && !useResponsiveLayout && !isNPS;
   
   // Calcular tamaño de botones para escalas grandes
   const buttonSize = useResponsiveLayout ? 'w-9 h-9 text-base' : 'w-10 h-10 text-lg';
-  const containerClass = useResponsiveLayout
+  
+  // 🎯 Layout especial para NPS: opciones distribuidas con espacio entre extremos
+  const containerClass = isNPS
+    ? 'flex flex-row items-center justify-between w-full max-w-4xl gap-1'
+    : useResponsiveLayout
     ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 w-full max-w-4xl justify-items-center'
     : 'flex flex-row items-center justify-center gap-4 sm:gap-6 flex-wrap';
 
@@ -69,7 +76,15 @@ export function ScaleRangeQuestion({
           );
         })}
       </div>
-      {!showLabelsBelowExtremes && (
+      {/* 🎯 Para NPS, mostrar leyenda inferior centrada */}
+      {isNPS && (displayStartLabel || displayEndLabel) && (
+        <div className="flex flex-row items-center justify-center w-full max-w-4xl mt-4 gap-4">
+          <span className="text-xs text-gray-500">{displayStartLabel}</span>
+          <span className="text-xs text-gray-400">•</span>
+          <span className="text-xs text-gray-500">{displayEndLabel}</span>
+        </div>
+      )}
+      {!showLabelsBelowExtremes && !isNPS && (
         <div className="flex flex-row items-center justify-between w-full max-w-md mt-2">
           <span className="text-xs text-gray-500">{displayStartLabel}</span>
           <span className="text-xs text-gray-500">{displayEndLabel}</span>
