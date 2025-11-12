@@ -91,6 +91,7 @@ jobs:
       
       - name: Create PR for frontend configuration (if needed)
         if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
