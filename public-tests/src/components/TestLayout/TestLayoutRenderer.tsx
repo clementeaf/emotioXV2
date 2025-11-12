@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useStepStoreWithBackend } from '../../hooks/useStepStoreWithBackend';
@@ -12,6 +12,7 @@ import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { MobileStepBlockedScreen } from '../common/MobileStepBlockedScreen';
+import { GlobalLoadingOverlay } from '../common/GlobalLoadingOverlay';
 import { ButtonSteps } from './ButtonSteps';
 import { RENDERERS, UnknownStepComponent } from './ComponentRenderers';
 import { getCurrentStepData, getQuestionType } from './utils';
@@ -69,6 +70,8 @@ const TestLayoutRenderer: React.FC = () => {
   const { currentQuestionKey } = useStepStore();
   const { getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [previousQuestionKey, setPreviousQuestionKey] = useState<string | null>(null);
 
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',
@@ -121,6 +124,18 @@ const TestLayoutRenderer: React.FC = () => {
       setSteps(stepObjects);
     }
   }, [formsData?.steps]);
+
+  // Detectar cambios en currentQuestionKey para mostrar transición
+  useEffect(() => {
+    if (previousQuestionKey && previousQuestionKey !== currentQuestionKey) {
+      setIsTransitioning(true);
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    setPreviousQuestionKey(currentQuestionKey);
+  }, [currentQuestionKey, previousQuestionKey]);
 
   if (!researchId) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -270,16 +285,24 @@ const TestLayoutRenderer: React.FC = () => {
   })();
 
   return (
-    <div className="flex flex-col h-full w-full">
-      {renderedForm}
-      {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && !shouldHideButton && (
-        <ButtonSteps
-          currentQuestionKey={currentQuestionKey}
-          formData={formData}
-          isWelcomeScreen={isWelcomeScreen}
-        />
-      )}
-    </div>
+    <>
+      <GlobalLoadingOverlay 
+        isVisible={isTransitioning} 
+        message="Cargando siguiente pregunta..."
+      />
+      <div className={`flex flex-col h-full w-full transition-opacity duration-300 ${
+        isTransitioning ? 'opacity-50' : 'opacity-100'
+      }`}>
+        {renderedForm}
+        {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && !shouldHideButton && (
+          <ButtonSteps
+            currentQuestionKey={currentQuestionKey}
+            formData={formData}
+            isWelcomeScreen={isWelcomeScreen}
+          />
+        )}
+      </div>
+    </>
   );
 };
 

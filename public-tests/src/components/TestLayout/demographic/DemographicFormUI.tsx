@@ -59,7 +59,7 @@ export const DemographicFormUI: React.FC<DemographicFormUIProps> = ({
           </p>
           <div className="text-sm text-gray-500">
             <p>Estado: Configuración pendiente</p>
-            <p>Research ID: N/A</p>
+            <p>ID de Investigación: N/A</p>
           </div>
         </div>
       ) : (

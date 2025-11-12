@@ -252,6 +252,29 @@ export const useStepStore = create<StepStore>()(
         
         if (nextStepKey) {
           state.setCurrentQuestionKey(nextStepKey);
+        } else {
+          // Si no hay más steps, navegar a thank_you_screen si no estamos ya ahí
+          const currentKey = state.currentQuestionKey;
+          if (currentKey !== 'thank_you_screen') {
+            // Verificar si thank_you_screen está en los steps
+            const stepOrder = state.steps.map(s => s.questionKey);
+            const hasThankYouScreen = stepOrder.includes('thank_you_screen');
+            
+            if (hasThankYouScreen) {
+              // Si está en los steps, navegar a él
+              state.setCurrentQuestionKey('thank_you_screen');
+            } else {
+              // Si no está en los steps, agregarlo temporalmente y navegar
+              const thankYouStep: Step = {
+                questionKey: 'thank_you_screen',
+                title: 'Gracias por participar'
+              };
+              set({
+                steps: [...state.steps, thankYouStep]
+              });
+              state.setCurrentQuestionKey('thank_you_screen');
+            }
+          }
         }
       }
     })

@@ -7,7 +7,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   currentQuestionKey,
   isWelcomeScreen = false
 }) => {
-  const { buttonText, isDisabled, handleClick } = useButtonSteps({
+  const { buttonText, isDisabled, handleClick, isSaving, isNavigating } = useButtonSteps({
     currentQuestionKey,
     isWelcomeScreen
   });
@@ -17,6 +17,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       buttonText={buttonText}
       isDisabled={isDisabled}
       onClick={handleClick}
+      isLoading={isSaving || isNavigating}
     />
   );
 };

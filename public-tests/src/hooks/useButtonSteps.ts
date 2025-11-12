@@ -547,6 +547,8 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
   return {
     buttonText: getButtonText(),
     isDisabled,
-    handleClick
+    handleClick,
+    isSaving,
+    isNavigating
   };
 };

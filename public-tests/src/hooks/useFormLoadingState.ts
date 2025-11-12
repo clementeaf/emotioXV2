@@ -27,6 +27,15 @@ export const useFormLoadingState = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasLoadedData, setHasLoadedData] = useState(false);
 
+  // 🎯 DETECTAR RECARGA DE PÁGINA - No cargar preferencias previas al recargar
+  // Solo aplicar en la primera pregunta después de recargar
+  const [hasHandledReload, setHasHandledReload] = useState(false);
+  const isPageReload = useState(() => {
+    // Verificar si es una recarga de página usando performance.navigation o performance.getEntriesByType
+    const navigationType = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    return navigationType?.type === 'reload';
+  })[0];
+
   // Query para obtener respuestas existentes del backend
   const { data: moduleResponses, isLoading: isLoadingResponses } = useModuleResponsesQuery(
     researchId || '',
@@ -53,6 +62,14 @@ export const useFormLoadingState = ({
       return;
     }
 
+    // 🎯 NO CARGAR PREFERENCIAS PREVIAS AL RECARGAR LA PÁGINA
+    // Solo aplicar esta lógica en la primera pregunta después de recargar
+    if (isPageReload && !hasHandledReload) {
+      setHasHandledReload(true);
+      setIsLoading(false);
+      return;
+    }
+
     // Buscar respuesta existente para este questionKey en el backend
     if (moduleResponses?.responses && Array.isArray(moduleResponses.responses)) {
       const existingResponse = moduleResponses.responses.find(
@@ -74,7 +91,7 @@ export const useFormLoadingState = ({
     // Si no hay datos en el backend, no cargar nada
 
     setIsLoading(false);
-  }, [moduleResponses, isLoadingResponses, questionKey, stableOnDataLoaded]);
+  }, [moduleResponses, isLoadingResponses, questionKey, stableOnDataLoaded, isPageReload]);
 
   const handleInputChange = useCallback((key: string, value: unknown) => {
     setFormValues(prevValues => {

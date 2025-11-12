@@ -13,8 +13,18 @@ export function ScaleRangeQuestion({
   onChange,
 }: ScaleRangeQuestionProps) {
   const range = Array.from({ length: max - min + 1 }, (_, i) => min + i);
-  const displayStartLabel = startLabel || leftLabel;
-  const displayEndLabel = endLabel || rightLabel;
+  
+  // 🎯 Limpiar labels que contengan prefijos numéricos con guion (ej: "1-", "5-")
+  // Si el label comienza con un número seguido de guion, extraer solo la parte del texto
+  const cleanLabel = (label: string | undefined, fallback: string): string => {
+    if (!label) return fallback;
+    // Remover patrones como "1-", "5-", "0 -", etc. al inicio del string
+    const cleaned = label.replace(/^\d+\s*-\s*/, '').trim();
+    return cleaned || fallback;
+  };
+  
+  const displayStartLabel = cleanLabel(startLabel, leftLabel);
+  const displayEndLabel = cleanLabel(endLabel, rightLabel);
 
   return (
     <div className="flex flex-col items-center w-full">

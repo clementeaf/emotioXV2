@@ -56,7 +56,12 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
     handleChange(emotion);
   }, [handleChange]);
 
-  if (isLoading) {
+  // 🎯 Para preguntas de texto (VOC), renderizar inmediatamente con placeholder
+  // El placeholder no depende de datos del backend, así que puede mostrarse de inmediato
+  const isTextQuestion = question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text';
+  const shouldShowLoading = isLoading && !isTextQuestion;
+
+  if (shouldShowLoading) {
     return <div className="flex items-center justify-center h-full">Cargando...</div>;
   }
 
