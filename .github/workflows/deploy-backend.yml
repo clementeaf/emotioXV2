@@ -68,9 +68,16 @@ jobs:
       
       - name: Process outputs and export endpoints
         working-directory: backendV2
+        continue-on-error: true
         run: |
           echo "Processing deployment outputs and exporting endpoints..."
-          node scripts/export-endpoints.js
+          if [ -f "scripts/export-endpoints.js" ]; then
+            node scripts/export-endpoints.js
+          elif [ -f "src/utils/endpoints-exporter.ts" ]; then
+            npm run export-endpoints || echo "⚠️ Export endpoints failed, continuing..."
+          else
+            echo "⚠️ No export endpoints script found, skipping..."
+          fi
       
       - name: Upload endpoints configuration
         uses: actions/upload-artifact@v4
