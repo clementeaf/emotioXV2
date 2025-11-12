@@ -7,7 +7,7 @@ on:
       - develop
     paths:
       - 'backendV2/**'
-      - '.github/workflows/cd.yml'
+      - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
     inputs:
       environment:
