@@ -91,7 +91,7 @@ export const useFormLoadingState = ({
     // Si no hay datos en el backend, no cargar nada
 
     setIsLoading(false);
-  }, [moduleResponses, isLoadingResponses, questionKey, stableOnDataLoaded, isPageReload]);
+  }, [moduleResponses, isLoadingResponses, questionKey, stableOnDataLoaded, isPageReload, hasHandledReload]);
 
   const handleInputChange = useCallback((key: string, value: unknown) => {
     setFormValues(prevValues => {
