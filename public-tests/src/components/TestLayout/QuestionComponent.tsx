@@ -96,7 +96,25 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
                   isDisqualify: choiceObj.isDisqualify
                 };
               })}
-              value={value as string | string[]}
+              value={(() => {
+                // 🎯 Asegurar que el valor sea el formato correcto para opciones múltiples
+                if (question.config?.multiple) {
+                  if (Array.isArray(value)) {
+                    return value;
+                  }
+                  if (value && typeof value === 'string') {
+                    // Si viene como string, intentar parsearlo
+                    try {
+                      const parsed = JSON.parse(value);
+                      return Array.isArray(parsed) ? parsed : [value];
+                    } catch {
+                      return [value];
+                    }
+                  }
+                  return value ? [value] : [];
+                }
+                return value as string | string[];
+              })()}
               onChange={handleChange}
               multiple={question.config?.multiple || false}
             />

@@ -77,12 +77,13 @@ export const useFormLoadingState = ({
       );
 
       if (existingResponse?.response) {
-        setFormValues(existingResponse.response as Record<string, unknown>);
+        const responseData = existingResponse.response as Record<string, unknown>;
+        setFormValues(responseData);
         setHasLoadedData(true);
         setIsLoading(false);
 
         // Callback opcional cuando se cargan los datos
-        stableOnDataLoaded(existingResponse.response as Record<string, unknown>);
+        stableOnDataLoaded(responseData);
         return;
       }
     }

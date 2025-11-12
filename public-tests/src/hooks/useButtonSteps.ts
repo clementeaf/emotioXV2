@@ -204,12 +204,26 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     (moduleResponse: { questionKey: string }) => moduleResponse.questionKey === currentQuestionKey
   );
 
-  // 🎯 SOLO CONSIDERAR RESPUESTA EXISTENTE SI NO ESTÁ VACÍA
+  // 🎯 SOLO CONSIDERAR RESPUESTA EXISTENTE SI NO ESTÁ VACÍA Y TIENE DATOS REALES
   const hasValidResponse = !!(existingResponse?.response && 
     typeof existingResponse.response === 'object' && 
     Object.keys(existingResponse.response).length > 0);
+  
+  // 🎯 Verificar si la respuesta tiene valores reales (no solo estructura vacía)
+  const responseHasData = hasValidResponse && (() => {
+    const response = existingResponse.response as Record<string, unknown>;
+    // Verificar si tiene value o selectedValue con datos
+    const value = response.value || response.selectedValue;
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    if (typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+    return value !== null && value !== undefined;
+  })();
     
-  const hasExistingResponse = hasValidResponse;
+  const hasExistingResponse = responseHasData;
   
   const documentId = moduleResponses?.id;
 
@@ -421,12 +435,12 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       const responseSize = JSON.stringify(formattedResponse).length;
       if (responseSize > 5000 && currentQuestionKey !== 'smartvoc_nev') {
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
-          const truncatedResponse: Record<string, string | number | boolean | null> = {};
+          const truncatedResponse: Record<string, string | number | boolean | string[] | null> = {};
           for (const [key, value] of Object.entries(formattedResponse).slice(0, 3)) {
             if (typeof value === 'string') {
               truncatedResponse[key] = value.substring(0, 50);
             } else {
-              truncatedResponse[key] = value;
+              truncatedResponse[key] = value as string | number | boolean | string[] | null;
             }
           }
           formattedResponse = truncatedResponse;
@@ -439,12 +453,12 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       if (estimatedNewSize > 350000 && currentQuestionKey !== 'smartvoc_nev') {
         
         if (typeof formattedResponse === 'object' && formattedResponse !== null) {
-          const aggressiveTruncation: Record<string, string | number | boolean | null> = {};
+          const aggressiveTruncation: Record<string, string | number | boolean | string[] | null> = {};
           for (const [key, value] of Object.entries(formattedResponse).slice(0, 2)) {
             if (typeof value === 'string') {
               aggressiveTruncation[key] = value.substring(0, 25);
             } else {
-              aggressiveTruncation[key] = value;
+              aggressiveTruncation[key] = value as string | number | boolean | string[] | null;
             }
           }
           formattedResponse = aggressiveTruncation;

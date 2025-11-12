@@ -346,7 +346,7 @@ export const LinearScaleSlider: React.FC<LinearScaleSliderProps> = ({
   }, [isDragging, handleMouseMove]);
 
   return (
-    <div className="flex flex-col items-center w-full max-w-2xl px-4">
+    <div className="flex flex-col items-center w-full max-w-4xl px-4">
       <div className="relative w-full h-8 mb-4">
         <div
           ref={sliderRef}

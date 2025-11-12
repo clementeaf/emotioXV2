@@ -76,26 +76,42 @@ export const useQuestionInitialization = ({
     questionType: string, 
     config?: QuestionConfig
   ): unknown => {
+    // 🎯 Convertir strings separados por comas a arrays para opciones múltiples
     if ((questionType === 'emojis' || questionType === 'detailed') && 
         config?.maxSelections && 
         config.maxSelections > 1 && 
         typeof backendValue === 'string') {
       return backendValue.split(',').map(item => item.trim()).filter(item => item.length > 0);
     }
+    // 🎯 Para opciones múltiples (choice con multiple: true), asegurar que sea array
+    if (questionType === 'choice' && config?.multiple) {
+      if (typeof backendValue === 'string') {
+        // Si viene como string separado por comas (ej: "1,2"), separarlo
+        if (backendValue.includes(',')) {
+          return backendValue.split(',').map(item => item.trim()).filter(item => item.length > 0);
+        }
+        // Si es un string simple, intentar parsearlo como JSON primero
+        try {
+          const parsed = JSON.parse(backendValue);
+          return Array.isArray(parsed) ? parsed : [backendValue];
+        } catch {
+          // Si no es JSON válido, tratarlo como un valor único
+          return [backendValue];
+        }
+      }
+      // Si ya es array, retornarlo; si es null/undefined, retornar array vacío
+      return Array.isArray(backendValue) ? backendValue : (backendValue ? [backendValue] : []);
+    }
     return backendValue;
   }, []);
 
-  React.useEffect(() => {
-    const initialValue = getInitialValue(question.type, question.config);
-    hasUserInteractedRef.current = false; // Reset en nueva pregunta
-    setValueInternal(initialValue);
-  }, [currentStepKey, question.type, question.config, getInitialValue]);
-
+  // 🎯 PRIMERO: Cargar datos del backend si están disponibles
   React.useEffect(() => {
     if (hasUserInteractedRef.current) {
       return;
     }
     
+    // Prioridad 1: initialFormData (datos pasados directamente)
     if (initialFormData && Object.keys(initialFormData).length > 0) {
       let backendValue = initialFormData.value || initialFormData.selectedValue;
       backendValue = convertBackendValue(backendValue, question.type, question.config);
@@ -112,8 +128,12 @@ export const useQuestionInitialization = ({
       return;
     }
 
+    // Prioridad 2: formValues (datos cargados desde el backend)
     if (hasLoadedData && formValues && Object.keys(formValues).length > 0) {
-      const savedValue = formValues.value || formValues.selectedValue;
+      let savedValue = formValues.value || formValues.selectedValue;
+      
+      // 🎯 Convertir valor del backend al formato correcto según el tipo de pregunta
+      savedValue = convertBackendValue(savedValue, question.type, question.config);
       
       const isTextType = question.type === 'text' || 
                         question.type === 'cognitive_short_text' || 
@@ -124,8 +144,28 @@ export const useQuestionInitialization = ({
       } else {
         setValueInternal(savedValue);
       }
+      return;
     }
   }, [currentStepKey, formValues, question.type, question.config, hasLoadedData, initialFormData, convertBackendValue]);
+
+  // 🎯 SEGUNDO: Establecer valor inicial solo si no hay datos cargados
+  React.useEffect(() => {
+    // Solo establecer valor inicial si el usuario no ha interactuado Y no hay datos cargados
+    if (hasUserInteractedRef.current) {
+      return;
+    }
+    
+    // Si ya hay datos cargados (initialFormData o formValues), no resetear
+    const hasInitialData = initialFormData && Object.keys(initialFormData).length > 0;
+    const hasFormValues = hasLoadedData && formValues && Object.keys(formValues).length > 0;
+    const hasData = hasInitialData || hasFormValues;
+    
+    if (!hasData) {
+      const initialValue = getInitialValue(question.type, question.config);
+      hasUserInteractedRef.current = false; // Reset en nueva pregunta
+      setValueInternal(initialValue);
+    }
+  }, [currentStepKey, question.type, question.config, getInitialValue, initialFormData, formValues, hasLoadedData]);
 
   return { 
     value, 

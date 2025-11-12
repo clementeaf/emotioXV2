@@ -76,7 +76,7 @@ export const useStepStore = create<StepStore>()(
         const stepOrder = state.steps.map(s => s.questionKey);
         let stepToActivate = '';
 
-        // Si hay respuestas guardadas, encontrar el último step completado y ir al siguiente
+        // Si hay respuestas guardadas, ir a la última pregunta respondida
         if (validResponses.length > 0) {
           // Encontrar el último step completado
           const completedKeys = validResponses.map((r: { questionKey: string }) => r.questionKey);
@@ -90,12 +90,9 @@ export const useStepStore = create<StepStore>()(
             }
           }
 
-          // Si se encontró un último step completado, ir al siguiente
-          if (lastCompletedIndex >= 0 && lastCompletedIndex < stepOrder.length - 1) {
-            stepToActivate = stepOrder[lastCompletedIndex + 1];
-          } else if (lastCompletedIndex === stepOrder.length - 1) {
-            // Si el último step está completado, quedarse en el último step
-            stepToActivate = stepOrder[stepOrder.length - 1];
+          // Ir directamente a la última pregunta respondida
+          if (lastCompletedIndex >= 0) {
+            stepToActivate = stepOrder[lastCompletedIndex];
           } else {
             // Si no se encontró ningún step completado (no debería pasar), ir al primero
             stepToActivate = stepOrder[0] || '';
@@ -105,13 +102,11 @@ export const useStepStore = create<StepStore>()(
           stepToActivate = stepOrder[0] || '';
         }
 
-        // 🎯 SOLO ACTUALIZAR currentQuestionKey SI NO HAY UNO ESTABLECIDO O SI EL ACTUAL NO ES VÁLIDO
-        const currentKey = state.currentQuestionKey;
-        const shouldUpdateCurrentStep = !currentKey || !stepOrder.includes(currentKey);
-
+        // 🎯 ACTUALIZAR currentQuestionKey cuando se cargan las respuestas del backend
+        // Esto asegura que al recargar la app, vaya a la última pregunta respondida
         set({
           backendResponses: validResponses,
-          ...(shouldUpdateCurrentStep && { currentQuestionKey: stepToActivate })
+          currentQuestionKey: stepToActivate
         });
       },
 
@@ -199,6 +194,22 @@ export const useStepStore = create<StepStore>()(
         const state = get();
         if (state.steps.length === 0) return '';
 
+        // 🎯 Si hay respuestas del backend, ir a la última pregunta respondida
+        if (state.backendResponses.length > 0) {
+          const stepOrder = state.steps.map(s => s.questionKey);
+          const completedKeys = state.backendResponses.map((r: unknown) =>
+            (r as { questionKey?: string }).questionKey
+          ).filter((key): key is string => typeof key === 'string');
+          
+          // Encontrar el último step completado en el orden de steps
+          for (let i = stepOrder.length - 1; i >= 0; i--) {
+            if (completedKeys.includes(stepOrder[i])) {
+              return stepOrder[i];
+            }
+          }
+        }
+
+        // Si no hay respuestas, ir al primer step sin responder
         const firstUnansweredStep = state.steps.find(step => !state.hasBackendResponse(step.questionKey));
         return firstUnansweredStep?.questionKey || state.steps[0]?.questionKey || '';
       },

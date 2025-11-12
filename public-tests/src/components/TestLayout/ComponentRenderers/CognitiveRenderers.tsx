@@ -74,14 +74,18 @@ export const cognitiveRenderers = {
       : [] as any[];
 
     return (
-      <div className='flex flex-col items-center justify-center h-full gap-6'>
-        <h2 className='text-2xl font-bold text-gray-800'>
-          {String(contentConfiguration?.title || 'Ordenar por Preferencia')}
-        </h2>
-        <p className='text-gray-600 text-center max-w-2xl'>
-          {String(contentConfiguration?.description || 'Arrastra los elementos para ordenarlos según tu preferencia')}
-        </p>
-        <div className='w-full max-w-2xl'>
+      <div className='flex flex-col items-center justify-center h-full w-full gap-6 p-[2.5%] sm:p-[3%]'>
+        {contentConfiguration?.title && String(contentConfiguration.title).trim() !== '' && (
+          <h1 className='text-2xl md:text-3xl font-bold text-gray-900 text-center w-full max-w-4xl'>
+            {String(contentConfiguration.title)}
+          </h1>
+        )}
+        {contentConfiguration?.description && String(contentConfiguration.description).trim() !== '' && (
+          <p className='text-gray-600 text-center w-full max-w-4xl'>
+            {String(contentConfiguration.description)}
+          </p>
+        )}
+        <div className='w-full max-w-4xl'>
           <RankingList
             items={rankingItems}
             onMoveUp={() => { }}

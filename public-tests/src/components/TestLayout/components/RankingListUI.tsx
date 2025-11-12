@@ -24,7 +24,7 @@ export const RankingListUI: React.FC<RankingListUIProps> = ({
   }
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 w-full flex flex-col items-center">
       {rankedItems.map((item, index) => {
         const canMoveUpItem = canMoveUp(index);
         const canMoveDownItem = canMoveDown(index, rankedItems.length);
@@ -32,7 +32,7 @@ export const RankingListUI: React.FC<RankingListUIProps> = ({
         return (
           <div 
             key={`${item}-${index}`} 
-            className="flex items-center justify-between border rounded-md p-3 mb-2 bg-white shadow-sm"
+            className="flex items-center justify-between border rounded-md p-3 mb-2 bg-white shadow-sm w-full max-w-2xl"
           >
             <span className="text-lg text-neutral-700">{item}</span>
             <div className="flex space-x-1">

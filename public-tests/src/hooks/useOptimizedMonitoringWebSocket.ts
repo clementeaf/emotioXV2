@@ -103,13 +103,21 @@ export const useOptimizedMonitoringWebSocket = () => {
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = undefined;
     }
     
     debounceTimersRef.current.forEach(timer => clearTimeout(timer));
     debounceTimersRef.current.clear();
 
     if (wsRef.current) {
-      wsRef.current.close(1000, 'Component unmount');
+      const readyState = wsRef.current.readyState;
+      // 🎯 Solo cerrar si el WebSocket está abierto (OPEN = 1)
+      // Evitar cerrar si está en estado CONNECTING (0) para prevenir warnings
+      if (readyState === WebSocket.OPEN) {
+        wsRef.current.close(1000, 'Component unmount');
+      }
+      // Si está en CONNECTING, simplemente limpiar la referencia
+      // El WebSocket se cerrará automáticamente cuando se complete la conexión
       wsRef.current = null;
     }
     isConnectedRef.current = false;

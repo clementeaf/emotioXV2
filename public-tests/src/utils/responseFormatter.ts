@@ -1,4 +1,4 @@
-export const formatResponseData = (data: unknown, questionKey: string, instructions?: string): string | number | boolean | string[] | Record<string, string | number | boolean | null> | null => {
+export const formatResponseData = (data: unknown, questionKey: string, instructions?: string): string | number | boolean | string[] | Record<string, string | number | boolean | string[] | null> | null => {
   if (data === null || data === undefined) {
     return null;
   }
@@ -13,7 +13,7 @@ export const formatResponseData = (data: unknown, questionKey: string, instructi
   }
   
   if (typeof data === 'object') {
-    const simpleObject: Record<string, string | number | boolean | null> = {};
+    const simpleObject: Record<string, string | number | boolean | string[] | null> = {};
     const entries = Object.entries(data as Record<string, unknown>);
     
     for (const [key, value] of entries.slice(0, 5)) {
@@ -24,8 +24,11 @@ export const formatResponseData = (data: unknown, questionKey: string, instructi
       } else if (typeof value === 'number' || typeof value === 'boolean') {
         simpleObject[key] = value;
       } else if (Array.isArray(value)) {
-        // Para smartvoc_nev, convertir a string SIN limitar la cantidad
-        if (questionKey === 'smartvoc_nev') {
+        // 🎯 Para opciones múltiples (value/selectedValue), preservar como array
+        if (key === 'value' || key === 'selectedValue') {
+          simpleObject[key] = value.map(item => String(item));
+        } else if (questionKey === 'smartvoc_nev') {
+          // Para smartvoc_nev, convertir a string SIN limitar la cantidad
           simpleObject[key] = value.map(item => String(item)).join(',');
         } else {
           // Para otros tipos, convertir a string con límite de 3
