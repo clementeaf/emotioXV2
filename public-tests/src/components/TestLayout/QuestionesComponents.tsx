@@ -30,6 +30,9 @@ export function ScaleRangeQuestion({
   const totalOptions = range.length;
   const useResponsiveLayout = totalOptions > 5;
   
+  // 🎯 Determinar si mostrar labels debajo de números extremos (para CES y similares)
+  const showLabelsBelowExtremes = (startLabel || endLabel) && !useResponsiveLayout;
+  
   // Calcular tamaño de botones para escalas grandes
   const buttonSize = useResponsiveLayout ? 'w-9 h-9 text-base' : 'w-10 h-10 text-lg';
   const containerClass = useResponsiveLayout
@@ -39,25 +42,39 @@ export function ScaleRangeQuestion({
   return (
     <div className="flex flex-col items-center w-full">
       <div className={containerClass}>
-        {range.map((num) => (
-          <button
-            key={num}
-            type="button"
-            className={`${buttonSize} rounded-full border-2 flex items-center justify-center font-semibold transition flex-shrink-0 ${value === num
-              ? 'bg-blue-600 text-white border-blue-700'
-              : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-              }`}
-            onClick={() => onChange?.(num)}
-            aria-label={`Seleccionar ${num}`}
-          >
-            {num}
-          </button>
-        ))}
+        {range.map((num) => {
+          const isFirst = num === min;
+          const isLast = num === max;
+          const showLabelBelow = showLabelsBelowExtremes && (isFirst || isLast);
+          
+          return (
+            <div key={num} className="flex flex-col items-center">
+              <button
+                type="button"
+                className={`${buttonSize} rounded-full border-2 flex items-center justify-center font-semibold transition flex-shrink-0 ${value === num
+                  ? 'bg-blue-600 text-white border-blue-700'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
+                  }`}
+                onClick={() => onChange?.(num)}
+                aria-label={`Seleccionar ${num}`}
+              >
+                {num}
+              </button>
+              {showLabelBelow && (
+                <span className="text-xs text-gray-500 mt-1 text-center max-w-[80px]">
+                  {isFirst ? displayStartLabel : displayEndLabel}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
-      <div className="flex flex-row items-center justify-between w-full max-w-md mt-2">
-        <span className="text-xs text-gray-500">{displayStartLabel}</span>
-        <span className="text-xs text-gray-500">{displayEndLabel}</span>
-      </div>
+      {!showLabelsBelowExtremes && (
+        <div className="flex flex-row items-center justify-between w-full max-w-md mt-2">
+          <span className="text-xs text-gray-500">{displayStartLabel}</span>
+          <span className="text-xs text-gray-500">{displayEndLabel}</span>
+        </div>
+      )}
     </div>
   );
 }
