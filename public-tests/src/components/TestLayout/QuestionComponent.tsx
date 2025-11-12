@@ -66,24 +66,24 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
   }
 
   return (
-    <div key={`question-${currentStepKey}-${question.type}`} className="flex flex-col items-center justify-center h-full w-full gap-6 p-8">
+    <div key={`question-${currentStepKey}-${question.type}`} className="flex flex-col items-center justify-center h-full w-full gap-6 p-[2.5%] sm:p-[3%]">
       {question.title && question.title.trim() !== '' && (
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center max-w-2xl">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center w-full max-w-4xl">
           {question.title}
         </h1>
       )}
       {question.description && question.description.trim() !== '' && (
-        <p className="text-gray-600 text-center max-w-2xl">
+        <p className="text-gray-600 text-center w-full max-w-4xl">
           {question.description}
         </p>
       )}
       {question.config?.instructions && (
-        <p className="text-sm text-gray-500 text-center max-w-2xl mt-2">
+        <p className="text-sm text-gray-500 text-center w-full max-w-4xl mt-2">
           {question.config.instructions}
         </p>
       )}
 
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-4xl">
         {question.type === 'choice' && (
           <SingleAndMultipleChoiceQuestion
               key={`choice-${currentStepKey}-${question.title.replace(/\s+/g, '-')}`}
