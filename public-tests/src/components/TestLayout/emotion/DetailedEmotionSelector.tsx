@@ -87,9 +87,10 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
               className={`
                 ${getEmotionBackgroundColor('advocacy')}
                 ${isSelected 
-                  ? 'ring-2 ring-blue-500 ring-offset-2' 
+                  ? 'ring-4 ring-blue-500 ring-offset-2 bg-blue-500 text-white border-blue-600' 
                   : 'hover:shadow-md'
                 }
+                relative
                 ${isDisabled 
                   ? 'opacity-50 cursor-not-allowed' 
                   : 'cursor-pointer'
@@ -99,6 +100,13 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
               title={emotion}
             >
               {emotion}
+              {isSelected && (
+                <div className="absolute top-1 right-1">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
             </button>
           );
         })}
@@ -122,18 +130,25 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
               className={`
                 ${getEmotionBackgroundColor('recommendation')}
                 ${isSelected 
-                  ? 'ring-2 ring-blue-500 ring-offset-2' 
+                  ? 'ring-4 ring-blue-500 ring-offset-2 bg-blue-500 text-white border-blue-600' 
                   : 'hover:shadow-md'
                 }
                 ${isDisabled 
                   ? 'opacity-50 cursor-not-allowed' 
                   : 'cursor-pointer'
                 }
-                px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all duration-200 text-center whitespace-nowrap min-h-[40px] flex items-center justify-center
+                px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all duration-200 text-center whitespace-nowrap min-h-[40px] flex items-center justify-center relative
               `}
               title={emotion}
             >
               {emotion}
+              {isSelected && (
+                <div className="absolute top-1 right-1">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
             </button>
           );
         })}
@@ -157,18 +172,26 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
               className={`
                 ${getEmotionBackgroundColor('attention')}
                 ${isSelected 
-                  ? 'ring-2 ring-blue-500 ring-offset-2' 
+                  ? 'ring-4 ring-blue-500 ring-offset-2 bg-blue-500 text-white border-blue-600' 
                   : 'hover:shadow-md'
                 }
+                relative
                 ${isDisabled 
                   ? 'opacity-50 cursor-not-allowed' 
                   : 'cursor-pointer'
                 }
-                px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all duration-200 text-center whitespace-nowrap min-h-[40px] flex items-center justify-center
+                px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all duration-200 text-center whitespace-nowrap min-h-[40px] flex items-center justify-center relative
               `}
               title={emotion}
             >
               {emotion}
+              {isSelected && (
+                <div className="absolute top-1 right-1">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
             </button>
           );
         })}
@@ -192,9 +215,10 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
               className={`
                 ${getEmotionBackgroundColor('destroying')}
                 ${isSelected 
-                  ? 'ring-2 ring-blue-500 ring-offset-2' 
+                  ? 'ring-4 ring-blue-500 ring-offset-2 bg-blue-500 text-white border-blue-600' 
                   : 'hover:shadow-md'
                 }
+                relative
                 ${isDisabled 
                   ? 'opacity-50 cursor-not-allowed' 
                   : 'cursor-pointer'
@@ -227,9 +251,10 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
               className={`
                 ${getEmotionBackgroundColor('destroying')}
                 ${isSelected 
-                  ? 'ring-2 ring-blue-500 ring-offset-2' 
+                  ? 'ring-4 ring-blue-500 ring-offset-2 bg-blue-500 text-white border-blue-600' 
                   : 'hover:shadow-md'
                 }
+                relative
                 ${isDisabled 
                   ? 'opacity-50 cursor-not-allowed' 
                   : 'cursor-pointer'
@@ -239,6 +264,13 @@ export const DetailedEmotionSelector: React.FC<DetailedEmotionSelectorProps> = (
               title={emotion}
             >
               {emotion}
+              {isSelected && (
+                <div className="absolute top-1 right-1">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
             </button>
           );
         })}
