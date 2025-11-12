@@ -32,7 +32,7 @@ export const useResponseTiming = ({
       startTime: Date.now()
     };
     setIsTracking(true);
-  }, [enabled, questionKey]);
+  }, [enabled]);
 
   const endTiming = useCallback(() => {
     if (!enabled || !timingRef.current) return;
@@ -47,7 +47,7 @@ export const useResponseTiming = ({
     };
 
     setIsTracking(false);
-  }, [enabled, questionKey]);
+  }, [enabled]);
 
   const getTimingData = useCallback(() => {
     return timingRef.current;

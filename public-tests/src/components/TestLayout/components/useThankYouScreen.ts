@@ -70,7 +70,8 @@ export const useThankYouScreen = ({
     researchId, 
     participantId, 
     eyeTrackingConfig?.parameterOptions?.saveDeviceInfo, 
-    eyeTrackingConfig?.parameterOptions?.saveLocationInfo
+    eyeTrackingConfig?.parameterOptions?.saveLocationInfo,
+    saveModuleResponseMutation
   ]);
 
   return {

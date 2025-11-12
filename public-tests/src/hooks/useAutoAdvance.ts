@@ -120,7 +120,9 @@ export const useAutoAdvance = ({
     goToNextStep,
     onAdvance,
     info,
-    error
+    error,
+    currentQuestionKey,
+    warn
   ]);
 
   return {
