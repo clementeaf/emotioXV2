@@ -1637,10 +1637,38 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
     
     try {
-      await navigator.clipboard.writeText(link);
-      toast.success('Enlace copiado al portapapeles');
+      // Intentar usar la API moderna de clipboard (solo funciona en contextos seguros)
+      if (navigator.clipboard && typeof window !== 'undefined' && window.isSecureContext) {
+        await navigator.clipboard.writeText(link);
+        toast.success('Enlace copiado al portapapeles');
+        return;
+      }
+      
+      // Fallback: método tradicional para contextos no seguros o navegadores antiguos
+      const textArea = document.createElement('textarea');
+      textArea.value = link;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.setAttribute('readonly', '');
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(0, link.length);
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          toast.success('Enlace copiado al portapapeles');
+        } else {
+          throw new Error('execCommand failed');
+        }
+      } finally {
+        document.body.removeChild(textArea);
+      }
     } catch (error) {
-      toast.error('Error al copiar enlace');
+      console.error('Error al copiar enlace:', error);
+      toast.error('Error al copiar enlace. Por favor, copia la URL manualmente.');
     }
   }, [formData.researchUrl, generateRecruitmentLink]);
 
