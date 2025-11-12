@@ -8,7 +8,7 @@ export enum LogLevel {
 interface LogEntry {
   level: LogLevel;
   message: string;
-  data?: any;
+  data?: unknown;
   timestamp: string;
   component: string;
 }
@@ -17,7 +17,7 @@ class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development';
   private isProduction = process.env.NODE_ENV === 'production';
 
-  private formatMessage(level: LogLevel, message: string, data?: any, component: string = 'QuestionComponent'): LogEntry {
+  private formatMessage(level: LogLevel, message: string, data?: unknown, component: string = 'QuestionComponent'): LogEntry {
     return {
       level,
       message,
@@ -33,7 +33,7 @@ class Logger {
     return false;
   }
 
-  private log(level: LogLevel, message: string, data?: any, component?: string): void {
+  private log(level: LogLevel, message: string, data?: unknown, component?: string): void {
     if (!this.shouldLog(level)) return;
 
     const entry = this.formatMessage(level, message, data, component);
@@ -54,19 +54,19 @@ class Logger {
     }
   }
 
-  debug(message: string, data?: any, component?: string): void {
+  debug(message: string, data?: unknown, component?: string): void {
     this.log(LogLevel.DEBUG, message, data, component);
   }
 
-  info(message: string, data?: any, component?: string): void {
+  info(message: string, data?: unknown, component?: string): void {
     this.log(LogLevel.INFO, message, data, component);
   }
 
-  warn(message: string, data?: any, component?: string): void {
+  warn(message: string, data?: unknown, component?: string): void {
     this.log(LogLevel.WARN, message, data, component);
   }
 
-  error(message: string, data?: any, component?: string): void {
+  error(message: string, data?: unknown, component?: string): void {
     this.log(LogLevel.ERROR, message, data, component);
   }
 }
@@ -77,9 +77,9 @@ export const logger = new Logger();
 // 🎯 HOOK PERSONALIZADO PARA LOGGING EN COMPONENTES
 export const useLogger = (componentName: string = 'QuestionComponent') => {
   return {
-    debug: (message: string, data?: any) => logger.debug(message, data, componentName),
-    info: (message: string, data?: any) => logger.info(message, data, componentName),
-    warn: (message: string, data?: any) => logger.warn(message, data, componentName),
-    error: (message: string, data?: any) => logger.error(message, data, componentName)
+    debug: (message: string, data?: unknown) => logger.debug(message, data, componentName),
+    info: (message: string, data?: unknown) => logger.info(message, data, componentName),
+    warn: (message: string, data?: unknown) => logger.warn(message, data, componentName),
+    error: (message: string, data?: unknown) => logger.error(message, data, componentName)
   };
 };

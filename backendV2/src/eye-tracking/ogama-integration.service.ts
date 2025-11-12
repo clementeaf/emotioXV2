@@ -9,6 +9,52 @@ import type {
   EyeTrackingAPIResponse
 } from '../../../shared/eye-tracking-types';
 
+interface OgamaAnalysisResult {
+  fixations: Array<{
+    start_time: number;
+    end_time: number;
+    x: number;
+    y: number;
+    duration: number;
+  }>;
+  saccades: Array<{
+    start_time: number;
+    end_time: number;
+    start_x: number;
+    start_y: number;
+    end_x: number;
+    end_y: number;
+    amplitude: number;
+    velocity: number;
+  }>;
+  heatmap: Array<{
+    x: number;
+    y: number;
+    intensity: number;
+  }>;
+  statistics: Record<string, unknown>;
+  device_type: string;
+  ogama_version: string;
+}
+
+interface SaliencyAnalysisResult {
+  saliency_map: Array<{
+    x: number;
+    y: number;
+    intensity: number;
+  }>;
+  dimensions: {
+    width: number;
+    height: number;
+  };
+  algorithm: string;
+  statistics: {
+    max_intensity: number;
+    mean_intensity: number;
+    total_points: number;
+  };
+}
+
 /**
  * Servicio de integración con Ogama
  * Maneja análisis avanzado, saliency maps y compatibilidad multi-dispositivo
@@ -216,7 +262,29 @@ export class OgamaIntegrationService {
   /**
    * Prepara datos para análisis con Ogama
    */
-  private prepareOgamaData(session: EyeTrackingSessionModel, deviceType: string): any {
+  private prepareOgamaData(session: EyeTrackingSessionModel, deviceType: string): {
+    sessionId: string;
+    participantId: string;
+    deviceType: string;
+    gazeData: Array<{
+      timestamp: number;
+      x: number;
+      y: number;
+      leftEye?: unknown;
+      rightEye?: unknown;
+    }>;
+    metadata: {
+      screenWidth: number;
+      screenHeight: number;
+      devicePixelRatio: number;
+      platform: string;
+    };
+    config: {
+      sampleRate: number;
+      smoothing: boolean;
+      smoothingFactor: number;
+    };
+  } {
     return {
       sessionId: session.sessionId,
       participantId: session.participantId,
@@ -245,7 +313,24 @@ export class OgamaIntegrationService {
   /**
    * Prepara datos para análisis de saliency
    */
-  private prepareSaliencyData(session: EyeTrackingSessionModel, stimulusImage?: string): any {
+  private prepareSaliencyData(session: EyeTrackingSessionModel, stimulusImage?: string): {
+    sessionId: string;
+    gazeData: unknown[];
+    stimulusImage?: string;
+    screenDimensions: {
+      width: number;
+      height: number;
+    };
+    analysisSettings: {
+      algorithm: string;
+      parameters: {
+        centerBias: number;
+        colorWeight: number;
+        intensityWeight: number;
+        orientationWeight: number;
+      };
+    };
+  } {
     return {
       sessionId: session.sessionId,
       gazeData: session.gazeData,
@@ -269,7 +354,29 @@ export class OgamaIntegrationService {
   /**
    * Ejecuta análisis con Ogama
    */
-  private async executeOgamaAnalysis(data: any, deviceType: string): Promise<any> {
+  private async executeOgamaAnalysis(data: {
+    sessionId: string;
+    participantId: string;
+    deviceType: string;
+    gazeData: Array<{
+      timestamp: number;
+      x: number;
+      y: number;
+      leftEye?: unknown;
+      rightEye?: unknown;
+    }>;
+    metadata: {
+      screenWidth: number;
+      screenHeight: number;
+      devicePixelRatio: number;
+      platform: string;
+    };
+    config: {
+      sampleRate: number;
+      smoothing: boolean;
+      smoothingFactor: number;
+    };
+  }, deviceType: string): Promise<OgamaAnalysisResult> {
     return new Promise((resolve, reject) => {
       const pythonScript = `
 import sys
@@ -389,7 +496,24 @@ def run_ogama_analysis(data, device_type):
   /**
    * Ejecuta análisis de saliency con Ogama
    */
-  private async executeSaliencyAnalysis(data: any): Promise<any> {
+  private async executeSaliencyAnalysis(data: {
+    sessionId: string;
+    gazeData: unknown[];
+    stimulusImage?: string;
+    screenDimensions: {
+      width: number;
+      height: number;
+    };
+    analysisSettings: {
+      algorithm: string;
+      parameters: {
+        centerBias: number;
+        colorWeight: number;
+        intensityWeight: number;
+        orientationWeight: number;
+      };
+    };
+  }): Promise<SaliencyAnalysisResult> {
     return new Promise((resolve, reject) => {
       const pythonScript = `
 import sys
@@ -482,7 +606,27 @@ def generate_saliency_map(data):
   /**
    * Procesa resultados de Ogama
    */
-  private processOgamaResults(ogamaResult: any, session: EyeTrackingSessionModel): any {
+  private processOgamaResults(ogamaResult: OgamaAnalysisResult, session: EyeTrackingSessionModel): {
+    sessionId: string;
+    participantId: string;
+    analysisId: string;
+    createdAt: string;
+    ogamaVersion: string;
+    deviceType: string;
+    fixations: unknown[];
+    saccades: unknown[];
+    heatMap: unknown[];
+    heatmap: unknown[];
+    statistics: Record<string, unknown>;
+    qualityMetrics: {
+      dataLossRate: number;
+      averageAccuracy: number;
+      trackingStability: number;
+      calibrationQuality: number;
+    };
+    recommendations: string[];
+    [key: string]: unknown;
+  } {
     return {
       sessionId: session.sessionId,
       participantId: session.participantId,
@@ -492,6 +636,7 @@ def generate_saliency_map(data):
       deviceType: ogamaResult.device_type,
       fixations: ogamaResult.fixations || [],
       saccades: ogamaResult.saccades || [],
+      heatMap: ogamaResult.heatmap || [],
       heatmap: ogamaResult.heatmap || [],
       statistics: ogamaResult.statistics || {},
       qualityMetrics: {
@@ -507,8 +652,38 @@ def generate_saliency_map(data):
   /**
    * Realiza análisis comparativo entre dispositivos
    */
-  private performComparativeAnalysis(results: any[]): any {
-    const comparativeAnalysis = {
+  private performComparativeAnalysis(results: Array<{
+    deviceType: string;
+    analysis: {
+      statistics?: {
+        total_fixations?: number;
+        total_saccades?: number;
+        average_fixation_duration?: number;
+        average_saccade_velocity?: number;
+      };
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  }>): {
+    deviceComparison: Record<string, {
+      totalFixations: number;
+      totalSaccades: number;
+      averageFixationDuration: number;
+      averageSaccadeVelocity: number;
+    }>;
+    accuracyComparison: Record<string, unknown>;
+    performanceComparison: Record<string, unknown>;
+  } {
+    const comparativeAnalysis: {
+      deviceComparison: Record<string, {
+        totalFixations: number;
+        totalSaccades: number;
+        averageFixationDuration: number;
+        averageSaccadeVelocity: number;
+      }>;
+      accuracyComparison: Record<string, unknown>;
+      performanceComparison: Record<string, unknown>;
+    } = {
       deviceComparison: {},
       accuracyComparison: {},
       performanceComparison: {}
@@ -518,7 +693,7 @@ def generate_saliency_map(data):
       const deviceType = result.deviceType;
       const analysis = result.analysis;
       
-      (comparativeAnalysis.deviceComparison as any)[deviceType] = {
+      comparativeAnalysis.deviceComparison[deviceType] = {
         totalFixations: analysis.statistics?.total_fixations || 0,
         totalSaccades: analysis.statistics?.total_saccades || 0,
         averageFixationDuration: analysis.statistics?.average_fixation_duration || 0,
@@ -532,14 +707,20 @@ def generate_saliency_map(data):
   /**
    * Genera recomendaciones específicas para Ogama
    */
-  private generateOgamaRecommendations(ogamaResult: any): string[] {
+  private generateOgamaRecommendations(ogamaResult: OgamaAnalysisResult): string[] {
     const recommendations: string[] = [];
     
-    if (ogamaResult.statistics?.total_fixations < 10) {
+    const statistics = ogamaResult.statistics as {
+      total_fixations?: number;
+      average_fixation_duration?: number;
+      [key: string]: unknown;
+    };
+    
+    if (statistics?.total_fixations && statistics.total_fixations < 10) {
       recommendations.push('Ogama: Considera aumentar la duración de la sesión para obtener más fijaciones');
     }
     
-    if (ogamaResult.statistics?.average_fixation_duration < 200) {
+    if (statistics?.average_fixation_duration && statistics.average_fixation_duration < 200) {
       recommendations.push('Ogama: Las fijaciones son muy cortas, verifica la calibración del dispositivo');
     }
 

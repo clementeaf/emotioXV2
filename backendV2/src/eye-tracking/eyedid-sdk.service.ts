@@ -4,7 +4,8 @@ import { ApiError } from '../utils/errors';
 import type { 
   EyeTrackingSessionModel,
   EyeTrackingAnalysisModel,
-  GazePointModel
+  GazePointModel,
+  AttentionMetricsModel
 } from '../models/eye-tracking.model';
 import type { 
   EyeTrackerStatus,
@@ -12,6 +13,41 @@ import type {
   StopEyeTrackingParams,
   EyeTrackingAPIResponse
 } from '../../../shared/eye-tracking-types';
+
+interface Fixation {
+  startTime: number;
+  endTime: number;
+  duration: number;
+  x: number;
+  y: number;
+  confidence: number;
+}
+
+interface Saccade {
+  startTime: number;
+  endTime: number;
+  duration: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  amplitude: number;
+  velocity: number;
+  direction: number;
+}
+
+interface HeatMapPoint {
+  x: number;
+  y: number;
+  intensity: number;
+}
+
+interface QualityMetrics {
+  dataLossRate: number;
+  averageAccuracy: number;
+  trackingStability: number;
+  calibrationQuality: number;
+}
 
 /**
  * Servicio de integración con Eyedid SDK
@@ -423,12 +459,17 @@ export class EyedidSDKService {
   /**
    * Detección avanzada de fijaciones con Eyedid SDK
    */
-  private detectFixationsAdvanced(gazeData: GazePointModel[]): any[] {
-    const fixations: any[] = [];
+  private detectFixationsAdvanced(gazeData: GazePointModel[]): Fixation[] {
+    const fixations: Fixation[] = [];
     const threshold = 100; // ms
     const distanceThreshold = 50; // pixels
 
-    let currentFixation: any = null;
+    let currentFixation: {
+      startTime: number;
+      x: number;
+      y: number;
+      points: GazePointModel[];
+    } | null = null;
     
     for (let i = 0; i < gazeData.length; i++) {
       const point = gazeData[i];
@@ -483,8 +524,8 @@ export class EyedidSDKService {
   /**
    * Detección avanzada de saccades con Eyedid SDK
    */
-  private detectSaccadesAdvanced(gazeData: GazePointModel[]): any[] {
-    const saccades: any[] = [];
+  private detectSaccadesAdvanced(gazeData: GazePointModel[]): Saccade[] {
+    const saccades: Saccade[] = [];
     
     for (let i = 1; i < gazeData.length; i++) {
       const prev = gazeData[i - 1];
@@ -520,10 +561,10 @@ export class EyedidSDKService {
   /**
    * Genera datos de heat map con Eyedid SDK
    */
-  private generateHeatMapData(gazeData: GazePointModel[]): any[] {
+  private generateHeatMapData(gazeData: GazePointModel[]): HeatMapPoint[] {
     // Implementación básica de heat map
     // Eyedid SDK proporciona heat maps nativos
-    const heatMapData: any[] = [];
+    const heatMapData: HeatMapPoint[] = [];
     const gridSize = 50; // Tamaño de celda para heat map
     
     // Agrupar puntos por celdas
@@ -553,7 +594,7 @@ export class EyedidSDKService {
   /**
    * Calcula métricas de atención avanzadas
    */
-  private calculateAdvancedAttentionMetrics(fixations: any[], saccades: any[], heatMapData: any[]): any {
+  private calculateAdvancedAttentionMetrics(fixations: Fixation[], saccades: Saccade[], heatMapData: HeatMapPoint[]): AttentionMetricsModel {
     const totalFixations = fixations.length;
     const averageFixationDuration = fixations.length > 0 
       ? fixations.reduce((sum, f) => sum + f.duration, 0) / fixations.length 
@@ -580,7 +621,7 @@ export class EyedidSDKService {
   /**
    * Calcula métricas de calidad específicas para Eyedid SDK
    */
-  private calculateEyedidQualityMetrics(session: EyeTrackingSessionModel): any {
+  private calculateEyedidQualityMetrics(session: EyeTrackingSessionModel): QualityMetrics {
     const totalPoints = session.gazeData.length;
     const validPoints = session.gazeData.filter(p => 
       (p.leftEye?.validity ?? 0) > 0.5 && (p.rightEye?.validity ?? 0) > 0.5
@@ -602,7 +643,7 @@ export class EyedidSDKService {
   /**
    * Genera recomendaciones específicas para Eyedid SDK
    */
-  private generateEyedidRecommendations(qualityMetrics: any, platform?: string): string[] {
+  private generateEyedidRecommendations(qualityMetrics: QualityMetrics, platform?: string): string[] {
     const recommendations: string[] = [];
     
     if (qualityMetrics.dataLossRate > 0.2) {

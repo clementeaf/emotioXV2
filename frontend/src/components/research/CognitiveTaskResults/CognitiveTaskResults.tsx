@@ -14,6 +14,64 @@ interface CognitiveTaskResultsProps {
   researchId?: string;
 }
 
+interface ResearchConfigQuestion {
+  id: string;
+  type: string;
+  title: string;
+  description?: string;
+  required?: boolean;
+  showConditionally?: boolean;
+  choices?: Array<{
+    id: string;
+    text: string;
+    label?: string;
+    isQualify?: boolean;
+    isDisqualify?: boolean;
+  }>;
+  scaleConfig?: {
+    startValue?: number;
+    endValue?: number;
+  };
+  [key: string]: unknown;
+}
+
+interface ResearchConfig {
+  questions?: ResearchConfigQuestion[];
+  [key: string]: unknown;
+}
+
+
+interface ProcessedDataItem {
+  questionId: string;
+  questionKey: string;
+  sentimentData?: {
+    responses: Array<{ text: string; participantId: string; timestamp: string }>;
+    totalResponses: number;
+  };
+  choiceData?: {
+    choices: Array<{ label: string; count: number; percentage: number }>;
+    totalResponses: number;
+  };
+  linearScaleData?: {
+    values: number[];
+    average: number;
+    totalResponses: number;
+  };
+  rankingData?: {
+    responses: Array<{ participantId: string; ranking: unknown; timestamp: string }>;
+    totalResponses: number;
+  };
+  preferenceTestData?: {
+    preferences: Array<{ option: string; count: number; percentage: number }>;
+    totalResponses: number;
+  };
+  navigationFlowData?: {
+    responses: Array<{ participantId: string; data: unknown; value?: unknown; timestamp: string }>;
+    totalResponses: number;
+  };
+  [key: string]: unknown;
+}
+
 export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ researchId: propResearchId }) => {
   const params = useParams();
   // Normalizar researchId para evitar cambios que causen re-renders
@@ -224,7 +282,10 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       ];
     }
 
-    return (researchConfig as any).questions.map((question: any) => {
+    const config = (researchConfig as unknown) as ResearchConfig | null;
+    if (!config?.questions) return [];
+    
+    return config.questions.map((question: ResearchConfigQuestion) => {
       // Mapear tipos de pregunta cognitiva a tipos de visualización
       const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
         switch (questionType) {
@@ -298,9 +359,10 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
   // Usar datos procesados cuando estén disponibles, o las preguntas de configuración
   let finalQuestions;
 
-  if ((researchConfig as any)?.questions) {
+  const config = (researchConfig as unknown) as ResearchConfig | null;
+  if (config?.questions) {
     // Siempre usar preguntas de configuración cuando estén disponibles
-    finalQuestions = (researchConfig as any).questions.map((question: any) => {
+    finalQuestions = config.questions.map((question: ResearchConfigQuestion) => {
       // Mapear tipos de pregunta cognitiva a tipos de visualización
       // El questionType puede venir con o sin prefijo 'cognitive_' (ej: 'short_text' o 'cognitive_short_text')
       const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
@@ -383,7 +445,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       const normalizedType = questionType.replace(/^cognitive_/, ''); // Remover prefijo si existe
       const expectedQuestionKey = `cognitive_${normalizedType}`;
       
-      const processedDataForQuestion = processedData.find((data: any) => {
+      const processedDataForQuestion = processedData.find((data) => {
         // 1. Comparar por questionId directo
         if (data.questionId === question.id) {
           return true;
@@ -408,7 +470,26 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       });
 
       // Transformar sentimentData al formato que espera MainContent (CognitiveTaskQuestion)
-      let transformedSentimentData: any = undefined;
+      let transformedSentimentData: {
+        id: string;
+        questionNumber: string;
+        questionText: string;
+        questionType: 'short_text' | 'long_text';
+        required: boolean;
+        conditionalityDisabled: boolean;
+        sentimentResults: Array<{
+          id: string;
+          text: string;
+          sentiment: 'neutral';
+          selected: boolean;
+          type: 'comment';
+        }>;
+        sentimentAnalysis: {
+          text: string;
+        };
+        themes: unknown[];
+        keywords: unknown[];
+      } | undefined = undefined;
       if (processedDataForQuestion?.sentimentData) {
         const sentimentDataRaw = processedDataForQuestion.sentimentData as { responses: Array<{ text: string; participantId: string; timestamp: string }>; totalResponses: number };
         
@@ -435,7 +516,18 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       }
 
       // Transformar choiceData al formato que espera ChoiceResults
-      let transformedChoiceData: any = undefined;
+      let transformedChoiceData: {
+        question: string;
+        description?: string;
+        options: Array<{
+          id: string;
+          text: string;
+          count: number;
+          percentage: number;
+        }>;
+        totalResponses: number;
+        responseDuration?: unknown;
+      } | undefined = undefined;
       if (processedDataForQuestion?.choiceData) {
         const choiceDataRaw = processedDataForQuestion.choiceData as { choices: Array<{ label: string; count: number; percentage: number }>; totalResponses: number };
         transformedChoiceData = {
@@ -453,13 +545,20 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       }
 
       // Transformar linearScaleData al formato que espera LinearScaleResults
-      let transformedLinearScaleData: any = undefined;
+      let transformedLinearScaleData: {
+        question: string;
+        description?: string;
+        scaleRange: { startValue: number; endValue: number };
+        values: number[];
+        average: number;
+        totalResponses: number;
+      } | undefined = undefined;
       if (processedDataForQuestion?.linearScaleData) {
         const linearScaleDataRaw = processedDataForQuestion.linearScaleData as { values: number[]; average: number; totalResponses: number };
         transformedLinearScaleData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
           description: question.description,
-          scaleRange: question.scaleConfig || { startValue: 1, endValue: 5 },
+          scaleRange: question.scaleConfig ? { startValue: question.scaleConfig.startValue || 1, endValue: question.scaleConfig.endValue || 5 } : { startValue: 1, endValue: 5 },
           values: linearScaleDataRaw.values,
           average: linearScaleDataRaw.average,
           totalResponses: linearScaleDataRaw.totalResponses
@@ -467,7 +566,18 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       }
 
       // Transformar rankingData al formato que espera RankingResults
-      let transformedRankingData: any = undefined;
+      let transformedRankingData: {
+        question: string;
+        options: Array<{
+          id: string;
+          text: string;
+          mean: number;
+          distribution: { 1: number; 2: number; 3: number; 4: number; 5: number; 6: number };
+          responseTime: string;
+        }>;
+        responses: Array<{ participantId: string; ranking: unknown; timestamp: string }>;
+        totalResponses: number;
+      } | undefined = undefined;
       if (processedDataForQuestion?.rankingData) {
         const rankingDataRaw = processedDataForQuestion.rankingData as { responses: Array<{ participantId: string; ranking: unknown; timestamp: string }>; totalResponses: number };
         
@@ -534,7 +644,20 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       }
 
       // Transformar preferenceTestData al formato que espera PreferenceTestResults
-      let transformedPreferenceTestData: any = undefined;
+      let transformedPreferenceTestData: {
+        question: string;
+        description?: string;
+        options: Array<{
+          id: string;
+          name: string;
+          image?: unknown;
+          selected: number;
+          percentage: number;
+          color?: unknown;
+        }>;
+        totalSelections: number;
+        totalParticipants: number;
+      } | undefined = undefined;
       if (processedDataForQuestion?.preferenceTestData) {
         const preferenceTestDataRaw = processedDataForQuestion.preferenceTestData as { preferences: Array<{ option: string; count: number; percentage: number }>; totalResponses: number };
         
@@ -558,7 +681,37 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       }
 
       // Transformar navigationFlowData al formato que espera NavigationFlowResults
-      let transformedNavigationFlowData: any = undefined;
+      let transformedNavigationFlowData: {
+        question: string;
+        allClicksTracking: Array<{
+          x: number;
+          y: number;
+          timestamp: number;
+          hitzoneId?: string;
+          imageIndex: number;
+          isCorrectHitzone: boolean;
+          participantId?: string;
+        }>;
+        visualClickPoints: Array<{
+          x: number;
+          y: number;
+          timestamp: number;
+          isCorrect: boolean;
+          imageIndex: number;
+          participantId?: string;
+        }>;
+        imageSelections: Record<string, {
+          hitzoneId: string;
+          click: {
+            x: number;
+            y: number;
+            hitzoneWidth: number;
+            hitzoneHeight: number;
+          };
+        }>;
+        totalResponses: number;
+        [key: string]: unknown;
+      } | undefined = undefined;
       if (processedDataForQuestion?.navigationFlowData) {
         const navigationFlowDataRaw = processedDataForQuestion.navigationFlowData as { responses: Array<{ participantId: string; data: unknown; value?: unknown; timestamp: string }>; totalResponses: number };
         
@@ -597,18 +750,49 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           // El data viene de r.value mapeado en useCognitiveTaskResponses.ts
           // En useCognitiveTaskResponses.ts línea 232: data: r.value
           // El backend ahora parsea los campos críticos (imageSelections, clickPosition, etc.)
-          const responseValue = (response.data || response.value) as any;
+          const responseValue = (response.data || response.value) as {
+            imageSelections?: Record<string, {
+              click?: { x: number; y: number };
+            }>;
+            clickPosition?: { x: number; y: number; hitzoneWidth?: number; hitzoneHeight?: number };
+            selectedImageIndex?: number;
+            selectedHitzone?: string;
+            hitzoneId?: string;
+            hitzoneWidth?: number;
+            hitzoneHeight?: number;
+            allClicksTracking?: Array<{
+              x: number;
+              y: number;
+              timestamp: number;
+              isCorrectHitzone?: boolean;
+              imageIndex?: number;
+            }>;
+            visualClickPoints?: Array<{
+              x: number;
+              y: number;
+              timestamp: number;
+              isCorrect?: boolean;
+              imageIndex?: number;
+            }> | Record<string, Array<{
+              x: number;
+              y: number;
+              timestamp: number;
+              isCorrect?: boolean;
+            }>>;
+            [key: string]: unknown;
+          };
           
           // Intentar extraer clicks de diferentes estructuras posibles
           let clicks: Array<{ x: number; y: number; timestamp: number; isCorrect: boolean; imageIndex: number }> = [];
           
           // Caso 1: imageSelections (ya parseado por el backend)
           if (responseValue?.imageSelections && typeof responseValue.imageSelections === 'object') {
-            Object.entries(responseValue.imageSelections).forEach(([imageIndexStr, selection]: [string, any]) => {
-              if (selection?.click) {
+            Object.entries(responseValue.imageSelections).forEach(([imageIndexStr, selection]: [string, unknown]) => {
+              const selectionObj = selection as { click?: { x: number; y: number } };
+              if (selectionObj?.click) {
                 clicks.push({
-                  x: selection.click.x || 0,
-                  y: selection.click.y || 0,
+                  x: selectionObj.click.x || 0,
+                  y: selectionObj.click.y || 0,
                   timestamp: new Date(response.timestamp).getTime() || Date.now(),
                   isCorrect: true,
                   imageIndex: parseInt(imageIndexStr) || 0
@@ -637,7 +821,13 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           
           // Caso 3: allClicksTracking (ya parseado por el backend)
           if (responseValue?.allClicksTracking && Array.isArray(responseValue.allClicksTracking) && clicks.length === 0) {
-            clicks = responseValue.allClicksTracking.map((click: any) => ({
+            clicks = responseValue.allClicksTracking.map((click: {
+              x?: number;
+              y?: number;
+              timestamp?: number;
+              isCorrectHitzone?: boolean;
+              imageIndex?: number;
+            }) => ({
               x: click.x || 0,
               y: click.y || 0,
               timestamp: click.timestamp || new Date(response.timestamp).getTime() || Date.now(),
@@ -648,7 +838,16 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           
           // Caso 4: visualClickPoints es un array plano de objetos con imageIndex
           if (Array.isArray(responseValue?.visualClickPoints) && clicks.length === 0) {
-            clicks = responseValue.visualClickPoints.map((point: any) => ({
+            const visualPoints = Array.isArray(responseValue.visualClickPoints) 
+              ? responseValue.visualClickPoints 
+              : [];
+            clicks = visualPoints.map((point: {
+              x?: number;
+              y?: number;
+              timestamp?: number;
+              isCorrect?: boolean;
+              imageIndex?: number;
+            }) => ({
               x: point.x || 0,
               y: point.y || 0,
               timestamp: point.timestamp || new Date(response.timestamp).getTime() || Date.now(),
@@ -659,15 +858,22 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           
           // Caso 5: visualClickPoints es un objeto con índices de imagen
           else if (responseValue?.visualClickPoints && typeof responseValue.visualClickPoints === 'object' && !Array.isArray(responseValue.visualClickPoints) && clicks.length === 0) {
-            Object.entries(responseValue.visualClickPoints).forEach(([imageIndexStr, imageClicks]: [string, any]) => {
+            Object.entries(responseValue.visualClickPoints).forEach(([imageIndexStr, imageClicks]: [string, unknown]) => {
               if (Array.isArray(imageClicks)) {
-                imageClicks.forEach((point: any) => {
+                const clicksArray = imageClicks as Array<{
+                  x?: number;
+                  y?: number;
+                  timestamp?: number;
+                  isCorrect?: boolean;
+                  imageIndex?: number;
+                }>;
+                clicksArray.forEach((point) => {
                   clicks.push({
                     x: point.x || 0,
                     y: point.y || 0,
                     timestamp: point.timestamp || new Date(response.timestamp).getTime() || Date.now(),
                     isCorrect: point.isCorrect !== false,
-                    imageIndex: parseInt(imageIndexStr) || (point.imageIndex ?? 0)
+                    imageIndex: (point.imageIndex ?? parseInt(imageIndexStr)) || 0
                   });
                 });
               }
@@ -679,7 +885,9 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             const x = click.x || 0;
             const y = click.y || 0;
             const imageIndex = click.imageIndex ?? 0;
-            const hitzoneId = responseValue?.selectedHitzone || responseValue?.hitzoneId || `hitzone-${index}`;
+            const hitzoneId = (typeof responseValue?.selectedHitzone === 'string' ? responseValue.selectedHitzone : undefined) 
+              || (typeof responseValue?.hitzoneId === 'string' ? responseValue.hitzoneId : undefined) 
+              || `hitzone-${index}`;
             const isCorrect = click.isCorrect !== false;
             const timestamp = click.timestamp || new Date(response.timestamp).getTime() || Date.now();
           
@@ -711,28 +919,27 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
               click: {
                 x,
                 y,
-                hitzoneWidth: responseValue?.clickPosition?.hitzoneWidth || responseValue?.hitzoneWidth || 50,
-                hitzoneHeight: responseValue?.clickPosition?.hitzoneHeight || responseValue?.hitzoneHeight || 50
+                hitzoneWidth: (typeof responseValue?.clickPosition === 'object' && responseValue.clickPosition && 'hitzoneWidth' in responseValue.clickPosition ? (responseValue.clickPosition as { hitzoneWidth?: number }).hitzoneWidth : undefined) 
+                  || (typeof responseValue?.hitzoneWidth === 'number' ? responseValue.hitzoneWidth : undefined) 
+                  || 50,
+                hitzoneHeight: (typeof responseValue?.clickPosition === 'object' && responseValue.clickPosition && 'hitzoneHeight' in responseValue.clickPosition ? (responseValue.clickPosition as { hitzoneHeight?: number }).hitzoneHeight : undefined) 
+                  || (typeof responseValue?.hitzoneHeight === 'number' ? responseValue.hitzoneHeight : undefined) 
+                  || 50
               }
             };
           });
         });
         
-        // Incluir hitzones de cada archivo en los files
-        const filesWithHitzones = (question.files || []).map((file: any) => ({
-          ...file,
-          hitZones: file.hitZones || []
-        }));
+        // Incluir hitzones de cada archivo en los files (si files existe y es array)
+        const questionFiles = question.files;
+        const filesArray = Array.isArray(questionFiles) ? questionFiles : [];
 
         transformedNavigationFlowData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
-          totalParticipants: navigationFlowDataRaw.totalResponses,
-          totalSelections: navigationFlowDataRaw.totalResponses,
-          researchId: researchId || '',
+          totalResponses: navigationFlowDataRaw.totalResponses,
           imageSelections,
           visualClickPoints,
-          allClicksTracking,
-          files: filesWithHitzones
+          allClicksTracking
         };
       }
 
@@ -743,7 +950,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         questionText: question.title || question.description || `Pregunta ${question.id}`,
         required: question.required || false,
         conditionalityDisabled: question.showConditionally || false,
-        hasNewData: processedDataForQuestion ? (processedDataForQuestion as any).totalResponses > 0 : false,
+        hasNewData: processedDataForQuestion ? (processedDataForQuestion.totalResponses || 0) > 0 : false,
         viewType: getViewType(question.type),
         sentimentData: transformedSentimentData,
         choiceData: transformedChoiceData,

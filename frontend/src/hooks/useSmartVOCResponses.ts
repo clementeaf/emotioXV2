@@ -28,7 +28,13 @@ interface SmartVOCResults {
     detractors: number;
     npsRatio: number;
   }>;
-  smartVOCResponses: Array<any>;
+  smartVOCResponses: Array<{
+    questionKey: string;
+    response: unknown;
+    participantId: string;
+    participantName: string;
+    timestamp: string;
+  }>;
   vocResponses: Array<{
     text: string;
     participantId: string;
@@ -48,13 +54,24 @@ interface SmartVOCResults {
 
 // Función para procesar datos SmartVOC desde la estructura agrupada por questionKey
 // groupedResponses: Record<string, Array<{participantId, value, responseTime, timestamp, metadata}>>
+interface GroupedResponseItem {
+  questionKey: string;
+  responses: Array<{
+    participantId: string;
+    value: unknown;
+    responseTime?: string;
+    timestamp: string;
+    metadata?: unknown;
+  }>;
+}
+
 const processSmartVOCData = (groupedResponses: Record<string, Array<{
   participantId: string;
   value: unknown;
   responseTime?: string;
   timestamp: string;
   metadata?: unknown;
-}>> | any[]): SmartVOCResults => {
+}>> | GroupedResponseItem[]): SmartVOCResults => {
   // Si es un array (formato antiguo), convertir a Record
   let responsesByQuestionKey: Record<string, Array<{
     participantId: string;
@@ -67,7 +84,7 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
   if (Array.isArray(groupedResponses)) {
     // Formato antiguo: Array<{questionKey, responses}>
     responsesByQuestionKey = {};
-    groupedResponses.forEach((item: any) => {
+    groupedResponses.forEach((item: GroupedResponseItem) => {
       if (item.questionKey && Array.isArray(item.responses)) {
         responsesByQuestionKey[item.questionKey] = item.responses;
       }
@@ -108,19 +125,35 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
   }
 
   // Extraer todas las respuestas SmartVOC
-  const allSmartVOCResponses: any[] = [];
+  const allSmartVOCResponses: Array<{
+    questionKey: string;
+    response: unknown;
+    participantId: string;
+    participantName: string;
+    timestamp: string;
+  }> = [];
   const npsScores: number[] = [];
   const csatScores: number[] = [];
   const cesScores: number[] = [];
   const nevScores: number[] = [];
   const cvScores: number[] = [];
-  const vocResponses: any[] = [];
+  const vocResponses: Array<{
+    text: string;
+    participantId: string;
+    participantName: string;
+    timestamp: string;
+  }> = [];
 
   // Función para parsear valores
-  const parseResponseValue = (response: any): number => {
+  const parseResponseValue = (response: unknown): number => {
     if (typeof response === 'number') return response;
-    if (typeof response === 'object' && response.value !== undefined) {
-      return typeof response.value === 'number' ? response.value : parseFloat(response.value) || 0;
+    if (response !== null && typeof response === 'object' && 'value' in response) {
+      const responseObj = response as { value: unknown };
+      if (typeof responseObj.value === 'number') return responseObj.value;
+      if (typeof responseObj.value === 'string') {
+        const parsed = parseFloat(responseObj.value);
+        return isNaN(parsed) ? 0 : parsed;
+      }
     }
     if (typeof response === 'string') {
       const parsed = parseFloat(response);
@@ -129,12 +162,13 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
     return 0;
   };
 
-  const parseResponseText = (response: any): string => {
+  const parseResponseText = (response: unknown): string => {
     if (typeof response === 'string') return response;
-    if (typeof response === 'object' && response.value !== undefined) {
-      return String(response.value);
+    if (response !== null && typeof response === 'object' && 'value' in response) {
+      const responseObj = response as { value: unknown };
+      return String(responseObj.value);
     }
-    if (typeof response === 'object') {
+    if (response !== null && typeof response === 'object') {
       return JSON.stringify(response);
     }
     return String(response);
@@ -275,7 +309,13 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
   const averageScore = allScores.length > 0 ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 10) / 10 : 0;
 
   // Generar time series data
-  const responsesByDate: { [key: string]: any[] } = {};
+  const responsesByDate: { [key: string]: Array<{
+    questionKey: string;
+    response: unknown;
+    participantId: string;
+    participantName: string;
+    timestamp: string;
+  }> } = {};
   allSmartVOCResponses.forEach(response => {
     const dateKey = new Date(response.timestamp || new Date()).toISOString().split('T')[0];
     if (!responsesByDate[dateKey]) {

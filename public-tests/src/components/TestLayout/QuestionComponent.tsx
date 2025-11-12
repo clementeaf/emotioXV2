@@ -82,12 +82,15 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
         {question.type === 'choice' && (
           <SingleAndMultipleChoiceQuestion
               key={`choice-${currentStepKey}-${question.title.replace(/\s+/g, '-')}`}
-              choices={(question.choices || []).map((choice: any) => ({
-                id: choice.id || choice.value || String(choice.text || choice.label),
-                text: choice.text || choice.label || String(choice.id || choice.value),
-                isQualify: choice.isQualify,
-                isDisqualify: choice.isDisqualify
-              }))}
+              choices={(question.choices || []).map((choice: unknown) => {
+                const choiceObj = choice as { id?: string; value?: string; text?: string; label?: string; isQualify?: boolean; isDisqualify?: boolean };
+                return {
+                  id: choiceObj.id || choiceObj.value || String(choiceObj.text || choiceObj.label || ''),
+                  text: choiceObj.text || choiceObj.label || String(choiceObj.id || choiceObj.value || ''),
+                  isQualify: choiceObj.isQualify,
+                  isDisqualify: choiceObj.isDisqualify
+                };
+              })}
               value={value as string | string[]}
               onChange={handleChange}
               multiple={question.config?.multiple || false}

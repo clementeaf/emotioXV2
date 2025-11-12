@@ -157,15 +157,16 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               const trimmed = String(e).trim();
               return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
             });
-          } else if (response.response && typeof response.response === 'object' && response.response.value) {
+          } else if (response.response && typeof response.response === 'object' && 'value' in response.response) {
             // Caso: {value: "feliz,cuidado,seguro,interesado"}
-            if (typeof response.response.value === 'string') {
-              emotions = response.response.value.split(',').map((e: string) => {
+            const responseObj = response.response as { value: unknown };
+            if (typeof responseObj.value === 'string') {
+              emotions = responseObj.value.split(',').map((e: string) => {
                 const trimmed = e.trim();
                 return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
               });
-            } else if (Array.isArray(response.response.value)) {
-              emotions = response.response.value.map((e: string) => {
+            } else if (Array.isArray(responseObj.value)) {
+              emotions = responseObj.value.map((e: string) => {
                 const trimmed = String(e).trim();
                 return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
               });
