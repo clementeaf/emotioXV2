@@ -41,7 +41,7 @@ TABLE_NAME: ${self:custom.tableName}
 ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, '*'} # Permitir cualquier origen por defecto para dev
 
 # Location Tracking
-LOCATION_TRACKING_TABLE: location-tracking-table
+LOCATION_TRACKING_TABLE: ${self:service}-location-tracking-${self:provider.stage}
 
 # IAT (Implicit Association Test) Tables
 IAT_TEST_CONFIG_TABLE: ${self:service}-iat-test-configs-${self:provider.stage}
