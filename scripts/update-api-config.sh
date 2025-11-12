@@ -107,18 +107,21 @@ echo "🔄 Actualizando archivos de configuración..."
 # Frontend
 if [ -d "frontend" ]; then
   echo "📱 Actualizando frontend..."
+  mkdir -p "frontend/config"
   cp "config/api-endpoints-${ENVIRONMENT}.yml" "frontend/config/api-endpoints.yml"
 fi
 
 # Public-tests
 if [ -d "public-tests" ]; then
   echo "🧪 Actualizando public-tests..."
+  mkdir -p "public-tests/config"
   cp "config/api-endpoints-${ENVIRONMENT}.yml" "public-tests/config/api-endpoints.yml"
 fi
 
 # Backend
 if [ -d "backendV2" ]; then
   echo "🚀 Actualizando backend..."
+  mkdir -p "backendV2/config"
   cp "config/api-endpoints-${ENVIRONMENT}.yml" "backendV2/config/api-endpoints.yml"
 fi
 
