@@ -23,11 +23,11 @@ export const EmotionButton: React.FC<EmotionButtonProps> = ({
   return (
     <button
       onClick={handleClick}
-      className={`px-2 py-3 rounded-lg border-2 text-xs font-medium transition-all cursor-pointer min-h-[56px] flex items-center justify-center text-center relative ${
+      className={`px-2 py-3 rounded-lg border-2 text-xs font-medium transition-all cursor-pointer min-h-[56px] flex items-center justify-center text-center relative w-full ${
         isSelected ? selectedClass : buttonClass
       } ${isSelected ? 'ring-4 ring-blue-300 ring-offset-2' : ''}`}
     >
-      <span className="leading-tight break-words px-1">{emotion}</span>
+      <span className="leading-tight break-words px-1 w-full text-center">{emotion}</span>
       {isSelected && (
         <div className="absolute top-1 right-1">
           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
