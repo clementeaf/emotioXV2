@@ -16,6 +16,7 @@ import { GlobalLoadingOverlay } from '../common/GlobalLoadingOverlay';
 import { ButtonSteps } from './ButtonSteps';
 import { RENDERERS, UnknownStepComponent } from './ComponentRenderers';
 import { getCurrentStepData, getQuestionType } from './utils';
+import { extractMaxSelections } from '../../utils/smartVOCUtils';
 
 
 const TestLayoutRenderer: React.FC = () => {
@@ -272,17 +273,19 @@ const TestLayoutRenderer: React.FC = () => {
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
   const isNavigationFlow = questionType === 'cognitive_navigation_flow';
 
+  // 🎯 Ocultar botón si hay maxSelections detectado en instrucciones
   const shouldHideButton = (() => {
-    if (questionType !== 'smartvoc_nev') return false;
-
-    const instructions = String(contentConfiguration?.instructions || '');
-    const hasMaxSelectionPattern = /hasta\s+(\d+)|máximo\s+(\d+)|máx\s+(\d+)|max\s+(\d+)|selecciona\s+hasta\s+(\d+)|selecciona\s+máximo\s+(\d+)|selecciona\s+(\d+)\s+emociones|(\d+)\s+emociones/i.test(instructions);
-
-    if (hasMaxSelectionPattern) {
-      return true;
+    // Solo aplicar a tipos que usan selección múltiple con auto-avance
+    if (questionType !== 'smartvoc_nev' && questionType !== 'detailed' && questionType !== 'emojis') {
+      return false;
     }
 
-    return false;
+    const instructions = String(contentConfiguration?.instructions || '');
+    const maxSelections = extractMaxSelections(instructions);
+
+    // Si se detecta un número máximo de selecciones, ocultar el botón
+    // porque el auto-avance se encargará de guardar y navegar
+    return maxSelections !== undefined && maxSelections > 1;
   })();
 
   return (

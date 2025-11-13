@@ -31,13 +31,14 @@ export const useAutoAdvance = ({
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
-        warn('Cancelando auto-avance pendiente por cambio de step');
+        // 🎯 Esto es normal cuando la navegación ocurre desde otro lugar (ej: useButtonSteps)
+        // Solo loggear en debug, no como warning
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
         setIsAdvancing(false);
       }
     };
-  }, [currentQuestionKey, warn]);
+  }, [currentQuestionKey]);
 
   const shouldAutoAdvance = useCallback((
     currentSelections: unknown[],
@@ -72,19 +73,26 @@ export const useAutoAdvance = ({
       await saveToBackend();
       info('✅ Datos guardados exitosamente en backend');
       
-      // Esperar un momento para UX y luego navegar
+      // 🎯 useButtonSteps ya navega automáticamente si willNavigate: true
+      // Verificar si ya se navegó antes de programar otro timeout
+      const currentStep = useStepStore.getState().currentQuestionKey;
+      if (currentStep !== currentQuestionKey) {
+        // Ya se navegó desde useButtonSteps, limpiar y salir
+        setIsAdvancing(false);
+        return;
+      }
+      
+      // Si no se navegó automáticamente, esperar un momento para UX y luego navegar
       timeoutRef.current = setTimeout(() => {
         // Verificar que seguimos en el mismo step antes de navegar
-        const currentStep = useStepStore.getState().currentQuestionKey;
-        if (currentStep === currentQuestionKey) {
+        const currentStepAfterDelay = useStepStore.getState().currentQuestionKey;
+        if (currentStepAfterDelay === currentQuestionKey) {
           info('🚀 Ejecutando goToNextStep() tras auto-avance y guardado');
           goToNextStep();
           onAdvance?.();
         } else {
-          warn('Auto-avance cancelado: ya se navegó a otro step', {
-            expectedStep: currentQuestionKey,
-            actualStep: currentStep
-          });
+          // Ya se navegó desde otro lugar, solo limpiar
+          info('Auto-avance: navegación ya ocurrió desde otro lugar');
         }
         setIsAdvancing(false);
         timeoutRef.current = null;

@@ -22,6 +22,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     description: 'Mide facilidad de uso',
     instructions: '',
     showConditionally: false,
+    required: false,
     config: {
       type: 'scale',
       scaleRange: { start: 1, end: 5 }
@@ -33,6 +34,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     description: 'Captura valor percibido',
     instructions: '',
     showConditionally: false,
+    required: false,
     config: {
       type: 'scale',
       scaleRange: { start: 1, end: 7 },
@@ -46,6 +48,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     description: 'Evalúa lealtad y recomendación',
     instructions: '',
     showConditionally: false,
+    required: false,
     config: {
       type: 'scale',
       scaleRange: { start: 0, end: 10 },
@@ -70,6 +73,7 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     description: 'Recolecta comentarios abiertos',
     instructions: '',
     showConditionally: false,
+    required: false,
     config: {
       type: 'text',
       maxLength: 500

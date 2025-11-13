@@ -15,7 +15,7 @@ export const getAvailableForms = async (researchId: string): Promise<AvailableFo
 // 🎯 ALINEADO CON BACKEND: saveModuleResponse retorna ParticipantResponsesDocument
 export const saveModuleResponse = async (data: CreateModuleResponseDto): Promise<ParticipantResponsesDocument> => {
   // 🎯 DEBUG: Log del payload antes de enviar
-  if (data.questionKey.includes('cognitive')) {
+  if (data.questionKey.includes('cognitive') || data.questionKey.includes('smartvoc')) {
     console.log('[saveModuleResponse] Payload a enviar:', JSON.stringify(data, null, 2));
   }
   
@@ -28,11 +28,23 @@ export const saveModuleResponse = async (data: CreateModuleResponseDto): Promise
     // 🎯 Capturar y loggear el error del backend
     if (error instanceof AxiosError && error.response) {
       const errorData = error.response.data;
-      console.error('[saveModuleResponse] Error del backend:', {
+      console.error('[saveModuleResponse] ❌ Error del backend:', {
         status: error.response.status,
+        statusText: error.response.statusText,
         data: errorData,
+        dataStringified: JSON.stringify(errorData, null, 2),
         payload: data
       });
+      
+      // 🎯 Log detallado del error si es un objeto
+      if (errorData && typeof errorData === 'object') {
+        console.error('[saveModuleResponse] Detalles del error:', {
+          error: errorData.error,
+          message: errorData.message,
+          details: errorData.details,
+          issues: errorData.issues
+        });
+      }
     }
     throw error;
   }

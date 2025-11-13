@@ -75,31 +75,54 @@ export const createScaleConfig = (
  * @returns Número máximo de selecciones encontrado, o undefined si no se encuentra
  */
 export const extractMaxSelections = (instructions: string): number | undefined => {
+  if (!instructions || typeof instructions !== 'string') {
+    return undefined;
+  }
+
   const patterns = [
     /selecciona\s+maximo\s+(\d+)\s+emociones/i,
+    /selecciona\s+máximo\s+(\d+)\s+emociones/i,
+    /selecciona\s+hasta\s+(\d+)\s+emociones/i,
+    /selecciona\s+(\d+)\s+emociones/i,
+    /hasta\s+(\d+)\s+emociones/i,
+    /máximo\s+(\d+)\s+emociones/i,
+    /max\s+(\d+)\s+emociones/i,
+    /máx\s+(\d+)\s+emociones/i,
+    /(\d+)\s+emociones/i,
+    /selecciona\s+hasta\s+(\d+)/i,
+    /selecciona\s+máximo\s+(\d+)/i,
+    /selecciona\s+maximo\s+(\d+)/i,
     /hasta\s+(\d+)/i,
     /máximo\s+(\d+)/i,
     /máx\s+(\d+)/i,
-    /max\s+(\d+)/i,
-    /selecciona\s+hasta\s+(\d+)/i,
-    /selecciona\s+máximo\s+(\d+)/i,
-    /selecciona\s+(\d+)\s+emociones/i,
-    /(\d+)\s+emociones/i
+    /max\s+(\d+)/i
   ];
   
   for (const pattern of patterns) {
     const match = instructions.match(pattern);
-    if (match) {
+    if (match && match[1]) {
       const number = parseInt(match[1], 10);
       if (number > 0 && number <= 10) {
+        console.log('[extractMaxSelections] ✅ Número encontrado:', number, 'en instrucciones:', instructions);
+        return number;
+      }
+    }
+  }
+  
+  // 🎯 ÚLTIMO INTENTO: Buscar cualquier número entre 1 y 10 en el texto
+  const allNumbers = instructions.match(/\b(\d+)\b/g);
+  if (allNumbers) {
+    for (const numStr of allNumbers) {
+      const number = parseInt(numStr, 10);
+      if (number > 0 && number <= 10) {
+        console.log('[extractMaxSelections] ✅ Número encontrado (búsqueda general):', number, 'en instrucciones:', instructions);
         return number;
       }
     }
   }
   
   // No se encontró número en las instrucciones
-  // El usuario deberá presionar "Guardar y continuar" manualmente
-  console.warn('[extractMaxSelections] No se identificó número máximo de selecciones en las instrucciones:', instructions);
+  console.warn('[extractMaxSelections] ❌ No se identificó número máximo de selecciones en las instrucciones:', instructions);
   return undefined;
 };
 

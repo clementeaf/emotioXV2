@@ -26,6 +26,17 @@ export const formatResponseData = (data: unknown, questionKey: string, instructi
       }
     }
     
+    // 🎯 CASO ESPECIAL: Para smartvoc_nev, retornar directamente el array (value o selectedValue)
+    // El backend espera un array de strings directamente, no un objeto
+    if (questionKey.includes('smartvoc_nev')) {
+      if (Array.isArray(dataObj.value)) {
+        return (dataObj.value as unknown[]).map(item => String(item));
+      }
+      if (Array.isArray(dataObj.selectedValue)) {
+        return (dataObj.selectedValue as unknown[]).map(item => String(item));
+      }
+    }
+    
     const simpleObject: Record<string, string | number | boolean | string[] | null> = {};
     const entries = Object.entries(dataObj);
     

@@ -597,7 +597,7 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
         };
 
         // 🎯 DEBUG: Log del payload completo antes de enviar
-        if (currentQuestionKey.includes('cognitive')) {
+        if (currentQuestionKey.includes('cognitive') || currentQuestionKey.includes('smartvoc')) {
           console.log('[useButtonSteps] createData completo:', JSON.stringify(createData, null, 2));
         }
 

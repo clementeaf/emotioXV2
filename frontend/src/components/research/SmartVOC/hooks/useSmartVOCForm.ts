@@ -49,6 +49,7 @@ const INITIAL_FORM_DATA: SmartVOCFormData = {
             description: '',
             instructions: '',
             showConditionally: false,
+            required: true,
             config: {
               type: 'stars'
             }
@@ -60,6 +61,7 @@ const INITIAL_FORM_DATA: SmartVOCFormData = {
             description: '',
             instructions: '',
             showConditionally: false,
+            required: false,
             config: {
               type: 'scale',
               scaleRange: { start: 1, end: 5 },
@@ -74,6 +76,7 @@ const INITIAL_FORM_DATA: SmartVOCFormData = {
             description: '',
             instructions: '',
             showConditionally: false,
+            required: false,
             config: {
               type: 'scale',
               scaleRange: { start: 1, end: 5 },
@@ -88,6 +91,7 @@ const INITIAL_FORM_DATA: SmartVOCFormData = {
             description: '',
             instructions: '',
             showConditionally: false,
+            required: true,
             config: {
               type: 'emojis'
             }
@@ -99,6 +103,7 @@ const INITIAL_FORM_DATA: SmartVOCFormData = {
             description: '',
             instructions: '',
             showConditionally: false,
+            required: false,
             config: {
               type: 'scale',
               scaleRange: { start: 0, end: 10 },
@@ -113,6 +118,7 @@ const INITIAL_FORM_DATA: SmartVOCFormData = {
             description: '',
             instructions: '',
             showConditionally: false,
+            required: false,
             config: {
               type: 'text'
             }
@@ -159,10 +165,15 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
     }
 
     if (existingData) {
-      // Asegurar que existingData tenga questions definido
+      // Asegurar que existingData tenga questions definido y que todas tengan required como boolean
+      const normalizedQuestions = (existingData.questions || []).map(question => ({
+        ...question,
+        required: typeof question.required === 'boolean' ? question.required : false
+      }));
+      
       setFormData({
         ...existingData,
-        questions: existingData.questions || []
+        questions: normalizedQuestions
       });
       setHasBeenSaved(true);
     } else if (!hasBeenSaved) {
@@ -228,10 +239,16 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
       // Asegurar que todas las preguntas tengan questionKey antes de enviar
       const questionsWithKeys = ensureSmartVOCQuestionKeys(formData.questions);
       
+      // 🎯 Asegurar que todas las preguntas tengan el campo required como boolean
+      const questionsWithRequired = questionsWithKeys.map(question => ({
+        ...question,
+        required: typeof question.required === 'boolean' ? question.required : false
+      }));
+      
       const dataToSubmit = {
         ...formData,
         researchId: actualResearchId,
-        questions: questionsWithKeys
+        questions: questionsWithRequired
       };
 
       if (existingData && actualResearchId) {
