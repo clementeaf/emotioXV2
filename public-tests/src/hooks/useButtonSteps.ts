@@ -27,7 +27,22 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
   const [showOptimisticSuccess, setShowOptimisticSuccess] = useState(false);
 
   const { getFormData } = useFormDataStore();
-  const getCurrentFormData = useCallback(() => getFormData(currentQuestionKey) || {}, [getFormData, currentQuestionKey]);
+  const getCurrentFormData = useCallback(() => {
+    const data = getFormData(currentQuestionKey) || {};
+    
+    // 🎯 DEBUG: Log para linear_scale
+    if (currentQuestionKey.includes('linear_scale') || currentQuestionKey.includes('cognitive')) {
+      console.log('[useButtonSteps] getCurrentFormData:', {
+        currentQuestionKey,
+        data,
+        dataKeys: Object.keys(data),
+        hasValue: data.value !== undefined,
+        hasSelectedValue: data.selectedValue !== undefined
+      });
+    }
+    
+    return data;
+  }, [getFormData, currentQuestionKey]);
 
   // const { validateDemographics } = useDemographicValidation();
   const { redirectToDisqualification } = useDisqualificationRedirect();
@@ -144,6 +159,14 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       setTimeout(() => {
         const store = useStepStore.getState();
         const currentStep = store.currentQuestionKey;
+        const nextStep = store.getNextStep();
+        
+        console.log('[useButtonSteps] saveMutation onSuccess:', {
+          currentQuestionKey,
+          currentStep,
+          nextStep,
+          willNavigate: currentStep === currentQuestionKey
+        });
     
         if (currentStep === currentQuestionKey) {
           goToNextStep();
@@ -182,9 +205,16 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       setTimeout(() => {
         const store = useStepStore.getState();
         const currentStep = store.currentQuestionKey;
+        const nextStep = store.getNextStep();
+        
+        console.log('[useButtonSteps] updateMutation onSuccess:', {
+          currentQuestionKey,
+          currentStep,
+          nextStep,
+          willNavigate: currentStep === currentQuestionKey
+        });
         
         if (currentStep === currentQuestionKey) {
-          // Navigation logging removido
           goToNextStep();
         }
         setIsNavigating(false);
@@ -213,12 +243,16 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
   const responseHasData = hasValidResponse && (() => {
     const response = existingResponse.response as Record<string, unknown>;
     // Verificar si tiene value o selectedValue con datos
-    const value = response.value || response.selectedValue;
+    const value = response.value !== undefined ? response.value : response.selectedValue;
     if (Array.isArray(value)) {
       return value.length > 0;
     }
     if (typeof value === 'string') {
       return value.trim().length > 0;
+    }
+    // 🎯 Para números, considerar 0 como un valor válido (importante para escalas lineales)
+    if (typeof value === 'number') {
+      return true; // 0 es un valor válido
     }
     return value !== null && value !== undefined;
   })();
@@ -287,6 +321,18 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
 
     const currentFormData = getCurrentFormData();
     
+    // 🎯 DEBUG: Log para linear_scale
+    if (currentQuestionKey.includes('cognitive') && currentFormData) {
+      console.log('[useButtonSteps] currentFormData para linear_scale:', {
+        currentQuestionKey,
+        currentFormData,
+        hasValue: currentFormData.value !== undefined,
+        hasSelectedValue: currentFormData.selectedValue !== undefined,
+        value: currentFormData.value,
+        selectedValue: currentFormData.selectedValue
+      });
+    }
+    
     // 🎯 OBTENER DATOS DEL BACKEND PARA COMPARAR
     const backendResponse = moduleResponses?.responses?.find(
       (response: { questionKey: string }) => response.questionKey === currentQuestionKey
@@ -298,8 +344,27 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
     const backendDataStr = JSON.stringify(backendData);
     const hasLocalChanges = localDataStr !== backendDataStr && localDataStr !== '{}';
     
-    // 🎯 USAR DATOS BACKEND SI NO HAY CAMBIOS LOCALES (evita enviar {})
-    const finalFormData = hasLocalChanges ? (currentFormData || {}) : backendData;
+    // 🎯 USAR DATOS LOCALES SI HAY CAMBIOS O SI HAY DATOS LOCALES
+    // Si hay datos locales (incluso si el valor es 0), usarlos
+    const hasLocalData = currentFormData && Object.keys(currentFormData).length > 0;
+    let finalFormData = hasLocalChanges || hasLocalData ? (currentFormData || {}) : backendData;
+    
+    // 🎯 Si finalFormData está vacío pero hay un valor en currentFormData (incluso 0), usarlo
+    if (Object.keys(finalFormData).length === 0 && hasLocalData) {
+      finalFormData = currentFormData;
+    }
+    
+      // 🎯 DEBUG: Log para linear_scale
+      if (currentQuestionKey.includes('linear_scale') || currentQuestionKey.includes('cognitive')) {
+        console.log('[useButtonSteps] finalFormData antes de formatear:', {
+          currentQuestionKey,
+          finalFormData,
+          hasLocalData,
+          hasLocalChanges,
+          currentFormData,
+          backendData
+        });
+      }
     
     
     if (currentQuestionKey === 'demographics' && finalFormData && Object.keys(finalFormData).length > 0 && eyeTrackingConfig?.demographicQuestions) {
@@ -430,7 +495,36 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
       );
       const instructions = stepConfig?.contentConfiguration?.instructions as string | undefined;
       
+      // 🎯 Asegurar que finalFormData tenga datos antes de formatear
+      // Si está vacío pero hay datos en currentFormData, usarlos
+      if (Object.keys(finalFormData).length === 0 && currentFormData && Object.keys(currentFormData).length > 0) {
+        finalFormData = currentFormData;
+      }
+      
+      // 🎯 Si finalFormData sigue vacío, no continuar (no hay datos para guardar)
+      if (Object.keys(finalFormData).length === 0) {
+        console.warn('[useButtonSteps] No hay datos para guardar en', currentQuestionKey);
+        setIsSaving(false);
+        return;
+      }
+      
       let formattedResponse = formatResponseData(finalFormData, currentQuestionKey, instructions);
+      
+      // 🎯 DEBUG: Log para linear_scale
+      if (currentQuestionKey.includes('linear_scale') || currentQuestionKey.includes('cognitive')) {
+        console.log('[useButtonSteps] formattedResponse:', {
+          currentQuestionKey,
+          formattedResponse,
+          type: typeof formattedResponse
+        });
+      }
+      
+      // 🎯 Si formattedResponse es null, no continuar
+      if (formattedResponse === null) {
+        console.warn('[useButtonSteps] formattedResponse es null para', currentQuestionKey);
+        setIsSaving(false);
+        return;
+      }
 
       const responseSize = JSON.stringify(formattedResponse).length;
       if (responseSize > 5000 && currentQuestionKey !== 'smartvoc_nev') {

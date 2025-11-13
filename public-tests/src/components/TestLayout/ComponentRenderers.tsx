@@ -17,7 +17,7 @@ interface RendererArgs {
   [key: string]: unknown;
 }
 
-const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
+const getRenderers = (): Record<string, (args: RendererArgs) => React.ReactNode> => ({
   ...screenRenderers,
   ...demographicRenderers,
 
@@ -65,7 +65,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
   },
   ...SmartVOCRenderers,
   ...cognitiveRenderers
-};
+});
 
 export const UnknownStepComponent: React.FC<{ data: unknown }> = ({ data }) => (
   <div className='flex flex-col items-center justify-center h-full gap-10'>
@@ -75,5 +75,4 @@ export const UnknownStepComponent: React.FC<{ data: unknown }> = ({ data }) => (
   </div>
 );
 
-
-export { RENDERERS };
+export const RENDERERS = getRenderers();

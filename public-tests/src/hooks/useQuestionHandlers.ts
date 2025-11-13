@@ -100,20 +100,37 @@ export const useQuestionHandlers = ({
       // 🎯 LÓGICA SIMPLE PARA OTROS TIPOS DE PREGUNTA
       // Actualizar estado INMEDIATAMENTE para UX responsiva
       setValue(newValue);
-      debug('Valor simple', { value: newValue });
+      debug('Valor simple', { value: newValue, questionType });
 
       const dataToSave = {
         selectedValue: newValue,
         value: newValue
       };
       
-      // Diferir solo las operaciones del store
-      setTimeout(() => {
+      // 🎯 DEBUG: Log para linear_scale
+      if (questionType === 'linear_scale') {
+        console.log('[useQuestionHandlers] Guardando linear_scale:', {
+          newValue,
+          dataToSave,
+          questionType,
+          onSave: typeof onSave
+        });
+      }
+      
+      // 🎯 Guardar inmediatamente (saveToStore ahora es síncrono)
+      try {
         onSave(dataToSave);
         
-        // Resetear flag después de procesar
-        isProcessingRef.current = false;
-      }, 0);
+        // 🎯 DEBUG: Verificar que se guardó
+        if (questionType === 'linear_scale') {
+          console.log('[useQuestionHandlers] onSave llamado para linear_scale');
+        }
+      } catch (error) {
+        console.error('[useQuestionHandlers] Error al guardar:', error);
+      }
+      
+      // Resetear flag después de procesar
+      isProcessingRef.current = false;
     }
   }, [
     isAdvancing,

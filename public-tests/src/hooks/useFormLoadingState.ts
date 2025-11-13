@@ -109,28 +109,63 @@ export const useFormLoadingState = ({
   // explícitamente a través de saveToStore() y handleInputChange()
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
+    // 🎯 DEBUG: Log para linear_scale
+    if (questionKey.includes('linear_scale') || questionKey.includes('cognitive')) {
+      console.log('[useFormLoadingState] saveToStore llamado:', {
+        questionKey,
+        data,
+        dataKeys: Object.keys(data)
+      });
+    }
+    
     // 💾 Actualizar estado local inmediatamente
     setFormValues(prevValues => {
       const newLocalValues = {
         ...prevValues,
         ...data
       };
+      
+      // 🎯 DEBUG: Log para linear_scale
+      if (questionKey.includes('linear_scale') || questionKey.includes('cognitive')) {
+        console.log('[useFormLoadingState] formValues actualizado:', {
+          questionKey,
+          newLocalValues
+        });
+      }
+      
       return newLocalValues;
     });
     
-    // 💾 Diferir actualización del FormDataStore global para evitar setState durante render
-    setTimeout(() => {
-      const { setFormData } = useFormDataStore.getState();
-      const { getFormData } = useFormDataStore.getState();
-      const currentFormData = getFormData(questionKey) || {};
-      
-      const newGlobalData = {
-        ...currentFormData,
-        ...data
-      };
-      
-      setFormData(questionKey, newGlobalData);
-    }, 0);
+    // 💾 Actualizar FormDataStore global de forma síncrona
+    // Ya que saveToStore se llama desde setTimeout en useQuestionHandlers,
+    // no estamos en el render, así que es seguro actualizar síncronamente
+    const { setFormData, getFormData } = useFormDataStore.getState();
+    const currentFormData = getFormData(questionKey) || {};
+    
+    const newGlobalData = {
+      ...currentFormData,
+      ...data
+    };
+    
+    // 🎯 DEBUG: Log para linear_scale
+    if (questionKey.includes('linear_scale') || questionKey.includes('cognitive')) {
+      console.log('[useFormLoadingState] FormDataStore actualizado:', {
+        questionKey,
+        currentFormData,
+        newGlobalData
+      });
+    }
+    
+    setFormData(questionKey, newGlobalData);
+    
+    // 🎯 DEBUG: Verificar que se guardó correctamente
+    if (questionKey.includes('linear_scale') || questionKey.includes('cognitive')) {
+      const verifyData = getFormData(questionKey);
+      console.log('[useFormLoadingState] Verificación después de guardar:', {
+        questionKey,
+        verifyData
+      });
+    }
   }, [questionKey]);
 
   return {

@@ -66,6 +66,9 @@ export const useQuestionInitialization = ({
       return '';
     } else if (questionType === 'choice' && config?.multiple) {
       return [];
+    } else if (questionType === 'linear_scale') {
+      // 🎯 Para escalas lineales, usar el valor mínimo como inicial (puede ser 0)
+      return config?.min !== undefined ? config.min : 0;
     } else {
       return null;
     }
