@@ -89,8 +89,10 @@ export const useFormLoadingState = ({
     }
 
     // 🎯 SOLO BACKEND - NO STORE LOCAL
-    // Si no hay datos en el backend, no cargar nada
-
+    // Si no hay datos en el backend para esta pregunta, resetear formValues
+    // Esto evita que se muestren datos de la pregunta anterior
+    setFormValues({});
+    setHasLoadedData(false);
     setIsLoading(false);
   }, [moduleResponses, isLoadingResponses, questionKey, stableOnDataLoaded, isPageReload, hasHandledReload]);
 

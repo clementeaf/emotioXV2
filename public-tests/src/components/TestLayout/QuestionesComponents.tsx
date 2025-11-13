@@ -14,32 +14,20 @@ export function ScaleRangeQuestion({
 }: ScaleRangeQuestionProps) {
   const range = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   
-  // 🎯 Limpiar labels que contengan prefijos numéricos con guion (ej: "1-", "5-")
-  // Si el label comienza con un número seguido de guion, extraer solo la parte del texto
   const cleanLabel = (label: string | undefined, fallback: string): string => {
     if (!label) return fallback;
-    // Remover patrones como "1-", "5-", "0 -", etc. al inicio del string
+
     const cleaned = label.replace(/^\d+\s*-\s*/, '').trim();
     return cleaned || fallback;
   };
   
   const displayStartLabel = cleanLabel(startLabel, leftLabel);
   const displayEndLabel = cleanLabel(endLabel, rightLabel);
-
-  // 🎯 Detectar si es NPS (escala 0-10 o 0-6)
   const isNPS = min === 0 && (max === 10 || max === 6);
-  
-  // 🎯 Determinar si usar layout responsive (más de 5 opciones)
   const totalOptions = range.length;
   const useResponsiveLayout = totalOptions > 5 && !isNPS;
-  
-  // 🎯 Determinar si mostrar labels debajo de números extremos (para CES y similares)
   const showLabelsBelowExtremes = (startLabel || endLabel) && !useResponsiveLayout && !isNPS;
-  
-  // Calcular tamaño de botones para escalas grandes
   const buttonSize = useResponsiveLayout ? 'w-9 h-9 text-base' : 'w-10 h-10 text-lg';
-  
-  // 🎯 Layout especial para NPS: opciones distribuidas con espacio entre extremos
   const containerClass = isNPS
     ? 'flex flex-row items-center justify-between w-full max-w-4xl gap-1'
     : useResponsiveLayout

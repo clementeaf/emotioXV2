@@ -74,6 +74,7 @@ export const useStepStore = create<StepStore>()(
         // 🎯 ENCONTRAR STEP ACTIVO basado en respuestas
         const state = get();
         const stepOrder = state.steps.map(s => s.questionKey);
+        const currentKey = state.currentQuestionKey;
         let stepToActivate = '';
 
         // Si hay respuestas guardadas, ir a la última pregunta respondida
@@ -102,11 +103,30 @@ export const useStepStore = create<StepStore>()(
           stepToActivate = stepOrder[0] || '';
         }
 
-        // 🎯 ACTUALIZAR currentQuestionKey cuando se cargan las respuestas del backend
-        // Esto asegura que al recargar la app, vaya a la última pregunta respondida
+        // 🎯 SOLO ACTUALIZAR currentQuestionKey si:
+        // 1. No hay un currentQuestionKey establecido, O
+        // 2. El currentQuestionKey actual no es válido (no está en los steps), O
+        // 3. El currentQuestionKey actual es la última pregunta respondida (para mantener consistencia al recargar)
+        // 4. El currentQuestionKey está ANTES de la última pregunta respondida (para corregir al recargar)
+        // 5. PERO NO si el usuario ya navegó a un step DESPUÉS de la última pregunta respondida (para no cancelar la navegación)
+        const currentKeyIndex = stepOrder.findIndex(step => step === currentKey);
+        const stepToActivateIndex = stepOrder.findIndex(step => step === stepToActivate);
+        
+        // Solo actualizar si:
+        // - No hay currentKey establecido
+        // - El currentKey no es válido (no está en los steps)
+        // - El currentKey es igual al stepToActivate (estamos en la última pregunta respondida)
+        // - El currentKey está ANTES del stepToActivate (para corregir posición al recargar)
+        // NO actualizar si el usuario ya navegó adelante (currentKeyIndex > stepToActivateIndex)
+        const shouldUpdateCurrentStep = 
+          !currentKey || 
+          currentKeyIndex === -1 || 
+          (currentKey === stepToActivate) ||
+          (currentKeyIndex >= 0 && stepToActivateIndex >= 0 && currentKeyIndex < stepToActivateIndex);
+
         set({
           backendResponses: validResponses,
-          currentQuestionKey: stepToActivate
+          ...(shouldUpdateCurrentStep && { currentQuestionKey: stepToActivate })
         });
       },
 
