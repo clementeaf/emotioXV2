@@ -13,8 +13,21 @@ export const formatResponseData = (data: unknown, questionKey: string, instructi
   }
   
   if (typeof data === 'object') {
+    const dataObj = data as Record<string, unknown>;
+    
+    // 🎯 CASO ESPECIAL: Para cognitive_multiple_choice, si hay value o selectedValue como array,
+    // retornar directamente el array en lugar de un objeto
+    if (questionKey.includes('cognitive_multiple_choice') || questionKey.includes('multiple_choice')) {
+      if (Array.isArray(dataObj.value)) {
+        return (dataObj.value as unknown[]).slice(0, 10).map(item => String(item));
+      }
+      if (Array.isArray(dataObj.selectedValue)) {
+        return (dataObj.selectedValue as unknown[]).slice(0, 10).map(item => String(item));
+      }
+    }
+    
     const simpleObject: Record<string, string | number | boolean | string[] | null> = {};
-    const entries = Object.entries(data as Record<string, unknown>);
+    const entries = Object.entries(dataObj);
     
     for (const [key, value] of entries.slice(0, 5)) {
       if (value === null || value === undefined) {

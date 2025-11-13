@@ -15,11 +15,11 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // 🎯 Permitir que 404 en /module-responses pase sin modificar para manejo específico
-    const isModuleResponses404 = error.config?.url?.includes('/module-responses') && 
-                                  error.response?.status === 404;
+    // 🎯 Permitir que 404 y 400 en /module-responses pasen sin modificar para manejo específico
+    const isModuleResponsesError = error.config?.url?.includes('/module-responses') && 
+                                   (error.response?.status === 404 || error.response?.status === 400);
     
-    if (isModuleResponses404) {
+    if (isModuleResponsesError) {
       // Re-lanzar el error original de Axios para que pueda ser manejado específicamente
       return Promise.reject(error);
     }
@@ -38,7 +38,12 @@ axiosInstance.interceptors.response.use(
     }
 
     if (error.response?.status && error.response.status >= 400 && error.response.status < 500) {
-      throw new Error('Error en la solicitud');
+      // 🎯 Preservar el mensaje de error del backend si está disponible
+      const errorData = error.response.data as { error?: string; message?: string } | undefined;
+      const errorMessage = errorData?.error || errorData?.message || 'Error en la solicitud';
+      const errorObj = new Error(errorMessage);
+      (errorObj as unknown as { response?: unknown }).response = error.response;
+      throw errorObj;
     }
 
     throw new Error('Error de conexión');

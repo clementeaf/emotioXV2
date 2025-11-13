@@ -57,7 +57,6 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
             response: { visited: true },
             timestamp,
             createdAt: timestamp,
-            updatedAt: undefined,
             ...(deviceInfo && { deviceInfo }),
             ...(location && { location })
           }],

@@ -226,8 +226,7 @@ export const useAutoSave = ({ currentQuestionKey, formValues }: UseAutoSaveProps
             questionKey: currentQuestionKey,
             response: formattedResponse,
             timestamp,
-            createdAt: now,
-            updatedAt: undefined
+            createdAt: now
           }],
           metadata: safeMetadata
         };

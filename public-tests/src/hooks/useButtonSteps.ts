@@ -591,11 +591,15 @@ export const useButtonSteps = ({ currentQuestionKey, isWelcomeScreen = false }: 
             questionKey: currentQuestionKey,
             response: formattedResponse,
             timestamp,
-            createdAt: now,
-            updatedAt: undefined
+            createdAt: now
           }],
           metadata: safeMetadata
         };
+
+        // 🎯 DEBUG: Log del payload completo antes de enviar
+        if (currentQuestionKey.includes('cognitive')) {
+          console.log('[useButtonSteps] createData completo:', JSON.stringify(createData, null, 2));
+        }
 
         await saveMutation.mutateAsync(createData);
       }

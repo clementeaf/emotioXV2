@@ -14,10 +14,28 @@ export const getAvailableForms = async (researchId: string): Promise<AvailableFo
 
 // 🎯 ALINEADO CON BACKEND: saveModuleResponse retorna ParticipantResponsesDocument
 export const saveModuleResponse = async (data: CreateModuleResponseDto): Promise<ParticipantResponsesDocument> => {
-  return apiRequest<ParticipantResponsesDocument>('/module-responses', {
-    method: 'POST',
-    data
-  });
+  // 🎯 DEBUG: Log del payload antes de enviar
+  if (data.questionKey.includes('cognitive')) {
+    console.log('[saveModuleResponse] Payload a enviar:', JSON.stringify(data, null, 2));
+  }
+  
+  try {
+    return await apiRequest<ParticipantResponsesDocument>('/module-responses', {
+      method: 'POST',
+      data
+    });
+  } catch (error) {
+    // 🎯 Capturar y loggear el error del backend
+    if (error instanceof AxiosError && error.response) {
+      const errorData = error.response.data;
+      console.error('[saveModuleResponse] Error del backend:', {
+        status: error.response.status,
+        data: errorData,
+        payload: data
+      });
+    }
+    throw error;
+  }
 };
 
 // 🎯 ALINEADO CON BACKEND: updateModuleResponse retorna ParticipantResponsesDocument
