@@ -445,29 +445,54 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       const normalizedType = questionType.replace(/^cognitive_/, ''); // Remover prefijo si existe
       const expectedQuestionKey = `cognitive_${normalizedType}`;
       
+      // 🎯 DEBUG: Log para diagnosticar matching de datos
+      if (processedData && processedData.length > 0) {
+        console.log(`[CognitiveTaskResults] Buscando datos para pregunta:`, {
+          questionId: question.id,
+          questionType: question.type,
+          normalizedType,
+          expectedQuestionKey,
+          availableDataKeys: processedData.map(d => ({ questionId: d.questionId, questionKey: d.questionKey }))
+        });
+      }
+      
       const processedDataForQuestion = processedData.find((data) => {
         // 1. Comparar por questionId directo
         if (data.questionId === question.id) {
+          console.log(`[CognitiveTaskResults] ✅ Match por questionId: ${data.questionId} === ${question.id}`);
           return true;
         }
         
         // 2. Comparar questionKey del endpoint con el esperado desde question.type
         if (data.questionKey === expectedQuestionKey) {
+          console.log(`[CognitiveTaskResults] ✅ Match por questionKey: ${data.questionKey} === ${expectedQuestionKey}`);
           return true;
         }
         
         // 3. Comparar questionKey con question.id (por si el questionKey es el mismo que el id)
         if (data.questionKey === question.id) {
+          console.log(`[CognitiveTaskResults] ✅ Match por questionKey === question.id: ${data.questionKey}`);
           return true;
         }
         
         // 4. Comparar si el questionKey contiene el tipo de pregunta (más flexible)
         if (data.questionKey && normalizedType && data.questionKey.toLowerCase().includes(normalizedType.toLowerCase())) {
+          console.log(`[CognitiveTaskResults] ✅ Match por contains: ${data.questionKey} contiene ${normalizedType}`);
           return true;
         }
         
         return false;
       });
+      
+      // 🎯 DEBUG: Log si no se encontraron datos
+      if (!processedDataForQuestion && processedData && processedData.length > 0) {
+        console.warn(`[CognitiveTaskResults] ⚠️ No se encontraron datos procesados para pregunta:`, {
+          questionId: question.id,
+          questionType: question.type,
+          expectedQuestionKey,
+          totalProcessedData: processedData.length
+        });
+      }
 
       // Transformar sentimentData al formato que espera MainContent (CognitiveTaskQuestion)
       let transformedSentimentData: {
@@ -519,6 +544,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       let transformedChoiceData: {
         question: string;
         description?: string;
+        instructions?: string;
         options: Array<{
           id: string;
           text: string;
@@ -529,16 +555,64 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         responseDuration?: unknown;
       } | undefined = undefined;
       if (processedDataForQuestion?.choiceData) {
-        const choiceDataRaw = processedDataForQuestion.choiceData as { choices: Array<{ label: string; count: number; percentage: number }>; totalResponses: number };
+        const choiceDataRaw = processedDataForQuestion.choiceData as { choices: Array<{ id?: string; label: string; count: number; percentage: number }>; totalResponses: number };
+        
+        // 🎯 Asegurar que todas las opciones de la configuración estén incluidas
+        // Si hay opciones en la configuración que no están en choiceDataRaw, agregarlas con 0%
+        const configChoices = question.choices || [];
+        const processedChoicesMap = new Map(
+          choiceDataRaw.choices.map(c => [c.id || c.label, c])
+        );
+        
+        // Agregar opciones de configuración que no están en los datos procesados
+        configChoices.forEach((configChoice: { id?: string; text?: string; label?: string }) => {
+          const choiceId = configChoice.id || '';
+          const choiceText = configChoice.text || configChoice.label || '';
+          const key = choiceId || choiceText;
+          
+          if (key && !processedChoicesMap.has(key)) {
+            processedChoicesMap.set(key, {
+              id: choiceId,
+              label: choiceText,
+              count: 0,
+              percentage: 0
+            });
+          }
+        });
+        
+        // Ordenar opciones según el orden de la configuración
+        const orderedChoices = configChoices.length > 0
+          ? configChoices.map((configChoice: { id?: string; text?: string; label?: string }, index: number) => {
+              const choiceId = configChoice.id || '';
+              const choiceText = configChoice.text || configChoice.label || '';
+              const key = choiceId || choiceText;
+              
+              const processedChoice = processedChoicesMap.get(key) || {
+                id: choiceId,
+                label: choiceText,
+                count: 0,
+                percentage: 0
+              };
+              
+              return {
+                id: processedChoice.id || `${question.id}-choice-${index}`,
+                text: processedChoice.label,
+                count: processedChoice.count,
+                percentage: processedChoice.percentage
+              };
+            })
+          : Array.from(processedChoicesMap.values()).map((choice, index) => ({
+              id: choice.id || `${question.id}-choice-${index}`,
+              text: choice.label,
+              count: choice.count,
+              percentage: choice.percentage
+            }));
+        
         transformedChoiceData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
           description: question.description,
-          options: choiceDataRaw.choices.map((choice, index) => ({
-            id: `${question.id}-choice-${index}`,
-            text: choice.label,
-            count: choice.count,
-            percentage: choice.percentage
-          })),
+          instructions: (question as any).instructions || (question as any).instruction || undefined,
+          options: orderedChoices,
           totalResponses: choiceDataRaw.totalResponses,
           responseDuration: undefined
         };
@@ -548,18 +622,34 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       let transformedLinearScaleData: {
         question: string;
         description?: string;
-        scaleRange: { startValue: number; endValue: number };
-        values: number[];
+        scaleRange: { start: number; end: number };
+        values?: number[];
+        responses?: Array<{ value: number; count: number }>;
+        distribution?: Record<number, number>;
         average: number;
         totalResponses: number;
       } | undefined = undefined;
       if (processedDataForQuestion?.linearScaleData) {
-        const linearScaleDataRaw = processedDataForQuestion.linearScaleData as { values: number[]; average: number; totalResponses: number };
+        const linearScaleDataRaw = processedDataForQuestion.linearScaleData as { 
+          values?: number[]; 
+          responses?: Array<{ value: number; count: number }>;
+          distribution?: Record<number, number>;
+          scaleRange?: { start: number; end: number };
+          average: number; 
+          totalResponses: number 
+        };
+        
+        // Usar scaleRange de los datos procesados o de la configuración
+        const scaleRange = linearScaleDataRaw.scaleRange || 
+          (question.scaleConfig ? { start: question.scaleConfig.startValue || 1, end: question.scaleConfig.endValue || 5 } : { start: 1, end: 5 });
+        
         transformedLinearScaleData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
           description: question.description,
-          scaleRange: question.scaleConfig ? { startValue: question.scaleConfig.startValue || 1, endValue: question.scaleConfig.endValue || 5 } : { startValue: 1, endValue: 5 },
+          scaleRange,
           values: linearScaleDataRaw.values,
+          responses: linearScaleDataRaw.responses,
+          distribution: linearScaleDataRaw.distribution,
           average: linearScaleDataRaw.average,
           totalResponses: linearScaleDataRaw.totalResponses
         };
@@ -587,9 +677,29 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         
         rankingDataRaw.responses.forEach(response => {
           const ranking = response.ranking;
-          if (Array.isArray(ranking)) {
+          
+          // 🎯 Caso 1: Array de strings (orden de preferencia: ["Opción A", "Opción B", "Opción C"])
+          if (Array.isArray(ranking) && ranking.length > 0 && typeof ranking[0] === 'string') {
+            ranking.forEach((optionText, position) => {
+              // Buscar la opción en question.choices por texto
+              const choice = question.choices?.find((c: { text: string; id?: string }) => 
+                c.text === optionText || c.id === optionText
+              );
+              
+              const optionId = choice?.id || `option-${position + 1}`;
+              const text = choice?.text || optionText;
+              const rank = position + 1; // Posición en el ranking (1-based)
+              
+              if (!rankingMap[optionId]) {
+                rankingMap[optionId] = { ranks: [], text };
+              }
+              rankingMap[optionId].ranks.push(rank);
+            });
+          }
+          // 🎯 Caso 2: Array de números (orden de preferencia: [1, 2, 3])
+          else if (Array.isArray(ranking) && ranking.length > 0 && typeof ranking[0] === 'number') {
             ranking.forEach((rank, index) => {
-              const optionId = `option-${index + 1}`;
+              const optionId = question.choices?.[index]?.id || `option-${index + 1}`;
               const optionText = question.choices?.[index]?.text || `Opción ${index + 1}`;
               
               if (!rankingMap[optionId]) {
@@ -597,7 +707,9 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
               }
               rankingMap[optionId].ranks.push(rank);
             });
-          } else if (typeof ranking === 'object' && ranking !== null) {
+          }
+          // 🎯 Caso 3: Objeto con índices ({"option-1": 1, "option-2": 2})
+          else if (typeof ranking === 'object' && ranking !== null && !Array.isArray(ranking)) {
             Object.entries(ranking as Record<string, number>).forEach(([key, rank]) => {
               const optionId = key;
               const optionText = question.choices?.find((c: { id: string; text: string }) => c.id === key)?.text || key;
@@ -712,9 +824,27 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         totalResponses: number;
         [key: string]: unknown;
       } | undefined = undefined;
+      
+      // 🎯 DEBUG: Log de processedDataForQuestion
+      console.log('[CognitiveTaskResults] processedDataForQuestion para NavigationFlow:', {
+        hasProcessedData: !!processedDataForQuestion,
+        hasNavigationFlowData: !!processedDataForQuestion?.navigationFlowData,
+        navigationFlowDataType: typeof processedDataForQuestion?.navigationFlowData,
+        navigationFlowData: processedDataForQuestion?.navigationFlowData,
+        processedDataKeys: processedDataForQuestion ? Object.keys(processedDataForQuestion) : []
+      });
+      
       if (processedDataForQuestion?.navigationFlowData) {
         const navigationFlowDataRaw = processedDataForQuestion.navigationFlowData as { responses: Array<{ participantId: string; data: unknown; value?: unknown; timestamp: string }>; totalResponses: number };
         
+        // 🎯 DEBUG: Log de navigationFlowDataRaw
+        console.log('[CognitiveTaskResults] navigationFlowDataRaw:', {
+          hasNavigationFlowData: !!processedDataForQuestion.navigationFlowData,
+          totalResponses: navigationFlowDataRaw?.totalResponses,
+          responsesCount: navigationFlowDataRaw?.responses?.length || 0,
+          responses: navigationFlowDataRaw?.responses,
+          navigationFlowDataRawKeys: navigationFlowDataRaw ? Object.keys(navigationFlowDataRaw) : []
+        });
         
         // Procesar responses para construir allClicksTracking y visualClickPoints
         const allClicksTracking: Array<{
@@ -746,11 +876,32 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           };
         }> = {};
         
-        navigationFlowDataRaw.responses.forEach((response, index) => {
+        // 🎯 DEBUG: Verificar que responses existe y tiene elementos
+        if (!navigationFlowDataRaw.responses || navigationFlowDataRaw.responses.length === 0) {
+          console.warn('[CognitiveTaskResults] ⚠️ navigationFlowDataRaw.responses está vacío o no existe:', {
+            hasResponses: !!navigationFlowDataRaw.responses,
+            responsesLength: navigationFlowDataRaw.responses?.length,
+            navigationFlowDataRaw
+          });
+        }
+        
+        navigationFlowDataRaw.responses?.forEach((response, index) => {
           // El data viene de r.value mapeado en useCognitiveTaskResponses.ts
           // En useCognitiveTaskResponses.ts línea 232: data: r.value
           // El backend ahora parsea los campos críticos (imageSelections, clickPosition, etc.)
-          const responseValue = (response.data || response.value) as {
+          const rawValue = response.data || response.value;
+          
+          // 🎯 DEBUG: Log del valor crudo antes de cualquier procesamiento
+          console.log('[CognitiveTaskResults] 🔍 Valor crudo de la respuesta:', {
+            index,
+            participantId: response.participantId,
+            rawValueType: typeof rawValue,
+            rawValue,
+            hasData: !!response.data,
+            hasValue: !!response.value
+          });
+          
+          const responseValue = rawValue as {
             imageSelections?: Record<string, {
               click?: { x: number; y: number };
             }>;
@@ -782,58 +933,264 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             [key: string]: unknown;
           };
           
+          // 🎯 DEBUG: Log de respuesta recibida
+          console.log('[CognitiveTaskResults] Procesando respuesta NavigationFlow:', {
+            index,
+            participantId: response.participantId,
+            hasData: !!response.data,
+            hasValue: !!response.value,
+            responseValueKeys: responseValue ? Object.keys(responseValue) : [],
+            hasImageSelections: !!responseValue?.imageSelections,
+            imageSelectionsType: typeof responseValue?.imageSelections,
+            imageSelectionsValue: responseValue?.imageSelections,
+            hasClickPosition: !!responseValue?.clickPosition,
+            clickPositionType: typeof responseValue?.clickPosition,
+            clickPositionValue: responseValue?.clickPosition
+          });
+          
           // Intentar extraer clicks de diferentes estructuras posibles
           let clicks: Array<{ x: number; y: number; timestamp: number; isCorrect: boolean; imageIndex: number }> = [];
           
-          // Caso 1: imageSelections (ya parseado por el backend)
-          if (responseValue?.imageSelections && typeof responseValue.imageSelections === 'object') {
-            Object.entries(responseValue.imageSelections).forEach(([imageIndexStr, selection]: [string, unknown]) => {
-              const selectionObj = selection as { click?: { x: number; y: number } };
-              if (selectionObj?.click) {
-                clicks.push({
-                  x: selectionObj.click.x || 0,
-                  y: selectionObj.click.y || 0,
-                  timestamp: new Date(response.timestamp).getTime() || Date.now(),
-                  isCorrect: true,
-                  imageIndex: parseInt(imageIndexStr) || 0
-                });
+          // Caso 1: imageSelections (puede venir como objeto o como string JSON)
+          if (responseValue?.imageSelections) {
+            let imageSelectionsObj: Record<string, unknown> = {};
+            
+            // Si es un objeto, usarlo directamente
+            if (typeof responseValue.imageSelections === 'object' && !Array.isArray(responseValue.imageSelections) && responseValue.imageSelections !== null) {
+              imageSelectionsObj = responseValue.imageSelections as Record<string, unknown>;
+              console.log('[CognitiveTaskResults] ✅ imageSelections es objeto, usando directamente');
+            }
+            // Si es un string, intentar parsearlo como JSON
+            else if (typeof responseValue.imageSelections === 'string') {
+              try {
+                const jsonString: string = responseValue.imageSelections;
+                console.log('[CognitiveTaskResults] 🔄 Parseando imageSelections como JSON, longitud:', jsonString.length);
+                
+                // Intentar parsear el JSON completo
+                let parsed: unknown;
+                try {
+                  parsed = JSON.parse(jsonString);
+                } catch (parseError) {
+                  // Si falla, el string puede estar truncado. Intentar extraer objetos individuales
+                  console.warn('[CognitiveTaskResults] ⚠️ Error parseando JSON completo:', (parseError as Error).message);
+                  console.warn('[CognitiveTaskResults] String (primeros 200 chars):', jsonString.substring(0, 200));
+                  
+                  // Intentar extraer objetos individuales usando regex (para casos donde el JSON está truncado)
+                  // Buscar patrones como "0":{"hitzoneId":"...","click":{"x":...,"y":...}}
+                  try {
+                    const extracted: Record<string, { hitzoneId?: string; click: { x: number; y: number } }> = {};
+                    
+                    // Buscar todos los índices de imagen y sus clicks
+                    // Patrón: "0":{"hitzoneId":"...","click":{"x":...,"y":...
+                    const imageIndexPattern = /"(\d+)":\s*\{[^}]*"click":\s*\{[^}]*"x":\s*([\d.]+)[^}]*"y":\s*([\d.]+)/g;
+                    let match;
+                    
+                    while ((match = imageIndexPattern.exec(jsonString)) !== null) {
+                      const imageIndex = match[1];
+                      const x = parseFloat(match[2]);
+                      const y = parseFloat(match[3]);
+                      if (!isNaN(x) && !isNaN(y)) {
+                        // Intentar extraer hitzoneId si está disponible
+                        const hitzoneIdMatch = jsonString.substring(0, match.index).match(/"hitzoneId":\s*"([^"]+)"/);
+                        const hitzoneId = hitzoneIdMatch ? hitzoneIdMatch[1] : undefined;
+                        
+                        extracted[imageIndex] = {
+                          hitzoneId,
+                          click: { x, y }
+                        };
+                        console.log('[CognitiveTaskResults] ✅ Extraído click para imagen', imageIndex, 'x:', x, 'y:', y, 'hitzoneId:', hitzoneId);
+                      }
+                    }
+                    
+                    if (Object.keys(extracted).length > 0) {
+                      parsed = extracted;
+                      console.log('[CognitiveTaskResults] ✅ Extraídos', Object.keys(extracted).length, 'clicks usando regex');
+                    } else {
+                      throw parseError;
+                    }
+                  } catch (regexError) {
+                    console.error('[CognitiveTaskResults] ❌ Error en extracción con regex:', regexError);
+                    // Si la extracción con regex también falla, lanzar el error original
+                    throw parseError;
+                  }
+                }
+                
+                if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
+                  imageSelectionsObj = parsed as Record<string, unknown>;
+                  console.log('[CognitiveTaskResults] ✅ imageSelections parseado exitosamente, keys:', Object.keys(imageSelectionsObj));
+                } else {
+                  console.warn('[CognitiveTaskResults] ⚠️ imageSelections parseado no es un objeto válido:', typeof parsed, Array.isArray(parsed));
+                }
+              } catch (e) {
+                console.error('[CognitiveTaskResults] ❌ Error crítico parseando imageSelections:', e);
+                console.error('[CognitiveTaskResults] String completo:', responseValue.imageSelections);
+                // Continuar sin romper la aplicación
               }
+            } else {
+              console.warn('[CognitiveTaskResults] ⚠️ imageSelections tiene tipo inesperado:', typeof responseValue.imageSelections);
+            }
+            
+            // 🎯 DEBUG: Log de imageSelections parseado
+            console.log('[CognitiveTaskResults] imageSelections parseado:', {
+              isString: typeof responseValue.imageSelections === 'string',
+              entriesCount: Object.keys(imageSelectionsObj).length,
+              imageSelectionsObj,
+              imageSelectionsObjKeys: Object.keys(imageSelectionsObj)
             });
+            
+            // Procesar imageSelections parseado
+            if (Object.keys(imageSelectionsObj).length > 0) {
+              Object.entries(imageSelectionsObj).forEach(([imageIndexStr, selection]: [string, unknown]) => {
+                const selectionObj = selection as { hitzoneId?: string; click?: { x: number; y: number; hitzoneWidth?: number; hitzoneHeight?: number } };
+                console.log('[CognitiveTaskResults] Procesando selection:', {
+                  imageIndexStr,
+                  selection,
+                  hasClick: !!selectionObj?.click,
+                  click: selectionObj?.click
+                });
+                if (selectionObj?.click) {
+                  clicks.push({
+                    x: selectionObj.click.x || 0,
+                    y: selectionObj.click.y || 0,
+                    timestamp: new Date(response.timestamp).getTime() || Date.now(),
+                    isCorrect: true,
+                    imageIndex: parseInt(imageIndexStr) || 0
+                  });
+                  console.log('[CognitiveTaskResults] ✅ Click agregado desde imageSelections:', {
+                    imageIndex: parseInt(imageIndexStr) || 0,
+                    x: selectionObj.click.x,
+                    y: selectionObj.click.y
+                  });
+                } else {
+                  console.warn('[CognitiveTaskResults] ⚠️ Selection sin click:', {
+                    imageIndexStr,
+                    selectionObj
+                  });
+                }
+              });
+            } else {
+              console.warn('[CognitiveTaskResults] ⚠️ imageSelectionsObj está vacío después del parseo');
+            }
+          } else {
+            console.warn('[CognitiveTaskResults] ⚠️ responseValue.imageSelections es falsy');
           }
           
-          // Caso 2: clickPosition (ya parseado por el backend) - SIEMPRE agregarlo si existe
+          // Caso 2: clickPosition (puede venir como objeto o como string JSON)
           // IMPORTANTE: clickPosition tiene el último click, que puede no estar en imageSelections
-          if (responseValue?.clickPosition && typeof responseValue.clickPosition === 'object') {
-            const lastImageIndex = responseValue.selectedImageIndex ?? 0;
-            // Verificar si ya tenemos un click para esta imagen
-            const hasClickForLastImage = clicks.some(c => c.imageIndex === lastImageIndex);
-            if (!hasClickForLastImage) {
-              // Agregar el click del clickPosition si no está en imageSelections
-              clicks.push({
-                x: responseValue.clickPosition.x || 0,
-                y: responseValue.clickPosition.y || 0,
-                timestamp: new Date(response.timestamp).getTime() || Date.now(),
-                isCorrect: true,
-                imageIndex: lastImageIndex
-              });
+          if (responseValue?.clickPosition) {
+            let clickPositionObj: { x?: number; y?: number; hitzoneWidth?: number; hitzoneHeight?: number } = {};
+            
+            // Si es un objeto, usarlo directamente
+            if (typeof responseValue.clickPosition === 'object' && !Array.isArray(responseValue.clickPosition) && responseValue.clickPosition !== null) {
+              clickPositionObj = responseValue.clickPosition as { x?: number; y?: number; hitzoneWidth?: number; hitzoneHeight?: number };
+              console.log('[CognitiveTaskResults] ✅ clickPosition es objeto, usando directamente');
+            }
+            // Si es un string, intentar parsearlo como JSON
+            else if (typeof responseValue.clickPosition === 'string') {
+              try {
+                const jsonString: string = responseValue.clickPosition;
+                console.log('[CognitiveTaskResults] 🔄 Parseando clickPosition como JSON, longitud:', jsonString.length);
+                
+                let parsed: unknown;
+                try {
+                  parsed = JSON.parse(jsonString);
+                } catch (parseError) {
+                  // Si falla, intentar extraer datos usando regex
+                  console.warn('[CognitiveTaskResults] ⚠️ Error parseando clickPosition JSON completo:', (parseError as Error).message);
+                  
+                  // Extraer x, y, hitzoneWidth, hitzoneHeight usando regex
+                  const xMatch = jsonString.match(/"x":\s*([\d.]+)/);
+                  const yMatch = jsonString.match(/"y":\s*([\d.]+)/);
+                  const widthMatch = jsonString.match(/"hitzoneWidth":\s*([\d.]+)/);
+                  const heightMatch = jsonString.match(/"hitzoneHeight":\s*([\d.]+)/);
+                  
+                  if (xMatch && yMatch) {
+                    const x = parseFloat(xMatch[1]);
+                    const y = parseFloat(yMatch[1]);
+                    const width = widthMatch ? parseFloat(widthMatch[1]) : undefined;
+                    const height = heightMatch ? parseFloat(heightMatch[1]) : undefined;
+                    
+                    if (!isNaN(x) && !isNaN(y)) {
+                      parsed = { x, y, hitzoneWidth: width, hitzoneHeight: height };
+                      console.log('[CognitiveTaskResults] ✅ Extraído clickPosition usando regex:', { x, y, width, height });
+                    } else {
+                      throw parseError;
+                    }
+                  } else {
+                    throw parseError;
+                  }
+                }
+                
+                if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
+                  clickPositionObj = parsed as { x?: number; y?: number; hitzoneWidth?: number; hitzoneHeight?: number };
+                }
+              } catch (e) {
+                console.error('[CognitiveTaskResults] ❌ Error crítico parseando clickPosition:', e);
+                // Continuar sin romper la aplicación
+              }
+            }
+            
+            if (clickPositionObj.x !== undefined && clickPositionObj.y !== undefined) {
+              const lastImageIndex = responseValue.selectedImageIndex ?? 0;
+              // Verificar si ya tenemos un click para esta imagen
+              const hasClickForLastImage = clicks.some(c => c.imageIndex === lastImageIndex);
+              if (!hasClickForLastImage) {
+                // Agregar el click del clickPosition si no está en imageSelections
+                clicks.push({
+                  x: clickPositionObj.x || 0,
+                  y: clickPositionObj.y || 0,
+                  timestamp: new Date(response.timestamp).getTime() || Date.now(),
+                  isCorrect: true,
+                  imageIndex: lastImageIndex
+                });
+              }
             }
           }
           
-          // Caso 3: allClicksTracking (ya parseado por el backend)
-          if (responseValue?.allClicksTracking && Array.isArray(responseValue.allClicksTracking) && clicks.length === 0) {
-            clicks = responseValue.allClicksTracking.map((click: {
+          // Caso 3: allClicksTracking (puede venir como array o como string mal serializado)
+          if (responseValue?.allClicksTracking && clicks.length === 0) {
+            let allClicksArray: Array<{
               x?: number;
               y?: number;
               timestamp?: number;
               isCorrectHitzone?: boolean;
               imageIndex?: number;
-            }) => ({
-              x: click.x || 0,
-              y: click.y || 0,
-              timestamp: click.timestamp || new Date(response.timestamp).getTime() || Date.now(),
-              isCorrect: click.isCorrectHitzone !== false,
-              imageIndex: click.imageIndex ?? 0
-            }));
+            }> = [];
+            
+            // Si es un array, usarlo directamente
+            if (Array.isArray(responseValue.allClicksTracking)) {
+              allClicksArray = responseValue.allClicksTracking;
+            }
+            // Si es un string, intentar parsearlo
+            else if (typeof responseValue.allClicksTracking === 'string') {
+              try {
+                // Intentar parsear como JSON array
+                const parsed = JSON.parse(responseValue.allClicksTracking);
+                if (Array.isArray(parsed)) {
+                  allClicksArray = parsed;
+                }
+              } catch {
+                // Si falla el parseo JSON, el string puede ser "[object Object],[object Object]"
+                // En este caso, necesitamos extraer los datos de imageSelections o visualClickPoints
+                console.warn('[CognitiveTaskResults] allClicksTracking viene como string mal formateado:', responseValue.allClicksTracking);
+              }
+            }
+            
+            if (allClicksArray.length > 0) {
+              clicks = allClicksArray.map((click: {
+                x?: number;
+                y?: number;
+                timestamp?: number;
+                isCorrectHitzone?: boolean;
+                imageIndex?: number;
+              }) => ({
+                x: click.x || 0,
+                y: click.y || 0,
+                timestamp: click.timestamp || new Date(response.timestamp).getTime() || Date.now(),
+                isCorrect: click.isCorrectHitzone !== false,
+                imageIndex: click.imageIndex ?? 0
+              }));
+            }
           }
           
           // Caso 4: visualClickPoints es un array plano de objetos con imageIndex
@@ -880,8 +1237,20 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             });
           }
           
+        // 🎯 DEBUG: Log de clicks encontrados antes de procesarlos
+        console.log('[CognitiveTaskResults] Clicks encontrados antes de procesar:', {
+          clicksCount: clicks.length,
+          clicks: clicks,
+          responseValue: responseValue,
+          hasImageSelections: !!responseValue?.imageSelections,
+          hasClickPosition: !!responseValue?.clickPosition,
+          hasAllClicksTracking: !!responseValue?.allClicksTracking,
+          hasVisualClickPoints: !!responseValue?.visualClickPoints
+        });
+          
           // Procesar cada click encontrado
-          clicks.forEach((click) => {
+          if (clicks.length > 0) {
+            clicks.forEach((click) => {
             const x = click.x || 0;
             const y = click.y || 0;
             const imageIndex = click.imageIndex ?? 0;
@@ -928,19 +1297,99 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
               }
             };
           });
+          } else {
+            console.warn('[CognitiveTaskResults] ⚠️ No se encontraron clicks para procesar en la respuesta:', {
+              index,
+              participantId: response.participantId,
+              responseValueKeys: Object.keys(responseValue || {}),
+              responseValue,
+              imageSelectionsType: typeof responseValue?.imageSelections,
+              imageSelectionsValue: responseValue?.imageSelections,
+              clickPositionType: typeof responseValue?.clickPosition,
+              clickPositionValue: responseValue?.clickPosition,
+              responseData: response.data,
+              responseValueType: typeof responseValue
+            });
+          }
         });
         
         // Incluir hitzones de cada archivo en los files (si files existe y es array)
-        const questionFiles = question.files;
+        // Los files pueden venir en question.files o en la configuración completa
+        let questionFiles = question.files;
+        
+        // 🎯 Si no hay files en question, buscar en researchConfig directamente
+        if ((!questionFiles || !Array.isArray(questionFiles) || questionFiles.length === 0) && researchConfig) {
+          const configQuestion = (researchConfig as any)?.questions?.find((q: any) => q.id === question.id);
+          if (configQuestion?.files && Array.isArray(configQuestion.files)) {
+            questionFiles = configQuestion.files;
+            console.log(`[CognitiveTaskResults] NavigationFlow - files encontrados en researchConfig:`, {
+              questionId: question.id,
+              filesCount: configQuestion.files.length
+            });
+          }
+        }
+        
         const filesArray = Array.isArray(questionFiles) ? questionFiles : [];
+        
+        // 🎯 Transformar files al formato esperado por NavigationFlowResults
+        const transformedFiles = filesArray.map((file: any) => {
+          // El archivo puede venir en diferentes formatos
+          if (typeof file === 'string') {
+            // Si es solo una URL string
+            return {
+              id: `file-${Date.now()}-${Math.random()}`,
+              url: file,
+              name: `Imagen ${filesArray.indexOf(file) + 1}`,
+              hitZones: []
+            };
+          } else if (file && typeof file === 'object') {
+            // Si es un objeto con propiedades
+            return {
+              id: file.id || file.s3Key || `file-${Date.now()}-${Math.random()}`,
+              url: file.url || file.s3Url || file.s3Key || '',
+              name: file.name || file.fileName || `Imagen ${filesArray.indexOf(file) + 1}`,
+              hitZones: Array.isArray(file.hitZones) ? file.hitZones : (Array.isArray(file.hitzones) ? file.hitzones : [])
+            };
+          }
+          return null;
+        }).filter((f): f is NonNullable<typeof f> => f !== null);
+        
+        // 🎯 DEBUG: Log de files disponibles
+        console.log(`[CognitiveTaskResults] NavigationFlow - files disponibles:`, {
+          questionId: question.id,
+          questionFiles,
+          filesArrayLength: filesArray.length,
+          transformedFilesLength: transformedFiles.length,
+          transformedFiles: transformedFiles
+        });
+        
+        // 🎯 Calcular totalParticipants desde las respuestas únicas
+        const uniqueParticipants = new Set(
+          navigationFlowDataRaw.responses.map(r => r.participantId).filter(Boolean)
+        );
+        const totalParticipants = uniqueParticipants.size;
 
         transformedNavigationFlowData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
           totalResponses: navigationFlowDataRaw.totalResponses,
+          totalParticipants,
           imageSelections,
           visualClickPoints,
-          allClicksTracking
+          allClicksTracking,
+          files: transformedFiles // 🎯 CRÍTICO: Incluir files transformados para mostrar las imágenes
         };
+        
+        // 🎯 DEBUG: Log de datos transformados
+        console.log(`[CognitiveTaskResults] NavigationFlow - datos transformados:`, {
+          questionId: question.id,
+          totalResponses: transformedNavigationFlowData.totalResponses,
+          totalParticipants: transformedNavigationFlowData.totalParticipants,
+          filesCount: Array.isArray(transformedNavigationFlowData.files) ? transformedNavigationFlowData.files.length : 0,
+          visualClickPointsCount: Array.isArray(transformedNavigationFlowData.visualClickPoints) ? transformedNavigationFlowData.visualClickPoints.length : 0,
+          allClicksTrackingCount: Array.isArray(transformedNavigationFlowData.allClicksTracking) ? transformedNavigationFlowData.allClicksTracking.length : 0,
+          visualClickPoints: transformedNavigationFlowData.visualClickPoints,
+          allClicksTracking: transformedNavigationFlowData.allClicksTracking
+        });
       }
 
       const questionData = {
@@ -963,6 +1412,20 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         initialActiveTab: 'sentiment' as const,
         themeImageSrc: '',
       };
+      
+      // 🎯 DEBUG: Log de datos finales para la pregunta
+      if (processedDataForQuestion) {
+        console.log(`[CognitiveTaskResults] 📊 Datos finales para pregunta ${question.id}:`, {
+          viewType: questionData.viewType,
+          hasSentimentData: !!questionData.sentimentData,
+          hasChoiceData: !!questionData.choiceData,
+          hasRankingData: !!questionData.rankingData,
+          hasLinearScaleData: !!questionData.linearScaleData,
+          hasPreferenceTestData: !!questionData.preferenceTestData,
+          hasNavigationFlowData: !!questionData.navigationFlowData,
+          totalResponses: processedDataForQuestion.totalResponses || 0
+        });
+      }
       
       return questionData;
     });

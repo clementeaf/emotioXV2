@@ -1,11 +1,5 @@
-/**
- * NavigationFlow component - High-fidelity implementation matching public-tests
- */
-
 import React, { useState, useRef, useEffect } from 'react';
-import type { NavigationFlowResultsProps, NavigationMetrics, VisualClickPoint, ClickTrackingData } from './types';
-// coordinate-fidelity-test eliminado - usar herramientas nativas del navegador
-// fidelity-validation-demo eliminado - usar herramientas nativas del navegador
+import type { NavigationFlowResultsProps, NavigationMetrics, VisualClickPoint } from './types';
 
 const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ 
   researchId, 
@@ -13,58 +7,16 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
 }) => {
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [showParticipantFilter, setShowParticipantFilter] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<string>('all');
   const imageRef = useRef<HTMLImageElement>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
 
-  // 🧪 INYECTAR UTILIDADES DE TEST DE FIDELIDAD FRONTEND
+  // 🎯 Resetear tamaños de imagen cuando cambia la imagen seleccionada (igual que public-tests)
   useEffect(() => {
-    // injectFrontendFidelityTest(); // Eliminado - usar herramientas nativas del navegador
-  }, []);
-
-  // 🧪 EJECUTAR TESTS DE FIDELIDAD CUANDO CAMBIE LA IMAGEN O DATOS
-  useEffect(() => {
-    if (imageRef.current && imageNaturalSize && imgRenderSize && (data?.visualClickPoints?.length ?? 0) > 0) {
-      const currentImageClicks = data!.visualClickPoints.filter(
-        point => point.imageIndex === selectedImageIndex &&
-        (selectedParticipant === 'all' || point.participantId === selectedParticipant)
-      );
-
-      if (currentImageClicks.length > 0) {
-        // Encontrar elementos de clicks renderizados
-        const clickElements = document.querySelectorAll(
-          '[data-testid^="navigation-click-point"]'
-        );
-
-        if (clickElements.length > 0) {
-          const testId = `frontend-validation-${researchId}-img-${selectedImageIndex}-${Date.now()}`;
-          // frontendCoordinateFidelityTester.startTest(testId); // Eliminado - usar herramientas nativas del navegador
-
-          // Validar cada click
-          currentImageClicks.forEach((clickData, index) => {
-            if (index < clickElements.length) {
-              // frontendCoordinateFidelityTester.recordOriginalClickData(testId, { // Eliminado - usar herramientas nativas del navegador
-              //   x: clickData.x,
-              //   y: clickData.y,
-              //   imageIndex: clickData.imageIndex,
-              //   isCorrect: clickData.isCorrect,
-              //   participantId: clickData.participantId
-              // });
-
-              // frontendCoordinateFidelityTester.recordRenderedClick( // Eliminado - usar herramientas nativas del navegador
-              //   testId,
-              //   clickElements[index] as HTMLElement,
-              //   imageRef.current!,
-              //   imageNaturalSize
-              // );
-            }
-          });
-        }
-      }
-    }
-  }, [selectedImageIndex, selectedParticipant, data, imageNaturalSize, imgRenderSize, researchId]);
+    setImageNaturalSize(null);
+    setImgRenderSize(null);
+  }, [selectedImageIndex]);
 
   if (!data) {
     return (
@@ -74,22 +26,37 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
     );
   }
 
-  // Calculate metrics from real data
+  // 🎯 DEBUG: Log de datos recibidos
+  console.log('[NavigationFlowResults] Datos recibidos:', {
+    hasData: !!data,
+    hasFiles: !!data.files,
+    filesCount: data.files?.length || 0,
+    hasVisualClickPoints: !!data.visualClickPoints,
+    visualClickPointsCount: data.visualClickPoints?.length || 0,
+    hasAllClicksTracking: !!data.allClicksTracking,
+    allClicksTrackingCount: data.allClicksTracking?.length || 0,
+    totalParticipants: data.totalParticipants,
+    dataKeys: Object.keys(data)
+  });
+
   const calculateMetrics = (): NavigationMetrics => {
-    const totalClicks = data.allClicksTracking.length;
-    const correctClicks = data.allClicksTracking.filter(click => click.isCorrectHitzone).length;
+    const allClicksTracking = data.allClicksTracking || [];
+    const files = data.files || [];
+    const totalParticipants = data.totalParticipants || 0;
+    
+    const totalClicks = allClicksTracking.length;
+    const correctClicks = allClicksTracking.filter(click => click.isCorrectHitzone).length;
     const incorrectClicks = totalClicks - correctClicks;
     
-    // Calculate average time per image (rough estimation from timestamps)
-    const timestamps = data.allClicksTracking.map(click => click.timestamp).sort((a, b) => a - b);
+    const timestamps = allClicksTracking.map(click => click.timestamp).sort((a, b) => a - b);
     const totalTime = timestamps.length > 1 ? (timestamps[timestamps.length - 1] - timestamps[0]) / 1000 : 0;
-    const averageTimePerImage = data.files.length > 0 ? totalTime / data.files.length : 0;
+    const averageTimePerImage = files.length > 0 ? totalTime / files.length : 0;
     
-    const completionRate = data.totalParticipants > 0 ? Math.round((correctClicks / data.totalParticipants) * 100) : 0;
+    const completionRate = totalParticipants > 0 ? Math.round((correctClicks / totalParticipants) * 100) : 0;
 
     return {
       totalClicks,
-      totalParticipants: data.totalParticipants,
+      totalParticipants,
       correctClicks,
       incorrectClicks,
       averageTimePerImage: Math.round(averageTimePerImage * 10) / 10,
@@ -99,14 +66,12 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
 
   const metrics = calculateMetrics();
   
-  // Get unique participant IDs
   const participantIds = Array.from(
     new Set(data.visualClickPoints.map(point => point.participantId).filter(Boolean))
   ) as string[];
 
-  // Filter clicks for current image and selected participant
   const getFilteredClicksForCurrentImage = (): VisualClickPoint[] => {
-    // Normalizar imageIndex a número para comparación (puede venir como string o número)
+
     let clicks = data.visualClickPoints.filter(point => {
       const pointImageIndex = typeof point.imageIndex === 'string' ? parseInt(point.imageIndex) : point.imageIndex;
       return pointImageIndex === selectedImageIndex;
@@ -127,12 +92,67 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
     setImgRenderSize({ width, height });
   };
 
-  const currentImage = data.files[selectedImageIndex];
+  const files = data.files || [];
+  const currentImage = files[selectedImageIndex];
+  
+  interface ConvertedHitZone {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    originalCoords?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+  }
 
-  // Obtener hitzones de la imagen actual
-  const currentImageHitzones = currentImage?.hitZones || [];
+  const convertHitZonesToPercentageCoordinates = (
+    hitZones: Array<{ id: string; region?: { x: number; y: number; width: number; height: number } }> | undefined
+  ): ConvertedHitZone[] => {
+    if (!hitZones || !Array.isArray(hitZones) || hitZones.length === 0) {
+      return [];
+    }
 
-  // Helper function to get image draw rect (same logic as public-tests)
+    return hitZones.map(zone => {
+      const region = zone.region || { x: 0, y: 0, width: 0, height: 0 };
+      const { x, y, width, height } = region;
+      return {
+        id: zone.id,
+        x,
+        y,
+        width,
+        height,
+        originalCoords: {
+          x,
+          y,
+          width,
+          height
+        }
+      };
+    });
+  };
+
+  // Obtener hitzones de la imagen actual (convertidos al formato de public-tests)
+  const availableHitzones: ConvertedHitZone[] = currentImage?.hitZones
+    ? convertHitZonesToPercentageCoordinates(currentImage.hitZones as Array<{ id: string; region?: { x: number; y: number; width: number; height: number } }>)
+    : [];
+
+  // 🎯 DEBUG: Log de hitzones y clicks para la imagen actual
+  console.log('[NavigationFlowResults] Imagen actual:', {
+    selectedImageIndex,
+    currentImageName: currentImage?.name,
+    currentImageUrl: currentImage?.url,
+    hasHitzones: !!currentImage?.hitZones,
+    hitzonesCount: currentImage?.hitZones?.length || 0,
+    availableHitzonesCount: availableHitzones.length,
+    currentImageClicksCount: currentImageClicks.length,
+    visualClickPointsTotal: data.visualClickPoints?.length || 0
+  });
+
+  // Helper function to get image draw rect (exact same logic as public-tests)
   function getImageDrawRect(
     imgNatural: { width: number; height: number },
     imgRender: { width: number; height: number }
@@ -156,61 +176,6 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
     
     return { drawWidth, drawHeight, offsetX, offsetY };
   }
-
-  // Calcular escalado de coordenadas de hitzones desde tamaño natural a renderizado
-  const getScaledHitzoneCoordinates = (hitzone: {
-    region?: { x: number; y: number; width: number; height: number };
-    x?: number;
-    y?: number;
-    width?: number;
-    height?: number;
-  }): { x: number; y: number; width: number; height: number } | null => {
-    if (!imageNaturalSize || !imgRenderSize || !imageRef.current) {
-      return null;
-    }
-
-    // Obtener coordenadas del hitzone (puede venir en region o directamente)
-    const hitzoneX = hitzone.region?.x ?? hitzone.x ?? 0;
-    const hitzoneY = hitzone.region?.y ?? hitzone.y ?? 0;
-    const hitzoneWidth = hitzone.region?.width ?? hitzone.width ?? 0;
-    const hitzoneHeight = hitzone.region?.height ?? hitzone.height ?? 0;
-
-    // Calcular el rectángulo de dibujo de la imagen
-    const drawRect = getImageDrawRect(imageNaturalSize, imgRenderSize);
-
-    // Calcular el factor de escala
-    const scaleX = drawRect.drawWidth / imageNaturalSize.width;
-    const scaleY = drawRect.drawHeight / imageNaturalSize.height;
-
-    // Escalar coordenadas del hitzone
-    const scaledX = hitzoneX * scaleX + drawRect.offsetX;
-    const scaledY = hitzoneY * scaleY + drawRect.offsetY;
-    const scaledWidth = hitzoneWidth * scaleX;
-    const scaledHeight = hitzoneHeight * scaleY;
-
-    return {
-      x: scaledX,
-      y: scaledY,
-      width: scaledWidth,
-      height: scaledHeight
-    };
-  };
-
-  // Los clicks vienen en coordenadas renderizadas del momento del click (igual que en public-tests)
-  // NO necesitan escalado adicional, se usan directamente
-  // Esta función solo verifica que tenemos los datos necesarios
-  const getClickCoordinates = (clickX: number, clickY: number): { x: number; y: number } | null => {
-    if (!imageNaturalSize || !imgRenderSize || !imageRef.current) {
-      return null;
-    }
-
-    // Los clicks ya vienen en coordenadas renderizadas (como en public-tests)
-    // Se usan directamente sin escalado adicional
-    return {
-      x: clickX,
-      y: clickY
-    };
-  };
 
   return (
     <div className="p-6">
@@ -269,7 +234,7 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
       </div>
 
       {/* Image Navigation */}
-      {data.files.length > 1 && (
+      {files.length > 1 && (
         <div className="flex justify-center items-center gap-4 mb-6">
           <button
             className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
@@ -279,12 +244,12 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
             Anterior
           </button>
           <span className="text-sm text-gray-600">
-            Imagen {selectedImageIndex + 1} de {data.files.length}
+            Imagen {selectedImageIndex + 1} de {files.length}
           </span>
           <button
             className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-            onClick={() => setSelectedImageIndex(Math.min(data.files.length - 1, selectedImageIndex + 1))}
-            disabled={selectedImageIndex === data.files.length - 1}
+            onClick={() => setSelectedImageIndex(Math.min(files.length - 1, selectedImageIndex + 1))}
+            disabled={selectedImageIndex === files.length - 1}
           >
             Siguiente
           </button>
@@ -304,93 +269,92 @@ const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({
             </div>
           </div>
           
-          <div 
-            className="relative w-[70vw] max-w-4xl bg-white rounded-lg shadow-lg mx-auto"
+          <div
+            className="relative w-[42vw] max-w-[33rem] max-h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden flex items-center justify-center mx-auto"
           >
-            <img
-              ref={imageRef}
-              src={currentImage.url}
-              alt={currentImage.name || `Imagen ${selectedImageIndex + 1}`}
-              className="w-full h-full object-contain bg-white"
-              loading="eager"
-              style={{ display: 'block' }}
-              onLoad={handleImageLoad}
-              crossOrigin="anonymous"
-            />
-              
-              {/* Hitzones y Click Points Overlay */}
-              {imageNaturalSize && imgRenderSize && (
-                (() => {
-                  const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
-                  return (
-                    <div
-                      className="absolute top-0 left-0 pointer-events-none"
-                      style={{ 
-                        width: `${imgRenderSize.width}px`, 
-                        height: `${imgRenderSize.height}px`
-                      }}
-                    >
-                {/* Renderizar Hitzones */}
-                {currentImageHitzones.length > 0 && currentImageHitzones.map((hitzone, hzIndex) => {
-                  const scaledCoords = getScaledHitzoneCoordinates(hitzone);
-                  if (!scaledCoords) return null;
-
-                  return (
-                    <div
-                      key={`hitzone-${hitzone.id || hzIndex}`}
-                      className="absolute border-2 border-blue-400 bg-blue-200 bg-opacity-30"
-                      style={{
-                        left: `${scaledCoords.x}px`,
-                        top: `${scaledCoords.y}px`,
-                        width: `${scaledCoords.width}px`,
-                        height: `${scaledCoords.height}px`,
-                        zIndex: 5,
-                        pointerEvents: 'none'
-                      }}
-                      title={hitzone.name || `Hitzone ${hitzone.id || hzIndex + 1}`}
-                    >
-                      {/* Label del hitzone */}
-                      {hitzone.name && (
-                        <div className="absolute -top-6 left-0 text-xs font-medium text-blue-600 bg-white px-1 rounded">
-                          {hitzone.name}
+            {!currentImage && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <p className="text-gray-600">No hay imagen disponible</p>
+              </div>
+            )}
+            {currentImage && !imageNaturalSize && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-2">Cargando imagen...</p>
+                  <p className="text-sm text-gray-400">{currentImage.name || 'Imagen'}</p>
+                </div>
+              </div>
+            )}
+            {currentImage && currentImage.url && (
+              <img
+                ref={imageRef}
+                src={currentImage.url}
+                alt={currentImage.name || `Imagen detallada ${selectedImageIndex + 1}`}
+                className="max-w-full max-h-full w-auto h-auto object-contain bg-white"
+                loading="eager"
+                style={{ display: 'block' }}
+                onLoad={handleImageLoad}
+                crossOrigin="anonymous"
+              />
+            )}
+            {imageNaturalSize && imgRenderSize && (
+              (() => {
+                const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+                return (
+                  <div
+                    className="absolute top-0 left-0"
+                    style={{ width: imgRenderSize.width, height: imgRenderSize.height, pointerEvents: 'none' }}
+                  >
+                    {availableHitzones.map((hitzone: ConvertedHitZone) => {
+                      const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
+                      const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
+                      const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
+                      const height = (hitzone.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
+                      return (
+                        <div
+                          key={hitzone.id}
+                          className="absolute transition-all duration-300 border-2 border-blue-400 bg-blue-200 bg-opacity-20"
+                          style={{
+                            left,
+                            top,
+                            width,
+                            height,
+                            pointerEvents: 'none',
+                          }}
+                          title={`Zona interactiva: ${hitzone.id}`}
+                        >
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                    {availableHitzones.length === 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="bg-white rounded-lg p-4 text-center">
+                          <p className="text-gray-600">Esta imagen no tiene zonas interactivas configuradas.</p>
+                        </div>
+                      </div>
+                    )}
 
-                {/* Renderizar Click Points */}
-                {currentImageClicks.map((point, index) => {
-                  const clickCoords = getClickCoordinates(point.x, point.y);
-                  if (!clickCoords) return null;
-
-                  return (
-                    <div
-                      key={`${point.timestamp}-${index}`}
-                      data-testid={`navigation-click-point-${index}`}
-                      data-original-x={point.x}
-                      data-original-y={point.y}
-                      data-is-correct={point.isCorrect}
-                      data-image-index={point.imageIndex}
-                      data-participant-id={point.participantId || ''}
-                      className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${
-                        point.isCorrect ? 'bg-green-500' : 'bg-red-500'
-                      }`}
-                      style={{
-                        left: `${clickCoords.x - 6}px`,
-                        top: `${clickCoords.y - 6}px`,
-                        zIndex: 10
-                      }}
-                      title={`${point.isCorrect ? 'Correcto' : 'Incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}${
-                        point.participantId ? ` - ${point.participantId.slice(-8).toUpperCase()}` : ''
-                      }`}
-                    />
-                  );
-                })}
-                    </div>
-                  );
-                })()
-              )}
+                    {/* 🎯 PUNTOS VISUALES ROJOS/VERDES - PERSISTENTES (igual que public-tests) */}
+                    {currentImageClicks.map((point, index) => (
+                      <div
+                        key={`${point.timestamp}-${index}`}
+                        className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${
+                          point.isCorrect ? 'bg-green-500' : 'bg-red-500'
+                        }`}
+                        style={{
+                          left: point.x - 6,
+                          top: point.y - 6,
+                          zIndex: 10
+                        }}
+                        title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}${
+                          point.participantId ? ` - ${point.participantId.slice(-8).toUpperCase()}` : ''
+                        }`}
+                      />
+                    ))}
+                  </div>
+                );
+              })()
+            )}
           </div>
         </div>
       )}

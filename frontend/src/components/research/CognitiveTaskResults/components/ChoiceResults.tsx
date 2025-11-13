@@ -14,6 +14,7 @@ export interface ChoiceOption {
 export interface ChoiceQuestionData {
   question: string;
   description?: string;
+  instructions?: string;
   options: ChoiceOption[];
   totalResponses: number;
   responseDuration?: string;
@@ -60,7 +61,8 @@ export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
           ))}
         </div>
 
-        <div className="mt-12">
+        {/* Comentado: Card de información de la pregunta */}
+        {/* <div className="mt-12">
           <div className="flex items-center">
             <div className="p-4 bg-white rounded-lg border border-neutral-200 w-full">
               <div className="flex items-start">
@@ -80,7 +82,7 @@ export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Panel derecho: Estadísticas e imagen opcional */}
@@ -93,6 +95,24 @@ export function ChoiceResults({ data, imageSrc }: ChoiceResultsProps) {
               <span className="text-sm text-neutral-500">{data.responseDuration}</span>
             )}
           </div>
+          
+          {/* Descripción e instrucciones */}
+          {(data.description || data.instructions) && (
+            <div className="mt-4 space-y-2">
+              {data.description && (
+                <div>
+                  <p className="text-sm font-medium text-neutral-600">Descripción:</p>
+                  <p className="text-sm text-neutral-500 mt-1">{data.description}</p>
+                </div>
+              )}
+              {data.instructions && (
+                <div>
+                  <p className="text-sm font-medium text-neutral-600">Instrucciones:</p>
+                  <p className="text-sm text-neutral-500 mt-1">{data.instructions}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {imageSrc && (
