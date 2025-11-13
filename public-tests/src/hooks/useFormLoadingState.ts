@@ -49,11 +49,11 @@ export const useFormLoadingState = ({
     }
   }, [onDataLoaded]);
 
-  // 🎯 NO RESETEAR FORMVALUES - Mantener datos del usuario
+  // 🎯 RESETEAR FORMVALUES CUANDO CAMBIA LA PREGUNTA - Evitar datos del step anterior
   useEffect(() => {
+    setFormValues({});
     setHasLoadedData(false);
     setIsLoading(true);
-    // NO resetear formValues para mantener datos del usuario
   }, [questionKey]);
 
   useEffect(() => {

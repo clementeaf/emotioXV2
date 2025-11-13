@@ -52,6 +52,12 @@ export const useQuestionInitialization = ({
   const [value, setValueInternal] = React.useState<unknown>(null);
   const hasUserInteractedRef = React.useRef(false);
   
+  // 🎯 RESETEAR TODO CUANDO CAMBIA EL STEP - Evitar datos del step anterior
+  React.useEffect(() => {
+    hasUserInteractedRef.current = false;
+    setValueInternal(null);
+  }, [currentStepKey]);
+  
   // Wrapper de setValue que marca interacción del usuario
   const setValue = React.useCallback((newValue: unknown) => {
     hasUserInteractedRef.current = true;

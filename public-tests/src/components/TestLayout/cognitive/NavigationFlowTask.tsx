@@ -262,6 +262,12 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     }
   }, [currentQuestionKey]);
 
+  // 🎯 Resetear tamaños de imagen cuando cambia la imagen seleccionada
+  useEffect(() => {
+    setImageNaturalSize(null);
+    setImgRenderSize(null);
+  }, [localSelectedImageIndex]);
+
   useEffect(() => {
     if (currentQuestionKey && allClicksTracking.length > 0) {
 
@@ -484,23 +490,6 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     });
   };
 
-  const handlePrevImage = (): void => {
-    if (localSelectedImageIndex > 0) {
-      setLocalSelectedImageIndex(localSelectedImageIndex - 1);
-      setLocalSelectedHitzone(null);
-    }
-  };
-
-  const handleNextImage = (): void => {
-
-    const currentImageSelection = imageSelections[localSelectedImageIndex.toString()];
-    const hasClickedHitzone = currentImageSelection && currentImageSelection.hitzoneId;
-
-    if (localSelectedImageIndex < images.length - 1 && hasClickedHitzone) {
-      setLocalSelectedImageIndex(localSelectedImageIndex + 1);
-      setLocalSelectedHitzone(null);
-    }
-  };
 
   // 🎯 VERIFICACIÓN DE SEGURIDAD PARA EVITAR ERRORES
   const isValidImageIndex = localSelectedImageIndex >= 0 && localSelectedImageIndex < images.length;
@@ -546,29 +535,15 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         </div>
 
         {images.length > 1 && (
-          <div className="flex justify-center items-center gap-4 mb-4">
-            <button
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-              onClick={handlePrevImage}
-              disabled={localSelectedImageIndex === 0}
-            >
-              Anterior
-            </button>
+          <div className="flex justify-center items-center mb-4">
             <span className="text-sm text-gray-600">
               Imagen {localSelectedImageIndex + 1} de {images.length}
             </span>
-            <button
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-              onClick={handleNextImage}
-              disabled={localSelectedImageIndex === images.length - 1 || !imageSelections[localSelectedImageIndex.toString()]}
-            >
-              Siguiente
-            </button>
           </div>
         )}
 
         <div
-          className="relative w-[70vw] max-w-4xl bg-white rounded-lg shadow-lg"
+          className="relative w-[42vw] max-w-[33rem] max-h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden flex items-center justify-center"
         >
           {!selectedImage && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
@@ -588,7 +563,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
               ref={imageRef}
               src={selectedImage.url}
               alt={selectedImage.name || `Imagen detallada ${localSelectedImageIndex + 1}`}
-              className="w-full h-full object-contain bg-white"
+              className="max-w-full max-h-full w-auto h-auto object-contain bg-white"
               loading="eager"
               style={{ display: 'block' }}
               onLoad={handleImageLoad}

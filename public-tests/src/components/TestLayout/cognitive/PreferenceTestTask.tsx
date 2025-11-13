@@ -204,6 +204,7 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
                   ? 'ring-4 ring-blue-500 shadow-2xl scale-[1.02] bg-blue-50'
                   : 'hover:shadow-xl'
                 }`}
+              style={{ width: '300px', height: '400px' }}
               onClick={() => handleImageSelect(image.id)}
             >
               {/* Botón de zoom (lupa) */}
@@ -233,21 +234,13 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
               </div>
 
               {/* Image */}
-              <div className="aspect-video w-full overflow-hidden">
+              <div className="w-full h-full overflow-hidden flex items-center justify-center">
                 <img
                   src={image.url}
                   alt={image.name || `Opción ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  className="max-w-full max-h-full object-contain"
                   loading="lazy"
                 />
-              </div>
-
-              {/* Image info */}
-              <div className="p-4 bg-white">
-                <h3 className="font-semibold text-gray-800 mb-1">{image.name}</h3>
-                <p className="text-sm text-gray-500">
-                  {image.type} • {(image.size / 1024 / 1024).toFixed(1)} MB
-                </p>
               </div>
             </div>
             );
