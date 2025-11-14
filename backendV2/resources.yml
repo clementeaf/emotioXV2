@@ -19,7 +19,7 @@
 #             - 'http://localhost:5173'        # Vite alternativo
 #             - 'http://localhost:5174'        # Vite alternativo
 #             - 'https://d2s9nr0bm47yl1.cloudfront.net'  # Frontend CloudFront
-#             - 'https://d35071761848hm.cloudfront.net'  # Public-tests CloudFront
+#             - 'https://d2zt8ia21te5mv.cloudfront.net'  # Public-tests CloudFront
 #             - 'http://54.90.132.233:3000'    # Frontend EC2
 #             - '*'                            # Fallback para desarrollo
 #           MaxAge: 3000

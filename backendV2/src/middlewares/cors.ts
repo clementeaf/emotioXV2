@@ -17,7 +17,7 @@ function getAllowedOrigins(): string[] {
 
     // ☁️ CloudFront (Producción)
     'https://d2s9nr0bm47yl1.cloudfront.net',  // Frontend CloudFront
-    'https://d35071761848hm.cloudfront.net',  // Public-tests CloudFront
+    'https://d2zt8ia21te5mv.cloudfront.net',  // Public-tests CloudFront
 
     // 🖥️ EC2 (Si aplicable)
     'http://54.90.132.233:3000',    // Frontend EC2
@@ -98,7 +98,7 @@ export function getCorsHeaders(event: APIGatewayProxyEvent) {
       console.log(`🔧 CORS (DEV): Usando origen permisivo: ${accessControlAllowOrigin} (solicitado: ${requestOrigin})`);
     } else {
       // En producción, usar fallback seguro
-      accessControlAllowOrigin = allowedOrigins.find(o => o.includes('cloudfront')) || allowedOrigins[0] || 'https://d35071761848hm.cloudfront.net';
+      accessControlAllowOrigin = allowedOrigins.find(o => o.includes('cloudfront')) || allowedOrigins[0] || 'https://d2zt8ia21te5mv.cloudfront.net';
       console.log(`🔒 CORS (PROD): Usando origen fallback seguro: ${accessControlAllowOrigin} (solicitado: ${requestOrigin})`);
     }
   }

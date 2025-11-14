@@ -502,7 +502,7 @@ export function getPublicTestsUrl(researchId?: string, participantId?: string): 
   // URL base de public tests - LOCAL vs PRODUCCIÓN
   const PUBLIC_TESTS_URL = isDevelopment 
     ? 'http://localhost:5173'  // 🏠 DESARROLLO LOCAL
-    : (process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'); // 🌐 PRODUCCIÓN
+    : (process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net'); // 🌐 PRODUCCIÓN
 
   let url = PUBLIC_TESTS_URL;
   if (researchId && participantId) {

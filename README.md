@@ -10,7 +10,7 @@ Sistema completo de investigación y análisis de emociones con eye-tracking.
 - **Distribution ID:** `E2S057L9JBBIWL`
 
 ### Public Tests
-- **CloudFront:** https://d35071761848hm.cloudfront.net
+- **CloudFront:** https://d2zt8ia21te5mv.cloudfront.net
 - **S3 Website:** http://emotioxv2-public-tests-041238861016.s3-website-us-east-1.amazonaws.com
 - **Distribution ID:** `E3KFNJVCTHRPO9`
 
@@ -73,8 +73,8 @@ serverless deploy
 - **Public Tests:** `emotioxv2-public-tests-041238861016`
 
 ### CloudFront Distributions
-- **Frontend:** `E2S057L9JBBIWL` → `d26ykfabt39qmf.cloudfront.net`
-- **Public Tests:** `E3KFNJVCTHRPO9` → `d35071761848hm.cloudfront.net`
+- **Frontend:** `E3MCIWNMF6ES2R` → `d2s9nr0bm47yl1.cloudfront.net`
+- **Public Tests:** `E2X8HCFI5FM1EC` → `d2zt8ia21te5mv.cloudfront.net`
 
 ### Región
 - **AWS Region:** `us-east-1`
@@ -85,9 +85,9 @@ Los siguientes secrets deben estar configurados en GitHub:
 
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
-- `FRONTEND_CLOUDFRONT_DISTRIBUTION_ID` → `E2S057L9JBBIWL`
-- `PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID` → `E3KFNJVCTHRPO9`
-- `NEXT_PUBLIC_PUBLIC_TESTS_URL` → `https://d35071761848hm.cloudfront.net`
+- `FRONTEND_CLOUDFRONT_DISTRIBUTION_ID` → `E3MCIWNMF6ES2R`
+- `PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID` → `E2X8HCFI5FM1EC`
+- `NEXT_PUBLIC_PUBLIC_TESTS_URL` → `https://d2zt8ia21te5mv.cloudfront.net`
 - `VITE_API_BASE_URL`
 - `VITE_PUBLIC_TESTS_URL`
 
