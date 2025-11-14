@@ -44,6 +44,7 @@ const processDemographicsData = (groupedResponses: GroupedResponsesData): Demogr
     const educationCounts: Record<string, number> = {};
     const userIdCounts: Record<string, number> = {};
     const participantCounts: Record<string, number> = {};
+    const participantTimestamps: Record<string, string> = {}; // Guardar timestamp de cada participante
     const processedParticipants = new Set<string>();
 
     // Procesar TODAS las respuestas que contengan "demographics" en el questionKey
@@ -65,6 +66,14 @@ const processDemographicsData = (groupedResponses: GroupedResponsesData): Demogr
           processedParticipants.add(participantId);
           const participantKey = participantId;
           participantCounts[participantKey] = (participantCounts[participantKey] || 0) + 1;
+
+          // Guardar timestamp del participante (usar el más reciente si hay múltiples)
+          if (response.timestamp) {
+            const existingTimestamp = participantTimestamps[participantKey];
+            if (!existingTimestamp || new Date(response.timestamp) > new Date(existingTimestamp)) {
+              participantTimestamps[participantKey] = response.timestamp;
+            }
+          }
 
           // Contar userIds únicos
           userIdCounts[participantId] = (userIdCounts[participantId] || 0) + 1;
@@ -161,11 +170,24 @@ const processDemographicsData = (groupedResponses: GroupedResponsesData): Demogr
 
     const participants = Object.entries(participantCounts)
       .slice(0, 20) // Máximo 20 participantes
-      .map(([label, count], index) => ({
-        id: `part-${index + 1}`,
-        label: `${new Date().toLocaleDateString('es-ES')}, ${label.length > 15 ? `${label.substring(0, 15)}...` : label}`,
-        count
-      }));
+      .map(([label, count], index) => {
+        // Obtener timestamp del participante o usar fecha actual como fallback
+        const timestamp = participantTimestamps[label] || new Date().toISOString();
+        const date = new Date(timestamp);
+        // Usar T12:00:00 para evitar problemas de zona horaria al formatear
+        const dateObj = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const formattedDate = dateObj.toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric' 
+        });
+        
+        return {
+          id: `part-${index + 1}`,
+          label: `${formattedDate}, ${label.length > 15 ? `${label.substring(0, 15)}...` : label}`,
+          count
+        };
+      });
 
     return {
       countries,
