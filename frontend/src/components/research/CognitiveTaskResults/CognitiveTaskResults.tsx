@@ -769,26 +769,85 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         }>;
         totalSelections: number;
         totalParticipants: number;
+        allImages?: Array<{
+          url: string;
+          name: string;
+          id: string;
+        }>;
       } | undefined = undefined;
       if (processedDataForQuestion?.preferenceTestData) {
         const preferenceTestDataRaw = processedDataForQuestion.preferenceTestData as { preferences: Array<{ option: string; count: number; percentage: number }>; totalResponses: number };
         
+        // Obtener archivos/imágenes de la configuración de la pregunta
+        let questionFiles = question.files;
+        // Buscar en researchConfig si no hay files en question
+        if ((!questionFiles || !Array.isArray(questionFiles) || questionFiles.length === 0) && researchConfig) {
+          const configQuestion = (researchConfig as any)?.questions?.find((q: any) => q.id === question.id);
+          if (configQuestion?.files && Array.isArray(configQuestion.files)) {
+            questionFiles = configQuestion.files;
+          }
+        }
+        
+        // Crear un mapa de opciones a imágenes usando el nombre o índice
+        const filesMap = new Map<string, string>();
+        if (questionFiles && Array.isArray(questionFiles)) {
+          questionFiles.forEach((file: any, index: number) => {
+            const fileUrl = file.url || file.preview || file.path || file.src;
+            if (fileUrl) {
+              // Mapear por índice o por nombre del archivo
+              const fileKey = file.name || `option-${index + 1}`;
+              filesMap.set(fileKey, fileUrl);
+              // También mapear por índice para compatibilidad
+              filesMap.set(`option-${index + 1}`, fileUrl);
+            }
+          });
+        }
+        
         // Transformar preferences a options con la estructura esperada
-        const options = preferenceTestDataRaw.preferences.map((pref, index) => ({
-          id: `option-${index + 1}`,
-          name: pref.option,
-          image: undefined, // Se puede agregar si hay imágenes en la pregunta
-          selected: pref.count,
-          percentage: pref.percentage,
-          color: undefined // Se puede agregar si hay colores definidos
-        }));
+        const options = preferenceTestDataRaw.preferences.map((pref, index) => {
+          // Intentar encontrar la imagen correspondiente
+          let imageUrl: string | undefined = undefined;
+          
+          // Buscar por nombre de opción
+          if (pref.option) {
+            imageUrl = filesMap.get(pref.option);
+          }
+          
+          // Si no se encuentra, buscar por índice
+          if (!imageUrl) {
+            imageUrl = filesMap.get(`option-${index + 1}`);
+          }
+          
+          // Si aún no se encuentra y hay archivos, usar el índice directamente
+          if (!imageUrl && questionFiles && Array.isArray(questionFiles) && questionFiles[index]) {
+            const file = questionFiles[index] as any;
+            imageUrl = file.url || file.preview || file.path || file.src;
+          }
+          
+          return {
+            id: `option-${index + 1}`,
+            name: pref.option,
+            image: imageUrl,
+            selected: pref.count,
+            percentage: pref.percentage,
+            color: undefined
+          };
+        });
         
         transformedPreferenceTestData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
           description: question.description,
           options,
           totalSelections: preferenceTestDataRaw.totalResponses,
-          totalParticipants: preferenceTestDataRaw.totalResponses
+          totalParticipants: preferenceTestDataRaw.totalResponses,
+          // Agregar todas las imágenes disponibles para mostrar en miniatura
+          allImages: questionFiles && Array.isArray(questionFiles) 
+            ? questionFiles.map((file: any) => ({
+                url: file.url || file.preview || file.path || file.src,
+                name: file.name || 'Imagen',
+                id: file.id || file.name
+              })).filter((img: any) => img.url)
+            : []
         };
       }
 

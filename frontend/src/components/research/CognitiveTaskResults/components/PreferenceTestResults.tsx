@@ -20,6 +20,11 @@ export interface PreferenceTestData {
   preferenceAnalysis?: string;
   mostPreferred?: string;
   leastPreferred?: string;
+  allImages?: Array<{
+    url: string;
+    name: string;
+    id: string;
+  }>; // 🎯 NUEVO: Todas las imágenes que se presentaron al usuario
 }
 
 interface PreferenceTestResultsProps {
@@ -238,6 +243,47 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
             <div className="text-sm text-gray-600">Tiempo Total</div>
           </div>
         </div>
+        
+        {/* Imágenes presentadas al usuario */}
+        {(data.allImages && data.allImages.length > 0) && (
+          <div className="mt-6 pt-4 border-t border-gray-300">
+            <h5 className="text-sm font-semibold text-gray-700 mb-3">
+              Imágenes presentadas al usuario ({data.allImages.length})
+            </h5>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {data.allImages.map((img, index) => (
+                <div
+                  key={img.id || index}
+                  className="relative group cursor-pointer"
+                  title={img.name}
+                >
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200 hover:border-blue-400 transition-colors">
+                    <img
+                      src={img.url}
+                      alt={img.name || `Opción ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                              <span class="text-gray-500 text-xs">Sin imagen</span>
+                            </div>
+                          `;
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="mt-1 text-xs text-gray-600 text-center truncate">
+                    {img.name || `Opción ${index + 1}`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
