@@ -5,14 +5,14 @@ Sistema completo de investigación y análisis de emociones con eye-tracking.
 ## 🌐 URLs de Producción
 
 ### Frontend
-- **CloudFront:** https://d26ykfabt39qmf.cloudfront.net
+- **CloudFront:** https://d2s9nr0bm47yl1.cloudfront.net
 - **S3 Website:** http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com
-- **Distribution ID:** `E2S057L9JBBIWL`
+- **Distribution ID:** `E3MCIWNMF6ES2R`
 
 ### Public Tests
 - **CloudFront:** https://d2zt8ia21te5mv.cloudfront.net
 - **S3 Website:** http://emotioxv2-public-tests-041238861016.s3-website-us-east-1.amazonaws.com
-- **Distribution ID:** `E3KFNJVCTHRPO9`
+- **Distribution ID:** `E2X8HCFI5FM1EC`
 
 ## 📁 Estructura del Proyecto
 
@@ -134,7 +134,7 @@ cd public-tests && npm run build && aws s3 sync ./dist/ s3://emotioxv2-public-te
 ### CloudFront no se actualiza
 - Verifica que el secret `FRONTEND_CLOUDFRONT_DISTRIBUTION_ID` esté configurado
 - Revisa los logs del workflow en GitHub Actions
-- Verifica el estado de la distribución: `aws cloudfront get-distribution --id E2S057L9JBBIWL`
+- Verifica el estado de la distribución: `aws cloudfront get-distribution --id E3MCIWNMF6ES2R`
 
 ### S3 Website no accesible
 - Verifica que el bucket tenga website hosting habilitado
