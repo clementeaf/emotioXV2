@@ -286,8 +286,17 @@ function calculateCPVMetrics(
   };
 }
 
+/**
+ * Extrae la clave de fecha usando la zona horaria local del navegador
+ * Esto asegura que las fechas se agrupen correctamente según la hora local del usuario
+ */
 function extractDateKey(timestamp: string): string {
-  return new Date(timestamp).toISOString().split('T')[0];
+  const date = new Date(timestamp);
+  // Usar métodos locales en lugar de UTC para mantener consistencia con la zona horaria del usuario
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function processDateResponses(
@@ -307,8 +316,11 @@ function processDateResponses(
   const avgNps = calculateAverage(npsScores);
   const avgNev = calculateAverage(nevScores);
 
+  // Formatear fecha usando la fecha ISO completa para evitar problemas de zona horaria
+  // date viene como 'YYYY-MM-DD', agregamos hora del mediodía para evitar problemas de zona horaria
+  const dateObj = new Date(date + 'T12:00:00');
   return {
-    stage: new Date(date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+    stage: dateObj.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
     nps: roundToOne(avgNps),
     nev: roundToOne(avgNev),
     timestamp: date

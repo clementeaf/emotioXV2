@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import {
   CartesianGrid,
   Legend,
@@ -50,6 +52,8 @@ interface TrustRelationshipFlowProps {
   className?: string;
   hasData?: boolean; // Nueva prop para indicar si hay datos reales
   isLoading?: boolean; // Nueva prop para loading
+  timeRange?: '24h' | 'week' | 'month';
+  onTimeRangeChange?: (range: '24h' | 'week' | 'month') => void;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -81,7 +85,76 @@ const CustomLegend = () => (
   </div>
 );
 
-export const TrustRelationshipFlow = ({ data, className, isLoading = false }: TrustRelationshipFlowProps) => {
+/**
+ * Filtrar datos según el rango de tiempo seleccionado
+ */
+function filterDataByTimeRange(dataToFilter: TrustFlowData[], range: '24h' | 'week' | 'month'): TrustFlowData[] {
+  if (!dataToFilter || dataToFilter.length === 0) return [];
+  
+  const now = new Date();
+  let daysBack: number;
+  
+  switch (range) {
+    case '24h':
+      daysBack = 1;
+      break;
+    case 'week':
+      daysBack = 7;
+      break;
+    case 'month':
+      daysBack = 30;
+      break;
+    default:
+      return dataToFilter;
+  }
+  
+  // Calcular fecha de corte usando solo la fecha (sin hora) para evitar problemas de zona horaria
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const cutoffDate = new Date(today);
+  cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+  
+  // Convertir a string 'YYYY-MM-DD' para comparación directa
+  const cutoffDateStr = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}-${String(cutoffDate.getDate()).padStart(2, '0')}`;
+  
+  console.log(`[TrustRelationshipFlow] Filtrando con rango: ${range}, días atrás: ${daysBack}, cutoff: ${cutoffDateStr}`);
+  
+  const filtered = dataToFilter.filter(item => {
+    // item.timestamp viene como 'YYYY-MM-DD', comparar directamente como string
+    if (item.timestamp && typeof item.timestamp === 'string') {
+      const passes = item.timestamp >= cutoffDateStr;
+      console.log(`[TrustRelationshipFlow] Item ${item.timestamp} >= ${cutoffDateStr} = ${passes}`);
+      return passes;
+    }
+    // Si no hay timestamp, incluir todos los datos (fallback)
+    console.log(`[TrustRelationshipFlow] Item sin timestamp, incluyendo por defecto`);
+    return true;
+  });
+  
+  console.log(`[TrustRelationshipFlow] Resultado del filtro: ${filtered.length} items de ${dataToFilter.length} totales`);
+  return filtered;
+}
+
+export const TrustRelationshipFlow = ({ 
+  data, 
+  className, 
+  isLoading = false,
+  timeRange = '24h',
+  onTimeRangeChange
+}: TrustRelationshipFlowProps) => {
+
+  // Debug: Ver qué datos están llegando
+  console.log('[TrustRelationshipFlow] Datos recibidos:', data);
+  console.log('[TrustRelationshipFlow] TimeRange seleccionado:', timeRange);
+  console.log('[TrustRelationshipFlow] Datos con timestamps:', data.map(d => ({ stage: d.stage, timestamp: d.timestamp })));
+  
+  // Usar useMemo para recalcular el filtro cuando cambien los datos o el timeRange
+  // IMPORTANTE: Los hooks deben estar antes de cualquier return condicional
+  const filteredData = useMemo(() => {
+    const result = filterDataByTimeRange(data, timeRange);
+    console.log('[TrustRelationshipFlow] Datos filtrados (useMemo):', result);
+    console.log('[TrustRelationshipFlow] Cantidad de datos filtrados:', result.length);
+    return result;
+  }, [data, timeRange]);
 
   // Si está cargando, mostrar skeleton
   if (isLoading) {
@@ -89,7 +162,7 @@ export const TrustRelationshipFlow = ({ data, className, isLoading = false }: Tr
   }
 
   // Calcular métricas actuales (último punto de datos)
-  const currentData = data.length > 0 ? data[data.length - 1] : null;
+  const currentData = filteredData.length > 0 ? filteredData[filteredData.length - 1] : null;
   const currentTime = new Date().toLocaleTimeString('es-ES', {
     hour: '2-digit',
     minute: '2-digit',
@@ -104,10 +177,18 @@ export const TrustRelationshipFlow = ({ data, className, isLoading = false }: Tr
             <h3 className="text-gray-600">Trust Relationship Flow</h3>
             <p className="text-sm text-gray-500 mt-1">Customer's perception about service in time</p>
           </div>
-          <select className="text-sm border rounded-md px-3 py-1.5 bg-white focus:ring-2 focus:ring-blue-500">
-            <option>Last 24 hours</option>
-            <option>Last week</option>
-            <option>Last month</option>
+          <select 
+            className="text-sm border rounded-md px-3 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
+            value={timeRange}
+            onChange={(e) => {
+              const newRange = e.target.value as '24h' | 'week' | 'month';
+              console.log('[TrustRelationshipFlow] Selector cambiado a:', newRange);
+              onTimeRangeChange?.(newRange);
+            }}
+          >
+            <option value="24h">Last 24 hours</option>
+            <option value="week">Last week</option>
+            <option value="month">Last month</option>
           </select>
         </div>
       </div>
@@ -115,7 +196,7 @@ export const TrustRelationshipFlow = ({ data, className, isLoading = false }: Tr
       <div className="h-64 mt-6 relative">
         {/* Siempre mostrar el gráfico, incluso sin datos */}
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
+              <LineChart data={filteredData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}

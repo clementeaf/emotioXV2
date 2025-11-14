@@ -80,7 +80,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   
   // Preparar datos para CPVCard usando timeSeriesData
   const cpvTrendData = smartVOCData?.timeSeriesData?.map(item => ({
-    date: new Date(item.date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+    date: new Date(item.date + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
     value: item.score
   })) || [];
 
@@ -104,8 +104,18 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     detractors: smartVOCData.detractors || 0
   } : null;
 
-  // TrustFlow data derivado
-  const trustFlowData = smartVOCData?.timeSeriesData || [];
+  // TrustFlow data derivado - mapear timeSeriesData al formato esperado por TrustRelationshipFlow
+  const trustFlowData = (smartVOCData?.timeSeriesData || []).map(item => ({
+    stage: new Date(item.date + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+    nps: item.nps || 0,
+    nev: item.nev || 0,
+    timestamp: item.date, // Guardar timestamp original para filtrado
+    count: item.count || 0
+  }));
+  
+  // Debug: Ver qué datos se están generando
+  console.log('[SmartVOCResults] timeSeriesData original:', smartVOCData?.timeSeriesData);
+  console.log('[SmartVOCResults] trustFlowData mapeado:', trustFlowData);
 
   // Debug logs removed
 
@@ -373,14 +383,14 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
           {/* TrustRelationshipFlow */}
           <div className="md:col-span-2">
             <TrustRelationshipFlow
-              data={trustFlowData.map(item => ({
-                stage: new Date(item.date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
-                nps: item.nps,
-                nev: item.nev,
-                timestamp: item.date
-              }))}
+              data={trustFlowData}
               hasData={hasData}
               isLoading={isLoading}
+              timeRange={timeRange === 'Today' ? '24h' : timeRange === 'Week' ? 'week' : 'month'}
+              onTimeRangeChange={(range) => {
+                const newRange = range === '24h' ? 'Today' : range === 'week' ? 'Week' : 'Month';
+                setTimeRange(newRange as 'Today' | 'Week' | 'Month');
+              }}
             />
           </div>
         </div>

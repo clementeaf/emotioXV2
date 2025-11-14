@@ -939,7 +939,12 @@ export class ModuleResponseController {
 
       allResponses.forEach(response => {
         const timestamp = (response as Record<string, unknown>).timestamp as string || new Date().toISOString();
-        const dateKey = new Date(timestamp).toISOString().split('T')[0];
+        // Usar zona horaria local del servidor para agrupar fechas correctamente
+        const date = new Date(timestamp);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const dateKey = `${year}-${month}-${day}`;
         if (!responsesByDate[dateKey]) {
           responsesByDate[dateKey] = [];
         }
@@ -963,9 +968,12 @@ export class ModuleResponseController {
         const avgNps = dateNpsScores.length > 0 ? dateNpsScores.reduce((a, b) => a + b, 0) / dateNpsScores.length : 0;
         const avgNev = dateNevScores.length > 0 ? dateNevScores.reduce((a, b) => a + b, 0) / dateNevScores.length : 0;
 
+        // Formatear fecha usando la fecha ISO completa para evitar problemas de zona horaria
+        // date viene como 'YYYY-MM-DD', agregamos hora del mediodía para evitar problemas de zona horaria
+        const dateObj = new Date(date + 'T12:00:00');
         return {
           date,
-          stage: new Date(date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+          stage: dateObj.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
           nps: avgNps,
           nev: avgNev,
           count: dateResponses.length

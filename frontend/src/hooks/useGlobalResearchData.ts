@@ -584,7 +584,12 @@ function processTrustFlowData(groupedResponses: QuestionWithResponses[]): TrustF
     if (questionGroup.responses && Array.isArray(questionGroup.responses)) {
       questionGroup.responses.forEach((response: any) => {
         if (response.timestamp) {
-          const dateKey = new Date(response.timestamp).toISOString().split('T')[0];
+          // Usar zona horaria local para agrupar fechas correctamente
+          const date = new Date(response.timestamp);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const dateKey = `${year}-${month}-${day}`;
           if (!responsesByDate[dateKey]) {
             responsesByDate[dateKey] = [];
           }
@@ -625,13 +630,15 @@ function processTrustFlowData(groupedResponses: QuestionWithResponses[]): TrustF
     const avgNps = npsScores.length > 0 ? npsScores.reduce((a, b) => a + b, 0) / npsScores.length : 0;
     const avgNev = nevScores.length > 0 ? nevScores.reduce((a, b) => a + b, 0) / nevScores.length : 0;
 
+    // date viene como 'YYYY-MM-DD', agregamos hora del mediodía para evitar problemas de zona horaria
+    const dateObj = new Date(date + 'T12:00:00');
     return {
-      stage: new Date(date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+      stage: dateObj.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
       nps: Math.round(avgNps * 10) / 10,
       nev: Math.round(avgNev * 10) / 10,
       timestamp: date
     };
-  }).sort((a, b) => new Date(a.stage).getTime() - new Date(b.stage).getTime());
+  }).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }
 
 // Función para combinar configuración con respuestas

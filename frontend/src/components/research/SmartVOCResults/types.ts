@@ -21,6 +21,7 @@ export interface TrustFlowData {
   nps: number;
   nev: number;
   count?: number;
+  timestamp?: string; // Timestamp original para filtrado por rango de tiempo
 }
 
 export interface CPVChartData {

@@ -308,7 +308,7 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
   const allScores = [...csatScores, ...cesScores, ...nevScores, ...cvScores].filter(score => score > 0);
   const averageScore = allScores.length > 0 ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 10) / 10 : 0;
 
-  // Generar time series data
+  // Generar time series data - incluir todas las fechas que tengan CUALQUIER respuesta SmartVOC
   const responsesByDate: { [key: string]: Array<{
     questionKey: string;
     response: unknown;
@@ -317,7 +317,12 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
     timestamp: string;
   }> } = {};
   allSmartVOCResponses.forEach(response => {
-    const dateKey = new Date(response.timestamp || new Date()).toISOString().split('T')[0];
+    // Usar zona horaria local para agrupar fechas correctamente
+    const date = new Date(response.timestamp || new Date());
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
     if (!responsesByDate[dateKey]) {
       responsesByDate[dateKey] = [];
     }
@@ -359,6 +364,7 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
       })
       .filter(score => score !== 0);
 
+    // Calcular promedios - si no hay datos de NPS/NEV para esta fecha, usar 0
     const avgNps = dateNpsScores.length > 0 ? dateNpsScores.reduce((a, b) => a + b, 0) / dateNpsScores.length : 0;
     const avgNev = dateNevScores.length > 0 ? dateNevScores.reduce((a, b) => a + b, 0) / dateNevScores.length : 0;
 
@@ -370,13 +376,15 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
       count: dateResponses.length
     };
   }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  console.log('[useSmartVOCResponses] timeSeriesData generado:', timeSeriesData);
 
   // Generar datos para CPVCard
   const cpvValue = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
 
   // Generar datos para NPSQuestion
   const monthlyNPSData = timeSeriesData.map(item => ({
-    month: new Date(item.date).toLocaleDateString('es-ES', { month: 'short' }),
+    month: new Date(item.date + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' }),
     promoters: totalResponses > 0 ? Math.round((promoters / totalResponses) * item.count) : 0,
     neutrals: totalResponses > 0 ? Math.round((neutrals / totalResponses) * item.count) : 0,
     detractors: totalResponses > 0 ? Math.round((detractors / totalResponses) * item.count) : 0,
