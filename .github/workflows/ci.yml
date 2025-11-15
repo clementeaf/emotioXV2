@@ -65,6 +65,8 @@ jobs:
     
     - name: Build Frontend
       run: cd frontend && npm ci && npm run build
+      env:
+        NEXT_PUBLIC_PUBLIC_TESTS_URL: ${{ secrets.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net' }}
     
     - name: Build Shared
       run: cd shared && npm ci && npx tsc
