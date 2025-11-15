@@ -1,5 +1,7 @@
 'use client';
 
+import React from 'react';
+
 import { CognitiveTaskQuestion } from '../types';
 import { NavigationFlowData } from './NavigationFlow/types';
 import { AnalysisTabType } from './AnalysisTabs';
@@ -66,9 +68,52 @@ export function QuestionContainer({
   themeImageSrc,
   choiceImageSrc
 }: QuestionContainerProps) {
+  /**
+   * Mapeo de tipos de visualización a sus componentes y renderizado
+   */
+  const renderViewContent = (): React.ReactNode => {
+    const viewMap: Record<QuestionViewType, React.ReactNode> = {
+      sentiment: sentimentData ? (
+        <MainContent
+          data={sentimentData}
+          initialActiveTab={initialActiveTab}
+          themeImageSrc={themeImageSrc}
+        />
+      ) : null,
+      choice: choiceData ? (
+        <ChoiceResults
+          data={choiceData}
+          imageSrc={choiceImageSrc}
+        />
+      ) : null,
+      ranking: rankingData ? (
+        <RankingResults data={rankingData} />
+      ) : null,
+      linear_scale: linearScaleData ? (
+        <LinearScaleResults data={linearScaleData} />
+      ) : null,
+      rating: ratingData ? (
+        <RatingResults data={ratingData} />
+      ) : null,
+      preference: preferenceTestData ? (
+        <PreferenceTestResults data={preferenceTestData} />
+      ) : null,
+      image_selection: imageSelectionData ? (
+        <ImageSelectionResults data={imageSelectionData} />
+      ) : null,
+      navigation_flow: (
+        <NavigationFlowResults
+          researchId={questionId}
+          data={navigationFlowData}
+        />
+      )
+    };
+
+    return viewMap[viewType] || null;
+  };
+
   return (
     <div className="w-full bg-white rounded-lg border border-neutral-200 mb-6">
-      {/* Sección de pregunta y estado */}
       <QuestionInfo
         questionId={questionId}
         questionText={questionText}
@@ -78,58 +123,7 @@ export function QuestionContainer({
         hasNewData={hasNewData}
       />
 
-      {/* Contenido principal según el tipo de visualización */}
-      {viewType === 'sentiment' && sentimentData && (
-        <MainContent
-          data={sentimentData}
-          initialActiveTab={initialActiveTab}
-          themeImageSrc={themeImageSrc}
-        />
-      )}
-
-      {viewType === 'choice' && choiceData && (
-        <ChoiceResults
-          data={choiceData}
-          imageSrc={choiceImageSrc}
-        />
-      )}
-
-      {viewType === 'ranking' && rankingData && (
-        <RankingResults
-          data={rankingData}
-        />
-      )}
-
-      {viewType === 'linear_scale' && linearScaleData && (
-        <LinearScaleResults
-          data={linearScaleData}
-        />
-      )}
-
-      {viewType === 'rating' && ratingData && (
-        <RatingResults
-          data={ratingData}
-        />
-      )}
-
-      {viewType === 'preference' && preferenceTestData && (
-        <PreferenceTestResults
-          data={preferenceTestData}
-        />
-      )}
-
-      {viewType === 'image_selection' && imageSelectionData && (
-        <ImageSelectionResults
-          data={imageSelectionData}
-        />
-      )}
-
-      {viewType === 'navigation_flow' && (
-        <NavigationFlowResults
-          researchId={questionId}
-          data={navigationFlowData}
-        />
-      )}
+      {renderViewContent()}
     </div>
   );
 }
