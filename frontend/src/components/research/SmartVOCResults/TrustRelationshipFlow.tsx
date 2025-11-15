@@ -107,30 +107,23 @@ function filterDataByTimeRange(dataToFilter: TrustFlowData[], range: '24h' | 'we
     default:
       return dataToFilter;
   }
-  
-  // Calcular fecha de corte usando solo la fecha (sin hora) para evitar problemas de zona horaria
+
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const cutoffDate = new Date(today);
   cutoffDate.setDate(cutoffDate.getDate() - daysBack);
   
-  // Convertir a string 'YYYY-MM-DD' para comparación directa
   const cutoffDateStr = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}-${String(cutoffDate.getDate()).padStart(2, '0')}`;
   
-  console.log(`[TrustRelationshipFlow] Filtrando con rango: ${range}, días atrás: ${daysBack}, cutoff: ${cutoffDateStr}`);
   
   const filtered = dataToFilter.filter(item => {
-    // item.timestamp viene como 'YYYY-MM-DD', comparar directamente como string
     if (item.timestamp && typeof item.timestamp === 'string') {
       const passes = item.timestamp >= cutoffDateStr;
-      console.log(`[TrustRelationshipFlow] Item ${item.timestamp} >= ${cutoffDateStr} = ${passes}`);
       return passes;
     }
-    // Si no hay timestamp, incluir todos los datos (fallback)
-    console.log(`[TrustRelationshipFlow] Item sin timestamp, incluyendo por defecto`);
+  
     return true;
   });
   
-  console.log(`[TrustRelationshipFlow] Resultado del filtro: ${filtered.length} items de ${dataToFilter.length} totales`);
   return filtered;
 }
 
@@ -141,27 +134,16 @@ export const TrustRelationshipFlow = ({
   timeRange = '24h',
   onTimeRangeChange
 }: TrustRelationshipFlowProps) => {
-
-  // Debug: Ver qué datos están llegando
-  console.log('[TrustRelationshipFlow] Datos recibidos:', data);
-  console.log('[TrustRelationshipFlow] TimeRange seleccionado:', timeRange);
-  console.log('[TrustRelationshipFlow] Datos con timestamps:', data.map(d => ({ stage: d.stage, timestamp: d.timestamp })));
   
-  // Usar useMemo para recalcular el filtro cuando cambien los datos o el timeRange
-  // IMPORTANTE: Los hooks deben estar antes de cualquier return condicional
   const filteredData = useMemo(() => {
     const result = filterDataByTimeRange(data, timeRange);
-    console.log('[TrustRelationshipFlow] Datos filtrados (useMemo):', result);
-    console.log('[TrustRelationshipFlow] Cantidad de datos filtrados:', result.length);
     return result;
   }, [data, timeRange]);
 
-  // Si está cargando, mostrar skeleton
   if (isLoading) {
     return <TrustRelationshipFlowSkeleton />;
   }
 
-  // Calcular métricas actuales (último punto de datos)
   const currentData = filteredData.length > 0 ? filteredData[filteredData.length - 1] : null;
   const currentTime = new Date().toLocaleTimeString('es-ES', {
     hour: '2-digit',
@@ -170,7 +152,7 @@ export const TrustRelationshipFlow = ({
   });
 
   return (
-    <Card className={cn('p-6', className)}>
+    <Card className={cn('p-6', className, 'h-96')}>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div>
@@ -182,7 +164,6 @@ export const TrustRelationshipFlow = ({
             value={timeRange}
             onChange={(e) => {
               const newRange = e.target.value as '24h' | 'week' | 'month';
-              console.log('[TrustRelationshipFlow] Selector cambiado a:', newRange);
               onTimeRangeChange?.(newRange);
             }}
           >

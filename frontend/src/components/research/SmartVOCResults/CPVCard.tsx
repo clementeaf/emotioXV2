@@ -123,26 +123,20 @@ export const CPVCard = ({
   value,
   timeRange,
   onTimeRangeChange,
-  trendData,
   className,
   satisfaction = 8.4,
   retention = 92,
   impact = 'Alto',
   trend = 'Positiva',
   hasData = true,
-  csatPercentage = 0,
-  cesPercentage = 0,
-  peakValue = 0,
   isLoading = false
 }: CPVCardProps) => {
-  const percentChange = 2.5; // Valor de ejemplo para el cambio porcentual
+  const percentChange = 2.5;
 
-  // Si está cargando, mostrar skeleton
   if (isLoading) {
     return <CPVCardSkeleton />;
   }
 
-  // Si no hay datos, mostrar mensaje informativo
   if (!hasData) {
     return (
       <Card className={cn('relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white h-96', className)}>
