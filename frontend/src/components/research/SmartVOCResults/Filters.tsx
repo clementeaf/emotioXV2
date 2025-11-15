@@ -37,7 +37,6 @@ export function Filters({ className, researchId }: FiltersProps) {
 
   const [showMoreSections, setShowMoreSections] = useState<Record<string, boolean>>({});
 
-  // Generar secciones de filtros SOLO con datos reales (filtrar secciones vacías)
   const filterSections: FilterSection[] = [
     ...(demographicsData?.countries && demographicsData.countries.length > 0 ? [{
       title: 'Country',
@@ -70,7 +69,6 @@ export function Filters({ className, researchId }: FiltersProps) {
     }] : [])
   ].filter(section => section.items.length > 0);
 
-  // Mostrar resumen de datos si hay muchos participantes
   const totalParticipants = demographicsData?.participants?.reduce((sum, item) => sum + item.count, 0) || 0;
   const showDataSummary = totalParticipants > 10;
 

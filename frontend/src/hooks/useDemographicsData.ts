@@ -200,9 +200,9 @@ const processDemographicsData = (groupedResponses: GroupedResponsesData): Demogr
 };
 
 export const useDemographicsData = (researchId: string) => {
-  // Usar React Query con el mismo query key que otros hooks para compartir cache
+  // Usar React Query con query key específico para demographics para evitar conflictos
   const query = useQuery({
-    queryKey: ['moduleResponses', 'research', researchId],
+    queryKey: ['demographicsData', 'research', researchId],
     queryFn: async () => {
       if (!researchId) {
         throw new Error('Research ID es requerido');

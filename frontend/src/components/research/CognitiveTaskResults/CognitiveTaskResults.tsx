@@ -24,7 +24,6 @@ import type {
 import {
   getViewType,
   getQuestionType,
-  getSimplifiedQuestionType
 } from './utils/question-type-mapper';
 import {
   createProcessedDataIndex,
@@ -38,17 +37,18 @@ import {
   transformPreferenceTestData,
   transformNavigationFlowData
 } from './utils/data-transformers';
+import { createQuestionsFromConfig } from './utils/question-builder';
 
 interface CognitiveTaskResultsProps {
   researchId?: string;
 }
 
-interface ResearchConfig {
+export interface ResearchConfig {
   questions?: ResearchConfigQuestionWithFiles[];
   [key: string]: unknown;
 }
 
-interface FinalQuestionData {
+export interface FinalQuestionData {
   key: string;
   questionId: string;
   questionType: string;
@@ -110,199 +110,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     );
   }
 
-  const createQuestionsFromConfig = () => {
-    const fallbackConfig = (researchConfig as unknown) as ResearchConfig | null;
-    if (!fallbackConfig?.questions) {
-      return [
-        {
-          key: 'question-cognitive_short_text',
-          questionId: 'cognitive_short_text',
-          questionType: 'short_text' as const,
-          questionText: 'Pregunta breve',
-          required: false,
-          conditionalityDisabled: false,
-          hasNewData: false,
-          viewType: 'sentiment' as const,
-          sentimentData: undefined,
-          choiceData: undefined,
-          rankingData: undefined,
-          linearScaleData: undefined,
-          ratingData: undefined,
-          preferenceTestData: undefined,
-          imageSelectionData: undefined,
-          navigationFlowData: undefined,
-          initialActiveTab: 'sentiment' as const,
-          themeImageSrc: '',
-        },
-        {
-          key: 'question-cognitive_long_text',
-          questionId: 'cognitive_long_text',
-          questionType: 'long_text' as const,
-          questionText: 'Crees que podría mejorar?',
-          required: false,
-          conditionalityDisabled: false,
-          hasNewData: false,
-          viewType: 'sentiment' as const,
-          sentimentData: undefined,
-          choiceData: undefined,
-          rankingData: undefined,
-          linearScaleData: undefined,
-          ratingData: undefined,
-          preferenceTestData: undefined,
-          imageSelectionData: undefined,
-          navigationFlowData: undefined,
-          initialActiveTab: 'sentiment' as const,
-          themeImageSrc: '',
-        },
-        {
-          key: 'question-cognitive_single_choice',
-          questionId: 'cognitive_single_choice',
-          questionType: 'multiple_choice' as const,
-          questionText: 'Cual de estos colores prefieres?',
-          required: false,
-          conditionalityDisabled: false,
-          hasNewData: false,
-          viewType: 'choice' as const,
-          sentimentData: undefined,
-          choiceData: undefined,
-          rankingData: undefined,
-          linearScaleData: undefined,
-          ratingData: undefined,
-          preferenceTestData: undefined,
-          imageSelectionData: undefined,
-          navigationFlowData: undefined,
-          initialActiveTab: 'sentiment' as const,
-          themeImageSrc: '',
-        },
-        {
-          key: 'question-cognitive_multiple_choice',
-          questionId: 'cognitive_multiple_choice',
-          questionType: 'multiple_choice' as const,
-          questionText: 'Cual de estas opciones prefieres?',
-          required: false,
-          conditionalityDisabled: false,
-          hasNewData: false,
-          viewType: 'choice' as const,
-          sentimentData: undefined,
-          choiceData: undefined,
-          rankingData: undefined,
-          linearScaleData: undefined,
-          ratingData: undefined,
-          preferenceTestData: undefined,
-          imageSelectionData: undefined,
-          navigationFlowData: undefined,
-          initialActiveTab: 'sentiment' as const,
-          themeImageSrc: '',
-        },
-        {
-          key: 'question-cognitive_linear_scale',
-          questionId: 'cognitive_linear_scale',
-          questionType: 'rating' as const,
-          questionText: 'Califica a la marca',
-          required: false,
-          conditionalityDisabled: false,
-          hasNewData: false,
-          viewType: 'linear_scale' as const,
-          sentimentData: undefined,
-          choiceData: undefined,
-          rankingData: undefined,
-          linearScaleData: undefined,
-          ratingData: undefined,
-          preferenceTestData: undefined,
-          imageSelectionData: undefined,
-          navigationFlowData: undefined,
-          initialActiveTab: 'sentiment' as const,
-          themeImageSrc: '',
-        },
-        {
-          key: 'question-cognitive_ranking',
-          questionId: 'cognitive_ranking',
-          questionType: 'ranking' as const,
-          questionText: 'Cual es tu mayor preferencia',
-          required: false,
-          conditionalityDisabled: false,
-          hasNewData: false,
-          viewType: 'ranking' as const,
-          sentimentData: undefined,
-          choiceData: undefined,
-          rankingData: undefined,
-          linearScaleData: undefined,
-          ratingData: undefined,
-          preferenceTestData: undefined,
-          imageSelectionData: undefined,
-          navigationFlowData: undefined,
-          initialActiveTab: 'sentiment' as const,
-          themeImageSrc: '',
-        },
-        {
-          key: 'question-cognitive_navigation_flow',
-          questionId: 'cognitive_navigation_flow',
-          questionType: 'rating' as const,
-          questionText: 'Flujo de navegación',
-          required: false,
-          conditionalityDisabled: false,
-          hasNewData: false,
-          viewType: 'navigation_flow' as const,
-          sentimentData: undefined,
-          choiceData: undefined,
-          rankingData: undefined,
-          linearScaleData: undefined,
-          ratingData: undefined,
-          preferenceTestData: undefined,
-          imageSelectionData: undefined,
-          navigationFlowData: undefined,
-          initialActiveTab: 'sentiment' as const,
-          themeImageSrc: '',
-        },
-        {
-          key: 'question-cognitive_preference_test',
-          questionId: 'cognitive_preference_test',
-          questionType: 'preference_test' as const,
-          questionText: 'Cual de estas imagenes te parece mas adecuada?',
-          required: false,
-          conditionalityDisabled: false,
-          hasNewData: false,
-          viewType: 'preference' as const,
-          sentimentData: undefined,
-          choiceData: undefined,
-          rankingData: undefined,
-          linearScaleData: undefined,
-          ratingData: undefined,
-          preferenceTestData: undefined,
-          imageSelectionData: undefined,
-          navigationFlowData: undefined,
-          initialActiveTab: 'sentiment' as const,
-          themeImageSrc: '',
-        }
-      ];
-    }
-
-    if (!fallbackConfig?.questions) return [];
-    
-    return fallbackConfig.questions.map((question: ResearchConfigQuestionWithFiles) => {
-      return {
-        key: `question-${question.id}`,
-        questionId: question.id,
-        questionType: getSimplifiedQuestionType(question.type),
-        questionText: question.title || question.description || `Pregunta ${question.id}`,
-        required: question.required || false,
-        conditionalityDisabled: question.showConditionally || false,
-        hasNewData: false,
-        viewType: getViewType(question.type),
-        sentimentData: undefined,
-        choiceData: undefined,
-        rankingData: undefined,
-        linearScaleData: undefined,
-        ratingData: undefined,
-        preferenceTestData: undefined,
-        imageSelectionData: undefined,
-        navigationFlowData: undefined,
-        initialActiveTab: 'sentiment' as const,
-        themeImageSrc: '',
-      };
-    });
-  };
-
   let finalQuestions;
 
   const config = (researchConfig as unknown) as ResearchConfig | null;
@@ -311,7 +118,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     finalQuestions = config.questions.map((question: ResearchConfigQuestionWithFiles) => {
       const questionType = (question.type as string) || '';
       
-      // Usar índice optimizado para búsqueda O(1) en lugar de O(n)
       const processedDataForQuestion = findProcessedDataForQuestion(
         processedDataIndex,
         question.id,
@@ -359,7 +165,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
       return questionData;
     });
   } else {
-    finalQuestions = createQuestionsFromConfig();
+    finalQuestions = createQuestionsFromConfig(researchConfig);
   }
 
   return (
@@ -388,7 +194,17 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           />
         ))}
       </div>
-        <Filters researchId={researchId || ''} />
+      {researchId ? (
+        <Filters researchId={researchId} />
+      ) : (
+        <div className="w-80 shrink-0">
+          <div className="p-4 border border-neutral-200 rounded-lg bg-white">
+            <div className="text-sm text-neutral-500 italic text-center py-8">
+              No se pudo obtener el ID de investigación
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
