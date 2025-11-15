@@ -28,6 +28,7 @@ interface EmotionalStatesProps {
   instructionsText?: string;
   questionNumber?: string;
   questionType?: string;
+  title?: string;
 }
 
 export function EmotionalStates({
@@ -42,7 +43,8 @@ export function EmotionalStates({
   questionText,
   instructionsText,
   questionNumber = "2.4",
-  questionType = "NEV"
+  questionType = "NEV",
+  title
 }: EmotionalStatesProps) {
   const calculatedPositivePercentage = emotionalStates
     .filter(state => state.isPositive)
@@ -61,7 +63,7 @@ export function EmotionalStates({
       <div className="flex items-center justify-between mb-6">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-lg font-semibold">{questionNumber}- {questionText || "Net Emotional Value"} ({questionType})</h2>
+            <h2 className="text-lg font-semibold">{questionNumber}- {title || questionText || "Net Emotional Value (NEV)"}</h2>
           </div>
           {instructionsText && (
             <p className="text-gray-500 text-sm">{instructionsText}</p>

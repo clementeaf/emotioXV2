@@ -388,7 +388,8 @@ const processSmartVOCData = (groupedResponses: Record<string, Array<{
     promoters: totalResponses > 0 ? Math.round((promoters / totalResponses) * item.count) : 0,
     neutrals: totalResponses > 0 ? Math.round((neutrals / totalResponses) * item.count) : 0,
     detractors: totalResponses > 0 ? Math.round((detractors / totalResponses) * item.count) : 0,
-    npsRatio: npsScore
+    npsRatio: npsScore,
+    date: item.date // Incluir fecha original para filtrado
   }));
 
   return {
@@ -471,6 +472,7 @@ export const useSmartVOCResponses = (researchId: string) => {
   return {
     data: query.data || null,
     isLoading: query.isLoading,
-    error: query.error?.message || null
+    error: query.error?.message || null,
+    refetch: query.refetch
   };
 };

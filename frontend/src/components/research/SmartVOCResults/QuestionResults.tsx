@@ -89,7 +89,7 @@ export function QuestionResults({
       <div className="space-y-4">
         {/* Header - Solo mostrar el título de la pregunta */}
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-medium">{questionNumber}- {question} ({questionType})</h3>
+          <h3 className="text-lg font-medium">{questionNumber}- {title}</h3>
         </div>
 
         {/* Layout principal: barras horizontales + responses + gauge */}

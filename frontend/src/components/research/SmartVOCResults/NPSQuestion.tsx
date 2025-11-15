@@ -1,4 +1,5 @@
 import { ChevronDown, Target } from 'lucide-react';
+import { useMemo } from 'react';
 import {
   Bar,
   CartesianGrid,
@@ -130,16 +131,20 @@ interface NPSQuestionProps {
     neutrals: number;
     detractors: number;
     npsRatio: number;
+    date?: string; // Fecha original para filtrado
   }>;
   npsScore?: number;
   promoters?: number;
   detractors?: number;
   neutrals?: number;
   totalResponses?: number;
-  isLoading?: boolean; // Nueva prop para loading
+  isLoading?: boolean;
   questionText?: string;
   questionNumber?: string;
   questionType?: string;
+  title?: string;
+  timeRange?: 'Today' | 'Week' | 'Month';
+  onTimeRangeChange?: (range: 'Today' | 'Week' | 'Month') => void;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -185,12 +190,44 @@ export function NPSQuestion({
   isLoading = false,
   questionText,
   questionNumber = "2.5",
-  questionType = "NPS"
+  questionType = "NPS",
+  title,
+  timeRange = 'Month',
+  onTimeRangeChange
 }: NPSQuestionProps) {
   // Calcular porcentajes
   const total = promoters + detractors + neutrals;
   const promotersPercentage = total > 0 ? Math.round((promoters / total) * 100) : 0;
   const detractorsPercentage = total > 0 ? Math.round((detractors / total) * 100) : 0;
+
+  // Filtrar datos según el rango de tiempo seleccionado
+  const filteredMonthlyData = useMemo(() => {
+    if (!monthlyData || monthlyData.length === 0) return monthlyData;
+    if (timeRange === 'Month') return monthlyData;
+
+    const now = new Date();
+    let daysBack: number;
+    
+    switch (timeRange) {
+      case 'Today':
+        daysBack = 1;
+        break;
+      case 'Week':
+        daysBack = 7;
+        break;
+      default:
+        return monthlyData;
+    }
+
+    const cutoffDate = new Date(now);
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+
+    return monthlyData.filter(item => {
+      if (!item.date) return true; // Si no hay fecha, incluir
+      const itemDate = new Date(item.date + 'T12:00:00');
+      return itemDate >= cutoffDate;
+    });
+  }, [monthlyData, timeRange]);
 
   // Si está cargando, mostrar skeleton
   if (isLoading) {
@@ -198,11 +235,11 @@ export function NPSQuestion({
   }
 
   return (
-    <Card className="p-6 space-y-6">
-      <div className="space-y-4">
+    <Card className="p-6 space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-medium">{questionNumber}- {questionText || "Net Promoter Score"} ({questionType})</h3>
+            <h3 className="text-lg font-medium">{questionNumber}- {title || questionText || "Net Promoter Score (NPS)"}</h3>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Responses</span>
@@ -211,8 +248,8 @@ export function NPSQuestion({
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="space-y-2">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Promoters</span>
               <span className="text-sm font-medium">{promotersPercentage}%</span>
@@ -223,7 +260,7 @@ export function NPSQuestion({
               indicatorClassName="bg-green-500"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Detractors</span>
               <span className="text-sm font-medium">{detractorsPercentage}%</span>
@@ -236,34 +273,37 @@ export function NPSQuestion({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-blue-600" />
-            <span className="text-sm">NPS' question</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1">
+            <Target className="w-5 h-5 text-blue-600 flex-shrink-0" />
+            <span className="text-sm text-gray-500">{questionText || "On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?"}</span>
           </div>
-          <p className="text-sm text-gray-500">{questionText || "On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?"}</p>
-        </div>
-
-        <div className="flex justify-end">
-          <div className="w-24 h-24">
+          <div className="ml-4">
             <NPSCircularProgress value={npsScore} size={96} strokeWidth={8} />
           </div>
         </div>
 
-        <div className="h-[480px]">
-          {/* Siempre mostrar el gráfico, incluso sin datos */}
-            <>
-              <div className="flex justify-between items-center mb-4">
-                <CustomLegend />
-                <div className="relative inline-block">
-                  <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white">
-                    <span>Month</span>
-                    <ChevronDown size={16} />
-                  </button>
-                </div>
-              </div>
-              <ResponsiveContainer width="100%" height="90%">
-                <ComposedChart data={monthlyData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }} barGap={15}>
+        <div className="h-[320px] bg-gray-50 rounded-lg border border-gray-200 p-4">
+          <div className="flex justify-between items-center mb-3">
+            <CustomLegend />
+            <div className="relative inline-block">
+              <select
+                className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none cursor-pointer pr-8"
+                value={timeRange}
+                onChange={(e) => {
+                  const newRange = e.target.value as 'Today' | 'Week' | 'Month';
+                  onTimeRangeChange?.(newRange);
+                }}
+              >
+                <option value="Today">Hoy</option>
+                <option value="Week">Semana</option>
+                <option value="Month">Mes</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <ComposedChart data={filteredMonthlyData} margin={{ top: 10, right: 10, bottom: 20, left: 40 }} barGap={0}>
                   <defs>
                     <linearGradient id="npsGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#4338CA" stopOpacity={0.4} />
@@ -272,9 +312,10 @@ export function NPSQuestion({
                   </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    vertical={true}
+                    vertical={false}
+                    horizontal={true}
                     stroke="#E5E7EB"
-                    opacity={0.4}
+                    opacity={0.5}
                   />
                   <XAxis
                     dataKey="month"
@@ -290,41 +331,44 @@ export function NPSQuestion({
                     stroke="#9CA3AF"
                     fontSize={12}
                     domain={[0, 100]}
-                    hide={true}
+                    ticks={[0, 25, 50, 75, 100]}
+                    tickMargin={8}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar
                     dataKey="promoters"
                     name="Promoters"
                     fill="#10B981"
+                    stackId="nps"
                     radius={[4, 4, 0, 0]}
                   />
                   <Bar
                     dataKey="neutrals"
                     name="Neutrals"
                     fill="#F59E0B"
-                    radius={[4, 4, 0, 0]}
+                    stackId="nps"
+                    radius={[0, 0, 0, 0]}
                   />
                   <Bar
                     dataKey="detractors"
                     name="Detractors"
                     fill="#EF4444"
-                    radius={[4, 4, 0, 0]}
+                    stackId="nps"
+                    radius={[0, 0, 4, 4]}
                   />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </>
+              </ComposedChart>
+            </ResponsiveContainer>
         </div>
 
-        <div className="border-t border-gray-200 pt-4">
-          <div className="mb-2">
-            <h3 className="text-lg font-medium">Loyalty's Evolution</h3>
-            <div className="text-green-600 font-medium">
+        <div className="border-t border-gray-200 pt-3">
+          <div className="mb-3">
+            <h3 className="text-base font-medium">Loyalty's Evolution</h3>
+            <div className="text-green-600 font-medium text-sm mt-1">
               {totalResponses > 0 ? `${npsScore >= 0 ? '+' : ''}${npsScore} NPS Score` : 'No hay datos disponibles'}
             </div>
           </div>
 
-          <div className="flex mt-4">
+          <div className="flex mt-3">
             <div className="flex-1 flex flex-col items-center">
               <div className="text-lg font-semibold text-gray-700">{promotersPercentage}%</div>
               <div className="my-2">

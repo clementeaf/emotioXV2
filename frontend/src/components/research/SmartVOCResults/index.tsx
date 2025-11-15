@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
+import { ResultsStateHandler } from '@/components/research/shared/ResultsStateHandler';
+import { useSmartVOCData } from '@/api/domains/smart-voc/smart-voc.hooks';
 import { useSmartVOCResponses } from '@/hooks/useSmartVOCResponses';
 import { CPVCard } from './CPVCard';
 import { EmotionalStates } from './EmotionalStates';
@@ -11,6 +13,7 @@ import { Filters } from './Filters';
 import { MetricCard } from './MetricCard';
 import { NPSQuestion } from './NPSQuestion';
 import { QuestionResults } from './QuestionResults';
+import { SmartVOCResultsSkeleton } from './SmartVOCResultsSkeleton';
 import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { VOCQuestion } from './VOCQuestion';
 import { SmartVOCResultsProps } from './types';
@@ -28,6 +31,10 @@ import {
   processNEVData,
   isValidComment
 } from './utils/data-processors';
+import {
+  calculateTimeAgo,
+  getLatestTimestamp
+} from './utils/time-helpers';
 
 export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps) {
   const [timeRange, setTimeRange] = useState<'Today' | 'Week' | 'Month'>('Today');
@@ -35,8 +42,14 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   const {
     data: smartVOCData,
     isLoading,
-    error
+    error,
+    refetch
   } = useSmartVOCResponses(researchId);
+
+  const {
+    data: smartVOCConfig,
+    isLoading: isLoadingConfig
+  } = useSmartVOCData(researchId);
 
   const hasData = useMemo(() => {
     return smartVOCData !== null && !error;
@@ -92,19 +105,60 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     return processNEVData(smartVOCData);
   }, [smartVOCData]);
 
-  const csatQuestion = getQuestionText('csat') || 
+  // Obtener preguntas reales desde la configuración
+  const getQuestionFromConfig = useCallback((questionType: string) => {
+    if (!smartVOCConfig?.questions) return null;
+    return smartVOCConfig.questions.find(q => 
+      q.type?.toLowerCase().includes(questionType.toLowerCase()) ||
+      q.questionKey?.toLowerCase().includes(questionType.toLowerCase())
+    );
+  }, [smartVOCConfig]);
+
+  const csatQuestionData = useMemo(() => getQuestionFromConfig('csat'), [getQuestionFromConfig]);
+  const cesQuestionData = useMemo(() => getQuestionFromConfig('ces'), [getQuestionFromConfig]);
+  const cvQuestionData = useMemo(() => getQuestionFromConfig('cv'), [getQuestionFromConfig]);
+  const nevQuestionData = useMemo(() => getQuestionFromConfig('nev'), [getQuestionFromConfig]);
+  const npsQuestionData = useMemo(() => getQuestionFromConfig('nps'), [getQuestionFromConfig]);
+  const vocQuestionData = useMemo(() => getQuestionFromConfig('voc'), [getQuestionFromConfig]);
+
+  // Helper para obtener título descriptivo (no ID)
+  const getDescriptiveTitle = useCallback((questionData: any, questionType: string, defaultTitle: string) => {
+    if (!questionData) return defaultTitle;
+    // Si el title parece ser un ID (solo letras/números sin espacios), usar el default
+    if (questionData.title && /^[a-z0-9]+$/i.test(questionData.title.replace(/[^a-z0-9]/gi, ''))) {
+      return defaultTitle;
+    }
+    // Si el title es descriptivo, usarlo
+    if (questionData.title && questionData.title.trim().length > 0) {
+      return questionData.title;
+    }
+    return defaultTitle;
+  }, []);
+
+  const csatTitle = getDescriptiveTitle(csatQuestionData, 'csat', 'Customer Satisfaction (CSAT)');
+  const csatQuestion = csatQuestionData?.description || getQuestionText('csat') || 
     "How would you rate your overall satisfaction level with [company]?";
-  const cesQuestion = getQuestionText('ces') || 
+  
+  const cesTitle = getDescriptiveTitle(cesQuestionData, 'ces', 'Customer Effort Score (CES)');
+  const cesQuestion = cesQuestionData?.description || getQuestionText('ces') || 
     "It was easy for me to handle my issue too";
-  const cvQuestion = getQuestionText('cv') || 
+  
+  const cvTitle = getDescriptiveTitle(cvQuestionData, 'cv', 'Cognitive Value (CV)');
+  const cvQuestion = cvQuestionData?.description || getQuestionText('cv') || 
     "Is there value in your solution over the memory of customers?";
-  const nevQuestion = getQuestionText('nev') || 
+  
+  const nevTitle = getDescriptiveTitle(nevQuestionData, 'nev', 'Net Emotional Value (NEV)');
+  const nevQuestion = nevQuestionData?.description || getQuestionText('nev') || 
     "How do you feel about the experience offered by the [company]?";
-  const nevInstructions = getQuestionInstructions('nev') || 
+  const nevInstructions = nevQuestionData?.instructions || getQuestionInstructions('nev') || 
     "Please select up to 3 options from these 20 emotional moods";
-  const npsQuestion = getQuestionText('nps') || 
+  
+  const npsTitle = getDescriptiveTitle(npsQuestionData, 'nps', 'Net Promoter Score (NPS)');
+  const npsQuestion = npsQuestionData?.description || getQuestionText('nps') || 
     "How likely are you to recommend [company] to a friend or colleague?";
-  const vocQuestion = getQuestionText('voc') || 
+  
+  const vocTitle = getDescriptiveTitle(vocQuestionData, 'voc', 'Voice of Customer (VOC)');
+  const vocQuestion = vocQuestionData?.description || getQuestionText('voc') || 
     "What else would you like to tell us about your experience?";
 
   const csatData = useMemo(() => {
@@ -138,7 +192,49 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     })) || [];
   }, [smartVOCData?.vocResponses]);
 
+  const csatTimeAgo = useMemo(() => {
+    if (!smartVOCData?.smartVOCResponses) return '0s';
+    const csatResponses = smartVOCData.smartVOCResponses.filter(
+      r => r.questionKey?.toLowerCase().includes('csat')
+    );
+    const latestTimestamp = getLatestTimestamp(csatResponses);
+    return calculateTimeAgo(latestTimestamp);
+  }, [smartVOCData?.smartVOCResponses]);
+
+  const cesTimeAgo = useMemo(() => {
+    if (!smartVOCData?.smartVOCResponses) return '0s';
+    const cesResponses = smartVOCData.smartVOCResponses.filter(
+      r => r.questionKey?.toLowerCase().includes('ces')
+    );
+    const latestTimestamp = getLatestTimestamp(cesResponses);
+    return calculateTimeAgo(latestTimestamp);
+  }, [smartVOCData?.smartVOCResponses]);
+
+  const cvTimeAgo = useMemo(() => {
+    if (!smartVOCData?.smartVOCResponses) return '0s';
+    const cvResponses = smartVOCData.smartVOCResponses.filter(
+      r => r.questionKey?.toLowerCase().includes('cv')
+    );
+    const latestTimestamp = getLatestTimestamp(cvResponses);
+    return calculateTimeAgo(latestTimestamp);
+  }, [smartVOCData?.smartVOCResponses]);
+
+  const nevResponseTime = useMemo(() => {
+    if (!smartVOCData?.smartVOCResponses) return '0s';
+    const nevResponses = smartVOCData.smartVOCResponses.filter(
+      r => r.questionKey?.toLowerCase().includes('nev')
+    );
+    const latestTimestamp = getLatestTimestamp(nevResponses);
+    return calculateTimeAgo(latestTimestamp);
+  }, [smartVOCData?.smartVOCResponses]);
+
   return (
+    <ResultsStateHandler
+      isLoading={isLoading}
+      error={error}
+      onRetry={() => refetch()}
+      loadingSkeleton={<SmartVOCResultsSkeleton />}
+    >
     <div className={cn('pt-4', className)}>
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -206,12 +302,12 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
           <div className="space-y-6">
             <QuestionResults
               questionNumber="2.1"
-              title="Customer Satisfaction Score"
+              title={csatTitle}
               questionType="CSAT"
               question={csatQuestion}
               responses={{
                 count: smartVOCData?.csatScores?.length || 0,
-                timeAgo: '0s'
+                timeAgo: csatTimeAgo
               }}
               score={safeCalculateAverage(smartVOCData?.csatScores)}
               distribution={[
@@ -235,12 +331,12 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
             <QuestionResults
               questionNumber="2.2"
-              title="Customer Effort Score (CES)"
+              title={cesTitle}
               questionType="CES"
               question={cesQuestion}
               responses={{
                 count: smartVOCData?.cesScores?.length || 0,
-                timeAgo: '0s'
+                timeAgo: cesTimeAgo
               }}
               score={safeCalculateAverage(smartVOCData?.cesScores)}
               distribution={[
@@ -264,12 +360,12 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
 
             <QuestionResults
               questionNumber="2.3"
-              title="Cognitive Value (CV)"
+              title={cvTitle}
               questionType="CV"
               question={cvQuestion}
               responses={{
                 count: smartVOCData?.cvScores?.length || 0,
-                timeAgo: '0s'
+                timeAgo: cvTimeAgo
               }}
               score={safeCalculateAverage(smartVOCData?.cvScores)}
               distribution={[
@@ -296,13 +392,14 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               longTermClusters={nevData.longTermClusters}
               shortTermClusters={nevData.shortTermClusters}
               totalResponses={nevData.totalResponses}
-              responseTime="0s"
+              responseTime={nevResponseTime}
               positivePercentage={nevData.positivePercentage}
               negativePercentage={nevData.negativePercentage}
               questionText={nevQuestion}
               instructionsText={nevInstructions}
               questionNumber="2.4"
               questionType="NEV"
+              title={nevTitle}
             />
 
             <NPSQuestion
@@ -312,10 +409,13 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               detractors={smartVOCData?.detractors || 0}
               neutrals={smartVOCData?.neutrals || 0}
               totalResponses={smartVOCData?.npsScores?.length || 0}
-              isLoading={isLoading}
+              isLoading={isLoading || isLoadingConfig}
               questionText={npsQuestion}
               questionNumber="2.5"
               questionType="NPS"
+              title={npsTitle}
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
             />
 
             <VOCQuestion
@@ -332,5 +432,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
         </div>
       </div>
     </div>
+    </ResultsStateHandler>
   );
 }
