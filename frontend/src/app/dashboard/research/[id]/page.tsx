@@ -6,9 +6,11 @@ interface ResearchPageProps {
   }>;
 }
 
-// Para soporte de export estático
+/**
+ * Genera parámetros estáticos para exportación estática
+ * Requerido cuando output: 'export' está habilitado
+ */
 export async function generateStaticParams() {
-  // Generar parámetros estáticos para rutas conocidas
   return [
     { id: 'demo' },
     { id: 'test' },
@@ -22,6 +24,16 @@ export async function generateStaticParams() {
  */
 export default async function ResearchPage({ params }: ResearchPageProps) {
   const { id: researchId } = await params;
+
+  if (!researchId) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-gray-500">ID de investigación no válido</p>
+        </div>
+      </div>
+    );
+  }
 
   return <GroupedResponsesPageContent researchId={researchId} />;
 }
