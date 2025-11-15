@@ -37,7 +37,7 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_PUBLIC_TESTS_URL: ${{ secrets.NEXT_PUBLIC_PUBLIC_TESTS_URL }}
+          NEXT_PUBLIC_PUBLIC_TESTS_URL: ${{ secrets.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net' }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
