@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, Target } from 'lucide-react';
 
 import { Card } from '@/components/ui/Card';
@@ -43,7 +44,6 @@ export function EmotionalStates({
   questionText,
   instructionsText,
   questionNumber = "2.4",
-  questionType = "NEV",
   title
 }: EmotionalStatesProps) {
   const calculatedPositivePercentage = emotionalStates
@@ -56,9 +56,16 @@ export function EmotionalStates({
   const positivePercentage = customPositivePercentage ?? calculatedPositivePercentage;
   const negativePercentage = customNegativePercentage ?? calculatedNegativePercentage;
 
+  // Calcular ancho mínimo necesario para evitar superposición de etiquetas
+  const minChartWidth = useMemo(() => {
+    const minItemWidth = 28; // 24px mínimo + 4px gap
+    const calculatedWidth = emotionalStates.length * minItemWidth;
+    return Math.max(calculatedWidth, 400); // Mínimo 400px para gráficos pequeños
+  }, [emotionalStates.length]);
+
 
   return (
-    <Card className={cn('p-6 pb-14', className)}>
+    <Card className={cn('p-6 pb-24', className)}>
       {/* Encabezado de la pregunta */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex-1">
@@ -110,91 +117,71 @@ export function EmotionalStates({
       {/* Contenido principal - Layout horizontal: gráfico a la izquierda, clusters a la derecha */}
       <div className="flex gap-8 items-start">
         {/* Gráfico de estados emocionales - Ocupa todo el espacio disponible a la izquierda */}
-        <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex-1 min-w-0 overflow-visible">
           <h3 className="text-xl font-light text-gray-500 mb-2">Emotional states</h3>
           <p className="text-2xl font-bold mb-12">{positivePercentage.toFixed(2)}% Positive</p>
 
-          {/* Gráfico de barras - Ancho completo del contenedor */}
-          <div className="relative h-[360px] mt-8 pb-10" style={{ width: '100%' }}>
-            {/* Fondo cuadriculado */}
-            <div className="absolute inset-0 bottom-10">
-              {[100, 50, 0].map((value, i) => (
-                <div
-                  key={value}
-                  className="border-t border-gray-200"
-                  style={{
-                    position: 'absolute',
-                    top: `${i * 50}%`,
-                    left: '2rem',
-                    right: 0
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Valores del eje Y */}
-            <div className="absolute left-0 h-[calc(100%-40px)]">
-              {[100, 50, 0].map((value, i) => (
-                <div
-                  key={value}
-                  className="absolute text-sm text-gray-500"
-                  style={{ top: `${i * 50}%`, transform: 'translateY(-50%)' }}
-                >
-                  {value}
-                </div>
-              ))}
-            </div>
-
-            {/* Contenedor de barras - Usa todo el ancho disponible */}
-            <div className="absolute left-10 right-0 bottom-10 top-0 flex" style={{ width: 'calc(100% - 2.5rem)' }}>
-              {emotionalStates.map((state) => (
-                <div key={state.name} className="flex-1 relative flex flex-col items-center">
-                  {/* Porcentaje arriba de la barra */}
-                  <div
-                    className="absolute text-xs font-medium"
-                    style={{
-                      bottom: `${state.value}%`,
-                      transform: 'translateY(-100%)'
-                    }}
-                  >
-                    {state.value}%
+          {/* Gráfico de barras - Layout con flexbox sin absolute/relative */}
+          <div className="overflow-x-auto" style={{ width: '100%' }}>
+            <div className="flex gap-4" style={{ minWidth: `${minChartWidth}px` }}>
+              {/* Eje Y con valores */}
+              <div className="flex flex-col justify-between h-[300px] w-8 flex-shrink-0">
+                {[100, 50, 0].map((value) => (
+                  <div key={value} className="text-sm text-gray-500">
+                    {value}
                   </div>
+                ))}
+              </div>
 
-                  {/* La barra en sí */}
-                  <div
-                    className={cn(
-                      'absolute bottom-0 w-4 rounded-full',
-                      state.isPositive ? 'bg-[#4ADE80]' : 'bg-[#F87171]'
-                    )}
-                    style={{
-                      height: `${state.value}%`,
-                      left: '50%',
-                      transform: 'translateX(-50%)'
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
+              {/* Área del gráfico */}
+              <div className="flex-1 flex flex-col">
+                {/* Contenedor de barras con líneas de cuadrícula */}
+                <div className="flex gap-1 items-end h-[300px] border-b border-gray-200 border-t border-gray-200" style={{ backgroundImage: 'linear-gradient(to bottom, rgba(229, 231, 235, 0.5) 0px, rgba(229, 231, 235, 0.5) 1px, transparent 1px, transparent 149px, rgba(229, 231, 235, 0.5) 149px, rgba(229, 231, 235, 0.5) 150px, transparent 150px)' }}>
+                  {emotionalStates.map((state) => (
+                    <div key={state.name} className="flex-1 flex flex-col items-center justify-end" style={{ minWidth: '24px' }}>
+                      {/* Porcentaje arriba de la barra */}
+                      <div className="text-xs font-medium mb-1">
+                        {state.value}%
+                      </div>
 
-            {/* Nombres debajo del gráfico - Usa todo el ancho disponible */}
-            <div className="absolute left-10 right-0 bottom-[-48px] h-[80px] flex" style={{ width: 'calc(100% - 2.5rem)' }}>
-              {emotionalStates.map((state) => (
-                <div key={`label-${state.name}`} className="flex-1 flex justify-center">
-                  <div className="h-full flex flex-col items-center relative">
-                    <span
-                      className="text-xs text-gray-600 absolute top-0 whitespace-nowrap"
-                      style={{
-                        writingMode: 'vertical-lr',
-                        transform: 'rotate(180deg)',
-                        textOrientation: 'mixed',
-                        lineHeight: '1'
-                      }}
-                    >
-                      {state.name}
-                    </span>
-                  </div>
+                      {/* La barra en sí */}
+                      <div
+                        className={cn(
+                          'w-4 rounded-full',
+                          state.isPositive ? 'bg-[#4ADE80]' : 'bg-[#F87171]'
+                        )}
+                        style={{
+                          height: `${(state.value / 100) * 280}px`,
+                          minHeight: state.value > 0 ? '4px' : '0'
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+
+                {/* Nombres debajo del gráfico - Formato vertical */}
+                <div className="h-[100px] flex gap-1 mt-2">
+                  {emotionalStates.map((state) => (
+                    <div key={`label-${state.name}`} className="flex-1 flex justify-center" style={{ minWidth: '24px' }}>
+                      <div className="h-full flex flex-col items-center justify-start">
+                        <span
+                          className="text-[10px] text-gray-600 whitespace-nowrap"
+                          style={{
+                            writingMode: 'vertical-lr',
+                            transform: 'rotate(180deg)',
+                            textOrientation: 'mixed',
+                            lineHeight: '1.1',
+                            letterSpacing: '0.5px'
+                          }}
+                          title={state.name}
+                        >
+                          {state.name}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
