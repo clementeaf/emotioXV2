@@ -596,8 +596,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
           </div>
         </div>
 
-        {/* Sidebar de filtros alineado con el título "1.0.- Smart VOC" */}
-        <div className="w-80 shrink-0 mt-[52px]">
+        {/* Sidebar de filtros alineado con "2.1- Customer Satisfaction (CSAT)" */}
+        <div className="w-80 shrink-0">
           <Filters researchId={researchId} />
         </div>
       </div>

@@ -1,18 +1,20 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Card } from '@/components/ui/Card';
 import { useDemographicsData } from '@/hooks/useDemographicsData';
 
 import { Checkbox } from './ui/Checkbox';
 
+interface FilterItem {
+  id: string;
+  label: string;
+  count?: number;
+}
+
 interface FilterSection {
   title: string;
-  items: Array<{
-    id: string;
-    label: string;
-    count?: number;
-  }>;
+  items: FilterItem[];
   initialVisibleItems?: number;
 }
 
@@ -21,100 +23,240 @@ interface FiltersProps {
   researchId: string;
 }
 
+interface DemographicData {
+  countries?: FilterItem[];
+  ageRanges?: FilterItem[];
+  genders?: FilterItem[];
+  educationLevels?: FilterItem[];
+  userIds?: FilterItem[];
+  participants?: FilterItem[];
+}
+
+const MIN_CARD_HEIGHT = 400;
+const HEIGHT_PADDING = 20;
+const HEIGHT_CALCULATION_DELAY = 100;
+const MIN_PARTICIPANTS_FOR_SUMMARY = 10;
+
+const DEFAULT_EXPANDED_SECTIONS: Record<string, boolean> = {
+  'Country': true,
+  'Age range': true,
+  'Gender': true,
+  'Education level': true,
+  'User ID': true,
+  'Participants': true,
+};
+
+interface SectionConfig {
+  key: keyof DemographicData;
+  title: string;
+  initialVisibleItems?: number;
+}
+
+const SECTION_CONFIGS: SectionConfig[] = [
+  { key: 'countries', title: 'Country', initialVisibleItems: 5 },
+  { key: 'ageRanges', title: 'Age range', initialVisibleItems: 5 },
+  { key: 'genders', title: 'Gender' },
+  { key: 'educationLevels', title: 'Education level', initialVisibleItems: 5 },
+  { key: 'userIds', title: 'User ID', initialVisibleItems: 10 },
+  { key: 'participants', title: 'Participants', initialVisibleItems: 10 },
+];
+
+/**
+ * Construye las secciones de filtros a partir de los datos demográficos
+ * @param demographicsData - Datos demográficos procesados
+ * @returns Array de secciones de filtros con items
+ */
+function buildFilterSections(demographicsData: DemographicData | null): FilterSection[] {
+  if (!demographicsData) {
+    return [];
+  }
+
+  const sections: FilterSection[] = [];
+
+  for (const config of SECTION_CONFIGS) {
+    const items = demographicsData[config.key];
+    if (items && items.length > 0) {
+      sections.push({
+        title: config.title,
+        items,
+        initialVisibleItems: config.initialVisibleItems,
+      });
+    }
+  }
+
+  return sections;
+}
+
+interface DataSummaryProps {
+  totalParticipants: number;
+  countriesCount: number;
+  ageRangesCount: number;
+}
+
+/**
+ * Componente que muestra un resumen de los datos demográficos
+ */
+function DataSummary({ totalParticipants, countriesCount, ageRangesCount }: DataSummaryProps) {
+  return (
+    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+      <div className="text-sm text-green-800">
+        <div className="font-medium">Resumen de Datos</div>
+        <div>Total de participantes: {totalParticipants}</div>
+        <div>Países: {countriesCount}</div>
+        <div>Rangos de edad: {ageRangesCount}</div>
+      </div>
+    </div>
+  );
+}
+
+interface FilterItemComponentProps {
+  item: FilterItem;
+}
+
+/**
+ * Componente que renderiza un item individual del filtro
+ */
+function FilterItemComponent({ item }: FilterItemComponentProps) {
+  return (
+    <div className="flex items-center">
+      <Checkbox id={item.id} />
+      <label htmlFor={item.id} className="ml-2 text-sm text-gray-700">
+        {item.label}
+        {item.count !== undefined && (
+          <span className="text-gray-500 ml-1">({item.count})</span>
+        )}
+      </label>
+    </div>
+  );
+}
+
+interface FilterSectionComponentProps {
+  section: FilterSection;
+  isExpanded: boolean;
+  isShowingAll: boolean;
+  onToggleExpand: () => void;
+  onToggleShowMore: () => void;
+}
+
+/**
+ * Componente que renderiza una sección completa de filtros
+ */
+function FilterSectionComponent({
+  section,
+  isExpanded,
+  isShowingAll,
+  onToggleExpand,
+  onToggleShowMore,
+}: FilterSectionComponentProps) {
+  const visibleItems = useMemo(() => {
+    if (isShowingAll || !section.initialVisibleItems) {
+      return section.items;
+    }
+    return section.items.slice(0, section.initialVisibleItems);
+  }, [section.items, section.initialVisibleItems, isShowingAll]);
+
+  const hasMoreItems = section.initialVisibleItems
+    ? section.items.length > section.initialVisibleItems
+    : false;
+
+  const remainingCount = hasMoreItems
+    ? section.items.length - (section.initialVisibleItems || 0)
+    : 0;
+
+  return (
+    <div className="border-b border-gray-200 pb-4 last:border-b-0">
+      <button
+        onClick={onToggleExpand}
+        className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
+        aria-expanded={isExpanded}
+        aria-label={`${isExpanded ? 'Colapsar' : 'Expandir'} sección ${section.title}`}
+      >
+        {section.title}
+        {isExpanded ? (
+          <ChevronUp className="h-4 w-4 text-gray-500" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-gray-500" />
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="space-y-2">
+          {visibleItems.map((item) => (
+            <FilterItemComponent key={item.id} item={item} />
+          ))}
+
+          {hasMoreItems && (
+            <button
+              onClick={onToggleShowMore}
+              className="text-sm text-blue-600 hover:text-blue-800"
+              aria-label={isShowingAll ? 'Mostrar menos' : `Mostrar ${remainingCount} más`}
+            >
+              {isShowingAll ? 'Show less' : `Show ${remainingCount} more`}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Filters({ className, researchId }: FiltersProps) {
   const { data: demographicsData, isLoading, error } = useDemographicsData(researchId);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dynamicHeight, setDynamicHeight] = useState<number | 'auto'>('auto');
 
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    'Country': true,
-    'Age range': true,
-    'Gender': true,
-    'Education level': true,
-    'User ID': true,
-    'Participants': true,
-  });
-
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
+    DEFAULT_EXPANDED_SECTIONS
+  );
   const [showMoreSections, setShowMoreSections] = useState<Record<string, boolean>>({});
 
-  const filterSections: FilterSection[] = [
-    ...(demographicsData?.countries && demographicsData.countries.length > 0 ? [{
-      title: 'Country',
-      initialVisibleItems: 5,
-      items: demographicsData.countries
-    }] : []),
-    ...(demographicsData?.ageRanges && demographicsData.ageRanges.length > 0 ? [{
-      title: 'Age range',
-      initialVisibleItems: 5,
-      items: demographicsData.ageRanges
-    }] : []),
-    ...(demographicsData?.genders && demographicsData.genders.length > 0 ? [{
-      title: 'Gender',
-      items: demographicsData.genders
-    }] : []),
-    ...(demographicsData?.educationLevels && demographicsData.educationLevels.length > 0 ? [{
-      title: 'Education level',
-      initialVisibleItems: 5,
-      items: demographicsData.educationLevels
-    }] : []),
-    ...(demographicsData?.userIds && demographicsData.userIds.length > 0 ? [{
-      title: 'User ID',
-      initialVisibleItems: 10,
-      items: demographicsData.userIds
-    }] : []),
-    ...(demographicsData?.participants && demographicsData.participants.length > 0 ? [{
-      title: 'Participants',
-      initialVisibleItems: 10,
-      items: demographicsData.participants
-    }] : [])
-  ].filter(section => section.items.length > 0);
+  const filterSections = useMemo(
+    () => buildFilterSections(demographicsData),
+    [demographicsData]
+  );
 
-  const totalParticipants = demographicsData?.participants?.reduce((sum, item) => sum + item.count, 0) || 0;
-  const showDataSummary = totalParticipants > 10;
+  const totalParticipants = useMemo(() => {
+    return (
+      demographicsData?.participants?.reduce((sum, item) => sum + (item.count || 0), 0) || 0
+    );
+  }, [demographicsData?.participants]);
 
-  const toggleSection = (title: string) => {
+  const showDataSummary = totalParticipants > MIN_PARTICIPANTS_FOR_SUMMARY;
+
+  const toggleSection = useCallback((title: string) => {
     setExpandedSections(prev => ({
       ...prev,
-      [title]: !prev[title]
+      [title]: !prev[title],
     }));
-  };
+  }, []);
 
-  const toggleShowMore = (title: string) => {
+  const toggleShowMore = useCallback((title: string) => {
     setShowMoreSections(prev => ({
       ...prev,
-      [title]: !prev[title]
+      [title]: !prev[title],
     }));
-  };
+  }, []);
 
-  // Función para calcular la altura dinámica
-  const calculateDynamicHeight = () => {
-    if (containerRef.current) {
-
-      const container = containerRef.current;
-      const contentHeight = container.scrollHeight;
-
-      // Solo altura mínima, sin límite máximo para evitar scrollbar
-      const minHeight = 400; // Altura mínima en píxeles
-      let calculatedHeight = Math.max(minHeight, contentHeight);
-
-      // Agregar un pequeño padding para evitar que el contenido toque los bordes
-      calculatedHeight += 20;
-
-      setDynamicHeight(calculatedHeight);
+  const calculateDynamicHeight = useCallback(() => {
+    if (!containerRef.current) {
+      return;
     }
-  };
 
-  // Efecto para recalcular altura cuando cambian las secciones expandidas
+    const container = containerRef.current;
+    const contentHeight = container.scrollHeight;
+    const calculatedHeight = Math.max(MIN_CARD_HEIGHT, contentHeight) + HEIGHT_PADDING;
+
+    setDynamicHeight(calculatedHeight);
+  }, []);
+
   useEffect(() => {
-    // Pequeño delay para permitir que el DOM se actualice
     const timer = setTimeout(() => {
       calculateDynamicHeight();
-    }, 100);
+    }, HEIGHT_CALCULATION_DELAY);
 
     return () => clearTimeout(timer);
-  }, [expandedSections, showMoreSections, demographicsData]);
+  }, [expandedSections, showMoreSections, demographicsData, calculateDynamicHeight]);
 
-  // Efecto para recalcular altura cuando cambia el tamaño de la ventana
   useEffect(() => {
     const handleResize = () => {
       calculateDynamicHeight();
@@ -122,11 +264,11 @@ export function Filters({ className, researchId }: FiltersProps) {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [calculateDynamicHeight]);
 
   if (isLoading) {
     return (
-      <Card className={`p-4 ${className}`}>
+      <Card className={`p-4 ${className || ''}`}>
         <div className="text-center py-8">
           <div className="text-gray-500">Cargando filtros...</div>
         </div>
@@ -136,7 +278,7 @@ export function Filters({ className, researchId }: FiltersProps) {
 
   if (error) {
     return (
-      <Card className={`p-4 ${className}`}>
+      <Card className={`p-4 ${className || ''}`}>
         <div className="text-center py-8">
           <div className="text-red-500">Error al cargar filtros: {error}</div>
         </div>
@@ -146,11 +288,11 @@ export function Filters({ className, researchId }: FiltersProps) {
 
   return (
     <Card
-      className={`p-4 ${className} : ''}`}
+      className={`p-4 ${className || ''}`}
       style={{
         height: typeof dynamicHeight === 'number' ? `${dynamicHeight}px` : dynamicHeight,
-        overflowY: 'hidden', // Nunca mostrar scrollbar
-        transition: 'height 0.3s ease-in-out'
+        overflowY: 'hidden',
+        transition: 'height 0.3s ease-in-out',
       }}
     >
       <div ref={containerRef}>
@@ -158,90 +300,26 @@ export function Filters({ className, researchId }: FiltersProps) {
           <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
         </div>
 
-        {/* Data summary for large datasets */}
-        {showDataSummary && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-            <div className="text-sm text-green-800">
-              <div className="font-medium">📊 Resumen de Datos</div>
-              <div>Total de participantes: {totalParticipants}</div>
-              <div>Países: {demographicsData?.countries?.length || 0}</div>
-              <div>Rangos de edad: {demographicsData?.ageRanges?.length || 0}</div>
-            </div>
-          </div>
+        {showDataSummary && demographicsData && (
+          <DataSummary
+            totalParticipants={totalParticipants}
+            countriesCount={demographicsData.countries?.length || 0}
+            ageRangesCount={demographicsData.ageRanges?.length || 0}
+          />
         )}
-
-        {/* Loading state */}
-        {isLoading && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
-            <div className="flex items-center justify-center">
-              <div className="w-4 h-4 bg-gray-200 rounded animate-pulse mr-2"></div>
-              <span className="text-sm text-gray-600">Cargando filtros...</span>
-            </div>
-          </div>
-        )}
-
-        {/* Error state */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <div className="text-sm text-red-800">
-              <div>Error al cargar filtros</div>
-              <div className="text-xs">{error}</div>
-            </div>
-          </div>
-        )}
-
-
 
         <div className="space-y-4">
           {filterSections.length > 0 ? (
-            filterSections.map((section) => {
-              const isExpanded = expandedSections[section.title];
-              const showMore = showMoreSections[section.title];
-              const visibleItems = showMore
-                ? section.items
-                : section.items.slice(0, section.initialVisibleItems || section.items.length);
-
-              return (
-                <div key={section.title} className="border-b border-gray-200 pb-4 last:border-b-0">
-                  <button
-                    onClick={() => toggleSection(section.title)}
-                    className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
-                  >
-                    {section.title}
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    )}
-                  </button>
-
-                  {isExpanded && (
-                    <div className="space-y-2">
-                      {visibleItems.map((item) => (
-                        <div key={item.id} className="flex items-center">
-                          <Checkbox id={item.id} />
-                          <label htmlFor={item.id} className="ml-2 text-sm text-gray-700">
-                            {item.label}
-                            {item.count !== undefined && (
-                              <span className="text-gray-500 ml-1">({item.count})</span>
-                            )}
-                          </label>
-                        </div>
-                      ))}
-
-                      {section.items.length > (section.initialVisibleItems || section.items.length) && (
-                        <button
-                          onClick={() => toggleShowMore(section.title)}
-                          className="text-sm text-blue-600 hover:text-blue-800"
-                        >
-                          {showMore ? 'Show less' : `Show ${section.items.length - (section.initialVisibleItems || section.items.length)} more`}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })
+            filterSections.map((section) => (
+              <FilterSectionComponent
+                key={section.title}
+                section={section}
+                isExpanded={expandedSections[section.title] ?? false}
+                isShowingAll={showMoreSections[section.title] ?? false}
+                onToggleExpand={() => toggleSection(section.title)}
+                onToggleShowMore={() => toggleShowMore(section.title)}
+              />
+            ))
           ) : (
             <div className="text-sm text-gray-500 italic text-center py-8">
               No hay datos de filtros disponibles
