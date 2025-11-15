@@ -134,17 +134,17 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             />
           ))}
         </div>
-        {researchId ? (
-          <Filters researchId={researchId} />
-        ) : (
-          <div className="w-80 shrink-0">
+        <div className="w-80 shrink-0">
+          {researchId ? (
+            <Filters researchId={researchId} />
+          ) : (
             <div className="p-4 border border-neutral-200 rounded-lg bg-white">
               <div className="text-sm text-neutral-500 italic text-center py-8">
                 No se pudo obtener el ID de investigación
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </ResultsStateHandler>
   );

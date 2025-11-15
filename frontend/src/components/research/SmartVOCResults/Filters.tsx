@@ -254,7 +254,7 @@ export function Filters({ className, researchId }: FiltersProps) {
 
   return (
     <Card className={`p-4 ${className || ''}`}>
-      <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-4">
+      <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
       </div>
 
