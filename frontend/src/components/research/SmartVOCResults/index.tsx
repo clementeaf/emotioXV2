@@ -304,7 +304,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               questionNumber="2.1"
               title={csatTitle}
               questionType="CSAT"
-              question={csatQuestion}
               responses={{
                 count: smartVOCData?.csatScores?.length || 0,
                 timeAgo: csatTimeAgo
@@ -333,7 +332,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               questionNumber="2.2"
               title={cesTitle}
               questionType="CES"
-              question={cesQuestion}
               responses={{
                 count: smartVOCData?.cesScores?.length || 0,
                 timeAgo: cesTimeAgo
@@ -362,7 +360,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               questionNumber="2.3"
               title={cvTitle}
               questionType="CV"
-              question={cvQuestion}
               responses={{
                 count: smartVOCData?.cvScores?.length || 0,
                 timeAgo: cvTimeAgo

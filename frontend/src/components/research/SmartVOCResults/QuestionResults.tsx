@@ -5,7 +5,6 @@ interface QuestionResultProps {
   questionNumber: string;
   title: string;
   questionType: string;
-  question: string;
   responses: {
     count: number;
     timeAgo: string;
@@ -77,7 +76,6 @@ export function QuestionResults({
   questionNumber,
   title,
   questionType,
-  question,
   responses,
   score,
   distribution,
@@ -129,22 +127,6 @@ export function QuestionResults({
 
             {/* Gauge circular azul */}
             <BlueGauge value={score} />
-          </div>
-        </div>
-
-        {/* Pregunta con icono de target */}
-        <div className="flex items-start gap-3 pt-4 border-t border-gray-100">
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM10 4a6 6 0 110 12 6 6 0 010-12zM10 6a4 4 0 100 8 4 4 0 000-8zM10 8a2 2 0 110 4 2 2 0 010-4z" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm text-gray-800 font-medium">
-              {title.includes('CSAT') ? "CSAT's question:" :
-                title.includes('CES') ? "CES's question:" :
-                  title.includes('CV') ? "CV's question:" : "Question:"} {question}
-            </p>
           </div>
         </div>
       </div>
