@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { Card } from '@/components/ui/Card';
 import { useDemographicsData } from '@/hooks/useDemographicsData';
@@ -32,9 +32,6 @@ interface DemographicData {
   participants?: FilterItem[];
 }
 
-const MIN_CARD_HEIGHT = 400;
-const HEIGHT_PADDING = 20;
-const HEIGHT_CALCULATION_DELAY = 100;
 const MIN_PARTICIPANTS_FOR_SUMMARY = 10;
 
 const DEFAULT_EXPANDED_SECTIONS: Record<string, boolean> = {
@@ -202,8 +199,6 @@ function FilterSectionComponent({
 
 export function Filters({ className, researchId }: FiltersProps) {
   const { data: demographicsData, isLoading, error } = useDemographicsData(researchId);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [dynamicHeight, setDynamicHeight] = useState<number | 'auto'>('auto');
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
     DEFAULT_EXPANDED_SECTIONS
@@ -237,35 +232,6 @@ export function Filters({ className, researchId }: FiltersProps) {
     }));
   }, []);
 
-  const calculateDynamicHeight = useCallback(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const container = containerRef.current;
-    const contentHeight = container.scrollHeight;
-    const calculatedHeight = Math.max(MIN_CARD_HEIGHT, contentHeight) + HEIGHT_PADDING;
-
-    setDynamicHeight(calculatedHeight);
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      calculateDynamicHeight();
-    }, HEIGHT_CALCULATION_DELAY);
-
-    return () => clearTimeout(timer);
-  }, [expandedSections, showMoreSections, demographicsData, calculateDynamicHeight]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      calculateDynamicHeight();
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [calculateDynamicHeight]);
-
   if (isLoading) {
     return (
       <Card className={`p-4 ${className || ''}`}>
@@ -287,45 +253,36 @@ export function Filters({ className, researchId }: FiltersProps) {
   }
 
   return (
-    <Card
-      className={`p-4 ${className || ''}`}
-      style={{
-        height: typeof dynamicHeight === 'number' ? `${dynamicHeight}px` : dynamicHeight,
-        overflowY: 'hidden',
-        transition: 'height 0.3s ease-in-out',
-      }}
-    >
-      <div ref={containerRef}>
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
-        </div>
+    <Card className={`p-4 ${className || ''}`}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+      </div>
 
-        {showDataSummary && demographicsData && (
-          <DataSummary
-            totalParticipants={totalParticipants}
-            countriesCount={demographicsData.countries?.length || 0}
-            ageRangesCount={demographicsData.ageRanges?.length || 0}
-          />
+      {showDataSummary && demographicsData && (
+        <DataSummary
+          totalParticipants={totalParticipants}
+          countriesCount={demographicsData.countries?.length || 0}
+          ageRangesCount={demographicsData.ageRanges?.length || 0}
+        />
+      )}
+
+      <div className="space-y-4">
+        {filterSections.length > 0 ? (
+          filterSections.map((section) => (
+            <FilterSectionComponent
+              key={section.title}
+              section={section}
+              isExpanded={expandedSections[section.title] ?? false}
+              isShowingAll={showMoreSections[section.title] ?? false}
+              onToggleExpand={() => toggleSection(section.title)}
+              onToggleShowMore={() => toggleShowMore(section.title)}
+            />
+          ))
+        ) : (
+          <div className="text-sm text-gray-500 italic text-center py-8">
+            No hay datos de filtros disponibles
+          </div>
         )}
-
-        <div className="space-y-4">
-          {filterSections.length > 0 ? (
-            filterSections.map((section) => (
-              <FilterSectionComponent
-                key={section.title}
-                section={section}
-                isExpanded={expandedSections[section.title] ?? false}
-                isShowingAll={showMoreSections[section.title] ?? false}
-                onToggleExpand={() => toggleSection(section.title)}
-                onToggleShowMore={() => toggleShowMore(section.title)}
-              />
-            ))
-          ) : (
-            <div className="text-sm text-gray-500 italic text-center py-8">
-              No hay datos de filtros disponibles
-            </div>
-          )}
-        </div>
       </div>
     </Card>
   );
