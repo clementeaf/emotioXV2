@@ -9,6 +9,15 @@ import {
   ErrorState,
   QuestionContainer
 } from './components';
+import type { CognitiveTaskQuestion, ThemeResult, KeywordResult } from './types';
+import type { ChoiceQuestionData } from './components/ChoiceResults';
+import type { RankingQuestionData } from './components/RankingResults';
+import type { LinearScaleData } from './components/LinearScaleResults';
+import type { PreferenceTestData } from './components/PreferenceTestResults';
+import type { RatingData } from './components/RatingResults';
+import type { ImageSelectionData } from './components/ImageSelectionResults';
+import type { NavigationFlowData } from './components/NavigationFlow/types';
+import type { AnalysisTabType } from './components/AnalysisTabs';
 
 interface CognitiveTaskResultsProps {
   researchId?: string;
@@ -40,46 +49,34 @@ interface ResearchConfig {
   [key: string]: unknown;
 }
 
-
-interface ProcessedDataItem {
+interface FinalQuestionData {
+  key: string;
   questionId: string;
-  questionKey: string;
-  sentimentData?: {
-    responses: Array<{ text: string; participantId: string; timestamp: string }>;
-    totalResponses: number;
-  };
-  choiceData?: {
-    choices: Array<{ label: string; count: number; percentage: number }>;
-    totalResponses: number;
-  };
-  linearScaleData?: {
-    values: number[];
-    average: number;
-    totalResponses: number;
-  };
-  rankingData?: {
-    responses: Array<{ participantId: string; ranking: unknown; timestamp: string }>;
-    totalResponses: number;
-  };
-  preferenceTestData?: {
-    preferences: Array<{ option: string; count: number; percentage: number }>;
-    totalResponses: number;
-  };
-  navigationFlowData?: {
-    responses: Array<{ participantId: string; data: unknown; value?: unknown; timestamp: string }>;
-    totalResponses: number;
-  };
-  [key: string]: unknown;
+  questionType: string;
+  questionText: string;
+  required: boolean;
+  conditionalityDisabled: boolean;
+  hasNewData: boolean;
+  viewType: 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow';
+  sentimentData?: CognitiveTaskQuestion;
+  choiceData?: ChoiceQuestionData;
+  rankingData?: RankingQuestionData;
+  linearScaleData?: LinearScaleData;
+  ratingData?: RatingData;
+  preferenceTestData?: PreferenceTestData;
+  imageSelectionData?: ImageSelectionData;
+  navigationFlowData?: NavigationFlowData;
+  initialActiveTab?: AnalysisTabType;
+  themeImageSrc?: string;
+  choiceImageSrc?: string;
 }
 
 export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ researchId: propResearchId }) => {
   const params = useParams();
-  // Normalizar researchId para evitar cambios que causen re-renders
   const researchId = React.useMemo(() => {
     return propResearchId || params?.research as string || params?.id as string || null;
   }, [propResearchId, params?.research, params?.id]);
 
-  // Hook para obtener respuestas y configuración de CognitiveTask
   const {
     researchConfig,
     processedData,
@@ -89,9 +86,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     refetch
   } = useCognitiveTaskResponses(researchId);
 
-
-
-  // Mostrar loading
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -103,7 +97,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     );
   }
 
-  // Mostrar error
   if (isError && error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return (
@@ -114,10 +107,8 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     );
   }
 
-  // Crear preguntas desde la configuración real del backend
   const createQuestionsFromConfig = () => {
     if (!researchConfig || !(researchConfig as any)?.questions) {
-      // Fallback: crear preguntas temporales mientras se carga la configuración
       return [
         {
           key: 'question-cognitive_short_text',
@@ -356,17 +347,13 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     });
   };
 
-  // Usar datos procesados cuando estén disponibles, o las preguntas de configuración
   let finalQuestions;
 
   const config = (researchConfig as unknown) as ResearchConfig | null;
+  
   if (config?.questions) {
-    // Siempre usar preguntas de configuración cuando estén disponibles
     finalQuestions = config.questions.map((question: ResearchConfigQuestion) => {
-      // Mapear tipos de pregunta cognitiva a tipos de visualización
-      // El questionType puede venir con o sin prefijo 'cognitive_' (ej: 'short_text' o 'cognitive_short_text')
       const getViewType = (questionType: string): 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'preference' | 'image_selection' | 'navigation_flow' => {
-        // Normalizar el tipo de pregunta (remover prefijo si existe)
         const normalizedType = questionType.replace(/^cognitive_/, '').toLowerCase();
         
         switch (normalizedType) {
@@ -387,7 +374,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           case 'navigation_flow':
             return 'navigation_flow';
           default:
-            // Fallback: intentar detectar por el tipo original
             const lowerType = questionType.toLowerCase();
             if (lowerType.includes('short_text') || lowerType.includes('long_text')) {
               return 'sentiment';
@@ -411,7 +397,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         }
       };
 
-      // Mapear tipos de pregunta a tipos de visualización
       const getQuestionType = (questionType: string): string => {
         switch (questionType) {
           case 'cognitive_short_text':
@@ -437,84 +422,31 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         }
       };
 
-      // Buscar datos procesados correspondientes a esta pregunta
-      // El questionKey del endpoint tiene formato: "cognitive_short_text", "cognitive_long_text", etc.
-      // El question.id de la configuración puede ser: "3.1", "3.2", etc.
-      // El question.type puede ser: "short_text", "long_text", etc. (sin prefijo cognitive_)
       const questionType = (question.type as string) || '';
-      const normalizedType = questionType.replace(/^cognitive_/, ''); // Remover prefijo si existe
+      const normalizedType = questionType.replace(/^cognitive_/, '');
       const expectedQuestionKey = `cognitive_${normalizedType}`;
       
-      // 🎯 DEBUG: Log para diagnosticar matching de datos
-      if (processedData && processedData.length > 0) {
-        console.log(`[CognitiveTaskResults] Buscando datos para pregunta:`, {
-          questionId: question.id,
-          questionType: question.type,
-          normalizedType,
-          expectedQuestionKey,
-          availableDataKeys: processedData.map(d => ({ questionId: d.questionId, questionKey: d.questionKey }))
-        });
-      }
-      
       const processedDataForQuestion = processedData.find((data) => {
-        // 1. Comparar por questionId directo
         if (data.questionId === question.id) {
-          console.log(`[CognitiveTaskResults] ✅ Match por questionId: ${data.questionId} === ${question.id}`);
           return true;
         }
         
-        // 2. Comparar questionKey del endpoint con el esperado desde question.type
         if (data.questionKey === expectedQuestionKey) {
-          console.log(`[CognitiveTaskResults] ✅ Match por questionKey: ${data.questionKey} === ${expectedQuestionKey}`);
           return true;
         }
         
-        // 3. Comparar questionKey con question.id (por si el questionKey es el mismo que el id)
         if (data.questionKey === question.id) {
-          console.log(`[CognitiveTaskResults] ✅ Match por questionKey === question.id: ${data.questionKey}`);
           return true;
         }
         
-        // 4. Comparar si el questionKey contiene el tipo de pregunta (más flexible)
         if (data.questionKey && normalizedType && data.questionKey.toLowerCase().includes(normalizedType.toLowerCase())) {
-          console.log(`[CognitiveTaskResults] ✅ Match por contains: ${data.questionKey} contiene ${normalizedType}`);
           return true;
         }
         
         return false;
       });
-      
-      // 🎯 DEBUG: Log si no se encontraron datos
-      if (!processedDataForQuestion && processedData && processedData.length > 0) {
-        console.warn(`[CognitiveTaskResults] ⚠️ No se encontraron datos procesados para pregunta:`, {
-          questionId: question.id,
-          questionType: question.type,
-          expectedQuestionKey,
-          totalProcessedData: processedData.length
-        });
-      }
 
-      // Transformar sentimentData al formato que espera MainContent (CognitiveTaskQuestion)
-      let transformedSentimentData: {
-        id: string;
-        questionNumber: string;
-        questionText: string;
-        questionType: 'short_text' | 'long_text';
-        required: boolean;
-        conditionalityDisabled: boolean;
-        sentimentResults: Array<{
-          id: string;
-          text: string;
-          sentiment: 'neutral';
-          selected: boolean;
-          type: 'comment';
-        }>;
-        sentimentAnalysis: {
-          text: string;
-        };
-        themes: unknown[];
-        keywords: unknown[];
-      } | undefined = undefined;
+      let transformedSentimentData: CognitiveTaskQuestion | undefined = undefined;
       if (processedDataForQuestion?.sentimentData) {
         const sentimentDataRaw = processedDataForQuestion.sentimentData as { responses: Array<{ text: string; participantId: string; timestamp: string }>; totalResponses: number };
         
@@ -527,7 +459,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           conditionalityDisabled: question.showConditionally || false,
           sentimentResults: sentimentDataRaw.responses.map((r, index) => ({
             id: `${question.id}-${index}`,
-            text: r.text || String(r.text || ''), // Asegurar que siempre sea string
+            text: r.text || String(r.text || ''),
             sentiment: 'neutral' as const,
             selected: false,
             type: 'comment' as const
@@ -540,31 +472,15 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         };
       }
 
-      // Transformar choiceData al formato que espera ChoiceResults
-      let transformedChoiceData: {
-        question: string;
-        description?: string;
-        instructions?: string;
-        options: Array<{
-          id: string;
-          text: string;
-          count: number;
-          percentage: number;
-        }>;
-        totalResponses: number;
-        responseDuration?: unknown;
-      } | undefined = undefined;
+      let transformedChoiceData: ChoiceQuestionData | undefined = undefined;
+
       if (processedDataForQuestion?.choiceData) {
         const choiceDataRaw = processedDataForQuestion.choiceData as { choices: Array<{ id?: string; label: string; count: number; percentage: number }>; totalResponses: number };
-        
-        // 🎯 Asegurar que todas las opciones de la configuración estén incluidas
-        // Si hay opciones en la configuración que no están en choiceDataRaw, agregarlas con 0%
         const configChoices = question.choices || [];
         const processedChoicesMap = new Map(
           choiceDataRaw.choices.map(c => [c.id || c.label, c])
         );
         
-        // Agregar opciones de configuración que no están en los datos procesados
         configChoices.forEach((configChoice: { id?: string; text?: string; label?: string }) => {
           const choiceId = configChoice.id || '';
           const choiceText = configChoice.text || configChoice.label || '';
@@ -580,7 +496,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           }
         });
         
-        // Ordenar opciones según el orden de la configuración
         const orderedChoices = configChoices.length > 0
           ? configChoices.map((configChoice: { id?: string; text?: string; label?: string }, index: number) => {
               const choiceId = configChoice.id || '';
@@ -618,17 +533,8 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         };
       }
 
-      // Transformar linearScaleData al formato que espera LinearScaleResults
-      let transformedLinearScaleData: {
-        question: string;
-        description?: string;
-        scaleRange: { start: number; end: number };
-        values?: number[];
-        responses?: Array<{ value: number; count: number }>;
-        distribution?: Record<number, number>;
-        average: number;
-        totalResponses: number;
-      } | undefined = undefined;
+      let transformedLinearScaleData: LinearScaleData | undefined = undefined;
+
       if (processedDataForQuestion?.linearScaleData) {
         const linearScaleDataRaw = processedDataForQuestion.linearScaleData as { 
           values?: number[]; 
@@ -639,7 +545,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           totalResponses: number 
         };
         
-        // Usar scaleRange de los datos procesados o de la configuración
         const scaleRange = linearScaleDataRaw.scaleRange || 
           (question.scaleConfig ? { start: question.scaleConfig.startValue || 1, end: question.scaleConfig.endValue || 5 } : { start: 1, end: 5 });
         
@@ -647,48 +552,31 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           question: question.title || question.description || `Pregunta ${question.id}`,
           description: question.description,
           scaleRange,
-          values: linearScaleDataRaw.values,
-          responses: linearScaleDataRaw.responses,
-          distribution: linearScaleDataRaw.distribution,
+          responses: linearScaleDataRaw.responses || [],
+          distribution: linearScaleDataRaw.distribution || {},
           average: linearScaleDataRaw.average,
           totalResponses: linearScaleDataRaw.totalResponses
         };
       }
 
-      // Transformar rankingData al formato que espera RankingResults
-      let transformedRankingData: {
-        question: string;
-        options: Array<{
-          id: string;
-          text: string;
-          mean: number;
-          distribution: { 1: number; 2: number; 3: number; 4: number; 5: number; 6: number };
-          responseTime: string;
-        }>;
-        responses: Array<{ participantId: string; ranking: unknown; timestamp: string }>;
-        totalResponses: number;
-      } | undefined = undefined;
+      let transformedRankingData: RankingQuestionData | undefined = undefined;
+
       if (processedDataForQuestion?.rankingData) {
         const rankingDataRaw = processedDataForQuestion.rankingData as { responses: Array<{ participantId: string; ranking: unknown; timestamp: string }>; totalResponses: number };
-        
-        // Procesar responses para construir options
-        // Agrupar rankings por opción y calcular mean, distribution
         const rankingMap: Record<string, { ranks: number[]; text: string }> = {};
         
         rankingDataRaw.responses.forEach(response => {
           const ranking = response.ranking;
           
-          // 🎯 Caso 1: Array de strings (orden de preferencia: ["Opción A", "Opción B", "Opción C"])
           if (Array.isArray(ranking) && ranking.length > 0 && typeof ranking[0] === 'string') {
             ranking.forEach((optionText, position) => {
-              // Buscar la opción en question.choices por texto
               const choice = question.choices?.find((c: { text: string; id?: string }) => 
                 c.text === optionText || c.id === optionText
               );
               
               const optionId = choice?.id || `option-${position + 1}`;
               const text = choice?.text || optionText;
-              const rank = position + 1; // Posición en el ranking (1-based)
+              const rank = position + 1;
               
               if (!rankingMap[optionId]) {
                 rankingMap[optionId] = { ranks: [], text };
@@ -722,13 +610,11 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           }
         });
         
-        // Construir options con mean y distribution
         const options = Object.entries(rankingMap).map(([id, data]) => {
           const mean = data.ranks.length > 0 
             ? data.ranks.reduce((sum, rank) => sum + rank, 0) / data.ranks.length 
             : 0;
           
-          // Construir distribution (1-6)
           const distribution: { 1: number; 2: number; 3: number; 4: number; 5: number; 6: number } = {
             1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0
           };
@@ -749,38 +635,17 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         
         transformedRankingData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
-          options,
-          responses: rankingDataRaw.responses,
-          totalResponses: rankingDataRaw.totalResponses
+          options
         };
       }
 
-      // Transformar preferenceTestData al formato que espera PreferenceTestResults
-      let transformedPreferenceTestData: {
-        question: string;
-        description?: string;
-        options: Array<{
-          id: string;
-          name: string;
-          image?: unknown;
-          selected: number;
-          percentage: number;
-          color?: unknown;
-        }>;
-        totalSelections: number;
-        totalParticipants: number;
-        allImages?: Array<{
-          url: string;
-          name: string;
-          id: string;
-        }>;
-      } | undefined = undefined;
+      let transformedPreferenceTestData: PreferenceTestData | undefined = undefined;
+
       if (processedDataForQuestion?.preferenceTestData) {
         const preferenceTestDataRaw = processedDataForQuestion.preferenceTestData as { preferences: Array<{ option: string; count: number; percentage: number }>; totalResponses: number };
         
-        // Obtener archivos/imágenes de la configuración de la pregunta
         let questionFiles = question.files;
-        // Buscar en researchConfig si no hay files en question
+        
         if ((!questionFiles || !Array.isArray(questionFiles) || questionFiles.length === 0) && researchConfig) {
           const configQuestion = (researchConfig as any)?.questions?.find((q: any) => q.id === question.id);
           if (configQuestion?.files && Array.isArray(configQuestion.files)) {
@@ -788,37 +653,29 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           }
         }
         
-        // Crear un mapa de opciones a imágenes usando el nombre o índice
         const filesMap = new Map<string, string>();
         if (questionFiles && Array.isArray(questionFiles)) {
           questionFiles.forEach((file: any, index: number) => {
             const fileUrl = file.url || file.preview || file.path || file.src;
             if (fileUrl) {
-              // Mapear por índice o por nombre del archivo
               const fileKey = file.name || `option-${index + 1}`;
               filesMap.set(fileKey, fileUrl);
-              // También mapear por índice para compatibilidad
               filesMap.set(`option-${index + 1}`, fileUrl);
             }
           });
         }
         
-        // Transformar preferences a options con la estructura esperada
         const options = preferenceTestDataRaw.preferences.map((pref, index) => {
-          // Intentar encontrar la imagen correspondiente
           let imageUrl: string | undefined = undefined;
           
-          // Buscar por nombre de opción
           if (pref.option) {
             imageUrl = filesMap.get(pref.option);
           }
           
-          // Si no se encuentra, buscar por índice
           if (!imageUrl) {
             imageUrl = filesMap.get(`option-${index + 1}`);
           }
           
-          // Si aún no se encuentra y hay archivos, usar el índice directamente
           if (!imageUrl && questionFiles && Array.isArray(questionFiles) && questionFiles[index]) {
             const file = questionFiles[index] as any;
             imageUrl = file.url || file.preview || file.path || file.src;
@@ -851,61 +708,11 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         };
       }
 
-      // Transformar navigationFlowData al formato que espera NavigationFlowResults
-      let transformedNavigationFlowData: {
-        question: string;
-        allClicksTracking: Array<{
-          x: number;
-          y: number;
-          timestamp: number;
-          hitzoneId?: string;
-          imageIndex: number;
-          isCorrectHitzone: boolean;
-          participantId?: string;
-        }>;
-        visualClickPoints: Array<{
-          x: number;
-          y: number;
-          timestamp: number;
-          isCorrect: boolean;
-          imageIndex: number;
-          participantId?: string;
-        }>;
-        imageSelections: Record<string, {
-          hitzoneId: string;
-          click: {
-            x: number;
-            y: number;
-            hitzoneWidth: number;
-            hitzoneHeight: number;
-          };
-        }>;
-        totalResponses: number;
-        [key: string]: unknown;
-      } | undefined = undefined;
-      
-      // 🎯 DEBUG: Log de processedDataForQuestion
-      console.log('[CognitiveTaskResults] processedDataForQuestion para NavigationFlow:', {
-        hasProcessedData: !!processedDataForQuestion,
-        hasNavigationFlowData: !!processedDataForQuestion?.navigationFlowData,
-        navigationFlowDataType: typeof processedDataForQuestion?.navigationFlowData,
-        navigationFlowData: processedDataForQuestion?.navigationFlowData,
-        processedDataKeys: processedDataForQuestion ? Object.keys(processedDataForQuestion) : []
-      });
+      let transformedNavigationFlowData: NavigationFlowData | undefined = undefined;
       
       if (processedDataForQuestion?.navigationFlowData) {
         const navigationFlowDataRaw = processedDataForQuestion.navigationFlowData as { responses: Array<{ participantId: string; data: unknown; value?: unknown; timestamp: string }>; totalResponses: number };
-        
-        // 🎯 DEBUG: Log de navigationFlowDataRaw
-        console.log('[CognitiveTaskResults] navigationFlowDataRaw:', {
-          hasNavigationFlowData: !!processedDataForQuestion.navigationFlowData,
-          totalResponses: navigationFlowDataRaw?.totalResponses,
-          responsesCount: navigationFlowDataRaw?.responses?.length || 0,
-          responses: navigationFlowDataRaw?.responses,
-          navigationFlowDataRawKeys: navigationFlowDataRaw ? Object.keys(navigationFlowDataRaw) : []
-        });
-        
-        // Procesar responses para construir allClicksTracking y visualClickPoints
+
         const allClicksTracking: Array<{
           x: number;
           y: number;
@@ -935,7 +742,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           };
         }> = {};
         
-        // 🎯 DEBUG: Verificar que responses existe y tiene elementos
         if (!navigationFlowDataRaw.responses || navigationFlowDataRaw.responses.length === 0) {
           console.warn('[CognitiveTaskResults] ⚠️ navigationFlowDataRaw.responses está vacío o no existe:', {
             hasResponses: !!navigationFlowDataRaw.responses,
@@ -945,20 +751,8 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         }
         
         navigationFlowDataRaw.responses?.forEach((response, index) => {
-          // El data viene de r.value mapeado en useCognitiveTaskResponses.ts
-          // En useCognitiveTaskResponses.ts línea 232: data: r.value
-          // El backend ahora parsea los campos críticos (imageSelections, clickPosition, etc.)
           const rawValue = response.data || response.value;
           
-          // 🎯 DEBUG: Log del valor crudo antes de cualquier procesamiento
-          console.log('[CognitiveTaskResults] 🔍 Valor crudo de la respuesta:', {
-            index,
-            participantId: response.participantId,
-            rawValueType: typeof rawValue,
-            rawValue,
-            hasData: !!response.data,
-            hasValue: !!response.value
-          });
           
           const responseValue = rawValue as {
             imageSelections?: Record<string, {
@@ -992,21 +786,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             [key: string]: unknown;
           };
           
-          // 🎯 DEBUG: Log de respuesta recibida
-          console.log('[CognitiveTaskResults] Procesando respuesta NavigationFlow:', {
-            index,
-            participantId: response.participantId,
-            hasData: !!response.data,
-            hasValue: !!response.value,
-            responseValueKeys: responseValue ? Object.keys(responseValue) : [],
-            hasImageSelections: !!responseValue?.imageSelections,
-            imageSelectionsType: typeof responseValue?.imageSelections,
-            imageSelectionsValue: responseValue?.imageSelections,
-            hasClickPosition: !!responseValue?.clickPosition,
-            clickPositionType: typeof responseValue?.clickPosition,
-            clickPositionValue: responseValue?.clickPosition
-          });
-          
           // Intentar extraer clicks de diferentes estructuras posibles
           let clicks: Array<{ x: number; y: number; timestamp: number; isCorrect: boolean; imageIndex: number }> = [];
           
@@ -1017,13 +796,11 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             // Si es un objeto, usarlo directamente
             if (typeof responseValue.imageSelections === 'object' && !Array.isArray(responseValue.imageSelections) && responseValue.imageSelections !== null) {
               imageSelectionsObj = responseValue.imageSelections as Record<string, unknown>;
-              console.log('[CognitiveTaskResults] ✅ imageSelections es objeto, usando directamente');
             }
             // Si es un string, intentar parsearlo como JSON
             else if (typeof responseValue.imageSelections === 'string') {
               try {
                 const jsonString: string = responseValue.imageSelections;
-                console.log('[CognitiveTaskResults] 🔄 Parseando imageSelections como JSON, longitud:', jsonString.length);
                 
                 // Intentar parsear el JSON completo
                 let parsed: unknown;
@@ -1034,13 +811,9 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
                   console.warn('[CognitiveTaskResults] ⚠️ Error parseando JSON completo:', (parseError as Error).message);
                   console.warn('[CognitiveTaskResults] String (primeros 200 chars):', jsonString.substring(0, 200));
                   
-                  // Intentar extraer objetos individuales usando regex (para casos donde el JSON está truncado)
-                  // Buscar patrones como "0":{"hitzoneId":"...","click":{"x":...,"y":...}}
                   try {
                     const extracted: Record<string, { hitzoneId?: string; click: { x: number; y: number } }> = {};
                     
-                    // Buscar todos los índices de imagen y sus clicks
-                    // Patrón: "0":{"hitzoneId":"...","click":{"x":...,"y":...
                     const imageIndexPattern = /"(\d+)":\s*\{[^}]*"click":\s*\{[^}]*"x":\s*([\d.]+)[^}]*"y":\s*([\d.]+)/g;
                     let match;
                     
@@ -1057,26 +830,22 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
                           hitzoneId,
                           click: { x, y }
                         };
-                        console.log('[CognitiveTaskResults] ✅ Extraído click para imagen', imageIndex, 'x:', x, 'y:', y, 'hitzoneId:', hitzoneId);
                       }
                     }
                     
                     if (Object.keys(extracted).length > 0) {
                       parsed = extracted;
-                      console.log('[CognitiveTaskResults] ✅ Extraídos', Object.keys(extracted).length, 'clicks usando regex');
                     } else {
                       throw parseError;
                     }
                   } catch (regexError) {
                     console.error('[CognitiveTaskResults] ❌ Error en extracción con regex:', regexError);
-                    // Si la extracción con regex también falla, lanzar el error original
                     throw parseError;
                   }
                 }
                 
                 if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
                   imageSelectionsObj = parsed as Record<string, unknown>;
-                  console.log('[CognitiveTaskResults] ✅ imageSelections parseado exitosamente, keys:', Object.keys(imageSelectionsObj));
                 } else {
                   console.warn('[CognitiveTaskResults] ⚠️ imageSelections parseado no es un objeto válido:', typeof parsed, Array.isArray(parsed));
                 }
@@ -1089,24 +858,10 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
               console.warn('[CognitiveTaskResults] ⚠️ imageSelections tiene tipo inesperado:', typeof responseValue.imageSelections);
             }
             
-            // 🎯 DEBUG: Log de imageSelections parseado
-            console.log('[CognitiveTaskResults] imageSelections parseado:', {
-              isString: typeof responseValue.imageSelections === 'string',
-              entriesCount: Object.keys(imageSelectionsObj).length,
-              imageSelectionsObj,
-              imageSelectionsObjKeys: Object.keys(imageSelectionsObj)
-            });
-            
             // Procesar imageSelections parseado
             if (Object.keys(imageSelectionsObj).length > 0) {
               Object.entries(imageSelectionsObj).forEach(([imageIndexStr, selection]: [string, unknown]) => {
                 const selectionObj = selection as { hitzoneId?: string; click?: { x: number; y: number; hitzoneWidth?: number; hitzoneHeight?: number } };
-                console.log('[CognitiveTaskResults] Procesando selection:', {
-                  imageIndexStr,
-                  selection,
-                  hasClick: !!selectionObj?.click,
-                  click: selectionObj?.click
-                });
                 if (selectionObj?.click) {
                   clicks.push({
                     x: selectionObj.click.x || 0,
@@ -1114,11 +869,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
                     timestamp: new Date(response.timestamp).getTime() || Date.now(),
                     isCorrect: true,
                     imageIndex: parseInt(imageIndexStr) || 0
-                  });
-                  console.log('[CognitiveTaskResults] ✅ Click agregado desde imageSelections:', {
-                    imageIndex: parseInt(imageIndexStr) || 0,
-                    x: selectionObj.click.x,
-                    y: selectionObj.click.y
                   });
                 } else {
                   console.warn('[CognitiveTaskResults] ⚠️ Selection sin click:', {
@@ -1142,13 +892,11 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             // Si es un objeto, usarlo directamente
             if (typeof responseValue.clickPosition === 'object' && !Array.isArray(responseValue.clickPosition) && responseValue.clickPosition !== null) {
               clickPositionObj = responseValue.clickPosition as { x?: number; y?: number; hitzoneWidth?: number; hitzoneHeight?: number };
-              console.log('[CognitiveTaskResults] ✅ clickPosition es objeto, usando directamente');
             }
             // Si es un string, intentar parsearlo como JSON
             else if (typeof responseValue.clickPosition === 'string') {
               try {
                 const jsonString: string = responseValue.clickPosition;
-                console.log('[CognitiveTaskResults] 🔄 Parseando clickPosition como JSON, longitud:', jsonString.length);
                 
                 let parsed: unknown;
                 try {
@@ -1171,7 +919,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
                     
                     if (!isNaN(x) && !isNaN(y)) {
                       parsed = { x, y, hitzoneWidth: width, hitzoneHeight: height };
-                      console.log('[CognitiveTaskResults] ✅ Extraído clickPosition usando regex:', { x, y, width, height });
                     } else {
                       throw parseError;
                     }
@@ -1296,17 +1043,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             });
           }
           
-        // 🎯 DEBUG: Log de clicks encontrados antes de procesarlos
-        console.log('[CognitiveTaskResults] Clicks encontrados antes de procesar:', {
-          clicksCount: clicks.length,
-          clicks: clicks,
-          responseValue: responseValue,
-          hasImageSelections: !!responseValue?.imageSelections,
-          hasClickPosition: !!responseValue?.clickPosition,
-          hasAllClicksTracking: !!responseValue?.allClicksTracking,
-          hasVisualClickPoints: !!responseValue?.visualClickPoints
-        });
-          
           // Procesar cada click encontrado
           if (clicks.length > 0) {
             clicks.forEach((click) => {
@@ -1372,29 +1108,19 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           }
         });
         
-        // Incluir hitzones de cada archivo en los files (si files existe y es array)
-        // Los files pueden venir en question.files o en la configuración completa
         let questionFiles = question.files;
         
-        // 🎯 Si no hay files en question, buscar en researchConfig directamente
         if ((!questionFiles || !Array.isArray(questionFiles) || questionFiles.length === 0) && researchConfig) {
           const configQuestion = (researchConfig as any)?.questions?.find((q: any) => q.id === question.id);
           if (configQuestion?.files && Array.isArray(configQuestion.files)) {
             questionFiles = configQuestion.files;
-            console.log(`[CognitiveTaskResults] NavigationFlow - files encontrados en researchConfig:`, {
-              questionId: question.id,
-              filesCount: configQuestion.files.length
-            });
           }
         }
         
         const filesArray = Array.isArray(questionFiles) ? questionFiles : [];
         
-        // 🎯 Transformar files al formato esperado por NavigationFlowResults
         const transformedFiles = filesArray.map((file: any) => {
-          // El archivo puede venir en diferentes formatos
           if (typeof file === 'string') {
-            // Si es solo una URL string
             return {
               id: `file-${Date.now()}-${Math.random()}`,
               url: file,
@@ -1402,7 +1128,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
               hitZones: []
             };
           } else if (file && typeof file === 'object') {
-            // Si es un objeto con propiedades
             return {
               id: file.id || file.s3Key || `file-${Date.now()}-${Math.random()}`,
               url: file.url || file.s3Url || file.s3Key || '',
@@ -1412,17 +1137,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           }
           return null;
         }).filter((f): f is NonNullable<typeof f> => f !== null);
-        
-        // 🎯 DEBUG: Log de files disponibles
-        console.log(`[CognitiveTaskResults] NavigationFlow - files disponibles:`, {
-          questionId: question.id,
-          questionFiles,
-          filesArrayLength: filesArray.length,
-          transformedFilesLength: transformedFiles.length,
-          transformedFiles: transformedFiles
-        });
-        
-        // 🎯 Calcular totalParticipants desde las respuestas únicas
+      
         const uniqueParticipants = new Set(
           navigationFlowDataRaw.responses.map(r => r.participantId).filter(Boolean)
         );
@@ -1430,25 +1145,14 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
 
         transformedNavigationFlowData = {
           question: question.title || question.description || `Pregunta ${question.id}`,
-          totalResponses: navigationFlowDataRaw.totalResponses,
+          totalSelections: navigationFlowDataRaw.totalResponses,
           totalParticipants,
+          researchId: researchId || '',
           imageSelections,
           visualClickPoints,
           allClicksTracking,
-          files: transformedFiles // 🎯 CRÍTICO: Incluir files transformados para mostrar las imágenes
+          files: transformedFiles
         };
-        
-        // 🎯 DEBUG: Log de datos transformados
-        console.log(`[CognitiveTaskResults] NavigationFlow - datos transformados:`, {
-          questionId: question.id,
-          totalResponses: transformedNavigationFlowData.totalResponses,
-          totalParticipants: transformedNavigationFlowData.totalParticipants,
-          filesCount: Array.isArray(transformedNavigationFlowData.files) ? transformedNavigationFlowData.files.length : 0,
-          visualClickPointsCount: Array.isArray(transformedNavigationFlowData.visualClickPoints) ? transformedNavigationFlowData.visualClickPoints.length : 0,
-          allClicksTrackingCount: Array.isArray(transformedNavigationFlowData.allClicksTracking) ? transformedNavigationFlowData.allClicksTracking.length : 0,
-          visualClickPoints: transformedNavigationFlowData.visualClickPoints,
-          allClicksTracking: transformedNavigationFlowData.allClicksTracking
-        });
       }
 
       const questionData = {
@@ -1472,33 +1176,16 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
         themeImageSrc: '',
       };
       
-      // 🎯 DEBUG: Log de datos finales para la pregunta
-      if (processedDataForQuestion) {
-        console.log(`[CognitiveTaskResults] 📊 Datos finales para pregunta ${question.id}:`, {
-          viewType: questionData.viewType,
-          hasSentimentData: !!questionData.sentimentData,
-          hasChoiceData: !!questionData.choiceData,
-          hasRankingData: !!questionData.rankingData,
-          hasLinearScaleData: !!questionData.linearScaleData,
-          hasPreferenceTestData: !!questionData.preferenceTestData,
-          hasNavigationFlowData: !!questionData.navigationFlowData,
-          totalResponses: processedDataForQuestion.totalResponses || 0
-        });
-      }
-      
       return questionData;
     });
   } else {
-    // Fallback con preguntas temporales
     finalQuestions = createQuestionsFromConfig();
   }
 
   return (
     <div className="flex gap-8">
       <div className="flex-1 space-y-6">
-        <CognitiveTaskHeader title="2.0.- Cognitive task" />
-
-        {finalQuestions.map((q: any) => (
+        {finalQuestions.map((q: FinalQuestionData) => (
           <QuestionContainer
             key={q.key}
             questionId={q.questionId}
@@ -1521,9 +1208,7 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
           />
         ))}
       </div>
-      <div className="w-80 shrink-0 mt-[52px]">
-        <Filters researchId={propResearchId || ''} />
-      </div>
+        <Filters researchId={researchId || ''} />
     </div>
   );
 };

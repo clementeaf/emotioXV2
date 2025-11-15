@@ -22,18 +22,16 @@ import {
   RatingResults
 } from './';
 
-// Tipo de visualización para la pregunta
 export type QuestionViewType = 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'rating' | 'preference' | 'image_selection' | 'navigation_flow';
 
 interface QuestionContainerProps {
   questionId: string;
-  questionText: string; // Agregar el título real de la pregunta
+  questionText: string;
   questionType: string;
   conditionalityDisabled: boolean;
   required?: boolean;
   hasNewData?: boolean;
   viewType: QuestionViewType;
-  // Datos específicos según el tipo de visualización
   sentimentData?: CognitiveTaskQuestion;
   choiceData?: ChoiceQuestionData;
   rankingData?: RankingQuestionData;
@@ -42,10 +40,8 @@ interface QuestionContainerProps {
   preferenceTestData?: PreferenceTestData;
   imageSelectionData?: ImageSelectionData;
   navigationFlowData?: NavigationFlowData;
-  // Props específicos para la visualización de sentimiento
   initialActiveTab?: AnalysisTabType;
   themeImageSrc?: string;
-  // Props específicos para la visualización de choice
   choiceImageSrc?: string;
 
 }

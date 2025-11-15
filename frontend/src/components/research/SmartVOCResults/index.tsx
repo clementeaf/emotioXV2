@@ -427,18 +427,14 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
         </div>
       </div>
 
-      {/* Sección con sidebar alineado con "1.0.- Smart VOC" */}
       <div className="flex gap-8 mt-8">
         <div className="flex-1">
-          {/* Sección detallada "1.0.- Smart VOC" */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">1.0.- Smart VOC</h2>
-
             <div className="space-y-6">
               {/* 2.1.- Question: Customer Satisfaction Score (CSAT) */}
               <QuestionResults
                 questionNumber="2.1"
-                title="Customer Satisfaction Score (CSAT)"
+                title="Customer Satisfaction Score"
                 questionType="CSAT"
                 question={csatQuestion}
                 responses={{

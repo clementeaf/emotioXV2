@@ -25,7 +25,6 @@ export function Filters({ className, researchId }: FiltersProps) {
   const { data: demographicsData, isLoading, error } = useDemographicsData(researchId);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dynamicHeight, setDynamicHeight] = useState<number | 'auto'>('auto');
-  const [isAdjusting, setIsAdjusting] = useState(false);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'Country': true,
@@ -92,7 +91,6 @@ export function Filters({ className, researchId }: FiltersProps) {
   // Función para calcular la altura dinámica
   const calculateDynamicHeight = () => {
     if (containerRef.current) {
-      setIsAdjusting(true);
 
       const container = containerRef.current;
       const contentHeight = container.scrollHeight;
@@ -105,11 +103,6 @@ export function Filters({ className, researchId }: FiltersProps) {
       calculatedHeight += 20;
 
       setDynamicHeight(calculatedHeight);
-
-      // Quitar el indicador de ajuste después de un breve delay
-      setTimeout(() => {
-        setIsAdjusting(false);
-      }, 300);
     }
   };
 
@@ -155,7 +148,7 @@ export function Filters({ className, researchId }: FiltersProps) {
 
   return (
     <Card
-      className={`p-4 ${className} ${isAdjusting ? 'ring-2 ring-blue-200' : ''}`}
+      className={`p-4 ${className} : ''}`}
       style={{
         height: typeof dynamicHeight === 'number' ? `${dynamicHeight}px` : dynamicHeight,
         overflowY: 'hidden', // Nunca mostrar scrollbar
@@ -163,14 +156,8 @@ export function Filters({ className, researchId }: FiltersProps) {
       }}
     >
       <div ref={containerRef}>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
-          {isAdjusting && (
-            <div className="flex items-center text-xs text-blue-600">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse mr-1"></div>
-              Ajustando
-            </div>
-          )}
         </div>
 
         {/* Data summary for large datasets */}
