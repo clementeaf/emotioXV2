@@ -25,11 +25,14 @@ export function ScaleRangeQuestion({
   const displayEndLabel = cleanLabel(endLabel, rightLabel);
   const isNPS = min === 0 && (max === 10 || max === 6);
   const totalOptions = range.length;
-  const useResponsiveLayout = totalOptions > 5 && !isNPS;
-  const showLabelsBelowExtremes = (startLabel || endLabel) && !useResponsiveLayout && !isNPS;
+  const useResponsiveLayout = totalOptions > 7 && !isNPS;
+  const isSevenOptions = totalOptions === 7 && !isNPS;
+  const showLabelsBelowExtremes = (startLabel || endLabel) && !useResponsiveLayout && !isNPS && !isSevenOptions;
   const buttonSize = useResponsiveLayout ? 'w-9 h-9 text-base' : 'w-10 h-10 text-lg';
   const containerClass = isNPS
     ? 'flex flex-row items-start justify-between w-full max-w-4xl gap-1'
+    : isSevenOptions
+    ? 'flex flex-row items-start justify-between w-full gap-2 sm:gap-3'
     : useResponsiveLayout
     ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 w-full max-w-4xl justify-items-center items-start'
     : 'flex flex-row items-start justify-center gap-4 sm:gap-6 flex-wrap';
