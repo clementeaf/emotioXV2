@@ -500,9 +500,10 @@ export function getPublicTestsUrl(researchId?: string, participantId?: string): 
   const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
   
   // URL base de public tests - LOCAL vs PRODUCCIÓN
+  // 🎯 SIEMPRE USAR URL CORRECTA EN PRODUCCIÓN (ignorar variable de entorno si está incorrecta)
   const PUBLIC_TESTS_URL = isDevelopment 
     ? 'http://localhost:5173'  // 🏠 DESARROLLO LOCAL
-    : (process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'); // 🌐 PRODUCCIÓN
+    : 'https://d35071761848hm.cloudfront.net'; // 🌐 PRODUCCIÓN - URL CORRECTA
 
   let url = PUBLIC_TESTS_URL;
   if (researchId && participantId) {

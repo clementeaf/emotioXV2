@@ -507,8 +507,7 @@ export class ParticipantController {
         generatedParticipants.push({
           id: participant.id,
           name: participant.name,
-          email: participant.email,
-          publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'}?researchId=${researchId}&userId=${participant.id}`
+          email: participant.email
         });
 
         structuredLog('info', 'ParticipantController.generateDummyParticipants', 'Participant created successfully', {
@@ -583,8 +582,7 @@ export class ParticipantController {
         id: participant.id,
         name: participant.name,
         email: participant.email,
-        createdAt: participant.createdAt,
-        publicTestsUrl: `${process.env.PUBLIC_TESTS_URL || 'https://d35071761848hm.cloudfront.net'}?researchId=${researchId}&participantId=${participant.id}`
+        createdAt: participant.createdAt
       }));
 
       return {

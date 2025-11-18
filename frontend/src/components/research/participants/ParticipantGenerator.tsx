@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { apiClient } from '@/api/config';
+import { getPublicTestsUrl } from '@/api/config';
 import { Copy, ExternalLink, Plus, Users } from 'lucide-react';
 import { useState } from 'react';
 
@@ -12,7 +13,6 @@ interface GeneratedParticipant {
   id: string;
   name: string;
   email: string;
-  publicTestsUrl: string;
 }
 
 interface ParticipantGeneratorProps {
@@ -148,14 +148,20 @@ export function ParticipantGenerator({ researchId, onParticipantsGenerated }: Pa
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyUrl(participant.publicTestsUrl)}
+                      onClick={() => {
+                        const url = getPublicTestsUrl(researchId, participant.id);
+                        copyUrl(url);
+                      }}
                       className="flex items-center gap-2"
                     >
                       <Copy className="h-4 w-4" />
                       Copiar URL
                     </Button>
                     <Button
-                      onClick={() => openPublicTests(participant.publicTestsUrl)}
+                      onClick={() => {
+                        const url = getPublicTestsUrl(researchId, participant.id);
+                        openPublicTests(url);
+                      }}
                       className="flex items-center gap-2"
                     >
                       <ExternalLink className="h-4 w-4" />
