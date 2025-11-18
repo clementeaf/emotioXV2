@@ -286,12 +286,15 @@ async function handleHttpRequest(
   try {
     let path = event.path || '';
     
+    // Logging para debug
+    requestLogger.info(`[handleHttpRequest] Path original: ${path}, Raw path: ${event.path}`);
+    
     // Normalizar path: remover stage si está presente (ej: /dev/device-info/location -> /device-info/location)
     // API Gateway puede incluir el stage en el path
     const pathMatch = path.match(/^\/(dev|prod|test|staging)(\/.*)$/);
     if (pathMatch) {
       path = pathMatch[2] || '/';
-      requestLogger.info(`Path normalizado: ${event.path} -> ${path}`);
+      requestLogger.info(`[handleHttpRequest] Path normalizado: ${event.path} -> ${path}`);
     }
     
     let controllerType: string | null = null;
@@ -311,16 +314,20 @@ async function handleHttpRequest(
     }
 
     // Buscar el controlador correspondiente en las definiciones de ruta
+    requestLogger.info(`[handleHttpRequest] Buscando controlador para path: ${path}, Total rutas: ${ROUTE_DEFINITIONS.length}`);
     for (const route of ROUTE_DEFINITIONS) {
-      if (route.pathPattern.test(path)) {
+      const matches = route.pathPattern.test(path);
+      requestLogger.info(`[handleHttpRequest] Probando patrón: ${route.pathPattern} -> ${matches ? 'MATCH' : 'NO MATCH'} -> Controller: ${route.controllerType}`);
+      if (matches) {
         controllerType = route.controllerType;
-        requestLogger.info(`Ruta encontrada: ${path} -> Controlador: ${controllerType}`);
+        requestLogger.info(`[handleHttpRequest] ✅ Ruta encontrada: ${path} -> Controlador: ${controllerType}`);
         break; // Detenerse en la primera coincidencia
       }
     }
 
     // Si no se encontró un controlador adecuado
     if (!controllerType) {
+      requestLogger.error(`[handleHttpRequest] ❌ No se encontró controlador para path: ${path}`);
       // Lanzar un error NotFoundError aquí en lugar de devolver directamente
       throw new NotFoundError(`Ruta no encontrada: ${path}`);
     }
