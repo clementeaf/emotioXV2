@@ -18,51 +18,41 @@ interface BacklinkConfig {
  */
 export const useBacklinkRedirect = () => {
   /**
-   * Redirige a un backlink específico con fallbacks
-   * @param eyeTrackingConfig - Configuración de eye tracking con backlinks
-   * @param backlinkType - Tipo de backlink: 'complete' | 'disqualified' | 'overquota'
-   * @param message - Mensaje opcional a mostrar si no hay backlink configurado
+   * Realiza la redirección a la URL especificada
    */
-  const redirectToBacklink = useCallback((
-    eyeTrackingConfig: BacklinkConfig | undefined,
-    backlinkType: 'complete' | 'disqualified' | 'overquota',
-    message?: string
-  ) => {
-    if (!eyeTrackingConfig?.backlinks) {
+  const performRedirect = useCallback((url: string) => {
+    // Validar que la URL sea válida
+    if (!url || typeof url !== 'string' || url.trim() === '') {
       return;
     }
 
-    // Obtener URL del backlink solicitado
-    let targetUrl: string | undefined;
-    
-    if (backlinkType === 'complete') {
-      targetUrl = eyeTrackingConfig.backlinks.complete;
-    } else if (backlinkType === 'disqualified') {
-      targetUrl = eyeTrackingConfig.backlinks.disqualified;
-    } else if (backlinkType === 'overquota') {
-      targetUrl = eyeTrackingConfig.backlinks.overquota;
+    // Agregar protocolo si no lo tiene
+    let redirectUrl = url;
+    if (!redirectUrl.startsWith('http://') && !redirectUrl.startsWith('https://')) {
+      redirectUrl = 'https://' + redirectUrl;
     }
 
-    // Si no hay URL configurada, intentar fallbacks
-    if (!targetUrl) {
-      // Fallback 1: Intentar otros backlinks disponibles
-      if (backlinkType !== 'complete' && eyeTrackingConfig.backlinks.complete) {
-        targetUrl = eyeTrackingConfig.backlinks.complete;
-      } else if (backlinkType !== 'overquota' && eyeTrackingConfig.backlinks.overquota) {
-        targetUrl = eyeTrackingConfig.backlinks.overquota;
-      } else if (backlinkType !== 'disqualified' && eyeTrackingConfig.backlinks.disqualified) {
-        targetUrl = eyeTrackingConfig.backlinks.disqualified;
+    // Verificar que la URL sea válida
+    if (!redirectUrl.startsWith('http')) {
+      return;
+    }
+
+    // Intentar redirección con múltiples métodos
+    try {
+      const newWindow = window.open(redirectUrl, '_self');
+      if (!newWindow) {
+        // Fallback: usar assign
+        window.location.assign(redirectUrl);
+      }
+    } catch {
+      // Fallback: usar href
+      try {
+        window.location.href = redirectUrl;
+      } catch {
+        // Último fallback: mostrar mensaje
+        console.error('No se pudo redirigir a:', redirectUrl);
       }
     }
-
-    // Si después de fallbacks aún no hay URL, mostrar mensaje
-    if (!targetUrl) {
-      showFallbackMessage(backlinkType, message);
-      return;
-    }
-
-    // Validar y redirigir
-    performRedirect(targetUrl);
   }, []);
 
   /**
@@ -134,42 +124,52 @@ export const useBacklinkRedirect = () => {
   }, []);
 
   /**
-   * Realiza la redirección a la URL especificada
+   * Redirige a un backlink específico con fallbacks
+   * @param eyeTrackingConfig - Configuración de eye tracking con backlinks
+   * @param backlinkType - Tipo de backlink: 'complete' | 'disqualified' | 'overquota'
+   * @param message - Mensaje opcional a mostrar si no hay backlink configurado
    */
-  const performRedirect = useCallback((url: string) => {
-    // Validar que la URL sea válida
-    if (!url || typeof url !== 'string' || url.trim() === '') {
+  const redirectToBacklink = useCallback((
+    eyeTrackingConfig: BacklinkConfig | undefined,
+    backlinkType: 'complete' | 'disqualified' | 'overquota',
+    message?: string
+  ) => {
+    if (!eyeTrackingConfig?.backlinks) {
       return;
     }
 
-    // Agregar protocolo si no lo tiene
-    let redirectUrl = url;
-    if (!redirectUrl.startsWith('http://') && !redirectUrl.startsWith('https://')) {
-      redirectUrl = 'https://' + redirectUrl;
+    // Obtener URL del backlink solicitado
+    let targetUrl: string | undefined;
+    
+    if (backlinkType === 'complete') {
+      targetUrl = eyeTrackingConfig.backlinks.complete;
+    } else if (backlinkType === 'disqualified') {
+      targetUrl = eyeTrackingConfig.backlinks.disqualified;
+    } else if (backlinkType === 'overquota') {
+      targetUrl = eyeTrackingConfig.backlinks.overquota;
     }
 
-    // Verificar que la URL sea válida
-    if (!redirectUrl.startsWith('http')) {
+    // Si no hay URL configurada, intentar fallbacks
+    if (!targetUrl) {
+      // Fallback 1: Intentar otros backlinks disponibles
+      if (backlinkType !== 'complete' && eyeTrackingConfig.backlinks.complete) {
+        targetUrl = eyeTrackingConfig.backlinks.complete;
+      } else if (backlinkType !== 'overquota' && eyeTrackingConfig.backlinks.overquota) {
+        targetUrl = eyeTrackingConfig.backlinks.overquota;
+      } else if (backlinkType !== 'disqualified' && eyeTrackingConfig.backlinks.disqualified) {
+        targetUrl = eyeTrackingConfig.backlinks.disqualified;
+      }
+    }
+
+    // Si después de fallbacks aún no hay URL, mostrar mensaje
+    if (!targetUrl) {
+      showFallbackMessage(backlinkType, message);
       return;
     }
 
-    // Intentar redirección con múltiples métodos
-    try {
-      const newWindow = window.open(redirectUrl, '_self');
-      if (!newWindow) {
-        // Fallback: usar assign
-        window.location.assign(redirectUrl);
-      }
-    } catch {
-      // Fallback: usar href
-      try {
-        window.location.href = redirectUrl;
-      } catch {
-        // Último fallback: mostrar mensaje
-        console.error('No se pudo redirigir a:', redirectUrl);
-      }
-    }
-  }, []);
+    // Validar y redirigir
+    performRedirect(targetUrl);
+  }, [performRedirect, showFallbackMessage]);
 
   return {
     redirectToBacklink,
