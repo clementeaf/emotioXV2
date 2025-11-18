@@ -17,7 +17,7 @@ import {
   Search,
   Trash2
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { ParticipantDetailsModal } from './ParticipantDetailsModal';
 
 interface Participant {
@@ -79,6 +79,8 @@ export function ParticipantsTable({
   const [participantToDelete, setParticipantToDelete] = useState<Participant | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<Set<string>>(new Set());
+  const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
 
   const filteredParticipants = participants.filter(participant => {
     const matchesSearch = participant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,6 +88,43 @@ export function ParticipantsTable({
     const matchesStatus = statusFilter === 'all' || participant.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const allFilteredSelected = useMemo(() => {
+    return filteredParticipants.length > 0 && 
+           filteredParticipants.every(p => selectedParticipantIds.has(p.id));
+  }, [filteredParticipants, selectedParticipantIds]);
+
+  const someFilteredSelected = useMemo(() => {
+    return filteredParticipants.some(p => selectedParticipantIds.has(p.id));
+  }, [filteredParticipants, selectedParticipantIds]);
+
+  useEffect(() => {
+    if (selectAllCheckboxRef.current) {
+      selectAllCheckboxRef.current.indeterminate = someFilteredSelected && !allFilteredSelected;
+    }
+  }, [someFilteredSelected, allFilteredSelected]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const newSelected = new Set(selectedParticipantIds);
+      filteredParticipants.forEach(p => newSelected.add(p.id));
+      setSelectedParticipantIds(newSelected);
+    } else {
+      const newSelected = new Set(selectedParticipantIds);
+      filteredParticipants.forEach(p => newSelected.delete(p.id));
+      setSelectedParticipantIds(newSelected);
+    }
+  };
+
+  const handleSelectParticipant = (participantId: string, checked: boolean) => {
+    const newSelected = new Set(selectedParticipantIds);
+    if (checked) {
+      newSelected.add(participantId);
+    } else {
+      newSelected.delete(participantId);
+    }
+    setSelectedParticipantIds(newSelected);
+  };
 
   const getStatusConfig = (status: string) => {
     return statusConfig[status as keyof typeof statusConfig] || statusConfig['Por iniciar'];
@@ -140,9 +179,50 @@ export function ParticipantsTable({
     }
   };
 
+  const handleDeleteSelected = () => {
+    if (selectedParticipantIds.size === 0) return;
+    setIsDeleteModalOpen(true);
+    setParticipantToDelete(null);
+  };
+
+  const handleDeleteSelectedParticipants = async () => {
+    if (selectedParticipantIds.size === 0) return;
+
+    setIsDeleting(true);
+
+    try {
+      const participantIdsArray = Array.from(selectedParticipantIds);
+      const deletePromises = participantIdsArray.map(id =>
+        researchInProgressApi.deleteParticipant(researchId, id)
+      );
+
+      const results = await Promise.allSettled(deletePromises);
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+      const failed = results.length - successful;
+
+      if (successful > 0) {
+        participantIdsArray.forEach(id => onParticipantDeleted?.(id));
+      }
+
+      setIsDeleteModalOpen(false);
+      setSelectedParticipantIds(new Set());
+
+      if (failed > 0) {
+        alert(`Se eliminaron ${successful} participante(s). ${failed} fallaron.`);
+      }
+    } catch (error) {
+      alert('Error al eliminar participantes');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setParticipantToDelete(null);
+    if (selectedParticipantIds.size > 0) {
+      setSelectedParticipantIds(new Set());
+    }
   };
 
   const generatePublicTestsUrl = (participantId: string) => {
@@ -165,6 +245,11 @@ export function ParticipantsTable({
 
   const SkeletonRow = () => (
     <tr className="border-b">
+      <td className="py-3 px-4">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-4"></div>
+        </div>
+      </td>
       <td className="py-3 px-4">
         <div className="animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
@@ -217,7 +302,7 @@ export function ParticipantsTable({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
+          <div className="flex gap-4 mb-4 items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -237,12 +322,32 @@ export function ParticipantsTable({
               <option value="Por iniciar">Por iniciar</option>
               <option value="Completado">Completado</option>
             </select>
+            {selectedParticipantIds.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteSelected}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar seleccionados ({selectedParticipantIds.size})
+              </Button>
+            )}
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
+                  <th className="text-left py-3 px-4 font-medium w-12">
+                    <input
+                      type="checkbox"
+                      ref={selectAllCheckboxRef}
+                      checked={allFilteredSelected}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </th>
                   <th className="text-left py-3 px-4 font-medium">Participante</th>
                   <th className="text-left py-3 px-4 font-medium">Estado</th>
                   <th className="text-left py-3 px-4 font-medium">Progreso</th>
@@ -264,6 +369,14 @@ export function ParticipantsTable({
 
                     return (
                       <tr key={participant.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedParticipantIds.has(participant.id)}
+                            onChange={(e) => handleSelectParticipant(participant.id, e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </td>
                         <td className="py-3 px-4">
                           <div>
                             <div className="font-medium">{participant.name}</div>
@@ -350,40 +463,67 @@ export function ParticipantsTable({
         />
       )}
 
-      {isDeleteModalOpen && participantToDelete && (
+      {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="h-6 w-6 text-red-500" />
               <h3 className="text-lg font-semibold text-gray-900">
-                Eliminar participante
+                {participantToDelete ? 'Eliminar participante' : 'Eliminar participantes seleccionados'}
               </h3>
             </div>
 
-            <p className="text-gray-600 mb-6">
-              ¿Estás seguro de que quieres eliminar a <strong>{participantToDelete.name}</strong> ({participantToDelete.email})?
-            </p>
-
-            <p className="text-sm text-red-600 mb-6">
-              ⚠️ Esta acción no se puede deshacer. Se eliminarán todos los datos del participante.
-            </p>
-
-            <div className="flex gap-3 justify-end">
-              <Button
-                variant="outline"
-                onClick={handleCloseDeleteModal}
-                disabled={isDeleting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteParticipant}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Eliminando...' : 'Eliminar'}
-              </Button>
-            </div>
+            {participantToDelete ? (
+              <>
+                <p className="text-gray-600 mb-6">
+                  ¿Estás seguro de que quieres eliminar a <strong>{participantToDelete.name}</strong> ({participantToDelete.email})?
+                </p>
+                <p className="text-sm text-red-600 mb-6">
+                  ⚠️ Esta acción no se puede deshacer. Se eliminarán todos los datos del participante.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={handleCloseDeleteModal}
+                    disabled={isDeleting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteParticipant}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-600 mb-6">
+                  ¿Estás seguro de que quieres eliminar <strong>{selectedParticipantIds.size}</strong> participante(s) seleccionado(s)?
+                </p>
+                <p className="text-sm text-red-600 mb-6">
+                  ⚠️ Esta acción no se puede deshacer. Se eliminarán todos los datos de los participantes seleccionados.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={handleCloseDeleteModal}
+                    disabled={isDeleting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteSelectedParticipants}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Eliminando...' : `Eliminar ${selectedParticipantIds.size}`}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
