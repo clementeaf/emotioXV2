@@ -45,45 +45,45 @@ export class DeviceInfoController {
             throw new Error(`HTTP ${response.status}`);
           }
 
-          const data = await response.json();
+          const data = await response.json() as Record<string, unknown>;
 
           // Procesar según el formato del servicio
           if (serviceUrl.includes('ipapi.co')) {
             locationData = {
-              ip: data.ip || clientIp,
-              country: data.country_name || data.country || 'Unknown',
-              city: data.city || 'Unknown',
-              region: data.region || data.region_code || null,
-              latitude: data.latitude || null,
-              longitude: data.longitude || null,
-              timezone: data.timezone || null
+              ip: (data.ip as string) || clientIp,
+              country: (data.country_name as string) || (data.country as string) || 'Unknown',
+              city: (data.city as string) || 'Unknown',
+              region: (data.region as string) || (data.region_code as string) || null,
+              latitude: (data.latitude as number) || null,
+              longitude: (data.longitude as number) || null,
+              timezone: (data.timezone as string) || null
             };
           } else if (serviceUrl.includes('ip-api.com')) {
             locationData = {
-              ip: data.query || clientIp,
-              country: data.country || 'Unknown',
-              city: data.city || 'Unknown',
-              region: data.regionName || data.region || null,
-              latitude: data.lat || null,
-              longitude: data.lon || null,
-              timezone: data.timezone || null
+              ip: (data.query as string) || clientIp,
+              country: (data.country as string) || 'Unknown',
+              city: (data.city as string) || 'Unknown',
+              region: (data.regionName as string) || (data.region as string) || null,
+              latitude: (data.lat as number) || null,
+              longitude: (data.lon as number) || null,
+              timezone: (data.timezone as string) || null
             };
           } else if (serviceUrl.includes('ipify.org')) {
             // ipify solo devuelve IP, necesitamos otro servicio para geolocalización
-            const ip = data.ip || clientIp;
+            const ip = (data.ip as string) || clientIp;
             // Intentar obtener geolocalización con otro servicio
             try {
               const geoResponse = await fetch(`https://ip-api.com/json/${ip}`);
               if (geoResponse.ok) {
-                const geoData = await geoResponse.json();
+                const geoData = await geoResponse.json() as Record<string, unknown>;
                 locationData = {
                   ip: ip,
-                  country: geoData.country || 'Unknown',
-                  city: geoData.city || 'Unknown',
-                  region: geoData.regionName || null,
-                  latitude: geoData.lat || null,
-                  longitude: geoData.lon || null,
-                  timezone: geoData.timezone || null
+                  country: (geoData.country as string) || 'Unknown',
+                  city: (geoData.city as string) || 'Unknown',
+                  region: (geoData.regionName as string) || null,
+                  latitude: (geoData.lat as number) || null,
+                  longitude: (geoData.lon as number) || null,
+                  timezone: (geoData.timezone as string) || null
                 };
               }
             } catch {
