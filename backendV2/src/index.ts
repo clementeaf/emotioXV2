@@ -284,11 +284,20 @@ async function handleHttpRequest(
   const headers = getCorsHeaders(event);
 
   try {
-    const path = event.path || '';
+    let path = event.path || '';
+    
+    // Normalizar path: remover stage si está presente (ej: /dev/device-info/location -> /device-info/location)
+    // API Gateway puede incluir el stage en el path
+    const pathMatch = path.match(/^\/(dev|prod|test|staging)(\/.*)$/);
+    if (pathMatch) {
+      path = pathMatch[2] || '/';
+      requestLogger.info(`Path normalizado: ${event.path} -> ${path}`);
+    }
+    
     let controllerType: string | null = null;
 
     // Manejo especial para la ruta raíz
-    if (path === '/') {
+    if (path === '/' || path === '') {
       return {
         statusCode: 200,
         headers,
