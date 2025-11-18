@@ -166,7 +166,7 @@ const controller = new DeviceInfoController();
 /**
  * Handler principal para las rutas de device info
  */
-export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     // Manejar preflight CORS
     if (event.httpMethod === 'OPTIONS') {
