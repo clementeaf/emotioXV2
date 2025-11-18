@@ -120,16 +120,32 @@ export const useLocationTracking = ({
 
   const getIPLocation = useCallback(async (): Promise<LocationData> => {
     try {
-      const response = await fetch('https://ipapi.co/json/');
-      const data = await response.json();
+      // Importar dinámicamente para evitar dependencias circulares
+      const { getApiUrl } = await import('../config/endpoints');
+      
+      // Usar endpoint del backend que hace proxy de servicios externos
+      const response = await fetch(getApiUrl('device-info/location'), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const data = result.data || result;
 
       return {
-        latitude: data.latitude,
-        longitude: data.longitude,
+        latitude: data.latitude || 0,
+        longitude: data.longitude || 0,
         timestamp: new Date().toISOString(),
         source: 'ip'
       };
     } catch (error) {
+      console.error('[useLocationTracking] Error obteniendo ubicación por IP:', error);
       throw new Error('No se pudo obtener ubicación por IP');
     }
   }, []);

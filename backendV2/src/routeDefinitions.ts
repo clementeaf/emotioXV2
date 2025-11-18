@@ -69,6 +69,9 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // S3 (Ajustar regex para download sin parámetro de ruta)
   { pathPattern: /^\/s3\/(upload|download|delete-object)$/, controllerType: 's3' },
 
+  // Device Info (para obtener ubicación sin problemas de CORS)
+  { pathPattern: /^\/device-info/, controllerType: 'device-info' },
+
   // Participants
   { pathPattern: /^\/participants/, controllerType: 'participants' },
 
