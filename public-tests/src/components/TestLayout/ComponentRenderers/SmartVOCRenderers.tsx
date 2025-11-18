@@ -47,7 +47,7 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
   smartvoc_ces: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
     const scaleRange = (contentConfiguration?.scaleRange as { start: number; end: number }) || { start: 1, end: 5 };
     
-    // 🎯 Para CES, usar "Muy fácil" y "Muy difícil" como etiquetas extremas por defecto
+    // 🎯 Para CES, usar "Muy difícil" (1) y "Muy fácil" (5) como etiquetas extremas por defecto
     // Solo usar labels personalizados si están definidos y no están vacíos
     const customStartLabel = String(contentConfiguration?.startLabel || '').trim();
     const customEndLabel = String(contentConfiguration?.endLabel || '').trim();

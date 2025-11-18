@@ -29,10 +29,10 @@ export function ScaleRangeQuestion({
   const showLabelsBelowExtremes = (startLabel || endLabel) && !useResponsiveLayout && !isNPS;
   const buttonSize = useResponsiveLayout ? 'w-9 h-9 text-base' : 'w-10 h-10 text-lg';
   const containerClass = isNPS
-    ? 'flex flex-row items-center justify-between w-full max-w-4xl gap-1'
+    ? 'flex flex-row items-start justify-between w-full max-w-4xl gap-1'
     : useResponsiveLayout
-    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 w-full max-w-4xl justify-items-center'
-    : 'flex flex-row items-center justify-center gap-4 sm:gap-6 flex-wrap';
+    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 w-full max-w-4xl justify-items-center items-start'
+    : 'flex flex-row items-start justify-center gap-4 sm:gap-6 flex-wrap';
 
   return (
     <div className="flex flex-col items-center w-full">

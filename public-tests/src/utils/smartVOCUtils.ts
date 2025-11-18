@@ -26,10 +26,10 @@ export const DEFAULT_SMARTVOC_CONFIGS = {
   CES: {
     min: 1,
     max: 5,
-    leftLabel: 'Muy fácil',
-    rightLabel: 'Muy difícil',
-    startLabel: 'Muy fácil',
-    endLabel: 'Muy difícil'
+    leftLabel: 'Muy difícil',
+    rightLabel: 'Muy fácil',
+    startLabel: 'Muy difícil',
+    endLabel: 'Muy fácil'
   },
   CV: {
     min: 1,
