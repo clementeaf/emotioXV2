@@ -57,22 +57,26 @@ export const getOSInfo = (): string => {
 
 /**
  * Obtiene información de ubicación del usuario
+ * Usa ipapi.co que soporta CORS y devuelve IP + geolocalización en una sola llamada
  */
 export const getLocationInfo = async (): Promise<LocationInfo> => {
   try {
-    const response = await fetch('https://api.ipify.org?format=json');
+    // Usar ipapi.co que soporta CORS y devuelve IP + geolocalización en una sola llamada
+    const response = await fetch('https://ipapi.co/json/');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const data = await response.json();
-    const ip = data.ip;
-
-    const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-    const geoData = await geoResponse.json();
 
     return {
-      country: geoData.country_name || 'Chile',
-      city: geoData.city || 'Valparaíso',
-      ip: ip
+      country: data.country_name || 'Chile',
+      city: data.city || 'Valparaíso',
+      ip: data.ip || 'N/A'
     };
-  } catch {
+  } catch (error) {
+    console.error('[getLocationInfo] Error obteniendo información de ubicación:', error);
     return {
       country: 'Chile',
       city: 'Valparaíso',
