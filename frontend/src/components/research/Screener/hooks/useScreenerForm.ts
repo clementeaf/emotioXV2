@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useScreenerData } from '@/api/domains/screener';
-import type { ScreenerFormData } from '@/api/domains/screener/screener.types';
+import type { ScreenerFormData, ScreenerQuestion, ScreenerOption } from '@/api/domains/screener/screener.types';
 
 export interface ValidationErrors {
   [key: string]: string;
@@ -30,6 +30,13 @@ export interface UseScreenerFormResult {
   confirmDelete: () => Promise<void>;
   closeModal: () => void;
   closeDeleteModal: () => void;
+  addQuestion: (questionType: ScreenerQuestion['questionType']) => void;
+  updateQuestion: (questionId: string, updates: Partial<ScreenerQuestion>) => void;
+  removeQuestion: (questionId: string) => void;
+  addOption: (questionId: string) => void;
+  updateOption: (questionId: string, optionId: string, updates: Partial<ScreenerOption>) => void;
+  removeOption: (questionId: string, optionId: string) => void;
+  reorderQuestions: (questionIds: string[]) => void;
 }
 
 const INITIAL_FORM_DATA: ScreenerFormData = {
@@ -37,7 +44,8 @@ const INITIAL_FORM_DATA: ScreenerFormData = {
   isEnabled: false,
   title: '',
   description: '',
-  questions: []
+  questions: [],
+  randomizeQuestions: false
 };
 
 export const useScreenerForm = (researchId: string): UseScreenerFormResult => {
@@ -72,10 +80,11 @@ export const useScreenerForm = (researchId: string): UseScreenerFormResult => {
     if (existingData) {
       setFormData({
         researchId: existingData.researchId,
-        isEnabled: existingData.isEnabled,
-        title: existingData.title,
-        description: existingData.description,
-        questions: existingData.questions || []
+        isEnabled: existingData.isEnabled ?? false,
+        title: existingData.title || '',
+        description: existingData.description || '',
+        questions: existingData.questions || [],
+        randomizeQuestions: existingData.randomizeQuestions ?? false
       });
       setHasBeenSaved(true);
     } else if (!hasBeenSaved) {
@@ -182,6 +191,116 @@ export const useScreenerForm = (researchId: string): UseScreenerFormResult => {
     setIsDeleteModalOpen(false);
   };
 
+  const addQuestion = useCallback((questionType: ScreenerQuestion['questionType']) => {
+    const newQuestion: ScreenerQuestion = {
+      id: `question_${Date.now()}`,
+      questionText: '',
+      questionType,
+      required: false,
+      order: formData.questions.length,
+      options: (questionType === 'single_choice' || questionType === 'multiple_choice' || questionType === 'ranking')
+        ? [
+            { id: '1', label: '', value: '', eligibility: 'qualify' },
+            { id: '2', label: '', value: '', eligibility: 'qualify' },
+            { id: '3', label: '', value: '', eligibility: 'qualify' }
+          ]
+        : undefined,
+      scaleConfig: questionType === 'linear_scale'
+        ? {
+            startValue: 1,
+            endValue: 5
+          }
+        : undefined
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      questions: [...prev.questions, newQuestion]
+    }));
+  }, [formData.questions.length]);
+
+  const updateQuestion = useCallback((questionId: string, updates: Partial<ScreenerQuestion>) => {
+    setFormData(prev => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === questionId ? { ...q, ...updates } : q
+      )
+    }));
+  }, []);
+
+  const removeQuestion = useCallback((questionId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      questions: prev.questions
+        .filter(q => q.id !== questionId)
+        .map((q, index) => ({ ...q, order: index }))
+    }));
+  }, []);
+
+  const addOption = useCallback((questionId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      questions: prev.questions.map(q => {
+        if (q.id === questionId && q.options) {
+          const newOptionId = String((q.options.length || 0) + 1);
+          return {
+            ...q,
+            options: [
+              ...q.options,
+              { id: newOptionId, label: '', value: '', eligibility: 'qualify' }
+            ]
+          };
+        }
+        return q;
+      })
+    }));
+  }, []);
+
+  const updateOption = useCallback((questionId: string, optionId: string, updates: Partial<ScreenerOption>) => {
+    setFormData(prev => ({
+      ...prev,
+      questions: prev.questions.map(q => {
+        if (q.id === questionId && q.options) {
+          return {
+            ...q,
+            options: q.options.map(opt =>
+              opt.id === optionId ? { ...opt, ...updates } : opt
+            )
+          };
+        }
+        return q;
+      })
+    }));
+  }, []);
+
+  const removeOption = useCallback((questionId: string, optionId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      questions: prev.questions.map(q => {
+        if (q.id === questionId && q.options) {
+          const filtered = q.options.filter(opt => opt.id !== optionId);
+          return { ...q, options: filtered.length > 0 ? filtered : undefined };
+        }
+        return q;
+      })
+    }));
+  }, []);
+
+  const reorderQuestions = useCallback((questionIds: string[]) => {
+    setFormData(prev => {
+      const questionMap = new Map(prev.questions.map(q => [q.id, q]));
+      const reordered = questionIds
+        .map(id => questionMap.get(id))
+        .filter((q): q is ScreenerQuestion => q !== undefined)
+        .map((q, index) => ({ ...q, order: index }));
+      
+      return {
+        ...prev,
+        questions: reordered
+      };
+    });
+  }, []);
+
   return {
     formData,
     isLoading,
@@ -195,7 +314,14 @@ export const useScreenerForm = (researchId: string): UseScreenerFormResult => {
     handleDelete,
     confirmDelete,
     closeModal,
-    closeDeleteModal
+    closeDeleteModal,
+    addQuestion,
+    updateQuestion,
+    removeQuestion,
+    addOption,
+    updateOption,
+    removeOption,
+    reorderQuestions
   };
 };
 

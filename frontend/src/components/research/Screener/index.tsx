@@ -1,18 +1,35 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Save, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { CustomSelect, Option } from '@/components/ui/CustomSelect';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { useScreenerForm } from './hooks/useScreenerForm';
+import { ScreenerQuestions } from './components/ScreenerQuestions';
+import type { ScreenerQuestion } from '@/api/domains/screener/screener.types';
 
 interface ScreenerFormProps {
   researchId: string;
 }
 
+const QUESTION_TYPES: Option[] = [
+  { value: 'single_choice', label: 'Single choice' },
+  { value: 'multiple_choice', label: 'Multiple choice' },
+  { value: 'short_text', label: 'Short text' },
+  { value: 'long_text', label: 'Long text' },
+  { value: 'linear_scale', label: 'Linear scale' },
+  { value: 'ranking', label: 'Ranking' },
+  { value: 'navigation_flow', label: 'Navigation flow' },
+  { value: 'preference_test', label: 'Preference test' }
+];
+
 export const ScreenerForm: React.FC<ScreenerFormProps> = ({ researchId }) => {
+  const [selectedQuestionType, setSelectedQuestionType] = useState<string>('single_choice');
+
   const {
     formData,
     isLoading,
@@ -26,8 +43,21 @@ export const ScreenerForm: React.FC<ScreenerFormProps> = ({ researchId }) => {
     handleDelete,
     confirmDelete,
     closeModal,
-    closeDeleteModal
+    closeDeleteModal,
+    addQuestion,
+    updateQuestion,
+    removeQuestion,
+    addOption,
+    updateOption,
+    removeOption
   } = useScreenerForm(researchId);
+
+  const handleAddQuestion = () => {
+    if (selectedQuestionType) {
+      addQuestion(selectedQuestionType as ScreenerQuestion['questionType']);
+      setSelectedQuestionType('single_choice');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -71,7 +101,7 @@ export const ScreenerForm: React.FC<ScreenerFormProps> = ({ researchId }) => {
       <div className="p-4 bg-gray-50 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-medium text-gray-900">Screener</h3>
+            <h3 className="text-lg font-medium text-gray-900">1.0.- Screener</h3>
             <p className="text-sm text-gray-600">
               Habilitar o deshabilitar el screener para esta investigación
             </p>
@@ -97,13 +127,30 @@ export const ScreenerForm: React.FC<ScreenerFormProps> = ({ researchId }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Título del Screener
             </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => handleChange('title', e.target.value)}
-              placeholder="Ingresa el título del screener"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={formData.title || ''}
+                onChange={(e) => handleChange('title', e.target.value)}
+                placeholder="Ingresa el título del screener"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <CustomSelect
+                value={selectedQuestionType}
+                onChange={setSelectedQuestionType}
+                options={QUESTION_TYPES}
+                placeholder="Selecciona el tipo"
+                disabled={isSaving}
+                className="w-[140px]"
+              />
+              <Button
+                onClick={handleAddQuestion}
+                disabled={isSaving || !selectedQuestionType}
+                className="whitespace-nowrap"
+              >
+                + Añadir Pregunta
+              </Button>
+            </div>
             {validationErrors.title && (
               <p className="text-xs text-red-500 mt-1">{validationErrors.title}</p>
             )}
@@ -115,7 +162,7 @@ export const ScreenerForm: React.FC<ScreenerFormProps> = ({ researchId }) => {
               Descripción
             </label>
             <textarea
-              value={formData.description}
+              value={formData.description || ''}
               onChange={(e) => handleChange('description', e.target.value)}
               placeholder="Ingresa la descripción del screener"
               rows={4}
@@ -126,12 +173,21 @@ export const ScreenerForm: React.FC<ScreenerFormProps> = ({ researchId }) => {
             )}
           </div>
 
-          {/* Questions placeholder */}
+          {/* Questions Management */}
           <div className="border-t pt-6">
-            <p className="text-sm text-gray-600">
-              La gestión de preguntas del screener estará disponible próximamente.
-            </p>
+            <ScreenerQuestions
+              questions={formData.questions}
+              onUpdateQuestion={updateQuestion}
+              onRemoveQuestion={removeQuestion}
+              onAddOption={addOption}
+              onUpdateOption={updateOption}
+              onRemoveOption={removeOption}
+              disabled={isSaving}
+            />
           </div>
+
+          {/* Randomize Questions Checkbox */}
+
         </div>
       </div>
 

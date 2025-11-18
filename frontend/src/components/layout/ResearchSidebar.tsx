@@ -92,36 +92,45 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     const buildSectionIndex = dynamicSections.findIndex(s => s.id === 'build');
     const resultsSectionIndex = dynamicSections.findIndex(s => s.id === 'results');
 
-    // Handle BUILD section
+    // Solo mostrar stages si hay una investigación seleccionada Y tiene técnica
+    // Si no hay researchId o no hay researchTechnique, no mostrar stages de BUILD
+    if (!researchId || !researchTechnique) {
+      // Ocultar BUILD y RESULTS si no hay investigación seleccionada
+      if (buildSectionIndex !== -1) {
+        dynamicSections[buildSectionIndex] = {
+          ...dynamicSections[buildSectionIndex],
+          stages: []
+        };
+      }
+      if (resultsSectionIndex !== -1) {
+        dynamicSections[resultsSectionIndex] = {
+          ...dynamicSections[resultsSectionIndex],
+          stages: []
+        };
+      }
+      return dynamicSections;
+    }
+
+    // Handle BUILD section - solo si hay researchTechnique válido
     if (buildSectionIndex !== -1 && researchTechnique) {
       const buildStages = getBuildStages(researchTechnique);
       dynamicSections[buildSectionIndex] = {
         ...dynamicSections[buildSectionIndex],
         stages: buildStages
       };
-    } else if (buildSectionIndex !== -1) {
-      dynamicSections[buildSectionIndex] = {
-        ...dynamicSections[buildSectionIndex],
-        stages: getBuildStages('')
-      };
     }
 
-    // Handle RESULTS section
+    // Handle RESULTS section - solo si hay researchTechnique válido
     if (resultsSectionIndex !== -1 && researchTechnique) {
       const resultsStages = getResultsStages(researchTechnique);
       dynamicSections[resultsSectionIndex] = {
         ...dynamicSections[resultsSectionIndex],
         stages: resultsStages
       };
-    } else if (resultsSectionIndex !== -1) {
-      dynamicSections[resultsSectionIndex] = {
-        ...dynamicSections[resultsSectionIndex],
-        stages: getResultsStages('')
-      };
     }
 
     return dynamicSections;
-  }, [researchTechnique, researchData]);
+  }, [researchTechnique, researchData, researchId]);
   const isLoadingName = isLoadingSpecific && !researchData;
   const error = null;
 

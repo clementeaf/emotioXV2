@@ -5,6 +5,9 @@ export const QUESTION_TYPE_MAP = {
   welcome_screen: 'screen',
   thank_you_screen: 'screen',
 
+  // Screener
+  screener: 'screener',
+
   // Demographics
   demographics: 'demographics',
 

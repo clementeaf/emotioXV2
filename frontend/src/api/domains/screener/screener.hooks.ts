@@ -58,6 +58,7 @@ export function useScreenerData(researchId: string | null) {
         title: newScreener.title,
         description: newScreener.description,
         questions: newScreener.questions || [],
+        randomizeQuestions: newScreener.randomizeQuestions ?? false,
         metadata: {
           ...newScreener.metadata,
           createdAt: new Date().toISOString(),
@@ -169,6 +170,7 @@ export function useScreenerData(researchId: string | null) {
       title: data.title,
       description: data.description,
       questions: data.questions,
+      randomizeQuestions: data.randomizeQuestions ?? false,
       metadata: data.metadata
     };
 

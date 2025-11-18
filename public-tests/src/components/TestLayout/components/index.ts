@@ -15,3 +15,4 @@ export { default as TestLayoutFooter } from './TestLayoutFooter';
 export { default as TestLayoutHeader } from './TestLayoutHeader';
 export { default as TestLayoutMain } from './TestLayoutMain';
 export { ThankYouScreenComponent } from './ThankYouScreenComponent';
+export { ScreenerComponent } from './ScreenerComponent';

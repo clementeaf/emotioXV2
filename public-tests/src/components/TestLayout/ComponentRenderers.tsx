@@ -5,6 +5,7 @@ import { SmartVOCRenderers } from './ComponentRenderers/SmartVOCRenderers';
 import { screenRenderers } from './ComponentRenderers/ScreenRenderers';
 import { cognitiveRenderers } from './ComponentRenderers/CognitiveRenderers';
 import { demographicRenderers } from './demographic';
+import { ScreenerComponent } from './components/ScreenerComponent';
 
 import { QuotaResult, EyeTrackingConfig } from './components/ThankYouScreenTypes';
 
@@ -20,6 +21,34 @@ interface RendererArgs {
 const getRenderers = (): Record<string, (args: RendererArgs) => React.ReactNode> => ({
   ...screenRenderers,
   ...demographicRenderers,
+
+  screener: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => (
+    <ScreenerComponent
+      contentConfiguration={contentConfiguration as {
+        title?: string;
+        description?: string;
+        questions?: Array<{
+          id: string;
+          questionText: string;
+          questionType: 'single_choice' | 'multiple_choice' | 'short_text' | 'long_text' | 'linear_scale';
+          required: boolean;
+          options?: Array<{
+            id: string;
+            label: string;
+            value: string;
+          }>;
+          minValue?: number;
+          maxValue?: number;
+          minLabel?: string;
+          maxLabel?: string;
+          order: number;
+        }>;
+        isEnabled?: boolean;
+      }}
+      currentQuestionKey={currentQuestionKey}
+      formData={formData}
+    />
+  ),
 
   smartvoc: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
     const displayType = contentConfiguration?.type || 'text';

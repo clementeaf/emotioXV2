@@ -271,6 +271,7 @@ const TestLayoutRenderer: React.FC = () => {
 
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
+  const isScreener = currentQuestionKey === 'screener';
   const isNavigationFlow = questionType === 'cognitive_navigation_flow';
 
   // 🎯 Ocultar botón si hay maxSelections detectado en instrucciones
@@ -298,7 +299,7 @@ const TestLayoutRenderer: React.FC = () => {
         isTransitioning ? 'opacity-50' : 'opacity-100'
       }`}>
         {renderedForm}
-        {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && !shouldHideButton && !isNavigationFlow && (
+        {!isWelcomeScreen && !isThankYouScreen && !isScreener && !isConfigurationPending && !shouldHideButton && !isNavigationFlow && (
           <ButtonSteps
             currentQuestionKey={currentQuestionKey}
             formData={formData}
