@@ -119,6 +119,24 @@ export const API_ENDPOINTS = {
     getUploadUrl: '/research/{researchId}/cognitive-task/upload-url',
   },
 
+  // Screener
+  screener: {
+    getByResearch: '/research/{researchId}/screener',
+    create: '/research/{researchId}/screener',
+    update: '/research/{researchId}/screener',
+    delete: '/research/{researchId}/screener',
+    validate: '/research/{researchId}/screener/validate',
+  },
+
+  // Implicit Association
+  implicitAssociation: {
+    getByResearch: '/research/{researchId}/implicit-association',
+    create: '/research/{researchId}/implicit-association',
+    update: '/research/{researchId}/implicit-association',
+    delete: '/research/{researchId}/implicit-association',
+    validate: '/research/{researchId}/implicit-association/validate',
+  },
+
   // S3
   s3: {
     upload: '/s3/upload',
@@ -350,7 +368,9 @@ export class ApiClient {
         '/cognitive-task',
         '/welcome-screen',
         '/smart-voc',
-        '/thank-you-screen'
+        '/thank-you-screen',
+        '/screener',
+        '/implicit-association'
       ];
 
       // Si es un 404 en un endpoint esperado, devolver null en lugar de lanzar error

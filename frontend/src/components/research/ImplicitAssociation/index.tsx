@@ -1,31 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+import React from 'react';
+import { Plus, Trash2, Save, Trash } from 'lucide-react';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { CustomSelect, Option } from '@/components/ui/CustomSelect';
 import { FileUploadQuestion } from '../CognitiveTask/components/questions/FileUploadQuestion';
-
-interface Target {
-  id: string;
-  title: string;
-  description: string;
-  type: string;
-  required: boolean;
-  showConditionally: boolean;
-  deviceFrame: boolean;
-  files: any[];
-  hitZones: any[];
-}
-
-interface Attribute {
-  id: string;
-  order: number;
-  name: string;
-}
+import { useImplicitAssociationForm } from './hooks/useImplicitAssociationForm';
+import { ErrorModal } from '@/components/common/ErrorModal';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
+import type { Question } from '../CognitiveTask/types';
+import type { Target } from '@/api/domains/implicit-association/implicit-association.types';
 
 interface ImplicitAssociationFormProps {
   researchId: string;
@@ -34,31 +20,31 @@ interface ImplicitAssociationFormProps {
 export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = ({
   researchId
 }) => {
-  const [isRequired, setIsRequired] = useState(false);
-  const [targets, setTargets] = useState<Target[]>([
-    {
-      id: 'target-1',
-      title: '',
-      description: 'You can use an image or a name for this.',
-      type: 'file-upload',
-      required: false,
-      showConditionally: false,
-      deviceFrame: false,
-      files: [],
-      hitZones: []
-    }
-  ]);
-
-  const [attributes, setAttributes] = useState<Attribute[]>([
-    { id: uuidv4(), order: 1, name: '' },
-    { id: uuidv4(), order: 2, name: '' }
-  ]);
-
-  const [exerciseInstructions, setExerciseInstructions] = useState('');
-  const [testInstructions, setTestInstructions] = useState('');
-
-  const [testConfiguration, setTestConfiguration] = useState('');
-  const [showResults, setShowResults] = useState(false);
+  const {
+    formData,
+    isLoading,
+    isSaving,
+    validationErrors,
+    modalError,
+    modalVisible,
+    isDeleteModalOpen,
+    handleTargetChange,
+    handleFileUpload,
+    handleFileDelete,
+    handleAttributeChange,
+    handleAddAttribute,
+    handleRemoveAttribute,
+    handleIsRequiredChange,
+    handleExerciseInstructionsChange,
+    handleTestInstructionsChange,
+    handleTestConfigurationChange,
+    handleShowResultsChange,
+    handleSave,
+    handleDelete,
+    confirmDelete,
+    closeModal,
+    closeDeleteModal
+  } = useImplicitAssociationForm(researchId);
 
   const testConfigOptions: Option[] = [
     { value: '', label: 'Please select' },
@@ -68,89 +54,44 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
     { value: 'custom', label: 'Custom Configuration' }
   ];
 
-  const handleTargetChange = (targetId: string, updates: Partial<Target>) => {
-    setTargets(prev => {
-      const updatedTargets = prev.map(target =>
-        target.id === targetId ? { ...target, ...updates } : target
-      );
-
-      // Verificar si necesitamos agregar un nuevo target
-      const currentTarget = updatedTargets.find(t => t.id === targetId);
-      const isCurrentTargetComplete = currentTarget &&
-        (currentTarget.title.trim() !== '' || currentTarget.files.length > 0);
-
-      const shouldAddNewTarget =
-        isCurrentTargetComplete &&
-        updatedTargets.length < 5 &&
-        targetId === `target-${updatedTargets.length}`;
-
-      if (shouldAddNewTarget) {
-        const newTarget: Target = {
-          id: `target-${updatedTargets.length + 1}`,
-          title: '',
-          description: 'You can use an image or a name for this.',
-          type: 'file-upload',
-          required: false,
-          showConditionally: false,
-          deviceFrame: false,
-          files: [],
-          hitZones: []
-        };
-        return [...updatedTargets, newTarget];
-      }
-
-      return updatedTargets;
-    });
-  };
-
-  const handleFileUpload = (targetId: string, files: FileList) => {
-    console.log('File upload for target:', targetId, files);
-    // TODO: Implementar lógica de upload real
-
-    // Simular que el archivo se agregó al target para disparar la verificación
-    const fileArray = Array.from(files).map(file => ({
-      id: uuidv4(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url: '',
-      s3Key: ''
-    }));
-
-    handleTargetChange(targetId, { files: fileArray });
-  };
-
-  const handleFileDelete = (targetId: string, fileId: string) => {
-    console.log('Delete file:', fileId, 'from target:', targetId);
-    // TODO: Implementar lógica de eliminación
-  };
-
-  const handleAttributeChange = (attributeId: string, name: string) => {
-    setAttributes(prev => prev.map(attr =>
-      attr.id === attributeId ? { ...attr, name } : attr
-    ));
-  };
-
-  const handleAddAttribute = () => {
-    const newAttribute: Attribute = {
-      id: uuidv4(),
-      order: attributes.length + 1,
-      name: ''
-    };
-    setAttributes(prev => [...prev, newAttribute]);
-  };
-
-  const handleRemoveAttribute = (attributeId: string) => {
-    if (attributes.length > 2) {
-      setAttributes(prev =>
-        prev.filter(attr => attr.id !== attributeId)
-           .map((attr, index) => ({ ...attr, order: index + 1 }))
-      );
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
+      {/* Header con acciones */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Implicit Association Test</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Configure the implicit association test for this research
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleDelete}
+            variant="outline"
+            className="flex items-center gap-2 text-red-600 hover:text-red-700"
+          >
+            <Trash className="w-4 h-4" />
+            Delete
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
+        </div>
+      </div>
+
       {/* Switch de Required */}
       <div className="p-4 bg-gray-50 rounded-lg">
         <div className="flex items-center justify-between">
@@ -162,11 +103,11 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">
-              {isRequired ? 'Requerido' : 'Opcional'}
+              {formData.isRequired ? 'Requerido' : 'Opcional'}
             </span>
             <Switch
-              checked={isRequired}
-              onCheckedChange={setIsRequired}
+              checked={formData.isRequired}
+              onCheckedChange={handleIsRequiredChange}
               aria-label="Marcar como requerido el test de asociación implícita"
             />
           </div>
@@ -181,23 +122,66 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
 
         {/* Target Objects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-          {targets.map((target, index) => (
-            <div key={target.id}>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Target {index + 1}
-              </h3>
-              <FileUploadQuestion
-                question={target}
-                onQuestionChange={(updates) => handleTargetChange(target.id, updates)}
-                onFileUpload={(files) => handleFileUpload(target.id, files)}
-                onFileDelete={(fileId) => handleFileDelete(target.id, fileId)}
-                validationErrors={null}
-                disabled={false}
-                isUploading={false}
-                uploadProgress={0}
-              />
-            </div>
-          ))}
+          {formData.targets.map((target, index) => {
+            // Adaptar Target a Question para FileUploadQuestion
+            const question: Question = {
+              id: target.id,
+              type: target.type,
+              title: target.title,
+              description: target.description,
+              required: target.required,
+              showConditionally: target.showConditionally,
+              deviceFrame: target.deviceFrame,
+              files: target.files.map(file => ({
+                id: file.id,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                url: file.url,
+                s3Key: file.s3Key || ''
+              })),
+              hitZones: target.hitZones
+            };
+
+            return (
+              <div key={target.id}>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Target {index + 1}
+                </h3>
+                <FileUploadQuestion
+                  question={question}
+                  onQuestionChange={(updates) => {
+                    // Adaptar Question updates a Target updates
+                    const targetUpdates: Partial<Target> = {
+                      ...(updates.title !== undefined && { title: updates.title }),
+                      ...(updates.description !== undefined && { description: updates.description }),
+                      ...(updates.required !== undefined && { required: updates.required }),
+                      ...(updates.showConditionally !== undefined && { showConditionally: updates.showConditionally }),
+                      ...(updates.deviceFrame !== undefined && { deviceFrame: updates.deviceFrame }),
+                      ...(updates.files !== undefined && {
+                        files: updates.files.map(file => ({
+                          id: file.id,
+                          name: file.name,
+                          size: file.size,
+                          type: file.type,
+                          url: file.url,
+                          s3Key: file.s3Key || ''
+                        }))
+                      }),
+                      ...(updates.hitZones !== undefined && { hitZones: updates.hitZones })
+                    };
+                    handleTargetChange(target.id, targetUpdates);
+                  }}
+                  onFileUpload={(files) => handleFileUpload(target.id, files)}
+                  onFileDelete={(fileId) => handleFileDelete(target.id, fileId)}
+                  validationErrors={null}
+                  disabled={false}
+                  isUploading={false}
+                  uploadProgress={0}
+                />
+              </div>
+            );
+          })}
         </div>
 
         {/* Criteria/Attributes Section */}
@@ -231,7 +215,7 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {attributes.map((attribute) => (
+                {formData.attributes.map((attribute) => (
                   <tr key={attribute.id}>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       {String(attribute.order).padStart(2, '0')}
@@ -244,6 +228,11 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
                         placeholder="Attribute"
                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
+                      {validationErrors[`attribute_${attribute.order - 1}`] && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {validationErrors[`attribute_${attribute.order - 1}`]}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
@@ -252,9 +241,9 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
                         </span>
                         <button
                           onClick={() => handleRemoveAttribute(attribute.id)}
-                          disabled={attributes.length <= 2}
+                          disabled={formData.attributes.length <= 2}
                           className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={attributes.length <= 2 ? "Minimum 2 attributes required" : "Delete attribute"}
+                          title={formData.attributes.length <= 2 ? "Minimum 2 attributes required" : "Delete attribute"}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -289,14 +278,15 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
               Exercise instructions
             </label>
             <Textarea
-              value={exerciseInstructions}
-              onChange={(e) => setExerciseInstructions(e.target.value)}
+              value={formData.exerciseInstructions}
+              onChange={(e) => handleExerciseInstructionsChange(e.target.value)}
               rows={8}
               className="w-full"
               placeholder="Enter exercise instructions..."
+              maxLength={1000}
             />
             <p className="text-xs text-gray-500 mt-1 text-right">
-              {exerciseInstructions.length} / 1000
+              {formData.exerciseInstructions.length} / 1000
             </p>
           </div>
 
@@ -306,14 +296,15 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
               Test instructions
             </label>
             <Textarea
-              value={testInstructions}
-              onChange={(e) => setTestInstructions(e.target.value)}
+              value={formData.testInstructions}
+              onChange={(e) => handleTestInstructionsChange(e.target.value)}
               rows={8}
               className="w-full"
               placeholder="Enter test instructions..."
+              maxLength={1000}
             />
             <p className="text-xs text-gray-500 mt-1 text-right">
-              {testInstructions.length} / 1000
+              {formData.testInstructions.length} / 1000
             </p>
           </div>
         </div>
@@ -325,12 +316,15 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
               Test configuration
             </label>
             <CustomSelect
-              value={testConfiguration}
-              onChange={setTestConfiguration}
+              value={formData.testConfiguration}
+              onChange={handleTestConfigurationChange}
               options={testConfigOptions}
               placeholder="Please select"
               className="w-full"
             />
+            {validationErrors.testConfiguration && (
+              <p className="text-xs text-red-500 mt-1">{validationErrors.testConfiguration}</p>
+            )}
           </div>
 
           {/* Show Results Checkbox */}
@@ -338,8 +332,8 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
             <input
               id="show-results"
               type="checkbox"
-              checked={showResults}
-              onChange={(e) => setShowResults(e.target.checked)}
+              checked={formData.showResults}
+              onChange={(e) => handleShowResultsChange(e.target.checked)}
               className="h-4 w-4 mt-0.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="show-results" className="text-sm text-gray-700">
@@ -348,6 +342,27 @@ export const ImplicitAssociationForm: React.FC<ImplicitAssociationFormProps> = (
           </div>
         </div>
       </div>
+
+      {/* Error Modal */}
+      {modalError && (
+        <ErrorModal
+          isOpen={modalVisible}
+          onClose={closeModal}
+          error={modalError}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Eliminar Implicit Association"
+        message="¿Estás seguro de que quieres eliminar la configuración de Implicit Association? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 };
