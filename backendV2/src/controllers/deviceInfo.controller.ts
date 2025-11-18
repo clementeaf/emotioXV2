@@ -181,7 +181,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const method = event.httpMethod;
 
     // Enrutar según el método y path
-    if (method === 'GET' && path === '/device-info/location') {
+    // El path puede incluir el stage (ej: /dev/device-info/location) o no (ej: /device-info/location)
+    const normalizedPath = path.replace(/^\/[^\/]+/, ''); // Remover stage si existe
+    if (method === 'GET' && (path === '/device-info/location' || normalizedPath === '/device-info/location' || path.endsWith('/device-info/location'))) {
       return controller.getLocationInfo(event);
     }
 
