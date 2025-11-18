@@ -239,7 +239,40 @@ const TestLayoutRenderer: React.FC = () => {
 
   const currentStepData = getCurrentStepData(formsData, currentQuestionKey);
 
+  // 🎯 Fallback para thank_you_screen cuando no está configurado
+  const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
+  const defaultThankYouConfig = {
+    title: '¡Gracias por tu participación!',
+    message: 'Tu opinión es muy valiosa para nosotros. Agradecemos el tiempo que dedicaste a completar esta encuesta.'
+  };
+
   if (!currentStepData) {
+    // Si es thank_you_screen y no está configurado, usar configuración por defecto
+    if (isThankYouScreen) {
+      const questionType = getQuestionType(currentQuestionKey);
+      const backendResponse = moduleResponses?.responses?.find(
+        (response) => response.questionKey === currentQuestionKey
+      );
+      const formData = backendResponse?.response || getFormData(currentQuestionKey) || {};
+      
+      const renderedForm = RENDERERS[questionType]?.({ 
+        contentConfiguration: defaultThankYouConfig, 
+        currentQuestionKey, 
+        quotaResult, 
+        eyeTrackingConfig, 
+        formData 
+      });
+      
+      if (renderedForm) {
+        return (
+          <div className={`flex flex-col h-full w-full transition-opacity duration-300 ${
+            isTransitioning ? 'opacity-50' : 'opacity-100'
+          }`}>
+            {renderedForm}
+          </div>
+        );
+      }
+    }
     return <div>No se encontró información para este step: {currentQuestionKey}</div>;
   }
 

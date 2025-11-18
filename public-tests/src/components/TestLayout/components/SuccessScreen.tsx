@@ -29,14 +29,17 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
     }
   }, [eyeTrackingConfig, redirectToComplete]);
 
+  const title = contentConfiguration?.title || '¡Gracias por tu participación!';
+  const message = contentConfiguration?.message;
+
   return (
     <div className='flex flex-col items-center justify-center h-full gap-6 p-8'>
       <h2 className='text-2xl font-bold text-gray-800 text-center'>
-        {contentConfiguration.title || '¡Gracias por tu participación!'}
+        {title}
       </h2>
-      {contentConfiguration.message && (
+      {message && (
         <p className='text-gray-600 text-center max-w-2xl'>
-          {contentConfiguration.message}
+          {message}
         </p>
       )}
       {eyeTrackingConfig?.backlinks?.complete && (
