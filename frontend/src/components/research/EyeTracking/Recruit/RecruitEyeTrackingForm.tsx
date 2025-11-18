@@ -686,9 +686,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                               type="text"
                               value={formData.backlinks.complete}
                               onChange={(e) => handleBacklinkChange('complete' as BacklinkKeys, e.target.value)}
+                              placeholder="d1m54jkfd0fdui.cloudfront.net/completed"
                               className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                             />
                           </div>
+                          <p className="text-xs text-neutral-500 mt-1">
+                            URL de Research Links para participantes que completan: <code className="bg-neutral-100 px-1 rounded">/completed</code>
+                          </p>
                         </div>
 
                         <div>
@@ -701,9 +705,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                               type="text"
                               value={formData.backlinks.disqualified}
                               onChange={(e) => handleBacklinkChange('disqualified' as BacklinkKeys, e.target.value)}
+                              placeholder="d1m54jkfd0fdui.cloudfront.net/disqualified"
                               className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                             />
                           </div>
+                          <p className="text-xs text-neutral-500 mt-1">
+                            URL de Research Links para participantes descalificados: <code className="bg-neutral-100 px-1 rounded">/disqualified</code>
+                          </p>
                         </div>
 
                         <div>
@@ -716,9 +724,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                               type="text"
                               value={formData.backlinks.overquota}
                               onChange={(e) => handleBacklinkChange('overquota' as BacklinkKeys, e.target.value)}
+                              placeholder="d1m54jkfd0fdui.cloudfront.net/exceeded"
                               className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                             />
                           </div>
+                          <p className="text-xs text-neutral-500 mt-1">
+                            URL de Research Links para participantes que exceden cuota: <code className="bg-neutral-100 px-1 rounded">/exceeded</code>
+                          </p>
                         </div>
                       </div>
                     </div>

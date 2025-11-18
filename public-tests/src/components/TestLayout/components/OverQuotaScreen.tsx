@@ -1,13 +1,34 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { OverQuotaScreenProps } from './ThankYouScreenTypes';
+import { useBacklinkRedirect } from '../../../hooks/useBacklinkRedirect';
 
 /**
  * Componente para pantalla de cuota alcanzada
+ * Redirige automáticamente al backlink de sobre cuota si está configurado
  */
 export const OverQuotaScreen: React.FC<OverQuotaScreenProps> = ({ 
   quotaResult, 
   eyeTrackingConfig 
 }) => {
+  const { redirectToOverquota } = useBacklinkRedirect();
+  const hasRedirectedRef = React.useRef(false);
+
+  useEffect(() => {
+    // Redirigir automáticamente después de mostrar el mensaje brevemente
+    if (eyeTrackingConfig?.backlinks?.overquota && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      
+      // Esperar 3 segundos para que el usuario vea el mensaje
+      const redirectTimeout = setTimeout(() => {
+        redirectToOverquota(eyeTrackingConfig);
+      }, 3000);
+
+      return () => {
+        clearTimeout(redirectTimeout);
+      };
+    }
+  }, [eyeTrackingConfig, redirectToOverquota]);
+
   const hasSpecificQuotaInfo = quotaResult && 
     quotaResult.demographicType && 
     quotaResult.demographicValue;
@@ -50,25 +71,36 @@ export const OverQuotaScreen: React.FC<OverQuotaScreenProps> = ({
           </>
         )}
         
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">
-            Información adicional
-          </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Para más información sobre futuras investigaciones, visita:
-          </p>
-          <a
-            href={eyeTrackingConfig.backlinks?.overquota}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            Ver futuras investigaciones
-          </a>
-        </div>
+        {eyeTrackingConfig.backlinks?.overquota ? (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Información adicional
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Serás redirigido automáticamente en unos segundos...
+            </p>
+            <a
+              href={eyeTrackingConfig.backlinks.overquota}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Ir ahora
+            </a>
+          </div>
+        ) : (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Información adicional
+            </h3>
+            <p className="text-sm text-gray-600">
+              Gracias por tu interés en participar. Puedes cerrar esta ventana cuando desees.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -34,5 +34,5 @@ export const ThankYouScreenComponent: React.FC<ThankYouScreenProps> = ({
     return <OverQuotaScreen quotaResult={quotaResult} eyeTrackingConfig={eyeTrackingConfig} />;
   }
 
-  return <SuccessScreen contentConfiguration={contentConfiguration} />;
+  return <SuccessScreen contentConfiguration={contentConfiguration} eyeTrackingConfig={eyeTrackingConfig} />;
 };

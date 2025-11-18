@@ -150,21 +150,21 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
                   label="Enlace para entrevistas completadas"
                   value={linkConfig.completeInterviews}
                   onChange={(value) => setLinkConfig(prev => ({ ...prev, completeInterviews: value }))}
-                  placeholder="https://example.com/complete"
+                  placeholder="https://d1m54jkfd0fdui.cloudfront.net/completed"
                 />
                 <FormField
                   type="text"
                   label="Enlace para entrevistas descalificadas"
                   value={linkConfig.disqualifiedInterviews}
                   onChange={(value) => setLinkConfig(prev => ({ ...prev, disqualifiedInterviews: value }))}
-                  placeholder="https://example.com/disqualified"
+                  placeholder="https://d1m54jkfd0fdui.cloudfront.net/disqualified"
                 />
                 <FormField
                   type="text"
                   label="Enlace para entrevistas sobre cuota"
                   value={linkConfig.overquotaInterviews}
                   onChange={(value) => setLinkConfig(prev => ({ ...prev, overquotaInterviews: value }))}
-                  placeholder="https://example.com/overquota"
+                  placeholder="https://d1m54jkfd0fdui.cloudfront.net/exceeded"
                 />
               </div>
             )}

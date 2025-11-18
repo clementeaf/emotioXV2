@@ -238,24 +238,33 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
                         <Input
                           value={linkConfig.completeInterviews}
                           onChange={(e) => handleLinkChange('completeInterviews', e.target.value)}
-                          placeholder="https://"
+                          placeholder="https://d1m54jkfd0fdui.cloudfront.net/completed"
                         />
+                        <p className="text-xs text-neutral-500 mt-1">
+                          Research Links URL: <code className="bg-neutral-100 px-1 rounded">/completed</code>
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm mb-2">Link for disqualified interviews</label>
                         <Input
                           value={linkConfig.disqualifiedInterviews}
                           onChange={(e) => handleLinkChange('disqualifiedInterviews', e.target.value)}
-                          placeholder="https://"
+                          placeholder="https://d1m54jkfd0fdui.cloudfront.net/disqualified"
                         />
+                        <p className="text-xs text-neutral-500 mt-1">
+                          Research Links URL: <code className="bg-neutral-100 px-1 rounded">/disqualified</code>
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm mb-2">Link for overquota interviews</label>
                         <Input
                           value={linkConfig.overquotaInterviews}
                           onChange={(e) => handleLinkChange('overquotaInterviews', e.target.value)}
-                          placeholder="https://"
+                          placeholder="https://d1m54jkfd0fdui.cloudfront.net/exceeded"
                         />
+                        <p className="text-xs text-neutral-500 mt-1">
+                          Research Links URL: <code className="bg-neutral-100 px-1 rounded">/exceeded</code>
+                        </p>
                       </div>
                     </div>
                   </div>

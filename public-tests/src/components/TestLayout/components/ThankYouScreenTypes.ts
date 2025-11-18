@@ -8,6 +8,7 @@ export interface EyeTrackingConfig {
     saveLocationInfo?: boolean;
   };
   backlinks?: {
+    complete?: string;
     disqualified?: string;
     overquota?: string;
   };
@@ -43,6 +44,7 @@ export interface OverQuotaScreenProps {
 
 export interface SuccessScreenProps {
   contentConfiguration: ContentConfiguration;
+  eyeTrackingConfig?: EyeTrackingConfig;
 }
 
 export interface UseThankYouScreenProps {
