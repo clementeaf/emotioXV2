@@ -311,7 +311,7 @@ export function ResearchInProgressContent({ researchId: propResearchId }: Resear
                 <p className="text-xs text-gray-600">
                   <strong>Formato de URL:</strong><br />
                   <code className="text-xs">
-                    https://d2zt8ia21te5mv.cloudfront.net?researchId=XXX&userId=YYY
+                    https://d35071761848hm.cloudfront.net?researchId=XXX&userId=YYY
                   </code>
                 </p>
               </div>

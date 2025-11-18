@@ -49,8 +49,8 @@ bash scripts/deploy/validate-deployment.sh
 
 ## 📋 **URLS ACTIVAS**
 
-- **🖥️ Frontend:** https://d2s9nr0bm47yl1.cloudfront.net/
-- **📱 Public-Tests:** https://d2zt8ia21te5mv.cloudfront.net/
+- **🖥️ Frontend:** https://d26ykfabt39qmf.cloudfront.net/
+- **📱 Public-Tests:** https://d35071761848hm.cloudfront.net/
 
 ## ⚙️ **CONFIGURACIÓN AUTOMÁTICA**
 

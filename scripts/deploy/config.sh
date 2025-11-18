@@ -24,10 +24,10 @@ export FRONTEND_BUILD_DIR="out"
 export FRONTEND_BUCKET_NAME="emotioxv2-frontend-041238861016"
 
 # ID de distribución CloudFront del frontend
-export FRONTEND_CLOUDFRONT_DIST_ID="E3MCIWNMF6ES2R"
+export FRONTEND_CLOUDFRONT_DIST_ID="E2S057L9JBBIWL"
 
 # URL CloudFront del frontend
-export FRONTEND_CLOUDFRONT_URL="https://d2s9nr0bm47yl1.cloudfront.net/"
+export FRONTEND_CLOUDFRONT_URL="https://d26ykfabt39qmf.cloudfront.net/"
 
 # URL S3 del frontend
 export FRONTEND_S3_URL="http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com"
@@ -46,10 +46,10 @@ export PUBLIC_TESTS_BUILD_DIR="dist"
 export PUBLIC_TESTS_BUCKET_NAME="emotioxv2-public-tests-041238861016"
 
 # ID de distribución CloudFront de public-tests
-export PUBLIC_TESTS_CLOUDFRONT_DIST_ID="E2X8HCFI5FM1EC"
+export PUBLIC_TESTS_CLOUDFRONT_DIST_ID="E3KFNJVCTHRPO9"
 
 # URL CloudFront de public-tests
-export PUBLIC_TESTS_CLOUDFRONT_URL="https://d2zt8ia21te5mv.cloudfront.net/"
+export PUBLIC_TESTS_CLOUDFRONT_URL="https://d35071761848hm.cloudfront.net/"
 
 # URL S3 de public-tests
 export PUBLIC_TESTS_S3_URL="http://emotioxv2-public-tests-041238861016.s3-website-us-east-1.amazonaws.com"

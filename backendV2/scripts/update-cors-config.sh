@@ -90,7 +90,7 @@ update_environment_vars() {
     local cors_origins="$FRONTEND_ENDPOINT,$PUBLIC_TESTS_ENDPOINT,http://localhost:3000,http://localhost:4700,http://localhost:5173,http://localhost:5174"
 
     # Agregar CloudFront si está configurado
-    cors_origins="$cors_origins,https://d2s9nr0bm47yl1.cloudfront.net,https://d2zt8ia21te5mv.cloudfront.net"
+    cors_origins="$cors_origins,https://d26ykfabt39qmf.cloudfront.net,https://d35071761848hm.cloudfront.net"
 
     # Agregar EC2 si está configurado
     cors_origins="$cors_origins,http://54.90.132.233:3000"

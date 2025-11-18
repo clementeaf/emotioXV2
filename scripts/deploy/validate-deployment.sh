@@ -19,8 +19,8 @@ log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # URLs a validar
-FRONTEND_URL="https://d2s9nr0bm47yl1.cloudfront.net/"
-PUBLIC_TESTS_URL="https://d2zt8ia21te5mv.cloudfront.net/"
+FRONTEND_URL="https://d26ykfabt39qmf.cloudfront.net/"
+PUBLIC_TESTS_URL="https://d35071761848hm.cloudfront.net/"
 
 # Función principal
 main() {

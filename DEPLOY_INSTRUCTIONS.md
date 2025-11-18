@@ -2,10 +2,11 @@
 
 ## ✅ Cambios Realizados
 
-Se han corregido todas las referencias a la URL de CloudFront para public-tests:
-- **URL antigua (incorrecta):** `https://d35071761848hm.cloudfront.net`
-- **URL nueva (correcta):** `https://d2zt8ia21te5mv.cloudfront.net`
-- **Distribution ID:** `E2X8HCFI5FM1EC`
+Se han corregido todas las referencias a las URLs de CloudFront:
+- **Frontend URL (correcta):** `https://d26ykfabt39qmf.cloudfront.net`
+- **Frontend Distribution ID:** `E2S057L9JBBIWL`
+- **Public Tests URL (correcta):** `https://d35071761848hm.cloudfront.net`
+- **Public Tests Distribution ID:** `E3KFNJVCTHRPO9`
 
 ## 🔧 Pasos para Sincronizar
 
@@ -20,7 +21,7 @@ El secret `NEXT_PUBLIC_PUBLIC_TESTS_URL` debe contener la URL correcta.
 gh secret list
 
 # Actualizar el secret
-gh secret set NEXT_PUBLIC_PUBLIC_TESTS_URL --body "https://d2zt8ia21te5mv.cloudfront.net"
+gh secret set NEXT_PUBLIC_PUBLIC_TESTS_URL --body "https://d35071761848hm.cloudfront.net"
 ```
 
 #### Opción B: Usando la interfaz web de GitHub
@@ -29,7 +30,7 @@ gh secret set NEXT_PUBLIC_PUBLIC_TESTS_URL --body "https://d2zt8ia21te5mv.cloudf
 2. Navega a: **Settings** → **Secrets and variables** → **Actions**
 3. Busca el secret `NEXT_PUBLIC_PUBLIC_TESTS_URL`
 4. Si existe y tiene la URL incorrecta, haz clic en **Update**
-5. Cambia el valor a: `https://d2zt8ia21te5mv.cloudfront.net`
+5. Cambia el valor a: `https://d35071761848hm.cloudfront.net`
 6. Guarda los cambios
 
 ### 2. Hacer Push de los Cambios
@@ -59,11 +60,11 @@ Esto activará automáticamente los workflows de deploy:
 Después del deploy (puede tardar 5-15 minutos):
 
 #### Frontend
-- **CloudFront:** https://d2s9nr0bm47yl1.cloudfront.net
+- **CloudFront:** https://d26ykfabt39qmf.cloudfront.net
 - **S3:** http://emotioxv2-frontend-041238861016.s3-website-us-east-1.amazonaws.com
 
 #### Public-tests
-- **CloudFront:** https://d2zt8ia21te5mv.cloudfront.net
+- **CloudFront:** https://d35071761848hm.cloudfront.net
 - **S3:** http://emotioxv2-public-tests-041238861016.s3-website-us-east-1.amazonaws.com
 
 ## 🔍 Verificación Adicional
@@ -98,8 +99,8 @@ aws s3 ls s3://emotioxv2-public-tests-041238861016/ --recursive | head -20
 
 | Componente | Distribution ID | CloudFront URL | S3 Bucket |
 |------------|----------------|----------------|-----------|
-| Frontend | `E3MCIWNMF6ES2R` | `d2s9nr0bm47yl1.cloudfront.net` | `emotioxv2-frontend-041238861016` |
-| Public-tests | `E2X8HCFI5FM1EC` | `d2zt8ia21te5mv.cloudfront.net` | `emotioxv2-public-tests-041238861016` |
+| Frontend | `E2S057L9JBBIWL` | `d26ykfabt39qmf.cloudfront.net` | `emotioxv2-frontend-041238861016` |
+| Public-tests | `E3KFNJVCTHRPO9` | `d35071761848hm.cloudfront.net` | `emotioxv2-public-tests-041238861016` |
 
 ## ✅ Checklist Final
 
