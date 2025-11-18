@@ -14,6 +14,14 @@ Sistema completo de investigación y análisis de emociones con eye-tracking.
 - **S3 Website:** http://emotioxv2-public-tests-041238861016.s3-website-us-east-1.amazonaws.com
 - **Distribution ID:** `E3KFNJVCTHRPO9`
 
+### Research Links
+- **CloudFront (Production):** https://d1m54jkfd0fdui.cloudfront.net
+- **CloudFront (Development):** https://d1mgbd7yo84hib.cloudfront.net
+- **S3 Bucket (Production):** `emotioxv2-research-links-prod`
+- **S3 Bucket (Development):** `emotioxv2-research-links-dev`
+- **Distribution ID (Production):** `E2NAK2Z0YM3JMB`
+- **Distribution ID (Development):** `E1A7OKWLBMDENT`
+
 ## 📁 Estructura del Proyecto
 
 ```
@@ -21,6 +29,7 @@ emotioXV2/
 ├── frontend/          # Next.js 14 - Panel de administración
 ├── backendV2/         # AWS Lambda Serverless - API
 ├── public-tests/      # Vite React - Tests públicos
+├── researchLinks/     # Vite React - Enlaces de retorno para entrevistas
 └── shared/            # Interfaces TypeScript compartidas
 ```
 
@@ -46,6 +55,12 @@ npm install
 npm run dev
 # http://localhost:5173
 
+# Research Links
+cd researchLinks
+npm install
+npm run dev
+# http://localhost:5174
+
 # Backend
 cd backendV2
 npm install
@@ -60,6 +75,9 @@ Los cambios en `frontend/**` se despliegan automáticamente a S3/CloudFront medi
 ### Public Tests
 Los cambios en `public-tests/**` se despliegan automáticamente a S3/CloudFront mediante GitHub Actions.
 
+### Research Links
+Los cambios en `researchLinks/**` se despliegan automáticamente a S3/CloudFront mediante GitHub Actions. El deployment se realiza a producción cuando se hace push a `main`, y a desarrollo cuando se hace push a `develop`.
+
 ### Backend
 ```bash
 cd backendV2
@@ -71,10 +89,14 @@ serverless deploy
 ### S3 Buckets
 - **Frontend:** `emotioxv2-frontend-041238861016`
 - **Public Tests:** `emotioxv2-public-tests-041238861016`
+- **Research Links (Production):** `emotioxv2-research-links-prod`
+- **Research Links (Development):** `emotioxv2-research-links-dev`
 
 ### CloudFront Distributions
 - **Frontend:** `E2S057L9JBBIWL` → `d26ykfabt39qmf.cloudfront.net`
 - **Public Tests:** `E3KFNJVCTHRPO9` → `d35071761848hm.cloudfront.net`
+- **Research Links (Production):** `E2NAK2Z0YM3JMB` → `d1m54jkfd0fdui.cloudfront.net`
+- **Research Links (Development):** `E1A7OKWLBMDENT` → `d1mgbd7yo84hib.cloudfront.net`
 
 ### Región
 - **AWS Region:** `us-east-1`
@@ -87,6 +109,8 @@ Los siguientes secrets deben estar configurados en GitHub:
 - `AWS_SECRET_ACCESS_KEY`
 - `FRONTEND_CLOUDFRONT_DISTRIBUTION_ID` → `E2S057L9JBBIWL`
 - `PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID` → `E3KFNJVCTHRPO9`
+- `RESEARCH_LINKS_CLOUDFRONT_DISTRIBUTION_ID_PROD` → `E2NAK2Z0YM3JMB`
+- `RESEARCH_LINKS_CLOUDFRONT_DISTRIBUTION_ID_DEV` → `E1A7OKWLBMDENT`
 - `NEXT_PUBLIC_PUBLIC_TESTS_URL` → `https://d35071761848hm.cloudfront.net`
 - `VITE_API_BASE_URL`
 - `VITE_PUBLIC_TESTS_URL`
@@ -108,6 +132,12 @@ cd frontend && npm run build && aws s3 sync ./out/ s3://emotioxv2-frontend-04123
 
 # Deploy manual de public-tests
 cd public-tests && npm run build && aws s3 sync ./dist/ s3://emotioxv2-public-tests-041238861016 --delete
+
+# Deploy manual de research-links (producción)
+cd researchLinks && npm run build && aws s3 sync ./dist/ s3://emotioxv2-research-links-prod --delete
+
+# Deploy manual de research-links (desarrollo)
+cd researchLinks && npm run build && aws s3 sync ./dist/ s3://emotioxv2-research-links-dev --delete
 ```
 
 ## 🔄 CI/CD
@@ -117,17 +147,20 @@ cd public-tests && npm run build && aws s3 sync ./dist/ s3://emotioxv2-public-te
 - **`.github/workflows/ci.yml`** - Verificación de TypeScript, linting y tests
 - **`.github/workflows/deploy-frontend.yml`** - Deploy automático de frontend a S3/CloudFront
 - **`.github/workflows/deploy-public-tests-s3.yml`** - Deploy automático de public-tests a S3/CloudFront
+- **`.github/workflows/deploy-research-links-s3.yml`** - Deploy automático de research-links a S3/CloudFront
 
 ### Triggers
 - **Frontend:** Push a `main` con cambios en `frontend/**`
 - **Public Tests:** Push a `main` con cambios en `public-tests/**`
+- **Research Links:** Push a `main` (producción) o `develop` (desarrollo) con cambios en `researchLinks/**`
 
 ## 📝 Notas
 
 - El frontend usa Next.js con export estático para S3/CloudFront
-- Public-tests usa Vite para build optimizado
-- Ambos proyectos invalidan automáticamente CloudFront después de cada deploy
+- Public-tests y Research Links usan Vite para build optimizado
+- Todos los proyectos invalidan automáticamente CloudFront después de cada deploy
 - Las distribuciones de CloudFront están configuradas para SPA (Single Page Application) con custom error responses
+- Research Links tiene dos entornos: producción (main) y desarrollo (develop)
 
 ## 🐛 Troubleshooting
 

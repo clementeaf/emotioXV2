@@ -55,6 +55,40 @@ export PUBLIC_TESTS_CLOUDFRONT_URL="https://d35071761848hm.cloudfront.net/"
 export PUBLIC_TESTS_S3_URL="http://emotioxv2-public-tests-041238861016.s3-website-us-east-1.amazonaws.com"
 
 # ======================================================================
+# 🔗 CONFIGURACIÓN DE RESEARCH-LINKS
+# ======================================================================
+
+# Directorio de research-links
+export RESEARCH_LINKS_DIR="researchLinks"
+
+# Directorio de build de research-links
+export RESEARCH_LINKS_BUILD_DIR="dist"
+
+# Bucket S3 de research-links (producción)
+export RESEARCH_LINKS_BUCKET_NAME_PROD="emotioxv2-research-links-prod"
+
+# Bucket S3 de research-links (desarrollo)
+export RESEARCH_LINKS_BUCKET_NAME_DEV="emotioxv2-research-links-dev"
+
+# ID de distribución CloudFront de research-links (producción)
+export RESEARCH_LINKS_CLOUDFRONT_DIST_ID_PROD="E2NAK2Z0YM3JMB"
+
+# ID de distribución CloudFront de research-links (desarrollo)
+export RESEARCH_LINKS_CLOUDFRONT_DIST_ID_DEV="E1A7OKWLBMDENT"
+
+# URL CloudFront de research-links (producción)
+export RESEARCH_LINKS_CLOUDFRONT_URL_PROD="https://d1m54jkfd0fdui.cloudfront.net/"
+
+# URL CloudFront de research-links (desarrollo)
+export RESEARCH_LINKS_CLOUDFRONT_URL_DEV="https://d1mgbd7yo84hib.cloudfront.net/"
+
+# URL S3 de research-links (producción)
+export RESEARCH_LINKS_S3_URL_PROD="http://emotioxv2-research-links-prod.s3-website-us-east-1.amazonaws.com"
+
+# URL S3 de research-links (desarrollo)
+export RESEARCH_LINKS_S3_URL_DEV="http://emotioxv2-research-links-dev.s3-website-us-east-1.amazonaws.com"
+
+# ======================================================================
 # 🔗 CONFIGURACIÓN DE APIs
 # ======================================================================
 
@@ -145,6 +179,14 @@ show_config() {
     echo "  Build: $PUBLIC_TESTS_BUILD_DIR"
     echo "  Bucket: $PUBLIC_TESTS_BUCKET_NAME"
     echo "  CloudFront: $PUBLIC_TESTS_CLOUDFRONT_URL"
+    echo ""
+    echo "🔗 Research-Links:"
+    echo "  Directorio: $RESEARCH_LINKS_DIR"
+    echo "  Build: $RESEARCH_LINKS_BUILD_DIR"
+    echo "  Bucket (Prod): $RESEARCH_LINKS_BUCKET_NAME_PROD"
+    echo "  Bucket (Dev): $RESEARCH_LINKS_BUCKET_NAME_DEV"
+    echo "  CloudFront (Prod): $RESEARCH_LINKS_CLOUDFRONT_URL_PROD"
+    echo "  CloudFront (Dev): $RESEARCH_LINKS_CLOUDFRONT_URL_DEV"
     echo ""
 }
 
