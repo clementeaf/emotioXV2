@@ -157,7 +157,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = React.memo(({
           <VOCTextQuestion
               value={value as string}
               onChange={handleChange}
-              placeholder={question.config?.placeholder as string}
+              placeholder={question.config?.placeholder as string || 'Escribe tu opinión aquí...'}
             />
         )}
         {(question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (

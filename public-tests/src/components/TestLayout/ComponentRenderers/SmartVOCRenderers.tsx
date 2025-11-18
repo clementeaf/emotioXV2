@@ -203,18 +203,25 @@ export const SmartVOCRenderers: Record<string, (args: RendererArgs) => React.Rea
     );
   },
 
-  smartvoc_voc: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => (
-    <QuestionComponent
-      question={createQuestionConfig(
-        contentConfiguration || {},
-        currentQuestionKey,
-        'text',
-        {
-          placeholder: String(contentConfiguration?.placeholder || 'Escribe tu opinión aquí...')
-        }
-      )}
-      currentStepKey={currentQuestionKey}
-      initialFormData={formData}
-    />
-  ),
+  smartvoc_voc: ({ contentConfiguration, currentQuestionKey, formData }: RendererArgs) => {
+    const rawPlaceholder = String(contentConfiguration?.placeholder || '').trim();
+    const placeholder = rawPlaceholder && rawPlaceholder.length > 0 
+      ? rawPlaceholder 
+      : 'Escribe tu opinión aquí...';
+    
+    return (
+      <QuestionComponent
+        question={createQuestionConfig(
+          contentConfiguration || {},
+          currentQuestionKey,
+          'text',
+          {
+            placeholder
+          }
+        )}
+        currentStepKey={currentQuestionKey}
+        initialFormData={formData}
+      />
+    );
+  },
 };
