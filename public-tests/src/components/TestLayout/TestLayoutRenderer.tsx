@@ -303,7 +303,6 @@ const TestLayoutRenderer: React.FC = () => {
     />;
 
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
-  const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
   const isNavigationFlow = questionType === 'cognitive_navigation_flow';
 
   // 🎯 Ocultar botón si hay maxSelections detectado en instrucciones
