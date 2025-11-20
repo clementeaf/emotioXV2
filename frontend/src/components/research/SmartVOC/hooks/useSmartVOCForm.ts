@@ -79,7 +79,7 @@ const INITIAL_FORM_DATA: SmartVOCFormData = {
             required: false,
             config: {
               type: 'scale',
-              scaleRange: { start: 1, end: 5 },
+              scaleRange: { start: 1, end: 7 },
               startLabel: '',
               endLabel: ''
             }
@@ -201,7 +201,23 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   const updateQuestion = useCallback((id: string, updates: Partial<SmartVOCQuestion>) => {
     setFormData(prev => ({
       ...prev,
-      questions: prev.questions.map(q => q.id === id ? { ...q, ...updates } : q)
+      questions: prev.questions.map(q => {
+        if (q.id !== id) return q;
+        
+        // Hacer merge profundo para objetos anidados como config
+        const merged = { ...q };
+        Object.keys(updates).forEach(key => {
+          const value = updates[key as keyof SmartVOCQuestion];
+          if (key === 'config' && value && typeof value === 'object' && !Array.isArray(value)) {
+            // Merge profundo para config
+            merged.config = { ...merged.config, ...value as Record<string, unknown> };
+          } else {
+            (merged as Record<string, unknown>)[key] = value;
+          }
+        });
+        
+        return merged;
+      })
     }));
   }, []);
 

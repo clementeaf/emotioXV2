@@ -11,15 +11,35 @@ export const getNestedValue = (obj: any, path: string): any => {
 
 /**
  * Crea un manejador de cambios para campos anidados
+ * Maneja correctamente campos anidados como 'config.scaleRange'
  */
 export const createFieldChangeHandler = (
   questionId: string,
   fieldPath: string,
   onUpdateQuestion: (id: string, updates: any) => void
 ) => {
-  return (value: any) => {
-    const updates = { [fieldPath]: value };
-    onUpdateQuestion(questionId, updates);
+  return (value: unknown) => {
+    // Si el campo es anidado (tiene puntos), crear la estructura anidada
+    if (fieldPath.includes('.')) {
+      const parts = fieldPath.split('.');
+      const updates: Record<string, unknown> = {};
+      let current = updates;
+      
+      // Crear la estructura anidada hasta el penúltimo nivel
+      for (let i = 0; i < parts.length - 1; i++) {
+        current[parts[i]] = {};
+        current = current[parts[i]] as Record<string, unknown>;
+      }
+      
+      // Asignar el valor al último nivel
+      current[parts[parts.length - 1]] = value;
+      
+      onUpdateQuestion(questionId, updates);
+    } else {
+      // Campo simple, actualizar directamente
+      const updates = { [fieldPath]: value };
+      onUpdateQuestion(questionId, updates);
+    }
   };
 };
 

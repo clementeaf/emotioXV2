@@ -4,20 +4,17 @@
  * Follows KISS and DRY principles
  */
 
-// import type {
-//   QuestionWithResponses,
-//   SmartVOCResults,
-//   CPVData,
-//   TrustFlowData,
-//   VOCResponse,
-//   SmartVOCResponse,
-//   EmotionType,
-//   PositiveEmotion,
-//   NegativeEmotion,
-//   ImpactLevel,
-//   TrendDirection,
-//   QuestionResponse
-// } from '../types/research'; // Comentado - tipos no existen
+import type {
+  GroupedResponse,
+  ResponseItem,
+  SmartVOCProcessedData,
+  SmartVOCResponse,
+  SmartVOCProcessors,
+  CPVMetrics,
+  CPVScores,
+  TrustFlowDataPoint,
+  VOCResponse
+} from '../types/data-processors.types';
 
 // Constants for emotion processing
 const POSITIVE_EMOTIONS: string[] = [
@@ -33,23 +30,23 @@ const NEGATIVE_EMOTIONS: string[] = [
 /**
  * Process SmartVOC data from grouped responses
  */
-export function processSmartVOCData(groupedResponses: any[]): any {
-  const processors = {
-    smartVOCResponses: [] as any[],
-    npsScores: [] as number[],
-    csatScores: [] as number[],
-    cesScores: [] as number[],
-    nevScores: [] as number[],
-    cvScores: [] as number[],
-    vocResponses: [] as any[]
+export function processSmartVOCData(groupedResponses: GroupedResponse[]): SmartVOCProcessedData {
+  const processors: SmartVOCProcessors = {
+    smartVOCResponses: [],
+    npsScores: [],
+    csatScores: [],
+    cesScores: [],
+    nevScores: [],
+    cvScores: [],
+    vocResponses: []
   };
 
-  groupedResponses.forEach(questionGroup => {
+  groupedResponses.forEach((questionGroup: GroupedResponse) => {
     if (!isSmartVOCQuestion(questionGroup.questionKey) || !hasValidResponses(questionGroup.responses)) {
       return;
     }
 
-    questionGroup.responses.forEach((response: any) => {
+    questionGroup.responses.forEach((response: ResponseItem) => {
       const smartVOCResponse = createSmartVOCResponse(questionGroup.questionKey, response);
       processors.smartVOCResponses.push(smartVOCResponse);
 
@@ -77,25 +74,25 @@ export function processSmartVOCData(groupedResponses: any[]): any {
 /**
  * Process CPV data from grouped responses
  */
-export function processCPVData(groupedResponses: any[]): any {
-  const scores = {
-    csat: [] as number[],
-    ces: [] as number[],
-    nps: [] as number[],
-    nev: [] as number[],
-    cv: [] as number[]
+export function processCPVData(groupedResponses: GroupedResponse[]): CPVMetrics {
+  const scores: CPVScores = {
+    csat: [],
+    ces: [],
+    nps: [],
+    nev: [],
+    cv: []
   };
 
   let totalResponses = 0;
 
-  groupedResponses.forEach(questionGroup => {
+  groupedResponses.forEach((questionGroup: GroupedResponse) => {
     if (!isSmartVOCQuestion(questionGroup.questionKey) || !hasValidResponses(questionGroup.responses)) {
       return;
     }
 
     totalResponses += questionGroup.responses.length;
 
-    questionGroup.responses.forEach((response: any) => {
+    questionGroup.responses.forEach((response: ResponseItem) => {
       const numericValue = parseResponseValue(response.value);
       if (isValidScore(numericValue)) {
         categorizeScore(questionGroup.questionKey, numericValue, scores);
@@ -109,14 +106,14 @@ export function processCPVData(groupedResponses: any[]): any {
 /**
  * Process TrustFlow data from grouped responses
  */
-export function processTrustFlowData(groupedResponses: any[]): any[] {
-  const responsesByDate: Record<string, Array<any & { questionKey: string }>> = {};
+export function processTrustFlowData(groupedResponses: GroupedResponse[]): TrustFlowDataPoint[] {
+  const responsesByDate: Record<string, Array<ResponseItem & { questionKey: string }>> = {};
 
-  groupedResponses.forEach(questionGroup => {
+  groupedResponses.forEach((questionGroup: GroupedResponse) => {
     if (!hasValidResponses(questionGroup.responses)) return;
 
-    questionGroup.responses.forEach((response: any) => {
-      if (!response.timestamp) return;
+    questionGroup.responses.forEach((response: ResponseItem) => {
+      if (!response.timestamp || typeof response.timestamp !== 'string') return;
 
       const dateKey = extractDateKey(response.timestamp);
       if (!responsesByDate[dateKey]) {
@@ -136,33 +133,26 @@ function isSmartVOCQuestion(questionKey: string): boolean {
   return questionKey?.toLowerCase().includes('smartvoc') ?? false;
 }
 
-function hasValidResponses(responses: any[]): boolean {
+function hasValidResponses(responses: ResponseItem[]): boolean {
   return Array.isArray(responses) && responses.length > 0;
 }
 
-function createSmartVOCResponse(questionKey: string, response: any): any {
+function createSmartVOCResponse(questionKey: string, response: ResponseItem): SmartVOCResponse {
   return {
     questionKey,
     response: typeof response.value === 'object' && !Array.isArray(response.value) 
       ? JSON.stringify(response.value) 
       : response.value as string | number | string[],
-    participantId: response.participantId,
+    participantId: response.participantId as string,
     participantName: 'Participante',
-    timestamp: response.timestamp || new Date().toISOString()
+    timestamp: (response.timestamp as string) || new Date().toISOString()
   };
 }
 
 function processResponseByType(
   questionKey: string, 
-  response: any, 
-  processors: {
-    npsScores: number[];
-    csatScores: number[];
-    cesScores: number[];
-    nevScores: number[];
-    cvScores: number[];
-    vocResponses: any[];
-  }
+  response: ResponseItem, 
+  processors: SmartVOCProcessors
 ): void {
   const lowerKey = questionKey.toLowerCase();
   
@@ -191,7 +181,7 @@ function processResponseByType(
   }
 }
 
-function calculateNEVScore(value: string | number | string[] | Record<string, unknown>): number | null {
+function calculateNEVScore(value: string | number | boolean | string[] | Record<string, unknown>): number | null {
   if (!Array.isArray(value)) return null;
 
   const emotions = value as string[];
@@ -209,7 +199,7 @@ function calculateNEVScore(value: string | number | string[] | Record<string, un
   return Math.round(((positiveCount - negativeCount) / totalEmotions) * 100);
 }
 
-function getUniqueParticipantCount(responses: any[]): number {
+function getUniqueParticipantCount(responses: SmartVOCResponse[]): number {
   return new Set(responses.map(r => r.participantId)).size;
 }
 
@@ -229,7 +219,7 @@ function isValidScore(score: number): boolean {
 function categorizeScore(
   questionKey: string, 
   score: number, 
-  scores: Record<string, number[]>
+  scores: CPVScores
 ): void {
   const lowerKey = questionKey.toLowerCase();
   
@@ -245,9 +235,9 @@ function categorizeScore(
 }
 
 function calculateCPVMetrics(
-  scores: Record<string, number[]>, 
+  scores: CPVScores, 
   totalResponses: number
-): any {
+): CPVMetrics {
   const csatAvg = calculateAverage(scores.csat);
   const cesAvg = calculateAverage(scores.ces);
   const npsAvg = calculateAverage(scores.nps);
@@ -265,8 +255,8 @@ function calculateCPVMetrics(
   const retention = totalResponses > 0 ? Math.round(((promoters + neutrals) / totalResponses) * 100) : 0;
   
   const detractors = scores.nps.length - promoters - neutrals;
-  const impact: string = promoters > detractors ? 'Alto' : totalResponses > 0 ? 'Medio' : 'Bajo';
-  const trend: string = promoters > detractors ? 'Positiva' : totalResponses > 0 ? 'Neutral' : 'Negativa';
+  const impact: 'Alto' | 'Medio' | 'Bajo' = promoters > detractors ? 'Alto' : totalResponses > 0 ? 'Medio' : 'Bajo';
+  const trend: 'Positiva' | 'Neutral' | 'Negativa' = promoters > detractors ? 'Positiva' : totalResponses > 0 ? 'Neutral' : 'Negativa';
   
   const npsValue = scores.nps.length > 0 ? Math.round(((promoters - detractors) / scores.nps.length) * 100) : 0;
   const peakValue = Math.max(cpvValue, satisfaction, retention);
@@ -301,8 +291,8 @@ function extractDateKey(timestamp: string): string {
 
 function processDateResponses(
   date: string, 
-  responses: Array<any & { questionKey: string }>
-): any {
+  responses: Array<ResponseItem & { questionKey: string }>
+): TrustFlowDataPoint {
   const npsScores = responses
     .filter(r => r.questionKey?.toLowerCase().includes('nps'))
     .map(r => parseResponseValue(r.value))
@@ -328,22 +318,24 @@ function processDateResponses(
 }
 
 // Utility functions
-export function parseResponseValue(response: string | number | string[] | Record<string, unknown>): number {
+export function parseResponseValue(response: string | number | boolean | string[] | Record<string, unknown>): number {
   if (typeof response === 'number') return response;
+  if (typeof response === 'boolean') return response ? 1 : 0;
   if (typeof response === 'string') {
     const parsed = parseFloat(response);
     return isNaN(parsed) ? 0 : parsed;
   }
   if (response && typeof response === 'object' && 'value' in response) {
-    return parseResponseValue(response.value as string | number | string[] | Record<string, unknown>);
+    return parseResponseValue(response.value as string | number | boolean | string[] | Record<string, unknown>);
   }
   return 0;
 }
 
-export function parseResponseText(response: string | number | string[] | Record<string, unknown>): string {
+export function parseResponseText(response: string | number | boolean | string[] | Record<string, unknown>): string {
   if (typeof response === 'string') return response;
+  if (typeof response === 'boolean') return response ? 'true' : 'false';
   if (response && typeof response === 'object' && 'value' in response) {
-    return parseResponseText(response.value as string | number | string[] | Record<string, unknown>);
+    return parseResponseText(response.value as string | number | boolean | string[] | Record<string, unknown>);
   }
   return JSON.stringify(response);
 }

@@ -201,7 +201,7 @@ export interface CreateResearchRequest {
     /** Versión de la aplicación */
     appVersion?: string;
     /** Otra información contextual */
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -258,7 +258,7 @@ export interface CreateResearchError {
   };
 
   /** Información adicional para depuración */
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 /**

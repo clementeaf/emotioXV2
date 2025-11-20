@@ -54,7 +54,7 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
       {
         name: 'config.type',
         label: 'Tipo de visualización',
-        component: 'FormSelect',
+        component: 'CustomSelect',
         placeholder: 'Seleccionar tipo',
         options: [
           { value: 'stars', label: 'Estrellas' },
@@ -87,10 +87,32 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
         placeholder: 'Añada instrucciones o información adicional para los participantes'
+      },
+      {
+        name: 'config.scaleRange',
+        label: 'Escala',
+        component: 'CustomSelect',
+        placeholder: 'Seleccionar escala',
+        options: [
+          { value: '1-5', label: '1-5' },
+          { value: '1-7', label: '1-7' },
+          { value: '1-10', label: '1-10' }
+        ]
+      },
+      {
+        name: 'config.startLabel',
+        label: 'Etiqueta inicial (opcional)',
+        component: 'FormInput',
+        placeholder: 'Ej: Muy difícil'
+      },
+      {
+        name: 'config.endLabel',
+        label: 'Etiqueta final (opcional)',
+        component: 'FormInput',
+        placeholder: 'Ej: Muy fácil'
       }
     ],
-    previewType: 'CES',
-    info: 'Escala fija 1-5'
+    previewType: 'CES'
   },
   [QuestionType.SMARTVOC_CV]: {
     id: 'CV',
@@ -115,10 +137,32 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
         placeholder: 'Añada instrucciones o información adicional para los participantes'
+      },
+      {
+        name: 'config.scaleRange',
+        label: 'Escala',
+        component: 'CustomSelect',
+        placeholder: 'Seleccionar escala',
+        options: [
+          { value: '1-5', label: '1-5' },
+          { value: '1-7', label: '1-7' },
+          { value: '1-10', label: '1-10' }
+        ]
+      },
+      {
+        name: 'config.startLabel',
+        label: 'Etiqueta inicial (opcional)',
+        component: 'FormInput',
+        placeholder: 'Ej: No en absoluto'
+      },
+      {
+        name: 'config.endLabel',
+        label: 'Etiqueta final (opcional)',
+        component: 'FormInput',
+        placeholder: 'Ej: Totalmente'
       }
     ],
-    previewType: 'CV',
-    info: '3 escalas principales de valoración en la región'
+    previewType: 'CV'
   },
   [QuestionType.SMARTVOC_NEV]: {
     id: 'NEV',
@@ -171,6 +215,16 @@ export const QUESTION_TYPE_CONFIGS: Record<string, QuestionTypeConfig> = {
         label: 'Instrucciones (opcional)',
         component: 'FormTextarea',
         placeholder: 'Añada instrucciones o información adicional para los participantes'
+      },
+      {
+        name: 'config.scaleRange',
+        label: 'Escala',
+        component: 'CustomSelect',
+        placeholder: 'Seleccionar escala',
+        options: [
+          { value: '0-10', label: '0-10 (Estándar NPS)' },
+          { value: '1-10', label: '1-10' }
+        ]
       }
     ],
     previewType: 'NPS'

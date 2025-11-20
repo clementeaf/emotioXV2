@@ -185,8 +185,8 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         questionKey: 'THANK_YOU_SCREEN',
         metadata: {
           version: resultRecord.metadata?.version || '1.0.0',
-          lastUpdated: resultRecord.metadata?.lastUpdated || new Date(),
-          lastModifiedBy: resultRecord.metadata?.lastModifiedBy || 'user'
+          lastUpdated: (resultRecord.metadata?.lastUpdated as string) || new Date().toISOString(),
+          lastModifiedBy: (resultRecord.metadata?.lastModifiedBy as string) || 'user'
         }
       };
 

@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/Button';
+import React from 'react';
 import { FormCard } from '@/components/common/FormCard';
 import { QuestionPreview } from '@/components/common/QuestionPreview';
-import { ActionButton } from '@/components/common/ActionButton';
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from '@/api/domains/smart-voc';
 import { getQuestionTypeConfig } from '../config';
@@ -16,7 +14,6 @@ interface SmartVOCQuestionsProps {
   onRemoveQuestion: (id: string) => void;
   disabled?: boolean;
 }
-import { AddQuestionModal } from './AddQuestionModal';
 
 export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   questions,
@@ -25,18 +22,6 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   onRemoveQuestion,
   disabled
 }) => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const existingQuestionTypes = questions
-    .map(q => q.type)
-    .filter((t): t is QuestionType => [
-      QuestionType.SMARTVOC_CSAT,
-      QuestionType.SMARTVOC_CES,
-      QuestionType.SMARTVOC_CV,
-      QuestionType.SMARTVOC_NEV,
-      QuestionType.SMARTVOC_NPS,
-      QuestionType.SMARTVOC_VOC
-    ].includes(t as QuestionType));
-
   const questionsForUI = questions.map(q => ({
     ...q,
     type: q.type
@@ -76,10 +61,6 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
     );
   };
 
-  const handleAddQuestion = (question: SmartVOCQuestion) => {
-    onAddQuestion(question);
-  };
-
   return (
     <div className="space-y-6">
       {questionsForUI.map((question, index) => (
@@ -94,40 +75,9 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               type={question.type}
               config={question.config}
             />
-
-            {questions.length > 1 && (
-              <div className="flex justify-end pt-4 border-t">
-                <ActionButton
-                  variant="danger"
-                  onClick={() => onRemoveQuestion(question.id)}
-                  disabled={disabled}
-                  icon="🗑️"
-                >
-                  Eliminar pregunta
-                </ActionButton>
-              </div>
-            )}
           </div>
         </FormCard>
       ))}
-
-      <div className="pt-4">
-        <Button
-          variant="outline"
-          onClick={() => setIsAddModalOpen(true)}
-          disabled={disabled || existingQuestionTypes.length === 7}
-          className="w-full"
-        >
-          Añadir pregunta
-        </Button>
-      </div>
-
-      <AddQuestionModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAddQuestion={handleAddQuestion}
-        existingQuestionTypes={existingQuestionTypes}
-      />
     </div>
   );
 };

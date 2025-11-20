@@ -1,3 +1,5 @@
+import type { ResearchAPIItem, ResearchSortableItem } from '@/types/research-api.types';
+
 export interface BestResearchData {
   id: string;
   title: string;
@@ -6,18 +8,26 @@ export interface BestResearchData {
   researchId: string;
 }
 
+export interface ResearchStats {
+  total: number;
+  completed: number;
+  inProgress: number;
+  pending: number;
+  averageProgress: number;
+}
+
 /**
  * Encuentra la mejor investigación basada en el progreso/puntuación
  *
  * @param apiData - Array de datos de investigación desde la API
  * @returns Datos de la mejor investigación o null si no hay datos
  */
-export const findBestResearch = (apiData: any[]): BestResearchData | null => {
+export const findBestResearch = (apiData: ResearchAPIItem[]): BestResearchData | null => {
   if (!apiData || apiData.length === 0) {
     return null;
   }
 
-  const sorted = [...apiData].sort((a: any, b: any) =>
+  const sorted = [...apiData].sort((a: ResearchAPIItem, b: ResearchAPIItem) =>
     (b.progress || 0) - (a.progress || 0)
   );
 
@@ -41,7 +51,7 @@ export const findBestResearch = (apiData: any[]): BestResearchData | null => {
  * @param research - Array de datos de investigación
  * @returns Objeto con estadísticas calculadas
  */
-export const calculateResearchStats = (research: any[]) => {
+export const calculateResearchStats = (research: ResearchAPIItem[]): ResearchStats => {
   if (!research || research.length === 0) {
     return {
       total: 0,
@@ -93,11 +103,11 @@ export const calculateResearchStats = (research: any[]) => {
  * @returns Array ordenado de investigaciones
  */
 export const sortResearch = (
-  research: any[],
+  research: ResearchSortableItem[],
   sortBy: 'date' | 'name' | 'progress' | 'status' = 'date',
   direction: 'asc' | 'desc' = 'desc'
-) => {
-  const sorted = [...research].sort((a: any, b: any) => {
+): ResearchSortableItem[] => {
+  const sorted = [...research].sort((a: ResearchSortableItem, b: ResearchSortableItem) => {
     let comparison = 0;
 
     switch (sortBy) {

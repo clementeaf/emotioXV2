@@ -2,6 +2,7 @@ import React from 'react';
 import { FormInput } from '@/components/common/FormInput';
 import { FormTextarea } from '@/components/common/FormTextarea';
 import { FormSelect } from '@/components/common/FormSelect';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LabeledInput } from '@/components/common/LabeledInput';
 import { ScaleSelector } from '@/components/common/ScaleSelector';
 import { FieldConfig } from '../config';
@@ -45,6 +46,43 @@ export const DynamicFieldRenderer: React.FC<DynamicFieldRendererProps> = ({
           {...commonProps}
           options={field.options || []}
         />
+      );
+
+    case 'CustomSelect':
+      // Manejar scaleRange que viene como objeto { start, end } pero CustomSelect espera string
+      let selectValue: string;
+      if (field.name === 'config.scaleRange' && value && typeof value === 'object' && 'start' in value && 'end' in value) {
+        // Convertir objeto scaleRange a string "start-end"
+        selectValue = `${value.start}-${value.end}`;
+      } else {
+        selectValue = value || '';
+      }
+
+      const handleCustomSelectChange = (selectedValue: string) => {
+        if (field.name === 'config.scaleRange') {
+          // Convertir string "start-end" a objeto { start, end }
+          const [start, end] = selectedValue.split('-').map(Number);
+          onChange({ start, end });
+        } else {
+          onChange(selectedValue);
+        }
+      };
+
+      return (
+        <div>
+          {field.label && (
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {field.label}
+            </label>
+          )}
+          <CustomSelect
+            value={selectValue}
+            onChange={handleCustomSelectChange}
+            options={field.options || []}
+            placeholder={field.placeholder || 'Seleccionar opción'}
+            disabled={disabled}
+          />
+        </div>
       );
 
     case 'LabeledInput':

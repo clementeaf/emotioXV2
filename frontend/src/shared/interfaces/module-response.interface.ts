@@ -6,7 +6,7 @@ export type ModuleResponseValue =
   | string[] 
   | number 
   | boolean 
-  | { [key: string]: any }
+  | { [key: string]: unknown }
   | null;
 
 /**

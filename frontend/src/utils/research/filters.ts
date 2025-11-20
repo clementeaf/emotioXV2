@@ -1,3 +1,5 @@
+import type { ResearchAPIItem } from '@/types/research-api.types';
+
 /**
  * Filtra datos de investigación por cliente específico
  *
@@ -5,12 +7,12 @@
  * @param clientId - ID del cliente para filtrar (null para mostrar todos)
  * @returns Array filtrado de investigaciones
  */
-export const filterResearchByClient = (research: any[], clientId: string | null) => {
+export const filterResearchByClient = (research: ResearchAPIItem[], clientId: string | null): ResearchAPIItem[] => {
   if (!clientId) {
     return research;
   }
 
-  return research.filter((item: any) =>
+  return research.filter((item: ResearchAPIItem) =>
     item.enterprise === clientId ||
     item.basic?.enterprise === clientId
   );
@@ -23,12 +25,12 @@ export const filterResearchByClient = (research: any[], clientId: string | null)
  * @param status - Estado para filtrar
  * @returns Array filtrado de investigaciones
  */
-export const filterResearchByStatus = (research: any[], status: string) => {
+export const filterResearchByStatus = (research: ResearchAPIItem[], status: string): ResearchAPIItem[] => {
   if (!status || status === 'all') {
     return research;
   }
 
-  return research.filter((item: any) => item.status === status);
+  return research.filter((item: ResearchAPIItem) => item.status === status);
 };
 
 /**
@@ -40,15 +42,15 @@ export const filterResearchByStatus = (research: any[], status: string) => {
  * @returns Array filtrado de investigaciones
  */
 export const filterResearchByDateRange = (
-  research: any[],
+  research: ResearchAPIItem[],
   startDate?: Date,
   endDate?: Date
-) => {
+): ResearchAPIItem[] => {
   if (!startDate && !endDate) {
     return research;
   }
 
-  return research.filter((item: any) => {
+  return research.filter((item: ResearchAPIItem) => {
     const itemDate = new Date(item.createdAt);
 
     if (startDate && itemDate < startDate) {

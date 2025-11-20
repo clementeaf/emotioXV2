@@ -9,7 +9,7 @@ export interface UnifiedStageConfig {
   displayTitle: string;
   component: string;
   containerStyles?: React.CSSProperties;
-  props?: Record<string, any>;
+  props?: Record<string, unknown>;
 }
 
 // ✨ SINGLE PLACE TO ADD NEW STAGES ✨

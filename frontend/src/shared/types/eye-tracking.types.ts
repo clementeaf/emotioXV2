@@ -8,15 +8,17 @@ export * from '../interfaces/eyeTrackingRecruit.interface';
 
 // Frontend-specific eye tracking types
 
+import type { EyeTrackingRecruitConfig } from '../interfaces/eyeTrackingRecruit.interface';
+
 // Eye tracking data management
 export interface EyeTrackingData {
   id: string;
   researchId: string;
   buildConfig?: EyeTrackingBuildConfig;
-  recruitConfig?: any; // EyeTrackingRecruitFormDataLocal eliminado
+  recruitConfig?: EyeTrackingRecruitConfig;
   results?: EyeTrackingResults;
   build?: EyeTrackingBuildConfig;
-  recruit?: any; // EyeTrackingRecruitFormDataLocal eliminado
+  recruit?: EyeTrackingRecruitConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -104,7 +106,7 @@ export interface EyeTrackingAnalysis {
 // Eye tracking form and validation
 export interface EyeTrackingFormState {
   step: number;
-  data: any; // EyeTrackingFormData eliminado
+  data: Record<string, unknown>;
   validation: EyeTrackingValidation;
   isSubmitting: boolean;
   isDirty: boolean;
@@ -137,7 +139,7 @@ export interface EyeTrackingImportOptions {
 export interface EyeTrackingError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -193,7 +195,7 @@ export interface EyeTrackingRealTimeData {
 }
 
 // Eye tracking API responses
-export interface EyeTrackingApiResponse<T = any> {
+export interface EyeTrackingApiResponse<T = unknown> {
   success: boolean;
   data: T;
   message?: string;

@@ -54,10 +54,10 @@ export const createEmotionSchema = emotionBaseSchema;
 export const updateEmotionSchema = emotionBaseSchema.partial();
 
 // Type guards
-export const isEmotionIntensity = (value: any): value is EmotionIntensity => {
-  return Object.values(EmotionIntensity).includes(value);
+export const isEmotionIntensity = (value: unknown): value is EmotionIntensity => {
+  return typeof value === 'string' && Object.values(EmotionIntensity).includes(value as EmotionIntensity);
 };
 
-export const isEmotionCategory = (value: any): value is EmotionCategory => {
-  return Object.values(EmotionCategory).includes(value);
+export const isEmotionCategory = (value: unknown): value is EmotionCategory => {
+  return typeof value === 'string' && Object.values(EmotionCategory).includes(value as EmotionCategory);
 }; 

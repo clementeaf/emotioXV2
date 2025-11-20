@@ -8,7 +8,6 @@ import { FormFooter } from '@/components/common/FormFooter';
 import { useSmartVOCForm } from './hooks/useSmartVOCForm';
 import { SmartVOCQuestions } from './components/SmartVOCQuestions';
 import type { SmartVOCFormData } from '@/api/domains/smart-voc';
-import { JsonPreviewModal } from '@/components/research/CognitiveTask/components';
 
 interface SmartVOCFormProps {
   className?: string;
@@ -44,8 +43,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     confirmDelete,
     closeDeleteModal
   } = useSmartVOCForm(researchId);
-
-  const [showJsonPreview, setShowJsonPreview] = React.useState(false);
 
   // Hook para el contenido educativo
   const {
@@ -103,7 +100,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           isSaving={isSaving}
           isLoading={isLoading}
           onSave={handleSaveAndNotify}
-          onPreview={() => setShowJsonPreview(true)}
           onDelete={handleDelete}
           isExisting={isExisting}
           deleteText="Eliminar datos SmartVOC"
@@ -141,18 +137,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         onConfirm={confirmDelete}
         title="Confirmar Eliminación"
         message="¿Estás seguro de que quieres eliminar TODOS los datos SmartVOC de esta investigación? Esta acción no se puede deshacer."
-      />
-
-      <JsonPreviewModal
-        isOpen={showJsonPreview}
-        onClose={() => setShowJsonPreview(false)}
-        onContinue={() => setShowJsonPreview(false)}
-        jsonData={JSON.stringify({
-          ...formData,
-          questions
-        })}
-        pendingAction={'preview'}
-        hasValidationErrors={Boolean(validationErrors && Object.keys(validationErrors).length > 0)}
       />
     </div>
   );

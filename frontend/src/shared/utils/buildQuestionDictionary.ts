@@ -1,4 +1,18 @@
 import { QuestionType } from '../interfaces/question-types.enum';
+import type { QuestionDictionary, QuestionDictionaryEntry } from '../interfaces/question-dictionary.interface';
+
+/**
+ * Step structure from expanded steps
+ */
+interface ExpandedStep {
+  id?: string;
+  questionId?: string;
+  type: string;
+  title?: string;
+  name?: string;
+  module?: string;
+  [key: string]: unknown;
+}
 
 /**
  * Construye el diccionario global de preguntas usando el ENUM estándar
@@ -8,8 +22,8 @@ import { QuestionType } from '../interfaces/question-types.enum';
  * - Los questionKey se generan usando el ENUM
  * - Si un tipo no está en el ENUM, se marca como error
  */
-export function buildQuestionDictionary(expandedSteps: any[]): Record<string, any> {
-    const questionDictionary: Record<string, any> = {};
+export function buildQuestionDictionary(expandedSteps: ExpandedStep[]): QuestionDictionary {
+    const questionDictionary: QuestionDictionary = {};
 
     expandedSteps.forEach((step) => {
         if (!step || typeof step !== 'object') return;
@@ -27,7 +41,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
         }
 
         // 1. Validar si el tipo está en el ENUM
-        const isValidType = Object.values(QuestionType).includes(stepType);
+        const isValidType = Object.values(QuestionType).includes(stepType as QuestionType);
 
         let mainQuestionKey = '';
 
@@ -39,8 +53,11 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
             // 3. Agregar al diccionario con el tipo del ENUM
             questionDictionary[questionKey] = {
                 ...step,
+                id: stepId,
+                module: step.module || 'custom',
                 type: stepType,
                 questionKey: questionKey,
+                title: step.title || step.name || 'Sin título',
                 renderComponent: stepType, // Para compatibilidad con el frontend
             };
 
@@ -78,8 +95,11 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
                 mainQuestionKey = questionKey;
                 questionDictionary[questionKey] = {
                     ...step,
+                    id: stepId,
+                    module: step.module || 'custom',
                     type: mappedType,
                     questionKey: questionKey,
+                    title: step.title || step.name || 'Sin título',
                     renderComponent: mappedType,
                     originalType: stepType // Preservar el tipo original
                 };
@@ -93,8 +113,11 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
                 mainQuestionKey = fallbackQuestionKey;
                 questionDictionary[fallbackQuestionKey] = {
                     ...step,
+                    id: stepId,
+                    module: step.module || 'custom',
                     type: stepType,
                     questionKey: fallbackQuestionKey,
+                    title: step.title || step.name || 'Sin título',
                     renderComponent: 'unknown',
                     error: `Tipo no soportado: ${stepType}`,
                 };
@@ -114,7 +137,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
  *
  * USO: Llamar antes de buildQuestionDictionary para detectar problemas
  */
-export function validateQuestionTypes(expandedSteps: any[]): { valid: boolean; errors: string[] } {
+export function validateQuestionTypes(expandedSteps: ExpandedStep[]): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     expandedSteps.forEach((step, index) => {
@@ -126,7 +149,7 @@ export function validateQuestionTypes(expandedSteps: any[]): { valid: boolean; e
             return;
         }
 
-        const isValidType = Object.values(QuestionType).includes(stepType);
+        const isValidType = Object.values(QuestionType).includes(stepType as QuestionType);
         if (!isValidType) {
             errors.push(`Step ${index}: Tipo no soportado "${stepType}"`);
         }

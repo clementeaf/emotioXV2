@@ -6,7 +6,7 @@ interface FormFooterProps {
   isSaving: boolean;
   isLoading: boolean;
   onSave: () => void;
-  onPreview: () => void;
+  onPreview?: () => void;
   onDelete?: () => void;
   isExisting?: boolean;
   saveText?: string;

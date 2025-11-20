@@ -7,8 +7,7 @@ import { useEducationalContent } from '@/hooks/useEducationalContent';
 import { cn } from '@/lib/utils';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import {
-  CognitiveTaskFooter,
-  JsonPreviewModal
+  CognitiveTaskFooter
 } from './components';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
@@ -42,13 +41,10 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleFileDelete: handleRemoveFile,
     handleRandomizeChange: setRandomizeQuestions,
     handleSave: saveForm,
-    handlePreview,
     handleDelete,
     closeModal,
     isUploading,
     uploadProgress,
-    showJsonPreview,
-    closeJsonModal,
     isDeleteModalOpen,
     openDeleteModal,
     closeDeleteModal
@@ -126,7 +122,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
 
           <CognitiveTaskFooter
             onSave={saveForm}
-            onPreview={handlePreview}
             onDelete={openDeleteModal}
             isSaving={isSaving}
             cognitiveTaskId={cognitiveTaskId}
@@ -155,15 +150,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           error={modalError}
         />
       )}
-
-      <JsonPreviewModal
-        isOpen={showJsonPreview}
-        onClose={closeJsonModal}
-        onContinue={() => {}}
-        jsonData=""
-        pendingAction={null}
-        hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
-      />
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

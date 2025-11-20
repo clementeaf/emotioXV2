@@ -401,7 +401,7 @@ export interface ResearchDraft {
     };
     configuration?: {
       technique?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     };
   };
   lastUpdated: Date;

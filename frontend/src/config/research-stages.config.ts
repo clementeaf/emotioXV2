@@ -90,6 +90,6 @@ export const DEFAULT_SECTION = 'welcome-screen';
 // Component rendering configuration interface (moved to stages-registry.ts)
 export interface StageComponentConfig {
   component: string;
-  props?: Record<string, any>;
+  props?: Record<string, unknown>;
   containerStyles?: React.CSSProperties;
 }

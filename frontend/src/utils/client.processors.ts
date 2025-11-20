@@ -64,24 +64,26 @@ export function searchClients(clients: Client[], query: string): Client[] {
   );
 }
 
+import type { ResearchAPIItem, ParticipantAPIItem } from '@/types/research-api.types';
+
 /**
  * Extract clients from research data
  */
-export function extractClientsFromResearch(researchData: any[]): Client[] {
+export function extractClientsFromResearch(researchData: ResearchAPIItem[]): Client[] {
   // Mock implementation - extract unique clients from research participants
   const clients: Client[] = [];
   const seenIds = new Set<string>();
 
-  researchData.forEach(research => {
+  researchData.forEach((research: ResearchAPIItem) => {
     if (research.participants) {
-      research.participants.forEach((participant: any) => {
+      research.participants.forEach((participant: ParticipantAPIItem) => {
         if (!seenIds.has(participant.id)) {
           seenIds.add(participant.id);
           clients.push({
             id: participant.id,
             name: participant.name || 'Unknown',
             email: participant.email,
-            company: research.company || 'Unknown Company',
+            company: research.company || research.enterprise || 'Unknown Company',
             status: 'active',
             researchCount: 1,
             lastActivity: research.updatedAt || new Date().toISOString(),

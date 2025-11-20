@@ -1,4 +1,5 @@
 import { ClientResearch } from '@/shared/interfaces/research.interface';
+import type { ResearchAPIItem } from '@/types/research-api.types';
 
 /**
  * Mapea estados de investigación al formato requerido por ClientResearch
@@ -26,12 +27,15 @@ export const mapStatus = (status: string): 'pending' | 'in_progress' | 'complete
  * @returns Array de datos adaptados al formato ClientResearch
  */
 export const adaptResearchData = (data: unknown[]): ClientResearch[] => {
-  return data.map((item: any) => ({
-    id: item.id,
-    name: item.name || item.basic?.name || 'Untitled Research',
-    status: mapStatus(item.status),
-    progress: item.progress || 0,
-    date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Unknown',
-    researcher: 'Team Member'
-  }));
+  return data.map((item: unknown) => {
+    const researchItem = item as ResearchAPIItem;
+    return {
+      id: researchItem.id,
+      name: researchItem.name || researchItem.basic?.name || 'Untitled Research',
+      status: mapStatus(researchItem.status),
+      progress: researchItem.progress || 0,
+      date: researchItem.createdAt ? new Date(researchItem.createdAt).toLocaleDateString() : 'Unknown',
+      researcher: 'Team Member'
+    };
+  });
 };

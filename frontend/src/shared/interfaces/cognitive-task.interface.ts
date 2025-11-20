@@ -106,7 +106,7 @@ export interface Question {
   }[];
   key?: string;
   moduleResponseId?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Datos completos del formulario de tareas cognitivas
