@@ -72,10 +72,14 @@ const processCognitiveTaskData = (
 
   const processed: CognitiveTaskResponses['processedData'] = [];
 
-  // Procesar cada questionKey
-
+  // Procesar cada questionKey - SOLO los que son de Cognitive Tasks
   Object.entries(groupedResponses).forEach(([questionKey, responses]) => {
     if (!responses || responses.length === 0) {
+      return;
+    }
+    
+    // 🎯 Filtrar solo questionKeys de Cognitive Tasks (deben empezar con "cognitive_")
+    if (!questionKey.toLowerCase().startsWith('cognitive_')) {
       return;
     }
     
@@ -388,13 +392,30 @@ export const useCognitiveTaskResponses = (researchId: string | null) => {
     return [];
   }, [responsesQuery.data, configData]);
 
+  // 🎯 No marcar como error si configData es null (puede ser que no haya configuración aún)
+  // El API devuelve null para 404, así que configError solo debería existir para errores reales
+  // Pero TanStack Query puede marcar 404 como error, así que verificamos el status
+  const configErrorObj = configError as { response?: { status?: number } } | null;
+  const isConfig404 = configErrorObj?.response?.status === 404;
+  
+  // 🎯 Si hay configData (aunque sea null), no hay error real
+  // Solo hay error si configError existe Y no es 404 Y configData es undefined
+  const hasRealConfigError = configError !== null && 
+                             configError !== undefined && 
+                             !isConfig404 &&
+                             configData === undefined;
+  
+  // 🎯 Solo mostrar error si hay un error real en las respuestas o en la configuración (no 404)
+  // Si no hay configuración (404 o null), no es un error, es un estado válido
+  const shouldShowError = responsesQuery.isError || hasRealConfigError;
+  
   return {
     researchConfig: configData,
     groupedResponses: responsesQuery.data || {},
     processedData,
     isLoading: responsesQuery.isLoading || isConfigLoading,
-    isError: responsesQuery.isError || (configError !== null && configError !== undefined),
-    error: responsesQuery.error || configError,
+    isError: shouldShowError,
+    error: responsesQuery.error || (hasRealConfigError ? configError : null),
     refetch: () => {
       responsesQuery.refetch();
     }

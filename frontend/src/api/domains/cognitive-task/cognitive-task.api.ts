@@ -22,11 +22,14 @@ export const cognitiveTaskApi = {
   getByResearchId: async (researchId: string): Promise<CognitiveTaskFormData | null> => {
     try {
       const response = await apiClient.get<ApiResponse<CognitiveTaskFormData>>(`/research/${researchId}/cognitive-task`);
-      return response.data.data || response.data || null;
+      return response.data?.data || response.data || null;
     } catch (error) {
-      if ((error as any)?.response?.status === 404) {
+      // 🎯 Manejar 404 como null (no hay configuración aún, no es un error)
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError?.response?.status === 404) {
         return null;
       }
+      // 🎯 Para otros errores, lanzar el error para que TanStack Query lo maneje
       throw error;
     }
   },

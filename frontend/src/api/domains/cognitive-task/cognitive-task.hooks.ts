@@ -29,12 +29,34 @@ export function useCognitiveTaskData(researchId: string | null) {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: cognitiveTaskKeys.byResearch(researchId || ''),
-    queryFn: () => researchId ? cognitiveTaskApi.getByResearchId(researchId) : Promise.resolve(null),
+    queryFn: async () => {
+      if (!researchId) return null;
+      try {
+        return await cognitiveTaskApi.getByResearchId(researchId);
+      } catch (err) {
+        // 🎯 Si es un 404, devolver null en lugar de lanzar error
+        const axiosError = err as { response?: { status?: number } };
+        if (axiosError?.response?.status === 404) {
+          return null;
+        }
+        // Para otros errores, lanzar el error
+        throw err;
+      }
+    },
     enabled: !!researchId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: false, // No refetch si ya hay datos en cache
     gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      // 🎯 No reintentar si es un 404 (no hay configuración, no es un error)
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError?.response?.status === 404) {
+        return false;
+      }
+      // Reintentar otros errores hasta 1 vez
+      return failureCount < 1;
+    }
   });
 
   // Create mutation

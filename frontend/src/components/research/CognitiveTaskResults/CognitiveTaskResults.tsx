@@ -102,16 +102,34 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     return createQuestionsFromConfig(researchConfig);
   }, [config, processedDataIndex, researchConfig, researchId]);
 
+  // 🎯 Si no hay configuración pero tampoco hay error real, mostrar mensaje en lugar de error
+  const errorObj = error as { response?: { status?: number } } | null;
+  const is404Error = errorObj?.response?.status === 404;
+  const shouldShowError = isError && error && !is404Error;
+  const hasNoData = !isLoading && !config && !isError && processedData.length === 0;
+  
   return (
     <ResultsStateHandler
       isLoading={isLoading}
-      error={isError ? error : null}
+      error={shouldShowError ? error : null}
       onRetry={refetch}
       loadingSkeleton={<CognitiveTaskResultsSkeleton />}
     >
-      <div className="flex gap-8">
-        <div className="flex-1 space-y-6">
-          {finalQuestions.map((q: FinalQuestionData) => (
+      {hasNoData ? (
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center max-w-md">
+            <p className="text-lg font-medium text-gray-900 mb-2">
+              No hay datos disponibles
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              No se encontraron respuestas de tareas cognitivas para esta investigación.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-8 w-full overflow-hidden">
+          <div className="flex-1 space-y-6 min-w-0">
+            {finalQuestions.map((q: FinalQuestionData) => (
             <QuestionContainer
               key={q.key}
               questionId={q.questionId}
@@ -133,19 +151,20 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
               themeImageSrc={q.themeImageSrc}
             />
           ))}
-        </div>
-        <div className="w-80 shrink-0">
-          {researchId ? (
-            <Filters researchId={researchId} />
-          ) : (
-            <div className="p-4 border border-neutral-200 rounded-lg bg-white">
-              <div className="text-sm text-neutral-500 italic text-center py-8">
-                No se pudo obtener el ID de investigación
+          </div>
+          <div className="w-80 shrink-0">
+            {researchId ? (
+              <Filters researchId={researchId} />
+            ) : (
+              <div className="p-4 border border-neutral-200 rounded-lg bg-white">
+                <div className="text-sm text-neutral-500 italic text-center py-8">
+                  No se pudo obtener el ID de investigación
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </ResultsStateHandler>
   );
 };
