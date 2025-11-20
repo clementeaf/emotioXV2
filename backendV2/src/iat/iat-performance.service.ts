@@ -336,7 +336,7 @@ export class IATPerformanceService {
     try {
       // Estimación simplificada basada en tamaño de cache
       return this.cache.size * 0.1; // MB
-    } catch (error) {
+    } catch {
       return 0;
     }
   }
@@ -348,7 +348,7 @@ export class IATPerformanceService {
     try {
       // Estimación simplificada
       return Math.min(this.cache.size * 0.5, 100);
-    } catch (error) {
+    } catch {
       return 0;
     }
   }
@@ -360,7 +360,7 @@ export class IATPerformanceService {
     try {
       // Basado en número de cores disponibles
       return Math.min(require('os').cpus().length, 8);
-    } catch (error) {
+    } catch {
       return 4;
     }
   }

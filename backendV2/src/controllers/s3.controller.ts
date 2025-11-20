@@ -129,7 +129,7 @@ export class S3Controller {
         try {
           const requestBody = JSON.parse(event.body);
           expiresIn = requestBody.expiresIn;
-        } catch (parseError) {
+        } catch {
             structuredLog('warn', 'S3Controller.generateDownloadUrl', 'No se pudo parsear el body para expiresIn');
         }
       }

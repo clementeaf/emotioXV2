@@ -39,7 +39,7 @@ function getAllowedOrigins(): string[] {
       const apiUrl = new URL(currentApiEndpoint);
       const apiOrigin = `${apiUrl.protocol}//${apiUrl.hostname}`;
       defaultOrigins.push(apiOrigin);
-    } catch (error) {
+    } catch {
       console.warn('No se pudo parsear API_ENDPOINT para CORS:', currentApiEndpoint);
     }
   }

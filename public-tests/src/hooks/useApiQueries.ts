@@ -118,36 +118,45 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Parti
 
 export function useUpdateModuleResponseMutation(options?: UseMutationOptions<ParticipantResponsesDocument, Error, { responseId: string; data: UpdateModuleResponseDto }>) {
   const queryClient = useQueryClient();
+  const userOnSuccess = options?.onSuccess;
   return useMutation<ParticipantResponsesDocument, Error, { responseId: string; data: UpdateModuleResponseDto }>({
+    ...options,
     mutationFn: ({ responseId, data }) => updateModuleResponse(responseId, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (data, variables, context, mutation) => {
       // Invalidar queries relacionadas con las respuestas del módulo
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses'],
       });
-      options?.onSuccess?.(data, variables, undefined);
+      if (userOnSuccess) {
+        (userOnSuccess as (data: ParticipantResponsesDocument, variables: { responseId: string; data: UpdateModuleResponseDto }, context: unknown) => void)(data, variables, context);
+      }
     },
-    ...options,
   });
 }
 
 export function useDeleteAllResponsesMutation(options?: UseMutationOptions<{ message: string; status: number }, Error, { researchId: string; participantId: string }>) {
   const queryClient = useQueryClient();
+  const userOnSuccess = options?.onSuccess;
+  const userOnError = options?.onError;
   return useMutation<{ message: string; status: number }, Error, { researchId: string; participantId: string }>({
+    ...options,
     mutationFn: async ({ researchId, participantId }) => {
       return deleteAllResponses(researchId, participantId);
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data, variables, context, mutation) => {
       // Invalidar queries relacionadas con las respuestas del módulo
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses', variables.researchId, variables.participantId],
       });
-      options?.onSuccess?.(data, variables, undefined);
+      if (userOnSuccess) {
+        (userOnSuccess as (data: { message: string; status: number }, variables: { researchId: string; participantId: string }, context: unknown) => void)(data, variables, context);
+      }
     },
-    onError: (error, variables, context) => {
+    onError: (error, variables, context, mutation) => {
       // Error logging removido
-      options?.onError?.(error, variables, context);
+      if (userOnError) {
+        (userOnError as (error: Error, variables: { researchId: string; participantId: string }, context: unknown) => void)(error, variables, context);
+      }
     },
-    ...options,
   });
 }

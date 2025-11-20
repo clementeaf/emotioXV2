@@ -749,7 +749,7 @@ export const validateEyeTrackingData = (data: unknown): APIGatewayProxyResult | 
       if (bl[field] && (bl[field] as string).trim() !== '') {
         try {
           new URL(bl[field] as string);
-        } catch (e) {
+        } catch {
           errors[`backlinks.${field}`] = `El campo ${field} debe ser una URL válida`;
         }
       }
@@ -763,7 +763,7 @@ export const validateEyeTrackingData = (data: unknown): APIGatewayProxyResult | 
     } else if (dataObj.researchUrl.trim() !== '') {
       try {
         new URL(dataObj.researchUrl);
-      } catch (e) {
+      } catch {
         errors['researchUrl'] = 'El campo researchUrl debe ser una URL válida';
       }
     }

@@ -77,7 +77,7 @@ const validateAdminAuth = async (event: APIGatewayProxyEvent): Promise<{ isValid
     // En producción deberías verificar que sea admin
     return { isValid: true, userId: decoded.id };
 
-  } catch (error) {
+  } catch {
     return { isValid: false, error: 'Error validando autenticación' };
   }
 };
@@ -93,7 +93,7 @@ const parseRequestBody = (body: string | null): { isValid: boolean; data?: unkno
   try {
     const data = JSON.parse(body);
     return { isValid: true, data };
-  } catch (error) {
+  } catch {
     return { isValid: false, error: 'JSON inválido' };
   }
 };
