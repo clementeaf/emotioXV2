@@ -2,11 +2,38 @@ import { spawn } from 'child_process';
 import type { IATSessionModel } from '../models/iat.model';
 
 /**
+ * Interfaz para input del análisis optimizado
+ */
+interface PerformanceOptimizedInput {
+  sessionId: string;
+  participantId: string;
+  testConfig: IATSessionModel['testConfig'];
+  responses: IATSessionModel['responses'];
+  metadata: {
+    startTime: string;
+    lastActivity: string;
+    sessionDuration: number;
+    totalTrials: number;
+    optimizationLevel: string;
+  };
+}
+
+/**
  * Interfaz para respuesta del optimizador de rendimiento
  */
+interface PerformanceOptimizedAnalysis {
+  d_score?: number;
+  d_score_interpretation?: string;
+  compatible_blocks_analysis?: Record<string, unknown>;
+  incompatible_blocks_analysis?: Record<string, unknown>;
+  overall_accuracy?: number;
+  overall_mean_rt?: number;
+  [key: string]: unknown;
+}
+
 interface PerformanceOptimizedResponse {
   success: boolean;
-  analysis?: any;
+  analysis?: PerformanceOptimizedAnalysis;
   performance_metrics?: {
     processing_time: number;
     memory_usage: number;
@@ -28,7 +55,7 @@ export class IATPerformanceService {
   private readonly serviceName = 'IATPerformanceService';
   private readonly pythonPath: string;
   private readonly optimizerPath: string;
-  private readonly cache: Map<string, any> = new Map();
+  private readonly cache: Map<string, { data: PerformanceOptimizedResponse; timestamp: number }> = new Map();
   private readonly maxCacheSize: number = 100;
   private readonly cacheTimeout: number = 5 * 60 * 1000; // 5 minutos
 
@@ -140,7 +167,7 @@ export class IATPerformanceService {
         return null;
       }
       
-      return cached;
+      return cached.data;
     } catch (error) {
       console.error('Error obteniendo desde cache:', error);
       return null;
@@ -160,7 +187,7 @@ export class IATPerformanceService {
         }
       }
       
-      this.cache.set(key, result);
+      this.cache.set(key, { data: result, timestamp: Date.now() });
     } catch (error) {
       console.error('Error guardando en cache:', error);
     }
@@ -169,7 +196,7 @@ export class IATPerformanceService {
   /**
    * Prepara datos optimizados para análisis
    */
-  private prepareOptimizedInput(sessionData: IATSessionModel): any {
+  private prepareOptimizedInput(sessionData: IATSessionModel): PerformanceOptimizedInput {
     return {
       sessionId: sessionData.sessionId,
       participantId: sessionData.participantId,
@@ -207,7 +234,7 @@ export class IATPerformanceService {
   /**
    * Ejecuta análisis optimizado con timeout y manejo de errores
    */
-  private async executeOptimizedAnalysis(inputData: any): Promise<PerformanceOptimizedResponse> {
+  private async executeOptimizedAnalysis(inputData: PerformanceOptimizedInput): Promise<PerformanceOptimizedResponse> {
     const context = 'executeOptimizedAnalysis';
     const timeout = 30000; // 30 segundos timeout
     
@@ -306,7 +333,7 @@ export class IATPerformanceService {
   /**
    * Calcula métricas de rendimiento
    */
-  private calculatePerformanceMetrics(processingTime: number): any {
+  private calculatePerformanceMetrics(processingTime: number): PerformanceOptimizedResponse['performance_metrics'] {
     try {
       return {
         processing_time: processingTime,
@@ -316,8 +343,7 @@ export class IATPerformanceService {
         parallel_tasks: this.getOptimalParallelTasks(),
         optimization_level: 'high'
       };
-    } catch (error) {
-      console.error('Error calculando métricas de rendimiento:', error);
+    } catch {
       return {
         processing_time: processingTime,
         memory_usage: 0,
@@ -385,18 +411,21 @@ export class IATPerformanceService {
   /**
    * Obtiene estadísticas de rendimiento
    */
-  getPerformanceStats(): any {
+  getPerformanceStats(): { cacheSize: number; cacheHits: number; cacheMisses: number; avgProcessingTime: number } {
     try {
       return {
         cacheSize: this.cache.size,
-        maxCacheSize: this.maxCacheSize,
-        cacheTimeout: this.cacheTimeout,
-        optimizationLevel: 'high',
-        parallelTasks: this.getOptimalParallelTasks()
+        cacheHits: 0,
+        cacheMisses: 0,
+        avgProcessingTime: 0
       };
-    } catch (error) {
-      console.error('Error obteniendo estadísticas:', error);
-      return {};
+    } catch {
+      return {
+        cacheSize: 0,
+        cacheHits: 0,
+        cacheMisses: 0,
+        avgProcessingTime: 0
+      };
     }
   }
 

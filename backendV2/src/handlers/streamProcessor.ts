@@ -28,7 +28,7 @@ export const streamProcessor: DynamoDBStreamHandler = async (event: DynamoDBStre
 /**
  * Procesa cambios en la tabla de participantes
  */
-async function processParticipantChange(record: any, eventName: string) {
+async function processParticipantChange(record: DynamoDBStreamEvent['Records'][0], eventName: string) {
   const participant = record.dynamodb?.NewImage || record.dynamodb?.OldImage;
   
   if (!participant) return;
@@ -59,7 +59,7 @@ async function processParticipantChange(record: any, eventName: string) {
 /**
  * Procesa cambios en la tabla de respuestas de módulos
  */
-async function processModuleResponseChange(record: any, eventName: string) {
+async function processModuleResponseChange(record: DynamoDBStreamEvent['Records'][0], eventName: string) {
   const response = record.dynamodb?.NewImage || record.dynamodb?.OldImage;
   
   if (!response) return;
@@ -89,7 +89,7 @@ async function processModuleResponseChange(record: any, eventName: string) {
 /**
  * Envía mensaje a todas las conexiones WebSocket activas
  */
-async function broadcastToConnections(message: any) {
+async function broadcastToConnections(message: { type: string; event: string; data: Record<string, unknown>; timestamp: string }) {
   try {
     // TODO: Implementar lógica para obtener conexiones activas
     // Por ahora, solo logueamos el mensaje

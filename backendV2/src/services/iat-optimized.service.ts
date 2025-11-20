@@ -14,7 +14,7 @@ import type {
 export class IATOptimizedService {
   private readonly serviceName = 'IATOptimizedService';
   private readonly dynamoClient: DynamoDBDocumentClient;
-  private readonly cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly cache: Map<string, { data: IATTestConfigModel | IATSessionModel; timestamp: number }> = new Map();
   private readonly cacheTimeout: number = 5 * 60 * 1000; // 5 minutos
   private readonly maxCacheSize: number = 1000;
 
@@ -32,7 +32,7 @@ export class IATOptimizedService {
     try {
       // Verificar cache primero
       const cacheKey = `test-config-${id}`;
-      const cached = this.getFromCache(cacheKey);
+      const cached = this.getFromCache<IATTestConfigModel>(cacheKey);
       if (cached) {
         console.log(`[${this.serviceName}.${context}] Configuración obtenida desde cache`);
         return cached;
@@ -77,7 +77,7 @@ export class IATOptimizedService {
     try {
       // Verificar cache primero
       const cacheKey = `session-${sessionId}`;
-      const cached = this.getFromCache(cacheKey);
+      const cached = this.getFromCache<IATSessionModel>(cacheKey);
       if (cached) {
         console.log(`[${this.serviceName}.${context}] Sesión obtenida desde cache`);
         return cached;
@@ -234,9 +234,9 @@ export class IATOptimizedService {
   /**
    * Obtiene sesiones por participante con paginación optimizada
    */
-  async getSessionsByParticipant(participantId: string, limit: number = 50, lastEvaluatedKey?: any): Promise<{
+  async getSessionsByParticipant(participantId: string, limit: number = 50, lastEvaluatedKey?: Record<string, unknown>): Promise<{
     sessions: IATSessionModel[];
-    lastEvaluatedKey?: any;
+    lastEvaluatedKey?: Record<string, unknown>;
   }> {
     const context = 'getSessionsByParticipant';
     
@@ -306,7 +306,7 @@ export class IATOptimizedService {
   /**
    * Obtiene desde cache
    */
-  private getFromCache(key: string): any | null {
+  private getFromCache<T extends IATTestConfigModel | IATSessionModel>(key: string): T | null {
     try {
       const cached = this.cache.get(key);
       if (!cached) return null;
@@ -317,7 +317,7 @@ export class IATOptimizedService {
         return null;
       }
       
-      return cached.data;
+      return cached.data as T;
     } catch (error) {
       console.error('Error obteniendo desde cache:', error);
       return null;
@@ -327,7 +327,7 @@ export class IATOptimizedService {
   /**
    * Guarda en cache
    */
-  private setCache(key: string, data: any): void {
+  private setCache(key: string, data: IATTestConfigModel | IATSessionModel): void {
     try {
       // Limpiar cache si está lleno
       if (this.cache.size >= this.maxCacheSize) {
@@ -393,8 +393,8 @@ export class IATOptimizedService {
   /**
    * Construye valores de atributos para expresión
    */
-  private buildExpressionAttributeValues(updateData: Partial<IATSessionModel>): Record<string, any> {
-    const values: Record<string, any> = {
+  private buildExpressionAttributeValues(updateData: Partial<IATSessionModel>): Record<string, unknown> {
+    const values: Record<string, unknown> = {
       ':updatedAt': new Date().toISOString()
     };
     
@@ -442,7 +442,7 @@ export class IATOptimizedService {
   /**
    * Obtiene estadísticas de cache
    */
-  getCacheStats(): any {
+  getCacheStats(): { cacheSize: number; maxCacheSize: number; cacheTimeout: number; hitRate: number } {
     try {
       return {
         cacheSize: this.cache.size,
@@ -452,7 +452,12 @@ export class IATOptimizedService {
       };
     } catch (error) {
       console.error('Error obteniendo estadísticas de cache:', error);
-      return {};
+      return {
+        cacheSize: 0,
+        maxCacheSize: this.maxCacheSize,
+        cacheTimeout: this.cacheTimeout,
+        hitRate: 0
+      };
     }
   }
 }

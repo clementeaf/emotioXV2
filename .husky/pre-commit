@@ -18,17 +18,32 @@ cd ../shared && npm run lint || exit 1
 cd ../public-tests && npm run lint || exit 1
 cd ..
 
-# Check for prohibited any/unknown types (WARNING ONLY - not blocking)
-echo "🚫 Checking for prohibited any/unknown types..."
-ANY_COUNT=$(grep -r ": any\|any\[\]\|any>" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=build . | grep -v "//.*any\|\.d\.ts:" | wc -l || echo "0")
-if [ "$ANY_COUNT" -gt 0 ]; then
-  echo "⚠️  WARNING: Found $ANY_COUNT 'any' types - consider replacing with specific types"
+# Check for prohibited any types (BLOCKING in critical projects only)
+echo "🚫 Checking for prohibited 'any' types..."
+# Check public-tests and backendV2 (critical projects)
+# Exclude false positives: Company (contains "any" but is a type name)
+ANY_FOUND_CRITICAL=$(grep -rE ':\s*any(\[\]|>|\s|$)' --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=build public-tests/src backendV2/src 2>/dev/null | grep -vE '(//.*any|\.d\.ts:|Company)' || true)
+if [ -n "$ANY_FOUND_CRITICAL" ]; then
+  ANY_COUNT=$(echo "$ANY_FOUND_CRITICAL" | wc -l | tr -d ' ')
+  echo "❌ ERROR: Found $ANY_COUNT 'any' types in critical projects (public-tests, backendV2)"
+  echo "$ANY_FOUND_CRITICAL" | head -10
+  exit 1
 fi
 
+# Check frontend (warning only for now - many to fix)
+ANY_COUNT_FRONTEND=$(grep -r ": any\|any\[\]\|any>" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=build frontend/src 2>/dev/null | grep -v "//.*any\|\.d\.ts:" | wc -l || echo "0")
+if [ "$ANY_COUNT_FRONTEND" -gt 0 ]; then
+  echo "⚠️  WARNING: Found $ANY_COUNT_FRONTEND 'any' types in frontend - consider replacing with specific types"
+fi
+
+# Check for unknown types (WARNING ONLY - unknown is safer and often necessary)
 UNKNOWN_COUNT=$(grep -r ": unknown\|unknown\[\]\|unknown>" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=build . | grep -v "isValidUser\|parseJwt\|//.*unknown\|\.d\.ts:" | wc -l || echo "0")
 if [ "$UNKNOWN_COUNT" -gt 0 ]; then
-  echo "⚠️  WARNING: Found $UNKNOWN_COUNT 'unknown' types - consider replacing with specific types"
+  echo "⚠️  WARNING: Found $UNKNOWN_COUNT 'unknown' types - consider replacing with specific types where possible"
+  echo "   (Note: 'unknown' is safer than 'any' and often necessary for dynamic data)"
 fi
+
+echo "✅ No prohibited 'any' types found"
 
 # Tests (optional for now)
 echo "🧪 Running tests..."

@@ -16,7 +16,7 @@ interface PythonIATResponse {
     confidence_interval: [number, number];
     analysis_method?: string;
     error_message?: string;
-    raw_data?: any[];
+    raw_data?: Array<Record<string, unknown>>;
   };
   error?: string;
   timestamp?: string;
@@ -48,7 +48,7 @@ export class PythonIATBridgeService {
    * @param sessionData Datos de la sesión IAT
    * @returns Resultado del análisis IAT
    */
-  async analyzeIATData(sessionData: IATSessionModel): Promise<any> {
+  async analyzeIATData(sessionData: IATSessionModel): Promise<PythonIATResponse> {
     const context = 'analyzeIATData';
     console.log(`[${this.serviceName}.${context}] Iniciando análisis IAT con Python`);
 
@@ -77,7 +77,7 @@ export class PythonIATBridgeService {
   /**
    * Prepara datos de sesión para envío a Python
    */
-  private preparePythonInput(sessionData: IATSessionModel): any {
+  private preparePythonInput(sessionData: IATSessionModel): Record<string, unknown> {
     return {
       sessionId: sessionData.sessionId,
       participantId: sessionData.participantId,
@@ -93,7 +93,7 @@ export class PythonIATBridgeService {
   /**
    * Ejecuta el script Python y retorna el resultado
    */
-  private async executePythonAnalysis(inputData: any): Promise<PythonIATResponse> {
+  private async executePythonAnalysis(inputData: Record<string, unknown>): Promise<PythonIATResponse> {
     const context = 'executePythonAnalysis';
     
     return new Promise((resolve, reject) => {

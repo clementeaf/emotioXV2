@@ -13,7 +13,7 @@ export const coordinateFidelityTester = {
   ) => {
     // No-op stub
   },
-  recordProcessedClick: (testId: string, point: any) => {
+  recordProcessedClick: (testId: string, point: { x: number; y: number }) => {
     // No-op stub
   }
 };

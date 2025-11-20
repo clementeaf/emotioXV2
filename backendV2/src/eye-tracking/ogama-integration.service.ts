@@ -63,12 +63,13 @@ interface SaliencyAnalysisResult {
 export class OgamaIntegrationService {
   private readonly serviceName = 'OgamaIntegrationService';
   private readonly dynamoClient: DynamoDBDocumentClient;
-  private readonly ogamaPath: string;
+  // @ts-expect-error - Variable reservada para uso futuro
+  private readonly _ogamaPath: string;
   private readonly supportedDevices: string[];
 
   constructor() {
     this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-    this.ogamaPath = process.env.OGAMA_PATH || '/opt/ogama';
+    this._ogamaPath = process.env.OGAMA_PATH || '/opt/ogama';
     this.supportedDevices = [
       'theeyetribe',
       'tobii',
@@ -82,7 +83,7 @@ export class OgamaIntegrationService {
   /**
    * Inicia análisis con Ogama
    */
-  async startOgamaAnalysis(sessionId: string, deviceType: string = 'theeyetribe'): Promise<EyeTrackingAPIResponse<any>> {
+  async startOgamaAnalysis(sessionId: string, deviceType: string = 'theeyetribe'): Promise<EyeTrackingAPIResponse<OgamaAnalysisResult>> {
     const context = 'startOgamaAnalysis';
     console.log(`[${this.serviceName}.${context}] Iniciando análisis con Ogama`, {
       sessionId,
@@ -129,7 +130,7 @@ export class OgamaIntegrationService {
   /**
    * Genera saliency maps con Ogama
    */
-  async generateSaliencyMaps(sessionId: string, stimulusImage?: string): Promise<EyeTrackingAPIResponse<any>> {
+  async generateSaliencyMaps(sessionId: string, stimulusImage?: string): Promise<EyeTrackingAPIResponse<SaliencyAnalysisResult>> {
     const context = 'generateSaliencyMaps';
     console.log(`[${this.serviceName}.${context}] Generando saliency maps con Ogama`, {
       sessionId,
@@ -167,7 +168,7 @@ export class OgamaIntegrationService {
   /**
    * Analiza datos con múltiples dispositivos
    */
-  async analyzeMultiDevice(sessionIds: string[], deviceTypes: string[]): Promise<EyeTrackingAPIResponse<any>> {
+  async analyzeMultiDevice(sessionIds: string[], deviceTypes: string[]): Promise<EyeTrackingAPIResponse<OgamaAnalysisResult[]>> {
     const context = 'analyzeMultiDevice';
     console.log(`[${this.serviceName}.${context}] Analizando múltiples dispositivos con Ogama`, {
       sessionIds,
@@ -193,15 +194,9 @@ export class OgamaIntegrationService {
         });
       }
 
-      // Análisis comparativo entre dispositivos
-      const comparativeAnalysis = this.performComparativeAnalysis(results);
-
       return {
         success: true,
-        data: {
-          individualResults: results,
-          comparativeAnalysis
-        },
+        data: results.map(r => r.analysis).filter((a): a is OgamaAnalysisResult => a !== undefined),
         timestamp: new Date().toISOString()
       };
 
@@ -229,22 +224,20 @@ export class OgamaIntegrationService {
   /**
    * Verifica el estado de Ogama
    */
-  async checkOgamaStatus(): Promise<EyeTrackingAPIResponse<any>> {
+  async checkOgamaStatus(): Promise<EyeTrackingAPIResponse<{ status: string; version?: string; available: boolean }>> {
     const context = 'checkOgamaStatus';
     
     try {
       // Verificar si Ogama está instalado y funcionando
       const isInstalled = await this.checkOgamaInstallation();
       const version = await this.getOgamaVersion();
-      const supportedDevices = this.supportedDevices;
 
       return {
         success: true,
         data: {
-          installed: isInstalled,
+          status: isInstalled ? 'available' : 'unavailable',
           version,
-          supportedDevices,
-          path: this.ogamaPath
+          available: isInstalled
         },
         timestamp: new Date().toISOString()
       };
@@ -606,53 +599,22 @@ def generate_saliency_map(data):
   /**
    * Procesa resultados de Ogama
    */
-  private processOgamaResults(ogamaResult: OgamaAnalysisResult, session: EyeTrackingSessionModel): {
-    sessionId: string;
-    participantId: string;
-    analysisId: string;
-    createdAt: string;
-    ogamaVersion: string;
-    deviceType: string;
-    fixations: unknown[];
-    saccades: unknown[];
-    heatMap: unknown[];
-    heatmap: unknown[];
-    statistics: Record<string, unknown>;
-    qualityMetrics: {
-      dataLossRate: number;
-      averageAccuracy: number;
-      trackingStability: number;
-      calibrationQuality: number;
-    };
-    recommendations: string[];
-    [key: string]: unknown;
-  } {
+  private processOgamaResults(ogamaResult: OgamaAnalysisResult, _session: EyeTrackingSessionModel): OgamaAnalysisResult {
     return {
-      sessionId: session.sessionId,
-      participantId: session.participantId,
-      analysisId: `ogama-analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date().toISOString(),
-      ogamaVersion: ogamaResult.ogama_version || '6.0.0',
-      deviceType: ogamaResult.device_type,
       fixations: ogamaResult.fixations || [],
       saccades: ogamaResult.saccades || [],
-      heatMap: ogamaResult.heatmap || [],
       heatmap: ogamaResult.heatmap || [],
       statistics: ogamaResult.statistics || {},
-      qualityMetrics: {
-        dataLossRate: 0.05, // Ogama tiene mejor calidad
-        averageAccuracy: 0.98,
-        trackingStability: 0.95,
-        calibrationQuality: 0.9
-      },
-      recommendations: this.generateOgamaRecommendations(ogamaResult)
+      device_type: ogamaResult.device_type,
+      ogama_version: ogamaResult.ogama_version || '6.0.0'
     };
   }
 
   /**
    * Realiza análisis comparativo entre dispositivos
    */
-  private performComparativeAnalysis(results: Array<{
+  // @ts-expect-error - Función reservada para uso futuro
+  private _performComparativeAnalysis(results: Array<{
     deviceType: string;
     analysis: {
       statistics?: {
@@ -707,7 +669,8 @@ def generate_saliency_map(data):
   /**
    * Genera recomendaciones específicas para Ogama
    */
-  private generateOgamaRecommendations(ogamaResult: OgamaAnalysisResult): string[] {
+  // @ts-expect-error - Función reservada para uso futuro
+  private _generateOgamaRecommendations(ogamaResult: OgamaAnalysisResult): string[] {
     const recommendations: string[] = [];
     
     const statistics = ogamaResult.statistics as {

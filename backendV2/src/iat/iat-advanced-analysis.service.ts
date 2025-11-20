@@ -2,6 +2,22 @@ import { spawn } from 'child_process';
 import type { IATSessionModel } from '../models/iat.model';
 
 /**
+ * Interfaz para input del análisis avanzado
+ */
+interface AdvancedAnalysisInput {
+  sessionId: string;
+  participantId: string;
+  testConfig: IATSessionModel['testConfig'];
+  responses: IATSessionModel['responses'];
+  metadata: {
+    startTime: string;
+    lastActivity: string;
+    sessionDuration: number;
+    totalTrials: number;
+  };
+}
+
+/**
  * Interfaz para respuesta del motor de análisis avanzado
  */
 interface AdvancedAnalysisResponse {
@@ -131,7 +147,7 @@ export class IATAdvancedAnalysisService {
   /**
    * Prepara datos de sesión para análisis avanzado
    */
-  private prepareAnalysisInput(sessionData: IATSessionModel): any {
+  private prepareAnalysisInput(sessionData: IATSessionModel): AdvancedAnalysisInput {
     return {
       sessionId: sessionData.sessionId,
       participantId: sessionData.participantId,
@@ -168,7 +184,7 @@ export class IATAdvancedAnalysisService {
   /**
    * Ejecuta el motor de análisis avanzado
    */
-  private async executeAdvancedAnalysis(inputData: any): Promise<AdvancedAnalysisResponse> {
+  private async executeAdvancedAnalysis(inputData: AdvancedAnalysisInput): Promise<AdvancedAnalysisResponse> {
     const context = 'executeAdvancedAnalysis';
     
     return new Promise((resolve, reject) => {

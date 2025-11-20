@@ -71,7 +71,7 @@ export const cognitiveRenderers = {
       ? contentConfiguration.choices
           .map((choice: Record<string, unknown>) => String(choice.text || choice.id || ''))
           .filter(item => item)
-      : [] as any[];
+      : [] as string[];
 
     return (
       <div className='flex flex-col items-center justify-center h-full w-full gap-6 p-[2.5%] sm:p-[3%]'>

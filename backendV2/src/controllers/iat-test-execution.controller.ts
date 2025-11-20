@@ -99,7 +99,7 @@ export class IATTestExecutionController {
 
       console.log(`[${this.serviceName}.${context}] Sesión IAT iniciada exitosamente`, {
         sessionId: validatedRequest.sessionId,
-        totalBlocks: sessionData.total_blocks
+        totalBlocks: (sessionData as { total_blocks?: number }).total_blocks
       });
 
       return {
@@ -208,10 +208,11 @@ export class IATTestExecutionController {
 
 
       // Actualizar sesión con la nueva respuesta
+      const responseData = responseResult as { is_last_response?: boolean; progress?: number };
       const updatedSession = await iatService.updateSessionStatus(
         validatedRequest.sessionId,
-        responseResult.is_last_response ? 'completed' : 'test',
-        responseResult.progress || 0.0
+        responseData.is_last_response ? 'completed' : 'test',
+        responseData.progress || 0.0
       );
 
       console.log(`[${this.serviceName}.${context}] Respuesta procesada exitosamente`, {
@@ -337,7 +338,7 @@ export class IATTestExecutionController {
   /**
    * Ejecuta el motor Python IAT y retorna el resultado
    */
-  private async executePythonEngine(inputData: any): Promise<any> {
+  private async executePythonEngine(inputData: Record<string, unknown>): Promise<Record<string, unknown>> {
     const context = 'executePythonEngine';
     
     return new Promise((resolve, reject) => {
