@@ -288,9 +288,16 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     }
   }, [researchId]);
 
-  // Cargar datos existentes
+  // Cargar datos existentes - optimizado para evitar procesamiento innecesario
   useEffect(() => {
+    if (!researchId) {
+      setFormData(prev => ({ ...prev, researchId: '' }));
+      setCognitiveTaskId(null);
+      return;
+    }
+
     if (existingData) {
+      // 🎯 Solo procesar si realmente hay cambios en los datos
       // Normalizar tipos de preguntas antiguos (file_upload -> navigation_flow)
       const normalizedData = {
         ...existingData,
@@ -301,10 +308,22 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
           return q;
         })
       };
-      setFormData(normalizedData);
+      
+      // 🎯 Solo actualizar si los datos realmente cambiaron
+      setFormData(prev => {
+        if (prev.researchId === researchId && prev.questions.length === normalizedData.questions.length) {
+          return prev; // Evitar actualización innecesaria
+        }
+        return normalizedData;
+      });
       setCognitiveTaskId('existing');
     } else {
-      setFormData(prev => ({ ...prev, researchId: researchId || '' }));
+      setFormData(prev => {
+        if (prev.researchId === researchId) {
+          return prev; // Ya está configurado, no actualizar
+        }
+        return { ...prev, researchId: researchId || '' };
+      });
       setCognitiveTaskId(null);
     }
   }, [existingData, researchId]);

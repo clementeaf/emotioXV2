@@ -45,7 +45,7 @@ export function useCognitiveTaskData(researchId: string | null) {
     },
     enabled: !!researchId,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: false, // No refetch cuando la ventana recibe foco
     refetchOnMount: false, // No refetch si ya hay datos en cache
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: (failureCount, error) => {

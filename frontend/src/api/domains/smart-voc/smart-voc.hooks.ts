@@ -32,6 +32,10 @@ export function useSmartVOCData(researchId: string | null) {
     queryFn: () => researchId ? smartVocApi.getByResearchId(researchId) : Promise.resolve(null),
     enabled: !!researchId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (antes cacheTime)
+    refetchOnWindowFocus: false, // No refetch cuando la ventana recibe foco
+    refetchOnMount: false, // No refetch si ya hay datos en caché
+    retry: 1 // Solo reintentar una vez en caso de error
   });
 
   // Create mutation

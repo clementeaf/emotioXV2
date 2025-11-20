@@ -157,27 +157,46 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   // Derivar isSaving del hook centralizado
   const isSaving = isCreating || isUpdating;
 
-  // Procesar datos cuando cambien
+  // Procesar datos cuando cambien - optimizado para evitar procesamiento innecesario
   useEffect(() => {
     if (!actualResearchId) {
-      setFormData({ ...INITIAL_FORM_DATA });
+      setFormData(prev => {
+        if (prev.researchId === '') {
+          return prev; // Ya está en estado inicial, no actualizar
+        }
+        return { ...INITIAL_FORM_DATA };
+      });
       return;
     }
 
     if (existingData) {
+      // 🎯 Solo procesar si realmente hay cambios en los datos
       // Asegurar que existingData tenga questions definido y que todas tengan required como boolean
       const normalizedQuestions = (existingData.questions || []).map(question => ({
         ...question,
         required: typeof question.required === 'boolean' ? question.required : false
       }));
       
-      setFormData({
-        ...existingData,
-        questions: normalizedQuestions
+      setFormData(prev => {
+        // 🎯 Evitar actualización si los datos son iguales
+        if (prev.researchId === actualResearchId && 
+            prev.questions.length === normalizedQuestions.length &&
+            JSON.stringify(prev.questions) === JSON.stringify(normalizedQuestions)) {
+          return prev;
+        }
+        return {
+          ...existingData,
+          questions: normalizedQuestions
+        };
       });
       setHasBeenSaved(true);
     } else if (!hasBeenSaved) {
-      setFormData({ ...INITIAL_FORM_DATA });
+      setFormData(prev => {
+        if (prev.researchId === '') {
+          return prev; // Ya está en estado inicial
+        }
+        return { ...INITIAL_FORM_DATA };
+      });
     }
   }, [existingData, actualResearchId, hasBeenSaved]);
 
