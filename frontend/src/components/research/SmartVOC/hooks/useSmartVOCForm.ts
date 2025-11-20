@@ -236,16 +236,6 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   }, []);
 
   const handleSave = async () => {
-    if (!validateForm()) {
-      setModalError({
-        title: 'Campos incompletos',
-        message: 'Por favor, complete todos los campos requeridos.',
-        type: 'warning'
-      });
-      setModalVisible(true);
-      return;
-    }
-
     try {
       // Validar que questions exista
       if (!formData.questions || !Array.isArray(formData.questions)) {
@@ -291,16 +281,6 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   };
 
   const handlePreview = () => {
-    if (!validateForm()) {
-      setModalError({
-        title: 'Campos incompletos',
-        message: 'Por favor, complete todos los campos requeridos antes de previsualizar.',
-        type: 'warning'
-      });
-      setModalVisible(true);
-      return;
-    }
-
     // Implementar vista previa
     toastHelpers.error('Vista previa no implementada aún');
   };

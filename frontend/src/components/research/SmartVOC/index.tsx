@@ -85,25 +85,27 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   return (
     <div className="flex gap-6 min-w-[1200px]">
       {/* Columna izquierda - Contenido principal con scroll */}
-      <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4">
-        {/* Gestión de preguntas */}
-        <SmartVOCQuestions
-          questions={questions}
-          onUpdateQuestion={updateQuestion}
-          onAddQuestion={addQuestion}
-          onRemoveQuestion={removeQuestion}
-          disabled={isLoading || isSaving}
-        />
-        
-        {/* Pie de página con acciones */}
-        <FormFooter
-          isSaving={isSaving}
-          isLoading={isLoading}
-          onSave={handleSaveAndNotify}
-          onDelete={handleDelete}
-          isExisting={isExisting}
-          deleteText="Eliminar datos SmartVOC"
-        />
+      <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4 hide-scrollbar">
+        <div className="space-y-4">
+          {/* Gestión de preguntas */}
+          <SmartVOCQuestions
+            questions={questions}
+            onUpdateQuestion={updateQuestion}
+            onAddQuestion={addQuestion}
+            onRemoveQuestion={removeQuestion}
+            disabled={isLoading || isSaving}
+          />
+          
+          {/* Pie de página con acciones */}
+          <FormFooter
+            isSaving={isSaving}
+            isLoading={isLoading}
+            onSave={handleSaveAndNotify}
+            onDelete={handleDelete}
+            isExisting={isExisting}
+            deleteText="Eliminar datos SmartVOC"
+          />
+        </div>
       </div>
 
       {/* Columna derecha - Sidebar fijo con contenido educativo */}

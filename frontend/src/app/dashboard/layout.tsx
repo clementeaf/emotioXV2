@@ -10,16 +10,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const researchId = searchParams ? searchParams.get('research') : '';
 
   return (
-    <div className="flex h-screen p-6 gap-6" style={{ backgroundColor: '#f1f5f9' }}>
-      <div className="w-60 bg-white rounded-xl">
+    <div className="flex h-screen p-6 gap-6 hide-scrollbar overflow-hidden" style={{ backgroundColor: '#f1f5f9' }}>
+      <div className="w-60 bg-white rounded-xl hide-scrollbar overf">
         {researchId ? (
           <ResearchSidebar researchId={researchId} />
         ) : (
           <Sidebar />
         )}
       </div>
-      <div className='flex-1 bg-white rounded-xl'>
-        <main className="h-full p-6">
+      <div className='bg-white rounded-xl h-full w-full'>
+        <main className="p-6">
           {children}
         </main>
       </div>

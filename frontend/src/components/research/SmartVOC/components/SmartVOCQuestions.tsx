@@ -62,10 +62,10 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {questionsForUI.map((question, index) => (
         <FormCard key={question.id || index} title={`Pregunta ${index + 1}: ${question.title}`}>
-          <div className="space-y-5">
+          <div className="space-y-4">
             {renderQuestionFields(question)}
 
             <QuestionPreview

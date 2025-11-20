@@ -100,9 +100,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
 
   return (
     <div className="flex gap-6 min-w-[1200px]">
-      {/* Columna izquierda - Contenido principal con scroll */}
-      <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4">
-        <div className={cn('space-y-4', className)}>
+      <div className="flex flex-col h-[700px]">
           {/* Campos del formulario */}
           <CognitiveTaskFields
             questions={formData.questions}
@@ -127,7 +125,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
             cognitiveTaskId={cognitiveTaskId}
             researchId={researchId}
           />
-        </div>
       </div>
 
       {/* Columna derecha - Sidebar fijo con contenido educativo */}

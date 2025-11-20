@@ -14,7 +14,7 @@ export function SidebarBase({ userInfo, topBlock, children, footer, className }:
   return (
     <aside
       className={cn(
-        'w-full h-full flex flex-col',
+        'w-full h-full flex flex-col hide-scrollbar overflow-y-auto',
         className
       )}
     >

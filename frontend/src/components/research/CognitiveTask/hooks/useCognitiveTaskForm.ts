@@ -715,15 +715,6 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
 
   // Función para guardar
   const handleSave = useCallback(async () => {
-    if (!validateForm()) {
-      showErrorModal({
-        title: 'Error de validación',
-        message: 'Por favor, corrija los errores antes de guardar',
-        type: 'error'
-      });
-      return;
-    }
-
     try {
       const dataToSave = filterValidQuestionsLocal(formData);
       
