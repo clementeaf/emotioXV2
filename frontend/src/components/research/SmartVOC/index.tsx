@@ -83,9 +83,9 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   }
 
   return (
-    <div className="flex gap-6 min-w-[1200px]">
+    <div className="flex gap-6 w-full overflow-hidden">
       {/* Columna izquierda - Contenido principal con scroll */}
-      <div className="flex-[2] min-w-[800px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4 hide-scrollbar">
+      <div className="flex-[2] min-w-0 max-h-[calc(100vh-200px)] overflow-y-auto pr-4 hide-scrollbar">
         <div className="space-y-4">
           {/* Gestión de preguntas */}
           <SmartVOCQuestions
@@ -109,7 +109,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
       </div>
 
       {/* Columna derecha - Sidebar fijo con contenido educativo */}
-      <div className="flex-[1] min-w-[400px]">
+      <div className="flex-[1] min-w-0">
         <div className="sticky top-6">
           <EducationalSidebar
             content={smartVocContent}

@@ -38,15 +38,13 @@ export const STAGE_REGISTRY: Record<string, UnifiedStageConfig> = {
     id: 'smart-voc',
     title: 'Smart VOC',
     displayTitle: 'Configuración de Smart VOC',
-    component: 'SmartVOCForm',
-    containerStyles: { maxWidth: '768px', width: '100%' }
+    component: 'SmartVOCForm'
   },
   'cognitive': {
     id: 'cognitive',
     title: 'Cognitive Tasks',
     displayTitle: 'Configuración de tareas cognitivas',
-    component: 'CognitiveTaskForm',
-    containerStyles: { maxWidth: '768px', width: '100%' }
+    component: 'CognitiveTaskForm'
   },
   'thank-you': {
     id: 'thank-you',

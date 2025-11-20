@@ -82,18 +82,7 @@ export interface CognitiveTaskFieldsProps {
   uploadProgress?: number;
 }
 
-export interface QuestionCardProps {
-  question: Question;
-  onQuestionChange: (questionId: string, updates: Partial<Question>) => void;
-  onAddChoice: (questionId: string) => void;
-  onRemoveChoice: (questionId: string, choiceId: string) => void;
-  onFileUpload: (questionId: string, files: FileList) => void;
-  onFileDelete: (questionId: string, fileId: string) => void;
-  disabled?: boolean;
-  validationErrors?: { [key: string]: string } | null;
-  isUploading?: boolean;
-  uploadProgress?: number;
-}
+// QuestionCardProps eliminado - QuestionCard ya no se usa, se usa FormCard directamente
 
 export interface CognitiveTaskHeaderProps {
   title: string;

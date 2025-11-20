@@ -1,6 +1,6 @@
 export { AddQuestionModal } from './AddQuestionModal';
 export * from './CognitiveTaskFields';
-export * from './CognitiveTaskFooter';
+// CognitiveTaskFooter eliminado - ahora se usa FormFooter directamente
 export * from './CognitiveTaskHeader';
 export { CognitiveTaskSettings } from './CognitiveTaskSettings';
 // ❌ ELIMINADO: ConfirmModal - usar /components/common/ConfirmationModal
@@ -9,4 +9,4 @@ export { CognitiveTaskSettings } from './CognitiveTaskSettings';
 export * from './JsonPreviewModal';
 export * from './NavigationFlowPreview';
 export * from './ProgressBar';
-export { QuestionCard } from './QuestionCard';
+// QuestionCard eliminado - ahora se usa FormCard directamente en CognitiveTaskFields

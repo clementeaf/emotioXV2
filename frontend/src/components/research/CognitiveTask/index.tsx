@@ -6,9 +6,7 @@ import { EducationalSidebar } from '@/components/common/EducationalSidebar';
 import { useEducationalContent } from '@/hooks/useEducationalContent';
 import { cn } from '@/lib/utils';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
-import {
-  CognitiveTaskFooter
-} from './components';
+import { FormFooter } from '@/components/common/FormFooter';
 import { ErrorModal } from '@/components/common/ErrorModal';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { useCognitiveTaskForm } from './hooks/useCognitiveTaskForm';
@@ -99,8 +97,10 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   }
 
   return (
-    <div className="flex gap-6 min-w-[1200px]">
-      <div className="flex flex-col h-[700px]">
+    <div className="flex gap-6 w-full overflow-hidden">
+      {/* Columna izquierda - Contenido principal con scroll */}
+      <div className="flex-[2] min-w-0 h-[700px] overflow-y-auto pr-4 hide-scrollbar">
+        <div className="space-y-4">
           {/* Campos del formulario */}
           <CognitiveTaskFields
             questions={formData.questions}
@@ -118,17 +118,20 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
             validationErrors={validationErrors}
           />
 
-          <CognitiveTaskFooter
+          {/* Pie de página con acciones */}
+          <FormFooter
+            isSaving={isSaving}
+            isLoading={isLoading}
             onSave={saveForm}
             onDelete={openDeleteModal}
-            isSaving={isSaving}
-            cognitiveTaskId={cognitiveTaskId}
-            researchId={researchId}
+            isExisting={!!cognitiveTaskId}
+            deleteText="Eliminar datos Cognitive Tasks"
           />
+        </div>
       </div>
 
       {/* Columna derecha - Sidebar fijo con contenido educativo */}
-      <div className="flex-[1] min-w-[400px]">
+      <div className="flex-[1] min-w-0">
         <div className="sticky top-6">
           <EducationalSidebar
             content={cognitiveTaskContent}
